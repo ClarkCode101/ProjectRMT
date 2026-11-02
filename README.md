@@ -51,10 +51,12 @@ After the project exists, you can replace the hand-written types with generated 
    pick `ClarkCode101/ProjectRMT`.
 2. Build settings: Framework preset **Vite** (or React (Vite)), build command
    `npm run build`, output directory `dist`.
-3. **Environment variables** (Production): `VITE_SUPABASE_URL`,
-   `VITE_SUPABASE_PUBLISHABLE_KEY`, and `NODE_VERSION` = `22`.
+3. Environment variable: `NODE_VERSION` = `22`. The Supabase URL and publishable
+   key come from the committed `.env.production` file (they are public values), so
+   they don't need to be set in Cloudflare.
 4. Save and Deploy. Every push to `main` redeploys automatically.
-   `public/_redirects` makes links like `/practice` work on refresh.
+   Links like `/practice` work on refresh because Pages serves `index.html` for
+   unknown paths when there is no `404.html` (no `_redirects` needed).
    (On Vercel, `vercel.json` does the same thing.)
 5. In Supabase **Authentication → URL Configuration**, set the Site URL to your
    `*.pages.dev` URL.
