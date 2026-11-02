@@ -1,6 +1,6 @@
-# MTLE Reviewer
+# ProjectRMT
 
-A private, mobile-first web app for reviewing for the Philippine Medical Technologist
+ProjectRMT is a private, mobile-first web app for reviewing for the Philippine Medical Technologist
 Licensure Examination. See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the full plan.
 
 **Phase 1 (done in code):** email login, question bank, practice quiz with instant
@@ -24,6 +24,7 @@ and seed questions.
    1. `supabase/migrations/0001_init.sql` (tables, RLS, view)
    2. `supabase/seed/01_subjects_topics.sql` (subjects + topics)
    3. `supabase/seed/02_questions.sql` (built-in questions, all `unverified`)
+   4. `supabase/migrations/0002_edit_builtin_questions.sql` (lets her verify and fix built-in questions)
 3. **Authentication → Sign In / Providers**: keep Email enabled and turn **off**
    "Allow new users to sign up" (the app is private).
 4. **Authentication → Users → Add user**: create her account (email + password,

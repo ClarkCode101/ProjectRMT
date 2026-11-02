@@ -1,4 +1,4 @@
-# MTLE Reviewer — Project Plan
+# ProjectRMT (MTLE Reviewer) — Project Plan
 
 A private, mobile-first PWA to help one MedTech student review for the Philippine **Medical Technologist Licensure Examination (MTLE)**. It combines a built-in question bank with her own reviewer content, plus smart duplicate detection, practice quizzes, mock exams, flashcards with spaced repetition, and a weak-area dashboard.
 
@@ -45,26 +45,26 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 ## 3. Features
 
 ### Phase 1 — MVP (must-have)
-- [ ] **Auth**: email login (Supabase Auth); app is private
-- [ ] **Question bank**: multiple choice (4 options), tagged by subject → topic
-- [ ] **Practice quiz**: filter by subject/topic/source; instant feedback + explanation after each answer
-- [ ] **Mistake notebook**: wrong answers are collected automatically into a "Review Again" list
-- [ ] **Weak-area dashboard**: score per subject and per topic; anything below 60% is highlighted
-- [ ] **Built-in seed content import** (JSON → Supabase)
+- [x] **Auth**: email login (Supabase Auth); app is private
+- [x] **Question bank**: multiple choice (4 options), tagged by subject → topic
+- [x] **Practice quiz**: filter by subject/topic/source; instant feedback + explanation after each answer
+- [x] **Mistake notebook**: wrong answers are collected automatically into a "Review Again" list
+- [x] **Weak-area dashboard**: score per subject and per topic; anything below 60% is highlighted
+- [x] **Built-in seed content import** (JSON → Supabase)
 
 ### Phase 2 — Content feeding
-- [ ] **Manual add question** form
+- [x] **Manual add question** form
 - [ ] **Bulk upload**: PDF / DOCX / pasted text → parse into questions → review screen → save
-- [ ] **Duplicate detection** (see §5) with side-by-side compare: `Skip` / `Save anyway` / `Replace`
-- [ ] **Verification status**: `unverified` → `verified` (all built-in content starts out unverified)
-- [ ] **Topic coverage map**: question count per topic (✅ enough / ⚠️ few / ❌ none)
+- [ ] **Duplicate detection** (see §5) with side-by-side compare: `Skip` / `Save anyway` / `Replace` (so far: a warning with "Save anyway" when adding one question)
+- [x] **Verification status**: `unverified` → `verified` (all built-in content starts out unverified)
+- [x] **Topic coverage map**: question count per topic (✅ enough / ⚠️ few / ❌ none)
 
 ### Phase 3 — Study modes
 - [ ] **Question Source selector** used by every mode (see §6)
 - [ ] **Mock exam mode**: timed, 100 items per subject, no feedback until submit, review screen afterwards
 - [ ] **Flashcards** with FSRS spaced repetition (Again / Hard / Good / Easy)
 - [ ] **Smart anti-repeat selection** (see §6)
-- [ ] **Shuffle choices** every time
+- [x] **Shuffle choices** every time
 
 ### Phase 4 — Extras & personal touch
 - [ ] **Image-based questions** (blood smears, parasite ova, urine crystals, colonies)
@@ -439,22 +439,22 @@ mtle-reviewer/
 
 ## 12. Build Order (checklist)
 
-1. [ ] `npm create vite@latest mtle-reviewer -- --template react-ts`
-2. [ ] Tailwind + shadcn/ui + React Router + TanStack Query
-3. [ ] Supabase project → run migrations (§7) → seed subjects & topics
-4. [ ] Auth (login page, protected routes)
-5. [ ] Import seed questions JSON
-6. [ ] Practice quiz + explanations + attempts logging
-7. [ ] Mistake notebook
-8. [ ] Dashboard (Recharts)
-9. [ ] Manual add/edit/verify questions + coverage map
+1. [x] `npm create vite@latest mtle-reviewer -- --template react-ts`
+2. [x] Tailwind + shadcn/ui + React Router + TanStack Query
+3. [x] Supabase project → run migrations (§7) → seed subjects & topics
+4. [x] Auth (login page, protected routes)
+5. [x] Import seed questions JSON
+6. [x] Practice quiz + explanations + attempts logging
+7. [x] Mistake notebook
+8. [x] Dashboard (Recharts) — built with simple bars instead of Recharts
+9. [x] Manual add/edit/verify questions + coverage map
 10. [ ] Upload + parse + duplicate review
 11. [ ] Source selector + smart selection
 12. [ ] Mock exam
 13. [ ] Flashcards (ts-fsrs)
 14. [ ] Reference page, planner, streak, encouragements
 15. [ ] PWA + iOS polish
-16. [ ] Deploy to Vercel/Netlify
+16. [x] Deploy to Vercel/Netlify — deployed on Cloudflare Pages instead
 
 ---
 

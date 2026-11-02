@@ -10,6 +10,8 @@ const HomePage = lazy(() => import('@/features/home/HomePage'))
 const PracticePage = lazy(() => import('@/features/quiz/PracticePage'))
 const MistakesPage = lazy(() => import('@/features/mistakes/MistakesPage'))
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'))
+const QuestionsPage = lazy(() => import('@/features/questions/QuestionsPage'))
+const QuestionEditorPage = lazy(() => import('@/features/questions/QuestionEditorPage'))
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +34,9 @@ export const router = createBrowserRouter([
       { path: '/practice', element: <PracticePage /> },
       { path: '/mistakes', element: <MistakesPage /> },
       { path: '/dashboard', element: <DashboardPage /> },
+      { path: '/questions', element: <QuestionsPage /> },
+      { path: '/questions/new', element: <QuestionEditorPage /> },
+      { path: '/questions/:id/edit', element: <QuestionEditorPage /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
