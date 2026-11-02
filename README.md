@@ -28,12 +28,13 @@ and seed questions.
    "Allow new users to sign up" (the app is private).
 4. **Authentication → Users → Add user**: create her account (email + password,
    tick "Auto confirm user").
-5. **Project Settings → API**: copy the Project URL and the `anon` public key.
+5. **Project Settings → API Keys**: copy the Project URL and the publishable key
+   (`sb_publishable_...`).
 6. Copy `.env.example` to `.env.local` and paste those two values in.
 7. `npm run dev` and log in.
 
-> Never put the `service_role` key in this app or in `.env.local`. The anon key is
-> safe to be public because Row Level Security protects the data.
+> Never put the secret / `service_role` key in this app or in `.env.local`. The
+> publishable key is safe to be public because Row Level Security protects the data.
 
 After the project exists, you can replace the hand-written types with generated ones:
 `npx supabase gen types typescript --project-id <id> > src/lib/database.types.ts`
@@ -44,12 +45,16 @@ After the project exists, you can replace the hand-written types with generated 
 2. `npm run seed:sql` checks every question and rewrites `02_questions.sql`.
 3. Run `02_questions.sql` in the SQL Editor. Questions that already exist are skipped.
 
-## Deploy (Vercel, free)
+## Deploy (Cloudflare Pages, free)
 
-1. Push this repo to GitHub.
-2. On Vercel: **Add New → Project** → import the repo (framework: Vite).
-3. Add environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
-4. Deploy. `vercel.json` makes links like `/practice` work on refresh.
-   (For Netlify, `public/_redirects` does the same thing.)
+1. Cloudflare Dashboard → **Workers & Pages → Create → Pages → Connect to Git** →
+   pick `ClarkCode101/ProjectRMT`.
+2. Build settings: Framework preset **Vite** (or React (Vite)), build command
+   `npm run build`, output directory `dist`.
+3. **Environment variables** (Production): `VITE_SUPABASE_URL`,
+   `VITE_SUPABASE_PUBLISHABLE_KEY`, and `NODE_VERSION` = `22`.
+4. Save and Deploy. Every push to `main` redeploys automatically.
+   `public/_redirects` makes links like `/practice` work on refresh.
+   (On Vercel, `vercel.json` does the same thing.)
 5. In Supabase **Authentication → URL Configuration**, set the Site URL to your
-   deployed URL.
+   `*.pages.dev` URL.

@@ -10,7 +10,8 @@
 --   * topic_performance view uses security_invoker so it follows RLS on attempts.
 
 -- Extensions
-create extension if not exists pg_trgm;
+-- Supabase keeps extensions in their own schema (not public).
+create extension if not exists pg_trgm with schema extensions;
 -- create extension if not exists vector;  -- phase 4 (optional)
 
 -- ---------- Reference data ----------
@@ -72,7 +73,7 @@ create table questions (
 
 create index questions_topic_idx on questions(topic_id);
 create index questions_hash_idx  on questions(stem_hash);
-create index questions_trgm_idx  on questions using gin (normalized_stem gin_trgm_ops);
+create index questions_trgm_idx  on questions using gin (normalized_stem extensions.gin_trgm_ops);
 
 -- ---------- Sessions & attempts ----------
 create type session_mode as enum ('practice', 'mock', 'flashcard');
@@ -142,7 +143,9 @@ create table reference_items (           -- quick reference page
 -- ---------- Duplicate check function ----------
 create or replace function find_similar_questions(p_stem text, p_threshold real default 0.6)
 returns table (id uuid, stem text, score real, exact boolean)
-language sql stable as $$
+language sql stable
+set search_path = public, extensions  -- fixed search_path, so the function can't be tricked into using other tables
+as $$
   with n as (
     select trim(regexp_replace(
              regexp_replace(lower(p_stem), '[^a-z0-9 ]', ' ', 'g'),
