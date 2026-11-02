@@ -1,12 +1,20 @@
+import { RotateCcw } from 'lucide-react'
 import { Link } from 'react-router'
-import { SubjectTag, TubeRack } from '@/components/specimen'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { MistakeItem } from '@/components/MistakeItem'
+import { HeroPanel, heroButtonClass, RangeBar, REFERENCE_RANGE, SampleRun } from '@/components/report'
 import { formatPercent, PASSING_RATE } from '@/lib/quiz'
 import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import type { AnswerResult } from './QuizRunner'
 
 type Props = { answers: AnswerResult[]; onRestart: () => void }
+
+function resultMessage(rate: number) {
+  if (rate >= 0.9) return 'Excellent! Almost perfect. That’s a board-ready score.'
+  if (rate >= PASSING_RATE) return 'You passed! Review the ones you missed to push your score higher.'
+  if (rate >= 0.4) return 'Almost there! A little more review on the ones you missed and you’ll reach 60%.'
+  return 'That’s okay, this is just the start. Go over the ones you missed below, then try again.'
+}
 
 export function QuizResults({ answers, onRestart }: Props) {
   const subjectOf = useSubjectOfTopic()
@@ -15,57 +23,104 @@ export function QuizResults({ answers, onRestart }: Props) {
   const passed = rate >= PASSING_RATE
   const wrong = answers.filter((a) => !a.isCorrect)
 
+  // Score per subject within this session, in the order subjects first appeared.
+  const bySubject = new Map<string, { correct: number; total: number }>()
+  for (const a of answers) {
+    const code = subjectOf(a.question.topic_id).code ?? '—'
+    const entry = bySubject.get(code) ?? { correct: 0, total: 0 }
+    entry.total++
+    if (a.isCorrect) entry.correct++
+    bySubject.set(code, entry)
+  }
+
   return (
-    <div className="space-y-8">
-      <section className="space-y-4">
-        <TubeRack
-          size="lg"
-          tubes={answers.map((a) => ({
-            state: a.isCorrect ? 'correct' : 'wrong',
-            subjectCode: subjectOf(a.question.topic_id).code,
-          }))}
-        />
-        <div>
-          <p className="text-3xl font-extrabold tabular-nums">
-            {score} of {answers.length} correct
-          </p>
-          <p className={cn('mt-1 text-lg font-bold', passed ? 'text-correct' : 'text-wrong')}>
-            {formatPercent(rate)}, {passed ? 'pasado sa 60% na passing.' : 'kulang pa sa 60% na passing.'}
+    <div className="mx-auto max-w-2xl space-y-6">
+      {/* The ONE colored thing on this screen: the score and what to do next. */}
+      <HeroPanel labelledBy="result-heading" className="space-y-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 id="result-heading" className="text-sm font-semibold text-white/70">
+              Practice result
+            </h1>
+            <p className="font-heading text-6xl leading-none font-bold tabular-nums sm:text-7xl">{formatPercent(rate)}</p>
+            <p className="mt-1.5 text-white/85 tabular-nums">
+              {score} of {answers.length} correct
+            </p>
+          </div>
+          {/* Like the "verified" stamp on a released lab result. */}
+          <p
+            className={cn(
+              'stamp mt-2 shrink-0 rounded-md border-[3px] bg-white px-3 py-1.5 text-center font-heading text-lg leading-none font-bold sm:text-xl',
+              passed ? 'border-correct text-correct' : 'border-wrong text-wrong',
+            )}
+          >
+            {passed ? 'PASSED' : 'NOT YET'}
           </p>
         </div>
-      </section>
+        <SampleRun samples={answers.map((a) => (a.isCorrect ? 'correct' : 'wrong'))} />
+        <p className="text-white/90">{resultMessage(rate)}</p>
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+          <button type="button" className={heroButtonClass} onClick={onRestart}>
+            <RotateCcw className="size-5" aria-hidden />
+            Practice again
+          </button>
+          <Link
+            to="/"
+            className="rounded-md px-2 py-2.5 text-center text-sm font-semibold text-white/85 underline-offset-4 outline-none hover:text-white hover:underline focus-visible:ring-3 focus-visible:ring-white/60"
+          >
+            Back to Home
+          </Link>
+        </div>
+      </HeroPanel>
 
-      {wrong.length > 0 && (
-        <section aria-labelledby="missed-heading" className="space-y-3">
-          <h2 id="missed-heading" className="text-lg font-bold">
-            Mga namali ({wrong.length})
+      {bySubject.size > 1 && (
+        <section aria-labelledby="by-subject-heading" className="space-y-3">
+          <h2 id="by-subject-heading" className="text-lg font-bold">
+            By subject
           </h2>
           <ul className="divide-y rounded-xl border bg-card">
-            {wrong.map(({ question, selectedIndex }) => (
-              <li key={question.id} className="space-y-2 p-4">
-                <SubjectTag code={subjectOf(question.topic_id).code} />
-                <p className="font-bold">{question.stem}</p>
-                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-                  <dt className="text-muted-foreground">Sagot mo</dt>
-                  <dd className="text-wrong line-through decoration-1">{question.choices[selectedIndex]}</dd>
-                  <dt className="text-muted-foreground">Tama</dt>
-                  <dd className="font-bold text-correct">{question.choices[question.correct_index]}</dd>
-                </dl>
-                {question.explanation && <p className="text-sm leading-relaxed text-muted-foreground">{question.explanation}</p>}
-              </li>
-            ))}
+            {[...bySubject].map(([code, { correct, total }]) => {
+              const subjectRate = correct / total
+              return (
+                <li key={code} className="grid grid-cols-[4rem_minmax(0,1fr)_3.5rem] items-center gap-3 px-4 py-3">
+                  <span className="font-heading font-bold">{code}</span>
+                  <RangeBar rate={subjectRate} label={`${code}: ${correct} of ${total} correct`} />
+                  <span className={cn('text-right font-semibold tabular-nums', subjectRate < PASSING_RATE && 'text-wrong')}>
+                    {correct}/{total}
+                  </span>
+                </li>
+              )
+            })}
           </ul>
+          <p className="text-xs text-muted-foreground">The tick on each bar marks 60%, the start of the passing range ({REFERENCE_RANGE}).</p>
         </section>
       )}
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <Button className="h-12 rounded-lg text-base font-bold" onClick={onRestart}>
-          New practice
-        </Button>
-        <Link to="/mistakes" className={cn(buttonVariants({ variant: 'outline' }), 'h-12 rounded-lg text-base')}>
-          Open Review Again
-        </Link>
-      </div>
+      {wrong.length > 0 && (
+        <section aria-labelledby="missed-heading" className="space-y-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="missed-heading" className="text-lg font-bold">
+              Questions you missed ({wrong.length})
+            </h2>
+            <Link to="/mistakes" className="text-sm font-semibold text-primary hover:underline">
+              Open Review Again
+            </Link>
+          </div>
+          <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+            {wrong.map(({ question, selectedIndex }) => (
+              <MistakeItem
+                key={question.id}
+                subject={subjectOf(question.topic_id)}
+                stem={question.stem}
+                yourAnswer={question.choices[selectedIndex]}
+                correctAnswer={question.choices[question.correct_index]}
+                explanation={question.explanation}
+              />
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">Tap a question to see the answer and explanation.</p>
+        </section>
+      )}
     </div>
   )
 }

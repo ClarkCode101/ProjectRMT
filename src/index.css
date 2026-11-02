@@ -1,18 +1,23 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
 @import "@fontsource-variable/atkinson-hyperlegible-next";
+@import "@fontsource/ibm-plex-sans-condensed/latin-600.css";
+@import "@fontsource/ibm-plex-sans-condensed/latin-700.css";
+
+/* tall: screens with room to spare in height (big laptops, iPad portrait). Home uses it to grow cards. */
+@custom-variant tall (@media (min-height: 820px));
 
 /*
-  Visual idea: "specimen rack".
-  - Background is a cool lab-bench grey; question sheets are white like a slide label.
-  - Primary is methylene blue (a stain she uses every day), not a generic app teal.
-  - Each subject is colored like the tube cap / medium it belongs to (see --subject-*).
+  Visual idea: "lab report".
+  - Scores read like a printed results sheet: Result, reference range 60–100, and an L flag when low.
+  - Quiz items read like a request form: labelled Subject / Topic rows above the question.
+  - Headings use a condensed face like report headers; body stays Atkinson for easy reading.
+  - Analyzer-screen blue is the one accent. Red is only for flags and wrong answers.
 */
 
 @theme inline {
     --font-sans: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
-    --font-heading: var(--font-sans);
+    --font-heading: 'IBM Plex Sans Condensed', 'Arial Narrow', system-ui, sans-serif;
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -33,19 +38,14 @@
     --color-input: var(--input);
     --color-ring: var(--ring);
 
-    /* Answer feedback */
+    /* Answer feedback and result flags */
     --color-correct: var(--correct);
     --color-correct-soft: var(--correct-soft);
     --color-wrong: var(--wrong);
     --color-wrong-soft: var(--wrong-soft);
-
-    /* Subject tube-cap colors */
-    --color-subject-cc: var(--subject-cc);
-    --color-subject-micro: var(--subject-micro);
-    --color-subject-hema: var(--subject-hema);
-    --color-subject-bbis: var(--subject-bbis);
-    --color-subject-cm: var(--subject-cm);
-    --color-subject-htmle: var(--subject-htmle);
+    --color-highlight: var(--highlight);
+    --color-highlight-soft: var(--highlight-soft);
+    --color-primary-deep: var(--primary-deep);
 
     --radius-sm: calc(var(--radius) * 0.5);
     --radius-md: calc(var(--radius) * 0.75);
@@ -54,37 +54,34 @@
 }
 
 :root {
-    --background: #EBF0EE;        /* lab bench */
-    --foreground: #1C2A2F;        /* ink */
-    --card: #FFFFFF;              /* slide label */
-    --card-foreground: #1C2A2F;
+    --background: #F3F6F8;        /* report paper tray */
+    --foreground: #17222C;        /* printer ink */
+    --card: #FFFFFF;              /* the printed sheet */
+    --card-foreground: #17222C;
     --popover: #FFFFFF;
-    --popover-foreground: #1C2A2F;
-    --primary: #1D5D8F;           /* methylene blue */
+    --popover-foreground: #17222C;
+    --primary: #0B6382;           /* analyzer-screen blue */
     --primary-foreground: #FFFFFF;
-    --secondary: #DDE5E2;
-    --secondary-foreground: #1C2A2F;
-    --muted: #DDE5E2;
-    --muted-foreground: #4F5F64;
-    --accent: #DDE5E2;
-    --accent-foreground: #1C2A2F;
-    --destructive: #A9271F;
-    --border: #CDD7D3;
-    --input: #B9C5C1;
-    --ring: #1D5D8F;
+    --secondary: #E6ECF0;
+    --secondary-foreground: #17222C;
+    --muted: #E6ECF0;
+    --muted-foreground: #5A6875;
+    --accent: #E6ECF0;
+    --accent-foreground: #17222C;
+    --destructive: #C2283A;
+    --border: #D6DEE5;            /* table rules */
+    --input: #B4C0CA;
+    --ring: #0B6382;
     --radius: 0.5rem;
 
-    --correct: #23704A;
-    --correct-soft: #E3F1E8;
-    --wrong: #A9271F;
-    --wrong-soft: #F8E5E3;
+    --correct: #1E7348;
+    --correct-soft: #E2F2E8;
+    --wrong: #C2283A;             /* also the L flag */
+    --wrong-soft: #FBE7E9;
 
-    --subject-cc: #C99419;        /* gold-top SST: chemistry */
-    --subject-micro: #A8332C;     /* sheep blood agar */
-    --subject-hema: #8A74C2;      /* lavender-top EDTA: CBC */
-    --subject-bbis: #D86A97;      /* pink-top EDTA: blood bank */
-    --subject-cm: #6E9338;        /* urine dipstick pad green */
-    --subject-htmle: #4B97C5;     /* tissue cassette blue */
+    --primary-deep: #07475E;      /* darker analyzer blue for the readiness card */
+    --highlight: #E9A23B;         /* warm gold for streaks and wins, used sparingly */
+    --highlight-soft: #FDF1DC;
 }
 
 @layer base {
@@ -97,10 +94,25 @@
   html {
     @apply font-sans;
   }
+  h1, h2, h3 {
+    @apply font-heading;
+    text-wrap: balance;
+  }
   /* iOS zooms in on inputs smaller than 16px, so keep form fields at 16px. */
   input, select, textarea {
     font-size: 16px;
   }
+}
+
+
+/* The PASSED stamp on the results screen lands once, like a stamp pressed on paper. */
+@keyframes stamp-in {
+  from { opacity: 0; transform: rotate(-8deg) scale(1.6); }
+  to   { opacity: 1; transform: rotate(-8deg) scale(1); }
+}
+.stamp {
+  transform: rotate(-8deg);
+  animation: stamp-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 150ms both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -108,4 +120,13 @@
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Body Explorer: a soft ring that keeps pulsing on the chosen organ. */
+@keyframes explorer-pulse {
+  from { r: 4; opacity: 0.9; }
+  to   { r: 14; opacity: 0; }
+}
+.explorer-pulse {
+  animation: explorer-pulse 1.6s ease-out infinite;
 }

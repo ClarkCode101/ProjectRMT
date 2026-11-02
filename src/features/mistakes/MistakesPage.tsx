@@ -1,7 +1,10 @@
+import { PartyPopper, Play } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router'
+import { headerButtonClass, PageHeader } from '@/components/dashboard'
 import { FullPageMessage } from '@/components/FullPageMessage'
-import { SubjectTag } from '@/components/specimen'
-import { buttonVariants } from '@/components/ui/button'
+import { MistakeItem } from '@/components/MistakeItem'
+import { HeroPanel, heroButtonClass } from '@/components/report'
 import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { useMistakes } from './api'
@@ -9,59 +12,95 @@ import { useMistakes } from './api'
 export default function MistakesPage() {
   const mistakes = useMistakes()
   const subjectOf = useSubjectOfTopic()
+  // Which subject's mistakes to list; null = all of them.
+  const [filter, setFilter] = useState<string | null>(null)
 
   if (mistakes.isPending) return <FullPageMessage>Loading…</FullPageMessage>
-  if (mistakes.isError) return <FullPageMessage>Hindi ma-load ang listahan. Check your internet, then refresh.</FullPageMessage>
+  if (mistakes.isError) return <FullPageMessage>Couldn’t load the list. Check your internet connection, then refresh.</FullPageMessage>
 
-  return (
-    <div className="space-y-5">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-extrabold">Review Again</h1>
-        <p className="text-muted-foreground">
-          Mga tanong na mali ang huling sagot mo. Aalis sila dito kapag nasagot mo nang tama.
-        </p>
-      </div>
-
-      {mistakes.data.length === 0 ? (
-        <div className="space-y-3 rounded-xl border border-dashed border-input p-6">
-          <p>Wala pang laman. Dito mapupunta ang mga mamamali mo sa practice.</p>
-          <Link to="/practice" className={cn(buttonVariants(), 'h-11 rounded-lg px-4 font-bold')}>
+  if (mistakes.data.length === 0) {
+    return (
+      <div className="mx-auto max-w-xl pt-4 sm:pt-10">
+        <HeroPanel labelledBy="review-heading" className="space-y-4 text-center">
+          <PartyPopper className="mx-auto size-10 text-highlight" aria-hidden />
+          <div>
+            <h1 id="review-heading" className="text-3xl font-bold">
+              All clear!
+            </h1>
+            <p className="mt-1 text-white/85">Nothing to review right now. Questions you miss in practice will show up here.</p>
+          </div>
+          <Link to="/practice" className={heroButtonClass}>
+            <Play className="size-5 fill-current" aria-hidden />
             Start practice
           </Link>
-        </div>
-      ) : (
-        <>
-          <Link to="/practice?from=mistakes" className={cn(buttonVariants(), 'h-12 w-full rounded-lg text-base font-bold')}>
-            Practice these {mistakes.data.length} items
-          </Link>
+        </HeroPanel>
+      </div>
+    )
+  }
 
-          <ul className="divide-y rounded-xl border bg-card">
-            {mistakes.data.map((m) => {
-              const subject = subjectOf(m.topicId)
-              return (
-                <li key={m.questionId} className="space-y-2 p-4">
-                  <div className="flex flex-wrap items-center gap-x-3">
-                    <SubjectTag code={subject.code} />
-                    {subject.topicName && <span className="text-sm text-muted-foreground">{subject.topicName}</span>}
-                  </div>
-                  <p className="font-bold">{m.stem}</p>
-                  <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-                    {m.selectedIndex !== null && (
-                      <>
-                        <dt className="text-muted-foreground">Sagot mo</dt>
-                        <dd className="text-wrong line-through decoration-1">{m.choices[m.selectedIndex]}</dd>
-                      </>
-                    )}
-                    <dt className="text-muted-foreground">Tama</dt>
-                    <dd className="font-bold text-correct">{m.choices[m.correctIndex]}</dd>
-                  </dl>
-                  {m.explanation && <p className="text-sm leading-relaxed text-muted-foreground">{m.explanation}</p>}
-                </li>
-              )
-            })}
-          </ul>
-        </>
+  const withSubject = mistakes.data.map((m) => ({ ...m, subject: subjectOf(m.topicId) }))
+  // How many mistakes per subject, for the filter chips.
+  const counts = new Map<string, number>()
+  for (const m of withSubject) {
+    const code = m.subject.code ?? '—'
+    counts.set(code, (counts.get(code) ?? 0) + 1)
+  }
+  const shown = filter === null ? withSubject : withSubject.filter((m) => (m.subject.code ?? '—') === filter)
+  const total = mistakes.data.length
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-5">
+      <PageHeader
+        title="Review Again"
+        subtitle={`${total} ${total === 1 ? 'question' : 'questions'} you got wrong last time. Answer one correctly and it leaves this list.`}
+        actions={
+          <Link to="/practice?from=mistakes" className={headerButtonClass}>
+            <Play className="size-4 fill-current" aria-hidden />
+            Practice all {total}
+          </Link>
+        }
+      />
+
+      {/* Filter chips only help when there is more than one subject to choose from. */}
+      {counts.size > 1 && (
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filter by subject">
+          <FilterChip active={filter === null} onClick={() => setFilter(null)} label="All" count={total} />
+          {[...counts].map(([code, count]) => (
+            <FilterChip key={code} active={filter === code} onClick={() => setFilter(code)} label={code} count={count} />
+          ))}
+        </div>
       )}
+
+      <ul className="divide-y overflow-hidden rounded-xl border bg-card" aria-label="Your mistakes">
+        {shown.map((m) => (
+          <MistakeItem
+            key={m.questionId}
+            subject={m.subject}
+            stem={m.stem}
+            yourAnswer={m.selectedIndex !== null ? m.choices[m.selectedIndex] : undefined}
+            correctAnswer={m.choices[m.correctIndex]}
+            explanation={m.explanation}
+          />
+        ))}
+      </ul>
+      <p className="text-xs text-muted-foreground">Tap a question to see the answer and explanation.</p>
     </div>
+  )
+}
+
+function FilterChip({ active, onClick, label, count }: { active: boolean; onClick: () => void; label: string; count: number }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        'flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
+        active ? 'border-foreground bg-foreground text-background' : 'bg-card hover:border-primary',
+      )}
+    >
+      {label}
+      <span className={cn('tabular-nums', active ? 'text-background/70' : 'text-muted-foreground')}>{count}</span>
+    </button>
   )
 }

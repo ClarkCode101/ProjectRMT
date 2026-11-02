@@ -1,6 +1,7 @@
-import { Check, X } from 'lucide-react'
+import { Check, Flame, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { SubjectTag, TubeRack, type TubeState } from '@/components/specimen'
+import { Dialog } from '@/components/Dialog'
+import { SampleRun, type SampleState } from '@/components/report'
 import { Button } from '@/components/ui/button'
 import { shuffledChoiceOrder } from '@/lib/quiz'
 import { useSubjectOfTopic } from '@/lib/referenceData'
@@ -13,11 +14,33 @@ type Props = {
   sessionId: string
   questions: QuizQuestion[]
   onFinish: (answers: AnswerResult[]) => void
+  /** She chose to leave before the end. */
+  onExit: (answers: AnswerResult[]) => void
 }
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
 
-export function QuizRunner({ sessionId, questions, onFinish }: Props) {
+// Rotated so a correct answer doesn't always get the same words.
+const PRAISE = ['Correct! Nice work.', 'Correct! Keep it up.', 'Correct! You got this.', 'Correct! Spot on.', 'Correct! Future RMT right there.']
+const ENCOURAGE = ['Not quite, and that’s okay.', 'Not quite. Now you know.', 'Not quite. We’ll come back to this one.']
+
+/** How many answers in a row (counting back from the latest) were correct. */
+function currentStreak(answers: AnswerResult[]) {
+  let streak = 0
+  for (let i = answers.length - 1; i >= 0 && answers[i].isCorrect; i--) streak++
+  return streak
+}
+
+/** Which display position a key picks: A–F or 1–6. Returns -1 for any other key. */
+function keyToPosition(key: string) {
+  const letter = LETTERS.indexOf(key.toUpperCase())
+  if (letter !== -1) return letter
+  const digit = Number(key)
+  return Number.isInteger(digit) && digit >= 1 && digit <= LETTERS.length ? digit - 1 : -1
+}
+
+export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
+  const [confirmExit, setConfirmExit] = useState(false)
   const subjectOf = useSubjectOfTopic()
   // Shuffle each question's choices once, when the quiz starts.
   // choiceOrders[q][displayPosition] = original choice index.
@@ -65,86 +88,167 @@ export function QuizRunner({ sessionId, questions, onFinish }: Props) {
     window.scrollTo({ top: 0 })
   }
 
-  const tubes = questions.map((q, i) => {
-    const state: TubeState = answers[i] ? (answers[i].isCorrect ? 'correct' : 'wrong') : i === current ? 'current' : 'empty'
-    return { state, subjectCode: subjectOf(q.topic_id).code }
+  // Keyboard shortcuts on a computer: A–D or 1–4 picks a choice.
+  // (Enter already works for "Next" because that button gets focus.)
+  // The listener reads choose() through a ref so it always sees the current question.
+  const chooseRef = useRef(choose)
+  useEffect(() => {
+    chooseRef.current = choose
   })
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.ctrlKey || event.metaKey || event.altKey) return
+      if (document.querySelector('dialog[open]')) return // the exit dialog is showing
+      const position = keyToPosition(event.key)
+      if (position === -1 || position >= order.length) return
+      chooseRef.current(order[position])
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [order])
+
+  const samples = questions.map((_, i): SampleState =>
+    answers[i] ? (answers[i].isCorrect ? 'correct' : 'wrong') : i === current ? 'current' : 'pending',
+  )
+  const streak = currentStreak(answers)
+
+  function askToExit() {
+    // Nothing answered yet means nothing to lose, so skip the question.
+    if (answers.length === 0) onExit(answers)
+    else setConfirmExit(true)
+  }
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-2">
-        <TubeRack tubes={tubes} />
-        <p className="text-sm text-muted-foreground tabular-nums">
-          Item {current + 1} of {questions.length}
-        </p>
+    // One centered column on every screen size: the question is the only thing to look at.
+    <div className="mx-auto max-w-2xl space-y-5">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3 text-sm tabular-nums">
+          <button
+            type="button"
+            onClick={askToExit}
+            className="-ml-2 flex h-10 items-center gap-1 rounded-md px-2 font-semibold text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
+            <X className="size-4" aria-hidden />
+            Exit
+          </button>
+          <p className="font-heading font-semibold text-muted-foreground">
+            <span className="text-foreground">{current + 1}</span> of {questions.length}
+          </p>
+          {/* Only shows up when there is a streak worth celebrating. */}
+          <span className="flex min-w-16 justify-end">
+            {streak >= 3 && (
+              <span className="flex items-center gap-1 rounded-full bg-highlight-soft px-2.5 py-0.5 font-bold">
+                <Flame className="size-4 text-highlight" aria-hidden />
+                {streak}
+                <span className="sr-only"> correct in a row</span>
+              </span>
+            )}
+          </span>
+        </div>
+        <SampleRun samples={samples} />
       </div>
 
-      <article className="space-y-5 rounded-xl border bg-card p-5">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <SubjectTag code={subject.code} />
-          {subject.topicName && <span className="text-sm text-muted-foreground">{subject.topicName}</span>}
-          {question.source !== 'builtin' && (
-            <span className="rounded-sm bg-secondary px-1.5 text-xs font-semibold">Akin</span>
-          )}
-        </div>
+      {/* key={current} remounts the question per item so it gets a fresh entrance. */}
+      <article key={current} className="animate-in fade-in space-y-2 duration-200">
+        <p className="text-sm text-muted-foreground">
+          <span className="font-heading font-bold text-primary">{subject.code ?? '—'}</span>
+          {subject.topicName && <> {subject.topicName}</>}
+          {question.source !== 'builtin' && <span className="ml-2 rounded-[4px] bg-secondary px-1.5 text-xs font-semibold text-foreground">Mine</span>}
+        </p>
+        <p className="text-xl leading-snug font-bold sm:text-2xl">{question.stem}</p>
+      </article>
 
-        <p className="text-xl leading-snug font-bold">{question.stem}</p>
-
-        <div className="space-y-2" role="group" aria-label="Choices">
-          {order.map((originalIndex, displayPos) => {
-            const isCorrectChoice = originalIndex === question.correct_index
-            const isSelected = answer?.selectedIndex === originalIndex
-            const showCorrect = answer && isCorrectChoice
-            const showWrong = answer && isSelected && !isCorrectChoice
-            return (
-              <button
-                key={originalIndex}
-                type="button"
-                disabled={Boolean(answer)}
-                onClick={() => choose(originalIndex)}
+      <div className="space-y-2" role="group" aria-label="Choices">
+        {order.map((originalIndex, displayPos) => {
+          const isCorrectChoice = originalIndex === question.correct_index
+          const isSelected = answer?.selectedIndex === originalIndex
+          const showCorrect = answer && isCorrectChoice
+          const showWrong = answer && isSelected && !isCorrectChoice
+          return (
+            <button
+              key={`${current}-${originalIndex}`}
+              type="button"
+              disabled={Boolean(answer)}
+              onClick={() => choose(originalIndex)}
+              aria-keyshortcuts={LETTERS[displayPos]}
+              className={cn(
+                'group flex min-h-14 w-full items-center gap-3 rounded-xl border bg-card px-3 py-3 text-left text-base transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
+                !answer && 'hover:border-primary active:bg-secondary',
+                showCorrect && 'border-correct bg-correct-soft ring-1 ring-correct',
+                showWrong && 'border-wrong bg-wrong-soft ring-1 ring-wrong',
+                answer && !isSelected && !isCorrectChoice && 'opacity-50',
+              )}
+            >
+              <span
                 className={cn(
-                  'flex min-h-13 w-full items-center gap-3 rounded-lg border-2 px-3 py-2.5 text-left text-base transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
-                  !answer && 'border-border hover:border-primary/50 active:bg-secondary',
-                  showCorrect && 'border-correct bg-correct-soft',
-                  showWrong && 'border-wrong bg-wrong-soft',
-                  answer && !isSelected && !isCorrectChoice && 'border-transparent text-muted-foreground',
+                  'flex size-8 shrink-0 items-center justify-center rounded-lg font-heading text-sm font-bold transition-colors',
+                  showCorrect
+                    ? 'bg-correct text-white'
+                    : showWrong
+                      ? 'bg-wrong text-white'
+                      : 'bg-secondary text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-disabled:group-hover:bg-secondary group-disabled:group-hover:text-foreground',
                 )}
               >
-                <span
-                  className={cn(
-                    'flex size-8 shrink-0 items-center justify-center rounded-md text-sm font-bold',
-                    showCorrect ? 'bg-correct text-white' : showWrong ? 'bg-wrong text-white' : 'bg-secondary',
-                  )}
-                >
-                  {showCorrect ? <Check className="size-4" aria-label="Tamang sagot" /> : showWrong ? <X className="size-4" aria-label="Mali ang napili mo" /> : LETTERS[displayPos]}
-                </span>
-                <span className="flex-1">{question.choices[originalIndex]}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {answer && (
-          <div role="status" className={cn('border-l-4 pl-4', answer.isCorrect ? 'border-correct' : 'border-wrong')}>
-            <p className={cn('font-bold', answer.isCorrect ? 'text-correct' : 'text-wrong')}>
-              {answer.isCorrect ? 'Tama.' : 'Mali. Mapupunta ito sa Review Again.'}
-            </p>
-            {question.explanation && <p className="mt-1 leading-relaxed">{question.explanation}</p>}
-          </div>
+                {showCorrect ? <Check className="size-4" aria-label="Correct answer" /> : showWrong ? <X className="size-4" aria-label="Your answer, incorrect" /> : LETTERS[displayPos]}
+              </span>
+              <span className="flex-1">{question.choices[originalIndex]}</span>
+            </button>
+          )
+        })}
+        {!answer && (
+          <p className="hidden pt-1 text-center text-xs text-muted-foreground md:block">Press A–D to answer, then Enter for the next item.</p>
         )}
-      </article>
+      </div>
+
+      {answer && (
+        <div
+          role="status"
+          className={cn(
+            'animate-in fade-in slide-in-from-bottom-1 rounded-xl px-4 py-3.5 duration-200',
+            answer.isCorrect ? 'bg-correct-soft' : 'bg-wrong-soft',
+          )}
+        >
+          <p className={cn('font-heading text-lg font-bold', answer.isCorrect ? 'text-correct' : 'text-wrong')}>
+            {answer.isCorrect ? PRAISE[current % PRAISE.length] : ENCOURAGE[current % ENCOURAGE.length]}
+          </p>
+          {!answer.isCorrect && <p className="text-sm text-muted-foreground">Added to Review Again.</p>}
+          {question.explanation && <p className="mt-2 leading-relaxed">{question.explanation}</p>}
+        </div>
+      )}
 
       {saveError && (
         <p role="alert" className="text-sm text-destructive">
-          Hindi na-save ang ilang sagot. Check your internet; tuloy lang ang quiz.
+          Some answers weren’t saved. Check your internet connection; you can keep going.
         </p>
       )}
 
       {answer && (
-        <Button className="h-12 w-full rounded-lg text-base font-bold" onClick={next} autoFocus>
+        <Button className="h-13 w-full rounded-xl font-heading text-lg font-bold" onClick={next} autoFocus>
           {isLast ? 'See results' : 'Next item'}
         </Button>
       )}
+
+      <Dialog open={confirmExit} onClose={() => setConfirmExit(false)} labelledBy="exit-heading">
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h2 id="exit-heading" className="text-xl font-bold">
+              Leave this quiz?
+            </h2>
+            <p className="text-muted-foreground">
+              Your {answers.length} {answers.length === 1 ? 'answer' : 'answers'} so far are saved and count toward your progress.
+            </p>
+          </div>
+          {/* "Keep going" comes first so the dialog focuses the safe choice. */}
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button className="h-11 rounded-lg text-base font-bold sm:order-2" onClick={() => setConfirmExit(false)}>
+              Keep going
+            </Button>
+            <Button variant="outline" className="h-11 rounded-lg text-base sm:order-1" onClick={() => onExit(answers)}>
+              Leave quiz
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   )
 }

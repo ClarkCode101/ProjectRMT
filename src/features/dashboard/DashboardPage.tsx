@@ -1,95 +1,57 @@
-import { ChevronDown, TriangleAlert } from 'lucide-react'
+import { ChevronDown, Play } from 'lucide-react'
+import { Link } from 'react-router'
+import { headerButtonClass, PageHeader } from '@/components/dashboard'
 import { FullPageMessage } from '@/components/FullPageMessage'
-import { SubjectCap } from '@/components/specimen'
-import { formatPercent, PASSING_RATE, summarizePerformance, type SubjectSummary } from '@/lib/quiz'
+import { LowFlag, RangeBar } from '@/components/report'
+import { formatPercent, overallStats, summarizePerformance, type SubjectSummary } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { useTopicPerformance } from './api'
 
-// One horizontal bar per subject with a tick at 60%.
-// Below 60% is marked with color AND an icon + text, so it never relies on color alone.
-function AccuracyBar({ rate, label }: { rate: number | null; label: string }) {
-  const below = rate !== null && rate < PASSING_RATE
-  return (
-    <div className="relative h-2.5 rounded-full bg-secondary" role="img" aria-label={label} title={label}>
-      {rate !== null && (
-        <div
-          className={cn('h-full rounded-full', below ? 'bg-wrong' : 'bg-primary')}
-          style={{ width: `${Math.max(rate * 100, 2)}%` }}
-        />
-      )}
-      <div className="absolute -top-1 -bottom-1 w-0.5 rounded-full bg-foreground" style={{ left: `${PASSING_RATE * 100}%` }} aria-hidden />
-    </div>
-  )
-}
-
+// One row per subject. Closed: score and bar. Tap to open: its topics, weakest first.
+// Below 60% gets red AND an L flag, so it never relies on color alone.
 function SubjectRow({ subject }: { subject: SubjectSummary }) {
   const hasData = subject.accuracy !== null
   return (
     <li>
       <details className="group">
-        <summary className="cursor-pointer list-none space-y-2.5 px-4 py-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/40 [&::-webkit-details-marker]:hidden">
+        <summary className="cursor-pointer list-none space-y-2.5 px-4 py-3.5 outline-none hover:bg-secondary/50 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset sm:px-5 [&::-webkit-details-marker]:hidden">
           <div className="flex items-center gap-3">
-            <SubjectCap code={subject.code} />
-            <span className="min-w-0 flex-1">
-              <span className="font-bold">{subject.code}</span>
-              <span className="block truncate text-sm text-muted-foreground">{subject.name}</span>
+            <span className="flex min-w-0 flex-1 items-baseline gap-2">
+              <span className="shrink-0 font-heading text-lg font-bold">{subject.code}</span>
+              <span className="truncate text-sm text-muted-foreground">{subject.name}</span>
             </span>
-            <span className="shrink-0 text-right tabular-nums">
-              {hasData ? (
-                <>
-                  <span className={cn('block text-lg font-extrabold', subject.belowPassing && 'text-wrong')}>
-                    {formatPercent(subject.accuracy!)}
-                  </span>
-                  <span className="block text-xs text-muted-foreground">{subject.attempts} nasagot</span>
-                </>
-              ) : (
-                <span className="text-sm text-muted-foreground">Wala pang sagot</span>
-              )}
+            <span className="flex shrink-0 items-center gap-1.5 tabular-nums">
+              {subject.belowPassing && <LowFlag />}
+              <span className={cn('font-heading text-lg font-bold', !hasData && 'text-sm font-normal text-muted-foreground', subject.belowPassing && 'text-wrong')}>
+                {hasData ? formatPercent(subject.accuracy!) : 'No answers yet'}
+              </span>
             </span>
-            <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
+            <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
           </div>
-          <AccuracyBar
-            rate={subject.accuracy}
-            label={hasData ? `${subject.code}: ${formatPercent(subject.accuracy!)}` : `${subject.code}: wala pang sagot`}
-          />
-          {subject.belowPassing && (
-            <p className="flex items-center gap-1.5 text-sm font-bold text-wrong">
-              <TriangleAlert className="size-4" aria-hidden />
-              Below 60%
-            </p>
-          )}
+          <RangeBar rate={subject.accuracy} label={hasData ? `${subject.code}: ${formatPercent(subject.accuracy!)}` : `${subject.code}: no answers yet`} />
         </summary>
 
-        <div className="px-4 pb-4">
+        <div className="space-y-3 bg-background/60 px-4 py-4 sm:px-5">
           {subject.topics.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Wala pang nasagot na tanong sa subject na ito.</p>
+            <p className="text-sm text-muted-foreground">You haven’t answered any questions in this subject yet.</p>
           ) : (
-            <table className="w-full text-sm">
-              <caption className="sr-only">{subject.name} topics, pinakamahina muna</caption>
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  <th className="py-1.5 font-normal">Topic</th>
-                  <th className="py-1.5 text-right font-normal">Nasagot</th>
-                  <th className="py-1.5 text-right font-normal">Score</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {subject.topics.map((t) => (
-                  <tr key={t.topicId} className={cn(t.belowPassing && 'text-wrong')}>
-                    <td className="py-1.5">
-                      <span className="inline-flex items-center gap-1.5">
-                        {t.belowPassing && <TriangleAlert className="size-3.5" aria-label="Below 60%" />}
-                        {t.name}
-                      </span>
-                    </td>
-                    <td className="py-1.5 text-right tabular-nums">{t.attempts}</td>
-                    <td className="py-1.5 text-right font-bold tabular-nums">{formatPercent(t.accuracy)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ul className="grid gap-x-8 gap-y-3 md:grid-cols-2" aria-label={`${subject.name} topics, weakest first`}>
+              {subject.topics.map((t) => (
+                <li key={t.topicId} className="space-y-1.5">
+                  <p className="flex items-baseline justify-between gap-3 text-sm tabular-nums">
+                    <span className="min-w-0 truncate">{t.name}</span>
+                    <span className={cn('shrink-0 font-semibold', t.belowPassing && 'text-wrong')}>{formatPercent(t.accuracy)}</span>
+                  </p>
+                  <RangeBar rate={t.accuracy} label={`${t.name}: ${formatPercent(t.accuracy)}, ${t.attempts} answered`} />
+                </li>
+              ))}
+            </ul>
           )}
+          <Link to={`/practice?subject=${subject.subjectId}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
+            <Play className="size-3.5 fill-current" aria-hidden />
+            Practice {subject.code}
+          </Link>
         </div>
       </details>
     </li>
@@ -105,36 +67,59 @@ export default function DashboardPage() {
     return <FullPageMessage>Loading…</FullPageMessage>
   }
   if (performance.isError || subjects.isError || topics.isError) {
-    return <FullPageMessage>Hindi ma-load ang progress. Check your internet, then refresh.</FullPageMessage>
+    return <FullPageMessage>Couldn’t load your progress. Check your internet connection, then refresh.</FullPageMessage>
   }
 
   const summary = summarizePerformance(performance.data, subjects.data, topics.data)
-  const weak = summary.filter((s) => s.belowPassing)
+  const stats = overallStats(summary)
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-extrabold">Progress</h1>
-        <p className="text-muted-foreground">
-          Kailangan ng at least 60% sa bawat subject. Ang itim na guhit sa bar ang 60%. I-tap ang subject para makita
-          ang topics.
-        </p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-5">
+      <PageHeader
+        title="Progress"
+        subtitle="You need 60% or higher in every subject to pass."
+        actions={
+          <Link to={stats.weakest ? `/practice?subject=${stats.weakest.subjectId}` : '/practice'} className={headerButtonClass}>
+            <Play className="size-4 fill-current" aria-hidden />
+            {stats.weakest ? `Practice ${stats.weakest.code}` : 'Start practice'}
+          </Link>
+        }
+      />
 
-      {weak.length > 0 && (
-        <p role="status" className="flex gap-2 rounded-lg border-l-4 border-wrong bg-wrong-soft p-3">
-          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-wrong" aria-hidden />
-          <span>
-            Unahin ang <strong>{weak.map((s) => s.code).join(', ')}</strong>, below 60% pa.
-          </span>
-        </p>
-      )}
+      {/* Three numbers in one quiet strip, instead of three separate cards. */}
+      <dl className="grid grid-cols-3 divide-x rounded-xl border bg-card">
+        <div className="px-3 py-3.5 sm:px-5">
+          <dt className="text-xs text-muted-foreground sm:text-sm">Overall</dt>
+          <dd className={cn('font-heading text-2xl font-bold tabular-nums sm:text-3xl', stats.accuracy !== null && stats.accuracy < 0.6 && 'text-wrong')}>
+            {stats.accuracy === null ? '—' : formatPercent(stats.accuracy)}
+          </dd>
+        </div>
+        <div className="px-3 py-3.5 sm:px-5">
+          <dt className="text-xs text-muted-foreground sm:text-sm">Passing</dt>
+          <dd className="font-heading text-2xl font-bold tabular-nums sm:text-3xl">
+            {stats.passingSubjects}
+            <span className="text-base text-muted-foreground sm:text-lg">/{stats.totalSubjects}</span>
+          </dd>
+        </div>
+        <div className="px-3 py-3.5 sm:px-5">
+          <dt className="text-xs text-muted-foreground sm:text-sm">Answered</dt>
+          <dd className="font-heading text-2xl font-bold tabular-nums sm:text-3xl">{stats.answered}</dd>
+        </div>
+      </dl>
 
-      <ul className="divide-y rounded-xl border bg-card">
-        {summary.map((s) => (
-          <SubjectRow key={s.subjectId} subject={s} />
-        ))}
-      </ul>
+      <section aria-labelledby="subjects-heading" className="space-y-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+          <h2 id="subjects-heading" className="text-lg font-bold">
+            Subjects
+          </h2>
+          <p className="text-xs text-muted-foreground">The tick on each bar marks 60%. Tap a subject for its topics.</p>
+        </div>
+        <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+          {summary.map((s) => (
+            <SubjectRow key={s.subjectId} subject={s} />
+          ))}
+        </ul>
+      </section>
     </div>
   )
 }

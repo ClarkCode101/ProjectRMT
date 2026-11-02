@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   formatPercent,
   latestMistakes,
+  overallStats,
   parseChoices,
   shuffle,
   shuffledChoiceOrder,
@@ -133,6 +134,41 @@ describe('summarizePerformance', () => {
     const result = summarizePerformance([], subjects, topics)
     expect(result.map((s) => s.code)).toEqual(['CC', 'HEMA'])
     expect(result[1]).toMatchObject({ attempts: 0, accuracy: null, belowPassing: false, topics: [] })
+  })
+})
+
+describe('overallStats', () => {
+  const subject = (code: string, attempts: number, accuracy: number | null) => ({
+    subjectId: code.length,
+    code,
+    name: code,
+    attempts,
+    accuracy,
+    belowPassing: accuracy !== null && accuracy < 0.6,
+    topics: [],
+  })
+
+  it('weights overall accuracy by attempts and counts passing subjects', () => {
+    const stats = overallStats([subject('CC', 30, 0.8), subject('HEMA', 10, 0.4), subject('CM', 0, null)])
+    expect(stats.accuracy).toBeCloseTo((24 + 4) / 40)
+    expect(stats.answered).toBe(40)
+    expect(stats.passingSubjects).toBe(1)
+    expect(stats.totalSubjects).toBe(3)
+    expect(stats.weakest?.code).toBe('HEMA')
+  })
+
+  it('picks the lowest subject below 60% as weakest', () => {
+    const stats = overallStats([subject('CC', 5, 0.5), subject('HEMA', 5, 0.2), subject('BBIS', 5, 0.9)])
+    expect(stats.weakest?.code).toBe('HEMA')
+  })
+
+  it('handles no answers at all', () => {
+    const stats = overallStats([subject('CC', 0, null)])
+    expect(stats).toMatchObject({ accuracy: null, answered: 0, passingSubjects: 0, weakest: null })
+  })
+
+  it('handles an empty subject list', () => {
+    expect(overallStats([])).toMatchObject({ accuracy: null, answered: 0, passingSubjects: 0, totalSubjects: 0 })
   })
 })
 

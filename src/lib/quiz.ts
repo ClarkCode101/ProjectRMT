@@ -116,6 +116,31 @@ export function summarizePerformance(
     })
 }
 
+export type OverallStats = {
+  /** all answers across subjects, weighted by attempts; null when nothing answered yet */
+  accuracy: number | null
+  answered: number
+  /** subjects with answers that are at 60% or higher */
+  passingSubjects: number
+  totalSubjects: number
+  /** the lowest-scoring subject below 60%, if any */
+  weakest: SubjectSummary | null
+}
+
+/** Totals for the stat tiles on Home and Progress. */
+export function overallStats(summary: readonly SubjectSummary[]): OverallStats {
+  const answered = summary.reduce((sum, s) => sum + s.attempts, 0)
+  const correct = summary.reduce((sum, s) => sum + (s.accuracy ?? 0) * s.attempts, 0)
+  const low = summary.filter((s) => s.belowPassing).sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0))
+  return {
+    accuracy: answered > 0 ? correct / answered : null,
+    answered,
+    passingSubjects: summary.filter((s) => s.accuracy !== null && !s.belowPassing).length,
+    totalSubjects: summary.length,
+    weakest: low[0] ?? null,
+  }
+}
+
 /** 0.756 -> "76%" */
 export function formatPercent(rate: number): string {
   return `${Math.round(rate * 100)}%`

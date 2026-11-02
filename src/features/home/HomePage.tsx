@@ -1,85 +1,86 @@
-import { ChevronRight } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router'
-import { SubjectCap } from '@/components/specimen'
+import { FullPageMessage } from '@/components/FullPageMessage'
 import { useTopicPerformance } from '@/features/dashboard/api'
 import { useMistakes } from '@/features/mistakes/api'
-import { formatPercent, summarizePerformance } from '@/lib/quiz'
+import { dailyActivity } from '@/lib/activity'
+import { overallStats, summarizePerformance, type SubjectSummary } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
-import { cn } from '@/lib/utils'
+import { useRecentActivity } from './api'
+import { BodyStage, SubjectInfoCard } from './BodyExplorer'
+import { ReadinessCard, TrendCards } from './HomeCards'
 
-// Countdown, streak and daily target come in Phase 4 (planner/streak).
+function greeting(hour: number) {
+  if (hour < 12) return 'Good morning!'
+  if (hour < 18) return 'Good afternoon!'
+  return 'Good evening!'
+}
+
+/** The subject to show first: the weakest one below 60%, else one not tried yet, else the lowest score. */
+function pickFocus(summary: SubjectSummary[]): SubjectSummary | undefined {
+  const byScore = (a: SubjectSummary, b: SubjectSummary) => (a.accuracy ?? 0) - (b.accuracy ?? 0)
+  return (
+    summary.filter((s) => s.belowPassing).sort(byScore)[0] ??
+    summary.find((s) => s.accuracy === null) ??
+    [...summary].sort(byScore)[0]
+  )
+}
+
+// Countdown and daily target come in Phase 4 (planner).
 export default function HomePage() {
   const mistakes = useMistakes()
   const performance = useTopicPerformance()
   const subjects = useSubjects()
   const topics = useTopics()
+  // Read the clock once when the page opens, not on every re-render.
+  const [now] = useState(() => new Date())
+  const activity = useRecentActivity(now)
+  // null = nothing tapped yet, so show the subject that needs the most work.
+  const [selectedId, setSelectedId] = useState<number | null>(null)
 
+  if (performance.isPending || subjects.isPending || topics.isPending) return <FullPageMessage>Loading…</FullPageMessage>
+  if (performance.isError || subjects.isError || topics.isError) {
+    return <FullPageMessage>Couldn’t load your progress. Check your internet connection, then refresh.</FullPageMessage>
+  }
+
+  const summary = summarizePerformance(performance.data, subjects.data, topics.data)
+  const stats = overallStats(summary)
+  const selected = summary.find((s) => s.subjectId === selectedId) ?? pickFocus(summary)
+  const selectedTopicIds = topics.data.filter((t) => t.subject_id === selected?.subjectId).map((t) => t.id)
   const mistakeCount = mistakes.data?.length ?? 0
-  const summary = summarizePerformance(performance.data ?? [], subjects.data ?? [], topics.data ?? [])
 
   return (
-    <div className="space-y-8">
-      <Link
-        to="/practice"
-        className="block rounded-xl bg-primary px-5 py-6 text-primary-foreground outline-none focus-visible:ring-4 focus-visible:ring-ring/40 active:translate-y-px"
-      >
-        <span className="block text-2xl font-extrabold">Start practice</span>
-        <span className="mt-1 block text-primary-foreground/80">
-          Pumili ng subject o topic. May paliwanag pagkatapos ng bawat sagot.
-        </span>
-      </Link>
-
-      <section aria-labelledby="review-heading" className="space-y-2">
-        <h2 id="review-heading" className="text-lg font-bold">
-          Review Again
-        </h2>
-        {mistakeCount > 0 ? (
-          <Link
-            to="/practice?from=mistakes"
-            className="flex items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3 outline-none hover:border-input focus-visible:ring-3 focus-visible:ring-ring/40"
-          >
-            <span>
-              <span className="font-bold">{mistakeCount}</span> tanong na mali ang huling sagot mo
-            </span>
-            <span className="flex shrink-0 items-center font-semibold text-primary">
-              Practice
-              <ChevronRight className="size-4" aria-hidden />
-            </span>
-          </Link>
-        ) : (
-          <p className="text-muted-foreground">Wala pang kailangang balikan. Dito mapupunta ang mga mamamali mo.</p>
-        )}
-      </section>
-
-      <section aria-labelledby="subjects-heading" className="space-y-2">
-        <div className="flex items-baseline justify-between">
-          <h2 id="subjects-heading" className="text-lg font-bold">
-            Subjects
-          </h2>
-          <Link to="/dashboard" className="text-sm font-semibold text-primary hover:underline">
-            See topics
-          </Link>
+    // Tablet and up: two columns that exactly fill the screen height, so nothing scrolls.
+    // (7rem = the top bar and the page's top/bottom padding in AppLayout.)
+    // On a very short window it stops shrinking at min-h and the page scrolls instead of squeezing.
+    // Phone: one column that scrolls as usual.
+    <div className="grid gap-5 md:h-[calc(100dvh-7rem)] md:min-h-[34rem] md:grid-cols-2 md:grid-rows-[minmax(0,1fr)] lg:gap-6">
+      <div className="flex flex-col gap-2 md:min-h-0">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div>
+            <h1 className="text-2xl leading-tight font-bold">{greeting(now.getHours())}</h1>
+            <p className="text-sm text-muted-foreground">Turn the body and tap an organ to explore a subject.</p>
+          </div>
+          {mistakeCount > 0 && (
+            <Link
+              to="/mistakes"
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold shadow-[0_8px_20px_-14px_rgb(7_71_94/0.5)] outline-none hover:ring-1 hover:ring-primary focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              <RotateCcw className="size-4" aria-hidden />
+              Review again
+              <span className="rounded-full bg-wrong-soft px-1.5 font-bold text-wrong tabular-nums">{mistakeCount}</span>
+            </Link>
+          )}
         </div>
-        <ul className="divide-y rounded-lg border bg-card">
-          {summary.map((s) => (
-            <li key={s.subjectId} className="flex items-center gap-3 px-4 py-3">
-              <SubjectCap code={s.code} />
-              <span className="w-14 shrink-0 font-bold">{s.code}</span>
-              <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{s.name}</span>
-              <span
-                className={cn(
-                  'shrink-0 text-right font-bold tabular-nums',
-                  s.accuracy === null && 'font-normal text-muted-foreground',
-                  s.belowPassing && 'text-wrong',
-                )}
-              >
-                {s.accuracy === null ? 'Wala pang sagot' : formatPercent(s.accuracy)}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="text-sm text-muted-foreground">Kailangan ng at least 60% sa bawat subject para pumasa.</p>
-      </section>
+        <BodyStage summary={summary} selected={selected} onSelect={setSelectedId} subjectTopicIds={selectedTopicIds} />
+      </div>
+
+      <div className="flex flex-col gap-4 md:min-h-0">
+        {selected && <SubjectInfoCard subject={selected} />}
+        <TrendCards days={dailyActivity(activity.data ?? [], now)} />
+        <ReadinessCard stats={stats} summary={summary} />
+      </div>
     </div>
   )
 }
