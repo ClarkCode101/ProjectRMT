@@ -45,21 +45,7 @@ After the project exists, you can replace the hand-written types with generated 
 2. `npm run seed:sql` checks every question and rewrites `02_questions.sql`.
 3. Run `02_questions.sql` in the SQL Editor. Questions that already exist are skipped.
 
-## Deploy (Cloudflare Pages via GitHub Actions)
-
-Every push to `main` runs `.github/workflows/deploy.yml`: tests → build → upload
-to the `projectrmt` Pages project. Watch it in the repo's **Actions** tab.
-You can also redeploy any time with **Actions → Deploy to Cloudflare Pages → Run workflow**.
-
-One-time setup (repository secrets, GitHub → Settings → Secrets and variables → Actions):
-- `CLOUDFLARE_API_TOKEN`: Cloudflare → My Profile → API Tokens → Create Token →
-  Custom token with permission **Account → Cloudflare Pages → Edit**.
-- `CLOUDFLARE_ACCOUNT_ID`: the Account ID shown in the Cloudflare dashboard.
-
-In the Cloudflare project, turn **off** Settings → Build → Branch control →
-Automatic deployments, so only GitHub Actions deploys.
-
-### Original Cloudflare Git setup (kept for reference)
+## Deploy (Cloudflare Pages, free)
 
 1. Cloudflare Dashboard → **Workers & Pages → Create → Pages → Connect to Git** →
    pick `ClarkCode101/ProjectRMT`.
@@ -74,3 +60,9 @@ Automatic deployments, so only GitHub Actions deploys.
    (On Vercel, `vercel.json` does the same thing.)
 5. In Supabase **Authentication → URL Configuration**, set the Site URL to your
    `*.pages.dev` URL.
+
+**If pushes stop deploying** (Cloudflare keeps rebuilding an old commit): GitHub →
+Settings → Applications → Installed GitHub Apps → Cloudflare Workers and Pages →
+Configure, and make sure this repo is in **Repository access**. A public repo can
+still be cloned without it, but push notifications only reach Cloudflare for
+repos the app has access to.
