@@ -1,7 +1,7 @@
-import { BadgeCheck, ChevronDown, CircleCheck, CircleX, Pencil, Plus, Search, Trash2, TriangleAlert } from 'lucide-react'
+import { BadgeCheck, ChevronDown, CircleCheck, CircleX, Pencil, Plus, Search, Trash2, TriangleAlert, Upload } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
-import { headerButtonClass, PageHeader } from '@/components/dashboard'
+import { headerButtonClass, headerSecondaryClass, PageHeader } from '@/components/dashboard'
 import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { NativeSelect } from '@/components/NativeSelect'
@@ -42,10 +42,16 @@ export default function QuestionsPage() {
         title="Questions"
         subtitle={`${bank.data.length} questions, ${toVerify} not yet verified.`}
         actions={
-          <Link to="/questions/new" className={headerButtonClass}>
-            <Plus className="size-4" aria-hidden />
-            Add question
-          </Link>
+          <>
+            <Link to="/questions/upload" className={headerSecondaryClass}>
+              <Upload className="size-4" aria-hidden />
+              Upload
+            </Link>
+            <Link to="/questions/new" className={headerButtonClass}>
+              <Plus className="size-4" aria-hidden />
+              Add question
+            </Link>
+          </>
         }
       />
 

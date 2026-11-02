@@ -28,12 +28,12 @@ export type Database = {
           id: string
           owner_id: string
           file_name: string
-          storage_path: string
+          storage_path: string | null // null: the file was read in the browser and not stored (migration 0003)
           status: string
           question_count: number | null
           created_at: string | null
         },
-        'file_name' | 'storage_path'
+        'file_name'
       >
       questions: Table<
         {

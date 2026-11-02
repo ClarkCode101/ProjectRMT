@@ -12,6 +12,7 @@ const MistakesPage = lazy(() => import('@/features/mistakes/MistakesPage'))
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'))
 const QuestionsPage = lazy(() => import('@/features/questions/QuestionsPage'))
 const QuestionEditorPage = lazy(() => import('@/features/questions/QuestionEditorPage'))
+const QuestionUploadPage = lazy(() => import('@/features/questions/QuestionUploadPage'))
 
 export const router = createBrowserRouter([
   {
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
       { path: '/dashboard', element: <DashboardPage /> },
       { path: '/questions', element: <QuestionsPage /> },
       { path: '/questions/new', element: <QuestionEditorPage /> },
+      { path: '/questions/upload', element: <QuestionUploadPage /> },
       { path: '/questions/:id/edit', element: <QuestionEditorPage /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],

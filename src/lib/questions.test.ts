@@ -37,6 +37,11 @@ describe('validateDraft', () => {
     expect(errors.choices).toBe('Fill in all four choices.')
   })
 
+  it('needs exactly four choices (uploads can bring three or five)', () => {
+    expect(validateDraft({ ...goodDraft(), choices: ['a', 'b', 'c'], correctIndex: 0 }).choices).toMatch(/exactly four/)
+    expect(validateDraft({ ...goodDraft(), choices: ['a', 'b', 'c', 'd', 'e'] }).choices).toMatch(/exactly four/)
+  })
+
   it('catches two choices that are the same, ignoring case and spaces', () => {
     const draft = { ...goodDraft(), choices: ['Factor V', 'factor v ', 'Factor VIII', 'Factor X'] }
     expect(validateDraft(draft).choices).toMatch(/same/)

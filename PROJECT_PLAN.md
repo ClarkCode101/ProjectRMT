@@ -54,8 +54,8 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 
 ### Phase 2 — Content feeding
 - [x] **Manual add question** form
-- [ ] **Bulk upload**: PDF / DOCX / pasted text → parse into questions → review screen → save
-- [ ] **Duplicate detection** (see §5) with side-by-side compare: `Skip` / `Save anyway` / `Replace` (so far: a warning with "Save anyway" when adding one question)
+- [x] **Bulk upload**: PDF / DOCX / pasted text → parse into questions → review screen → save
+- [x] **Duplicate detection** (see §5) with side-by-side compare: `Skip` / `Save anyway` / `Replace`
 - [x] **Verification status**: `unverified` → `verified` (all built-in content starts out unverified)
 - [x] **Topic coverage map**: question count per topic (✅ enough / ⚠️ few / ❌ none)
 
@@ -353,7 +353,8 @@ create policy read_reference  on reference_items for select to authenticated usi
 
 ```
 1. User picks PDF/DOCX or pastes text
-2. File → Supabase Storage (uploads/{user_id}/{file})
+2. ~~File → Supabase Storage (uploads/{user_id}/{file})~~ Decided not to store files: they are read in the browser
+   and only the chosen questions are saved (keeps copyrighted reviewers out of the cloud; migration 0003)
 3. Extract text in browser (pdfjs-dist / mammoth)
 4. Parse into questions:
      - Regex for structured format: "1. stem  A. ... B. ... C. ... D. ...  Answer: B"
@@ -448,7 +449,7 @@ mtle-reviewer/
 7. [x] Mistake notebook
 8. [x] Dashboard (Recharts) — built with simple bars instead of Recharts
 9. [x] Manual add/edit/verify questions + coverage map
-10. [ ] Upload + parse + duplicate review
+10. [x] Upload + parse + duplicate review
 11. [ ] Source selector + smart selection
 12. [ ] Mock exam
 13. [ ] Flashcards (ts-fsrs)

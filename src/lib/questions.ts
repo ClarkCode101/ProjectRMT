@@ -25,7 +25,9 @@ export function validateDraft(draft: QuestionDraft): DraftErrors {
   if (draft.stem.trim() === '') errors.stem = 'Write the question.'
 
   const choices = draft.choices.map((c) => c.trim())
-  if (choices.some((c) => c === '')) {
+  if (choices.length !== CHOICE_COUNT) {
+    errors.choices = 'Each question needs exactly four choices.'
+  } else if (choices.some((c) => c === '')) {
     errors.choices = 'Fill in all four choices.'
   } else if (new Set(choices.map((c) => c.toLowerCase())).size !== choices.length) {
     errors.choices = 'Two choices are the same. Make each one different.'
