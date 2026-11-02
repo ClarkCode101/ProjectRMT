@@ -45,7 +45,21 @@ After the project exists, you can replace the hand-written types with generated 
 2. `npm run seed:sql` checks every question and rewrites `02_questions.sql`.
 3. Run `02_questions.sql` in the SQL Editor. Questions that already exist are skipped.
 
-## Deploy (Cloudflare Pages, free)
+## Deploy (Cloudflare Pages via GitHub Actions)
+
+Every push to `main` runs `.github/workflows/deploy.yml`: tests → build → upload
+to the `projectrmt` Pages project. Watch it in the repo's **Actions** tab.
+You can also redeploy any time with **Actions → Deploy to Cloudflare Pages → Run workflow**.
+
+One-time setup (repository secrets, GitHub → Settings → Secrets and variables → Actions):
+- `CLOUDFLARE_API_TOKEN`: Cloudflare → My Profile → API Tokens → Create Token →
+  Custom token with permission **Account → Cloudflare Pages → Edit**.
+- `CLOUDFLARE_ACCOUNT_ID`: the Account ID shown in the Cloudflare dashboard.
+
+In the Cloudflare project, turn **off** Settings → Build → Branch control →
+Automatic deployments, so only GitHub Actions deploys.
+
+### Original Cloudflare Git setup (kept for reference)
 
 1. Cloudflare Dashboard → **Workers & Pages → Create → Pages → Connect to Git** →
    pick `ClarkCode101/ProjectRMT`.
