@@ -1,0 +1,43 @@
+[
+  {
+    "subject": "CM",
+    "topic": "Chemical Exam of Urine",
+    "stem": "The reagent strip test for urine protein is based on the principle of:",
+    "choices": ["Diazo reaction", "Protein error of indicators", "Pseudoperoxidase activity", "Sodium nitroprusside reaction"],
+    "correct_index": 1,
+    "explanation": "The protein pad uses the protein error of indicators (e.g. tetrabromophenol blue). Diazo = bilirubin, pseudoperoxidase = blood, nitroprusside = ketones.",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Urine Sediment",
+    "stem": "Which urine crystal is described as having a 'coffin-lid' shape?",
+    "choices": ["Calcium oxalate", "Uric acid", "Triple phosphate", "Cystine"],
+    "correct_index": 2,
+    "explanation": "Triple phosphate (ammonium magnesium phosphate) crystals look like coffin lids and are seen in alkaline urine.",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Urine Sediment",
+    "stem": "Cystine crystals in urine appear as:",
+    "choices": [
+      "Colorless hexagonal plates",
+      "Envelope-shaped octahedrons",
+      "Fine needles in sheaves",
+      "Yellow-brown spheres with concentric striations"
+    ],
+    "correct_index": 0,
+    "explanation": "Cystine forms colorless hexagonal plates in acidic urine. Envelope shapes = calcium oxalate dihydrate; needles = tyrosine; striated spheres = leucine.",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Urine Sediment",
+    "stem": "The presence of WBC casts in urine is most suggestive of:",
+    "choices": ["Acute glomerulonephritis", "Pyelonephritis", "Cystitis", "Nephrotic syndrome"],
+    "correct_index": 1,
+    "explanation": "WBC casts form in the tubules, so they point to kidney infection/inflammation such as pyelonephritis. Cystitis (bladder) gives WBCs but no casts; RBC casts suggest glomerulonephritis.",
+    "difficulty": 2
+  }
+]

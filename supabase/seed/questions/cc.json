@@ -1,0 +1,47 @@
+[
+  {
+    "subject": "CC",
+    "topic": "Carbohydrates",
+    "stem": "Which method is considered the reference method for glucose determination?",
+    "choices": ["Glucose oxidase", "Hexokinase", "Folin-Wu", "o-Toluidine"],
+    "correct_index": 1,
+    "explanation": "The hexokinase method is the reference method because it is highly specific and less affected by interferences than glucose oxidase.",
+    "difficulty": 1
+  },
+  {
+    "subject": "CC",
+    "topic": "Enzymes",
+    "stem": "Which enzyme is the most specific marker for acute pancreatitis?",
+    "choices": ["Amylase", "Lipase", "Alkaline phosphatase", "Gamma-glutamyltransferase"],
+    "correct_index": 1,
+    "explanation": "Lipase is more specific to the pancreas than amylase and stays elevated longer after an attack of acute pancreatitis.",
+    "difficulty": 1
+  },
+  {
+    "subject": "CC",
+    "topic": "Lipids & Lipoproteins",
+    "stem": "Which lipoprotein carries most of the cholesterol to peripheral tissues?",
+    "choices": ["Chylomicrons", "VLDL", "LDL", "HDL"],
+    "correct_index": 2,
+    "explanation": "LDL delivers cholesterol to peripheral cells (the 'bad' cholesterol). HDL does reverse cholesterol transport back to the liver.",
+    "difficulty": 1
+  },
+  {
+    "subject": "CC",
+    "topic": "Electrolytes",
+    "stem": "Which formula correctly computes the anion gap (without potassium)?",
+    "choices": ["Na⁺ − (Cl⁻ + HCO₃⁻)", "(Na⁺ + K⁺) − Cl⁻", "Cl⁻ − (Na⁺ + HCO₃⁻)", "Na⁺ + Cl⁻ − HCO₃⁻"],
+    "correct_index": 0,
+    "explanation": "Anion gap = Na⁺ − (Cl⁻ + HCO₃⁻). When potassium is included it becomes (Na⁺ + K⁺) − (Cl⁻ + HCO₃⁻).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CC",
+    "topic": "Non-protein Nitrogen",
+    "stem": "The Jaffe reaction for creatinine uses which reagent?",
+    "choices": ["Diacetyl monoxime", "Alkaline picrate", "Phosphotungstic acid", "o-Cresolphthalein complexone"],
+    "correct_index": 1,
+    "explanation": "In the Jaffe reaction, creatinine reacts with alkaline picrate to form a red-orange complex. Diacetyl monoxime is for urea, phosphotungstic acid for uric acid, and o-cresolphthalein for calcium.",
+    "difficulty": 2
+  }
+]

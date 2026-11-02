@@ -1,0 +1,47 @@
+[
+  {
+    "subject": "BBIS",
+    "topic": "ABO & H System",
+    "stem": "Individuals with the Bombay (Oh) phenotype lack which antigen on their red cells?",
+    "choices": ["A antigen only", "B antigen only", "H antigen", "D antigen"],
+    "correct_index": 2,
+    "explanation": "Bombay individuals (hh) cannot make H antigen, the precursor of A and B, so they have no A, B, or H antigens and produce anti-A, anti-B, and anti-H.",
+    "difficulty": 2
+  },
+  {
+    "subject": "BBIS",
+    "topic": "Rh System",
+    "stem": "Anti-D produced after exposure to D-positive red cells is mostly of which immunoglobulin class?",
+    "choices": ["IgM", "IgG", "IgA", "IgE"],
+    "correct_index": 1,
+    "explanation": "Immune anti-D is mainly IgG. That is why it can cross the placenta and cause hemolytic disease of the fetus and newborn (HDFN).",
+    "difficulty": 1
+  },
+  {
+    "subject": "BBIS",
+    "topic": "Antiglobulin Testing",
+    "stem": "Which test detects red cells that were sensitized with antibody or complement in vivo?",
+    "choices": ["Indirect antiglobulin test", "Direct antiglobulin test", "Antibody screen", "Immediate spin crossmatch"],
+    "correct_index": 1,
+    "explanation": "The DAT tests the patient's red cells directly for bound IgG or complement (in vivo sensitization). The IAT detects in vitro sensitization.",
+    "difficulty": 1
+  },
+  {
+    "subject": "BBIS",
+    "topic": "Immunology Basics",
+    "stem": "Which immunoglobulin is the first to appear in a primary immune response?",
+    "choices": ["IgM", "IgG", "IgA", "IgD"],
+    "correct_index": 0,
+    "explanation": "IgM appears first in a primary response. IgG dominates the secondary (anamnestic) response.",
+    "difficulty": 1
+  },
+  {
+    "subject": "BBIS",
+    "topic": "Blood Components & Storage",
+    "stem": "Platelet concentrates are stored at:",
+    "choices": ["1–6 °C", "20–24 °C with continuous gentle agitation", "−18 °C or colder", "37 °C"],
+    "correct_index": 1,
+    "explanation": "Platelets are kept at room temperature (20–24 °C) with continuous agitation to keep them viable. Cold storage causes them to lose function.",
+    "difficulty": 1
+  }
+]

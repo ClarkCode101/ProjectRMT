@@ -1,0 +1,47 @@
+[
+  {
+    "subject": "MICRO",
+    "topic": "Bacteriology",
+    "stem": "A gram-positive coccus in clusters is catalase-positive and coagulase-positive. The most likely organism is:",
+    "choices": ["Staphylococcus epidermidis", "Staphylococcus aureus", "Streptococcus pyogenes", "Enterococcus faecalis"],
+    "correct_index": 1,
+    "explanation": "S. aureus is catalase-positive and coagulase-positive. S. epidermidis is coagulase-negative, while streptococci and enterococci are catalase-negative.",
+    "difficulty": 1
+  },
+  {
+    "subject": "MICRO",
+    "topic": "Mycobacteriology",
+    "stem": "Which staining method is used to detect acid-fast bacilli such as Mycobacterium tuberculosis?",
+    "choices": ["Gram stain", "Ziehl-Neelsen stain", "India ink", "Giemsa stain"],
+    "correct_index": 1,
+    "explanation": "Ziehl-Neelsen (a hot acid-fast method) uses carbol fuchsin, acid-alcohol decolorizer, and methylene blue counterstain. AFB appear red.",
+    "difficulty": 1
+  },
+  {
+    "subject": "MICRO",
+    "topic": "Parasitology",
+    "stem": "The infective stage of Ascaris lumbricoides for humans is the:",
+    "choices": ["Filariform larva", "Embryonated egg", "Rhabditiform larva", "Unembryonated (fertilized) egg"],
+    "correct_index": 1,
+    "explanation": "Humans get infected by swallowing embryonated eggs. Filariform larvae are the infective stage of hookworms and Strongyloides, which penetrate skin.",
+    "difficulty": 2
+  },
+  {
+    "subject": "MICRO",
+    "topic": "Parasitology",
+    "stem": "Crescent- or banana-shaped gametocytes on a blood smear are characteristic of:",
+    "choices": ["Plasmodium vivax", "Plasmodium malariae", "Plasmodium falciparum", "Plasmodium ovale"],
+    "correct_index": 2,
+    "explanation": "P. falciparum has crescent (banana-shaped) gametocytes. The other species have round gametocytes.",
+    "difficulty": 1
+  },
+  {
+    "subject": "MICRO",
+    "topic": "Mycology",
+    "stem": "Which yeast is presumptively identified by a positive germ tube test?",
+    "choices": ["Candida albicans", "Cryptococcus neoformans", "Candida glabrata", "Saccharomyces cerevisiae"],
+    "correct_index": 0,
+    "explanation": "Candida albicans (and C. dubliniensis) form germ tubes in serum after about 2–3 hours at 37 °C.",
+    "difficulty": 1
+  }
+]

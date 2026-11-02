@@ -1,0 +1,57 @@
+[
+  {
+    "subject": "HEMA",
+    "topic": "Coagulation",
+    "stem": "Which coagulation factor is known as the stable factor?",
+    "choices": ["Factor V", "Factor VII", "Factor VIII", "Factor X"],
+    "correct_index": 1,
+    "explanation": "Factor VII is called the stable factor because it is not consumed during clotting and is stable in stored plasma.",
+    "difficulty": 2
+  },
+  {
+    "subject": "HEMA",
+    "topic": "Coagulation",
+    "stem": "Hemophilia A is caused by a deficiency of which coagulation factor?",
+    "choices": ["Factor IX", "Factor VIII", "Factor XI", "Factor XII"],
+    "correct_index": 1,
+    "explanation": "Hemophilia A is an X-linked deficiency of Factor VIII. Hemophilia B (Christmas disease) is a Factor IX deficiency.",
+    "difficulty": 1
+  },
+  {
+    "subject": "HEMA",
+    "topic": "RBC Indices & Morphology",
+    "stem": "Which formula is used to compute the mean corpuscular volume (MCV) in fL?",
+    "choices": [
+      "(Hgb in g/dL ÷ RBC count) × 10",
+      "(Hct in % ÷ RBC count) × 10",
+      "(Hgb in g/dL ÷ Hct in %) × 100",
+      "(RBC count ÷ Hct in %) × 10"
+    ],
+    "correct_index": 1,
+    "explanation": "MCV = (Hct ÷ RBC count in millions/µL) × 10. Hgb ÷ RBC × 10 is MCH, and Hgb ÷ Hct × 100 is MCHC.",
+    "difficulty": 1
+  },
+  {
+    "subject": "HEMA",
+    "topic": "RBC Indices & Morphology",
+    "stem": "Howell-Jolly bodies are red cell inclusions composed of:",
+    "choices": ["Denatured hemoglobin", "Nuclear remnants (DNA)", "Ribosomal RNA", "Iron granules"],
+    "correct_index": 1,
+    "explanation": "Howell-Jolly bodies are DNA remnants, often seen after splenectomy. Denatured Hgb = Heinz bodies; RNA = basophilic stippling; iron = Pappenheimer bodies.",
+    "difficulty": 2
+  },
+  {
+    "subject": "HEMA",
+    "topic": "WBC Disorders",
+    "stem": "Auer rods in blast cells are most characteristic of:",
+    "choices": [
+      "Acute lymphoblastic leukemia",
+      "Chronic lymphocytic leukemia",
+      "Acute myeloid leukemia",
+      "Hairy cell leukemia"
+    ],
+    "correct_index": 2,
+    "explanation": "Auer rods are fused primary (azurophilic) granules found in myeloid blasts, so they point to AML rather than lymphoid leukemias.",
+    "difficulty": 2
+  }
+]

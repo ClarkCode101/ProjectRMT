@@ -1,0 +1,38 @@
+[
+  {
+    "subject": "HTMLE",
+    "topic": "Fixation",
+    "stem": "The most commonly used fixative for routine histopathology is:",
+    "choices": ["Bouin's solution", "10% neutral buffered formalin", "Zenker's fluid", "Carnoy's fluid"],
+    "correct_index": 1,
+    "explanation": "10% neutral buffered formalin is the standard routine fixative: it penetrates well, is cheap, and works with most stains.",
+    "difficulty": 1
+  },
+  {
+    "subject": "HTMLE",
+    "topic": "Staining",
+    "stem": "In routine H&E staining, hematoxylin stains which structures?",
+    "choices": ["Cytoplasm pink", "Nuclei blue to purple", "Collagen green", "Fat red-orange"],
+    "correct_index": 1,
+    "explanation": "Hematoxylin is a basic (nuclear) dye that stains nuclei blue-purple. Eosin is the acidic counterstain that colors cytoplasm pink.",
+    "difficulty": 1
+  },
+  {
+    "subject": "HTMLE",
+    "topic": "MT Laws",
+    "stem": "The Philippine Medical Technology Act is:",
+    "choices": ["Republic Act 5527", "Republic Act 4688", "Republic Act 9288", "Republic Act 7719"],
+    "correct_index": 0,
+    "explanation": "RA 5527 is the Philippine Medical Technology Act of 1969. RA 4688 is the Clinical Laboratory Law, RA 9288 the Newborn Screening Act, and RA 7719 the National Blood Services Act.",
+    "difficulty": 1
+  },
+  {
+    "subject": "HTMLE",
+    "topic": "Cytology",
+    "stem": "Which stain is primarily used for routine cervical cytology screening?",
+    "choices": ["Wright stain", "Papanicolaou stain", "Gram stain", "Periodic acid–Schiff"],
+    "correct_index": 1,
+    "explanation": "The Papanicolaou (Pap) stain shows nuclear detail and cytoplasmic maturation, which is what cervical screening needs.",
+    "difficulty": 1
+  }
+]
