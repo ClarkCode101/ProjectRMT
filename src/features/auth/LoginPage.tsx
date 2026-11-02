@@ -1,11 +1,17 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation } from 'react-router'
+import { TubeRack } from '@/components/specimen'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from './authContext'
+
+// One tube per board subject, in exam order.
+const SUBJECT_TUBES = ['CC', 'MICRO', 'HEMA', 'BBIS', 'CM', 'HTMLE'].map((code) => ({
+  state: 'empty' as const,
+  subjectCode: code,
+}))
 
 // Email + password (not magic link): on iPhone, a magic link opens in Safari
 // instead of the installed home-screen app, which is confusing.
@@ -33,49 +39,54 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-muted/40 px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-xl">MTLE Reviewer</CardTitle>
-          <CardDescription>Mag-login para magsimulang mag-review.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-11"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-11"
-              />
-            </div>
-            {error && (
-              <p role="alert" className="text-sm text-destructive">
-                {error}
-              </p>
-            )}
-            <Button type="submit" className="h-11 w-full text-base" disabled={submitting}>
-              {submitting ? 'Logging in…' : 'Log in'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <main className="flex min-h-dvh items-center justify-center px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="w-full max-w-sm space-y-8">
+        <div className="space-y-4">
+          <TubeRack size="lg" tubes={SUBJECT_TUBES} />
+          <h1 className="text-3xl font-extrabold">
+            MTLE <span className="font-normal text-muted-foreground">Reviewer</span>
+          </h1>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border bg-card p-5">
+          <div className="space-y-2">
+            <Label htmlFor="email" className="font-bold">
+              Email
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="h-11"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password" className="font-bold">
+              Password
+            </Label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="h-11"
+            />
+          </div>
+          {error && (
+            <p role="alert" className="text-sm font-bold text-destructive">
+              {error}
+            </p>
+          )}
+          <Button type="submit" className="h-12 w-full rounded-lg text-base font-bold" disabled={submitting}>
+            {submitting ? 'Logging in…' : 'Log in'}
+          </Button>
+        </form>
+      </div>
     </main>
   )
 }

@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useMistakes } from '@/features/mistakes/api'
 import { shuffle } from '@/lib/quiz'
 import { useTopics } from '@/lib/referenceData'
@@ -84,31 +83,32 @@ export default function PracticePage() {
     if (mistakes.isPending) return <FullPageMessage>Loading your mistakes…</FullPageMessage>
     const ids = (mistakes.data ?? []).map((m) => m.questionId)
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Review Again</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {message && <p role="status" className="text-sm">{message}</p>}
-          {ids.length === 0 ? (
-            <p className="text-muted-foreground">Wala kang mistakes na kailangang i-review. Galing! 🎉</p>
-          ) : (
-            <Button className="h-12 w-full text-base" disabled={starting} onClick={() => startMistakes(ids)}>
-              {starting ? 'Loading questions…' : `Start ${ids.length} questions`}
+      <div className="space-y-5">
+        <h1 className="text-2xl font-extrabold">Review Again</h1>
+        {message && <p role="status">{message}</p>}
+        {ids.length === 0 ? (
+          <p className="text-muted-foreground">Wala nang kailangang balikan. Lahat ng huling sagot mo ay tama.</p>
+        ) : (
+          <>
+            <p>
+              {ids.length} tanong na mali ang huling sagot mo. Kapag nasagot mo nang tama, aalis na sila sa listahan.
+            </p>
+            <Button className="h-12 w-full rounded-lg text-base font-bold" disabled={starting} onClick={() => startMistakes(ids)}>
+              {starting ? 'Kinukuha ang mga tanong…' : `Start ${ids.length} items`}
             </Button>
-          )}
-          <Button variant="ghost" className="h-11 w-full" onClick={restart}>
-            Normal practice instead
-          </Button>
-        </CardContent>
-      </Card>
+          </>
+        )}
+        <Button variant="ghost" className="h-11 w-full" onClick={restart}>
+          Pumili ng ibang subject
+        </Button>
+      </div>
     )
   }
 
   return (
     <div className="space-y-4">
       {message && (
-        <p role="status" className="rounded-lg bg-muted p-3 text-sm">
+        <p role="status" className="rounded-lg border-l-4 border-primary bg-card p-3">
           {message}
         </p>
       )}

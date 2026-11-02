@@ -19,6 +19,19 @@ export function useSubjects() {
   })
 }
 
+/** Returns a function that finds the subject (code + name) a topic belongs to. */
+export function useSubjectOfTopic() {
+  const subjects = useSubjects()
+  const topics = useTopics()
+  const subjectById = new Map((subjects.data ?? []).map((s) => [s.id, s]))
+  const topicById = new Map((topics.data ?? []).map((t) => [t.id, t]))
+  return (topicId: number) => {
+    const topic = topicById.get(topicId)
+    const subject = topic ? subjectById.get(topic.subject_id) : undefined
+    return { code: subject?.code, subjectName: subject?.name, topicName: topic?.name }
+  }
+}
+
 export function useTopics() {
   return useQuery({
     queryKey: ['topics'],

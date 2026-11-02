@@ -1,8 +1,9 @@
+import { Check, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { Badge } from '@/components/ui/badge'
+import { SubjectTag, TubeRack, type TubeState } from '@/components/specimen'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { shuffledChoiceOrder } from '@/lib/quiz'
+import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { recordAttempt, type QuizQuestion } from './api'
 
@@ -17,6 +18,7 @@ type Props = {
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
 
 export function QuizRunner({ sessionId, questions, onFinish }: Props) {
+  const subjectOf = useSubjectOfTopic()
   // Shuffle each question's choices once, when the quiz starts.
   // choiceOrders[q][displayPosition] = original choice index.
   const [choiceOrders] = useState(() => questions.map((q) => shuffledChoiceOrder(q.choices.length)))
@@ -33,6 +35,7 @@ export function QuizRunner({ sessionId, questions, onFinish }: Props) {
   const order = choiceOrders[current]
   const answer = answers[current] as AnswerResult | undefined
   const isLast = current === questions.length - 1
+  const subject = subjectOf(question.topic_id)
 
   function choose(originalIndex: number) {
     if (answer) return // already answered
@@ -62,79 +65,84 @@ export function QuizRunner({ sessionId, questions, onFinish }: Props) {
     window.scrollTo({ top: 0 })
   }
 
-  const score = answers.filter((a) => a.isCorrect).length
+  const tubes = questions.map((q, i) => {
+    const state: TubeState = answers[i] ? (answers[i].isCorrect ? 'correct' : 'wrong') : i === current ? 'current' : 'empty'
+    return { state, subjectCode: subjectOf(q.topic_id).code }
+  })
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <TubeRack tubes={tubes} />
+        <p className="text-sm text-muted-foreground tabular-nums">
           Item {current + 1} of {questions.length}
-        </span>
-        <span>Score: {score}</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
-        <div
-          className="h-full bg-primary transition-all"
-          style={{ width: `${((current + (answer ? 1 : 0)) / questions.length) * 100}%` }}
-        />
+        </p>
       </div>
 
-      <Card>
-        <CardContent className="space-y-4">
-          {question.source !== 'builtin' && <Badge variant="secondary">My question</Badge>}
-          <p className="text-lg leading-relaxed font-medium">{question.stem}</p>
+      <article className="space-y-5 rounded-xl border bg-card p-5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <SubjectTag code={subject.code} />
+          {subject.topicName && <span className="text-sm text-muted-foreground">{subject.topicName}</span>}
+          {question.source !== 'builtin' && (
+            <span className="rounded-sm bg-secondary px-1.5 text-xs font-semibold">Akin</span>
+          )}
+        </div>
 
-          <div className="space-y-2" role="group" aria-label="Choices">
-            {order.map((originalIndex, displayPos) => {
-              const isCorrectChoice = originalIndex === question.correct_index
-              const isSelected = answer?.selectedIndex === originalIndex
-              return (
-                <button
-                  key={originalIndex}
-                  type="button"
-                  disabled={Boolean(answer)}
-                  onClick={() => choose(originalIndex)}
+        <p className="text-xl leading-snug font-bold">{question.stem}</p>
+
+        <div className="space-y-2" role="group" aria-label="Choices">
+          {order.map((originalIndex, displayPos) => {
+            const isCorrectChoice = originalIndex === question.correct_index
+            const isSelected = answer?.selectedIndex === originalIndex
+            const showCorrect = answer && isCorrectChoice
+            const showWrong = answer && isSelected && !isCorrectChoice
+            return (
+              <button
+                key={originalIndex}
+                type="button"
+                disabled={Boolean(answer)}
+                onClick={() => choose(originalIndex)}
+                className={cn(
+                  'flex min-h-13 w-full items-center gap-3 rounded-lg border-2 px-3 py-2.5 text-left text-base transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
+                  !answer && 'border-border hover:border-primary/50 active:bg-secondary',
+                  showCorrect && 'border-correct bg-correct-soft',
+                  showWrong && 'border-wrong bg-wrong-soft',
+                  answer && !isSelected && !isCorrectChoice && 'border-transparent text-muted-foreground',
+                )}
+              >
+                <span
                   className={cn(
-                    'flex min-h-12 w-full items-start gap-3 rounded-lg border px-3 py-3 text-left text-base transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                    !answer && 'hover:bg-muted active:bg-muted',
-                    answer && isCorrectChoice && 'border-green-600 bg-green-50 text-green-900',
-                    answer && isSelected && !isCorrectChoice && 'border-red-600 bg-red-50 text-red-900',
-                    answer && !isSelected && !isCorrectChoice && 'opacity-60',
+                    'flex size-8 shrink-0 items-center justify-center rounded-md text-sm font-bold',
+                    showCorrect ? 'bg-correct text-white' : showWrong ? 'bg-wrong text-white' : 'bg-secondary',
                   )}
                 >
-                  <span className="font-semibold">{LETTERS[displayPos]}.</span>
-                  <span className="flex-1">{question.choices[originalIndex]}</span>
-                  {answer && isCorrectChoice && <span aria-label="correct answer">✓</span>}
-                  {answer && isSelected && !isCorrectChoice && <span aria-label="your answer, wrong">✗</span>}
-                </button>
-              )
-            })}
-          </div>
+                  {showCorrect ? <Check className="size-4" aria-label="Tamang sagot" /> : showWrong ? <X className="size-4" aria-label="Mali ang napili mo" /> : LETTERS[displayPos]}
+                </span>
+                <span className="flex-1">{question.choices[originalIndex]}</span>
+              </button>
+            )
+          })}
+        </div>
 
-          {answer && (
-            <div
-              role="status"
-              className={cn(
-                'rounded-lg p-3 text-sm leading-relaxed',
-                answer.isCorrect ? 'bg-green-50 text-green-900' : 'bg-red-50 text-red-900',
-              )}
-            >
-              <p className="font-semibold">{answer.isCorrect ? 'Tama! 🎉' : 'Mali — okay lang, babalikan natin ito.'}</p>
-              {question.explanation && <p className="mt-1">{question.explanation}</p>}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        {answer && (
+          <div role="status" className={cn('border-l-4 pl-4', answer.isCorrect ? 'border-correct' : 'border-wrong')}>
+            <p className={cn('font-bold', answer.isCorrect ? 'text-correct' : 'text-wrong')}>
+              {answer.isCorrect ? 'Tama.' : 'Mali. Mapupunta ito sa Review Again.'}
+            </p>
+            {question.explanation && <p className="mt-1 leading-relaxed">{question.explanation}</p>}
+          </div>
+        )}
+      </article>
 
       {saveError && (
         <p role="alert" className="text-sm text-destructive">
-          Hindi na-save ang ilang sagot (check your internet). Tuloy lang ang quiz.
+          Hindi na-save ang ilang sagot. Check your internet; tuloy lang ang quiz.
         </p>
       )}
 
       {answer && (
-        <Button className="h-12 w-full text-base" onClick={next} autoFocus>
-          {isLast ? 'See results' : 'Next'}
+        <Button className="h-12 w-full rounded-lg text-base font-bold" onClick={next} autoFocus>
+          {isLast ? 'See results' : 'Next item'}
         </Button>
       )}
     </div>

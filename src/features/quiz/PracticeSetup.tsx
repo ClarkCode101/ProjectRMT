@@ -1,16 +1,50 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { NativeSelect } from '@/components/NativeSelect'
+import { SubjectCap } from '@/components/specimen'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { useSubjects, useTopics } from '@/lib/referenceData'
+import { cn } from '@/lib/utils'
 import type { QuizFilters, SourceFilter } from './api'
 
 const ITEM_COUNTS = [10, 20, 50]
+const SOURCES: { value: SourceFilter; label: string }[] = [
+  { value: 'all', label: 'Lahat' },
+  { value: 'builtin', label: 'Built-in' },
+  { value: 'mine', label: 'Akin' },
+]
 
 type Props = {
   onStart: (filters: QuizFilters, itemCount: number) => void
   starting: boolean
+}
+
+/** A radio button that looks like a pressable tile. Real radios keep keyboard + screen readers working. */
+function Tile({
+  name,
+  checked,
+  onChange,
+  children,
+  className,
+}: {
+  name: string
+  checked: boolean
+  onChange: () => void
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <label
+      className={cn(
+        'flex min-h-11 cursor-pointer items-center gap-2 rounded-md border bg-card px-3 py-2 has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
+        checked ? 'border-primary bg-primary/[0.06] font-bold text-primary' : 'hover:border-input',
+        className,
+      )}
+    >
+      <input type="radio" name={name} checked={checked} onChange={onChange} className="sr-only" />
+      {children}
+    </label>
+  )
 }
 
 export function PracticeSetup({ onStart, starting }: Props) {
@@ -24,86 +58,81 @@ export function PracticeSetup({ onStart, starting }: Props) {
 
   const topicsInSubject = (topics.data ?? []).filter((t) => t.subject_id === subjectId)
 
+  function chooseSubject(id: number | null) {
+    setSubjectId(id)
+    setTopicId(null) // topic list changes with the subject
+  }
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     onStart({ source, subjectId, topicId }, itemCount)
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Practice Quiz</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="subject">Subject</Label>
-            <NativeSelect
-              id="subject"
-              value={subjectId ?? ''}
-              onChange={(e) => {
-                setSubjectId(e.target.value ? Number(e.target.value) : null)
-                setTopicId(null) // topic list changes with the subject
-              }}
-            >
-              <option value="">All subjects</option>
-              {subjects.data?.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code} — {s.name}
-                </option>
-              ))}
-            </NativeSelect>
+    <form onSubmit={handleSubmit} className="space-y-7">
+      <h1 className="text-2xl font-extrabold">Practice</h1>
+
+      <fieldset className="space-y-2">
+        <legend className="mb-2 font-bold">Subject</legend>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <Tile name="subject" checked={subjectId === null} onChange={() => chooseSubject(null)} className="col-span-2 sm:col-span-3">
+            Lahat ng subjects
+          </Tile>
+          {subjects.data?.map((s) => (
+            <Tile key={s.id} name="subject" checked={subjectId === s.id} onChange={() => chooseSubject(s.id)}>
+              <SubjectCap code={s.code} />
+              <span>
+                {s.code}
+                <span className="sr-only"> — {s.name}</span>
+              </span>
+            </Tile>
+          ))}
+        </div>
+      </fieldset>
+
+      {subjectId !== null && (
+        <div className="space-y-2">
+          <Label htmlFor="topic" className="font-bold">
+            Topic
+          </Label>
+          <NativeSelect id="topic" value={topicId ?? ''} onChange={(e) => setTopicId(e.target.value ? Number(e.target.value) : null)}>
+            <option value="">Lahat ng topics</option>
+            {topicsInSubject.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
+      )}
+
+      <div className="grid gap-7 sm:grid-cols-2">
+        <fieldset>
+          <legend className="mb-2 font-bold">Galing saan ang tanong</legend>
+          <div className="grid grid-cols-3 gap-2">
+            {SOURCES.map((s) => (
+              <Tile key={s.value} name="source" checked={source === s.value} onChange={() => setSource(s.value)} className="justify-center">
+                {s.label}
+              </Tile>
+            ))}
           </div>
+        </fieldset>
 
-          <div className="space-y-2">
-            <Label htmlFor="topic">Topic</Label>
-            <NativeSelect
-              id="topic"
-              value={topicId ?? ''}
-              disabled={subjectId === null}
-              onChange={(e) => setTopicId(e.target.value ? Number(e.target.value) : null)}
-            >
-              <option value="">{subjectId === null ? 'Pumili muna ng subject' : 'All topics'}</option>
-              {topicsInSubject.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </NativeSelect>
+        <fieldset>
+          <legend className="mb-2 font-bold">Ilang items</legend>
+          <div className="grid grid-cols-3 gap-2">
+            {ITEM_COUNTS.map((n) => (
+              <Tile key={n} name="count" checked={itemCount === n} onChange={() => setItemCount(n)} className="justify-center tabular-nums">
+                {n}
+              </Tile>
+            ))}
           </div>
+        </fieldset>
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="source">Source</Label>
-            <NativeSelect id="source" value={source} onChange={(e) => setSource(e.target.value as SourceFilter)}>
-              <option value="all">All (built-in + mine)</option>
-              <option value="builtin">Built-in only</option>
-              <option value="mine">My questions only</option>
-            </NativeSelect>
-          </div>
-
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">Number of items</legend>
-            <div className="grid grid-cols-3 gap-2">
-              {ITEM_COUNTS.map((n) => (
-                <Button
-                  key={n}
-                  type="button"
-                  variant={itemCount === n ? 'default' : 'outline'}
-                  className="h-11 text-base"
-                  aria-pressed={itemCount === n}
-                  onClick={() => setItemCount(n)}
-                >
-                  {n}
-                </Button>
-              ))}
-            </div>
-          </fieldset>
-
-          <Button type="submit" className="h-12 w-full text-base" disabled={starting}>
-            {starting ? 'Loading questions…' : 'Start'}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      <Button type="submit" className="h-12 w-full rounded-lg text-base font-bold" disabled={starting}>
+        {starting ? 'Kinukuha ang mga tanong…' : `Start ${itemCount} items`}
+      </Button>
+    </form>
   )
 }
