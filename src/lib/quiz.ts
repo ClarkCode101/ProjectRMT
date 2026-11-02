@@ -1,0 +1,122 @@
+// Pure quiz logic: no Supabase or React here, so it is easy to unit test.
+import type { Json } from './database.types'
+
+/** She must get at least 60% in EVERY subject (PROJECT_PLAN.md §2). */
+export const PASSING_RATE = 0.6
+
+export type RandomFn = () => number
+
+/** Returns a shuffled copy (Fisher–Yates). Pass `random` in tests for repeatable results. */
+export function shuffle<T>(items: readonly T[], random: RandomFn = Math.random): T[] {
+  const copy = [...items]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
+/**
+ * Shuffles the order choices are DISPLAYED in.
+ * Returns `order`, where order[displayPosition] = original index.
+ * We always save the original index to the database (PROJECT_PLAN.md §13).
+ */
+export function shuffledChoiceOrder(choiceCount: number, random: RandomFn = Math.random): number[] {
+  return shuffle(
+    Array.from({ length: choiceCount }, (_, i) => i),
+    random,
+  )
+}
+
+/** The `choices` column is jsonb, so check it really is a list of strings. */
+export function parseChoices(value: Json): string[] {
+  if (Array.isArray(value) && value.every((c) => typeof c === 'string')) return value as string[]
+  return []
+}
+
+export type AttemptLike = {
+  question_id: string
+  is_correct: boolean
+  selected_index: number | null
+  created_at: string | null
+}
+
+/**
+ * The "Review Again" list: questions whose MOST RECENT attempt was wrong.
+ * Answering a question correctly later removes it from the list.
+ * Result is newest mistake first.
+ */
+export function latestMistakes<A extends AttemptLike>(attempts: readonly A[]): A[] {
+  const newestFirst = [...attempts].sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+  const seen = new Set<string>()
+  const mistakes: A[] = []
+  for (const attempt of newestFirst) {
+    if (seen.has(attempt.question_id)) continue
+    seen.add(attempt.question_id)
+    if (!attempt.is_correct) mistakes.push(attempt)
+  }
+  return mistakes
+}
+
+export type TopicPerformanceRow = { subject_id: number; topic_id: number; attempts: number; accuracy: number }
+export type SubjectInfo = { id: number; code: string; name: string; sort_order: number | null }
+export type TopicInfo = { id: number; subject_id: number; name: string }
+
+export type TopicSummary = { topicId: number; name: string; attempts: number; accuracy: number; belowPassing: boolean }
+export type SubjectSummary = {
+  subjectId: number
+  code: string
+  name: string
+  attempts: number
+  /** null when she has not answered anything in this subject yet */
+  accuracy: number | null
+  belowPassing: boolean
+  topics: TopicSummary[]
+}
+
+/**
+ * Combines topic_performance rows into per-subject scores.
+ * Subject accuracy is weighted by attempts (a topic with 50 answers counts more than one with 2).
+ * Every subject is included, even with no attempts, so nothing is hidden.
+ */
+export function summarizePerformance(
+  rows: readonly TopicPerformanceRow[],
+  subjects: readonly SubjectInfo[],
+  topics: readonly TopicInfo[],
+): SubjectSummary[] {
+  const topicName = new Map(topics.map((t) => [t.id, t.name]))
+
+  return [...subjects]
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .map((subject) => {
+      const subjectRows = rows.filter((r) => r.subject_id === subject.id && r.attempts > 0)
+      const attempts = subjectRows.reduce((sum, r) => sum + r.attempts, 0)
+      const correct = subjectRows.reduce((sum, r) => sum + r.accuracy * r.attempts, 0)
+      const accuracy = attempts > 0 ? correct / attempts : null
+
+      const topicSummaries = subjectRows
+        .map((r) => ({
+          topicId: r.topic_id,
+          name: topicName.get(r.topic_id) ?? `Topic #${r.topic_id}`,
+          attempts: r.attempts,
+          accuracy: r.accuracy,
+          belowPassing: r.accuracy < PASSING_RATE,
+        }))
+        .sort((a, b) => a.accuracy - b.accuracy) // weakest topic first
+
+      return {
+        subjectId: subject.id,
+        code: subject.code,
+        name: subject.name,
+        attempts,
+        accuracy,
+        belowPassing: accuracy !== null && accuracy < PASSING_RATE,
+        topics: topicSummaries,
+      }
+    })
+}
+
+/** 0.756 -> "76%" */
+export function formatPercent(rate: number): string {
+  return `${Math.round(rate * 100)}%`
+}
