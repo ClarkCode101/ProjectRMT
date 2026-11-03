@@ -24,12 +24,10 @@ export function BodyStage({
   summary,
   selected,
   onSelect,
-  subjectTopicIds,
 }: {
   summary: SubjectSummary[]
   selected: SubjectSummary | undefined
   onSelect: (subjectId: number) => void
-  subjectTopicIds: number[]
 }) {
   const mapped = summary.filter((s) => ORGANS[s.code])
   const controls = useRef<Body3DControls | null>(null)
@@ -37,7 +35,6 @@ export function BodyStage({
   const canvasBoxRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef(new Map<string, HTMLElement>())
   const lineRefs = useRef(new Map<string, SVGGElement>())
-  const [warmupOpen, setWarmupOpen] = useState(false)
 
   // Runs every frame: move each dashed line so it joins its card to the organ, wherever the body has turned.
   // Done directly on the SVG (not through React state) so turning stays smooth.
@@ -182,50 +179,28 @@ export function BodyStage({
         </div>
       </div>
 
-      {/* The mini game: one quick question from the chosen subject. */}
-      {selected && (
-        <div className="flex shrink-0 justify-center">
-          <button
-            type="button"
-            onClick={() => setWarmupOpen(true)}
-            aria-haspopup="dialog"
-            className="flex h-12 w-full max-w-sm items-center justify-center gap-2.5 rounded-full bg-card px-6 font-heading text-base font-bold shadow-[0_10px_28px_-18px_rgb(7_71_94/0.55)] outline-none hover:ring-1 hover:ring-primary focus-visible:ring-3 focus-visible:ring-ring/40"
-          >
-            <Dices className="size-5 text-primary" aria-hidden />
-            Warm-up question: {selected.code}
-          </button>
-        </div>
-      )}
-
-      <Dialog open={warmupOpen} onClose={() => setWarmupOpen(false)} labelledBy="warmup-heading" variant="sheet" size="lg">
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setWarmupOpen(false)}
-            aria-label="Close"
-            className="absolute -top-1 -right-1 z-10 flex size-9 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
-          >
-            <X className="size-5" aria-hidden />
-          </button>
-          {selected && warmupOpen && <WarmupCard key={selected.subjectId} subject={selected} subjectTopicIds={subjectTopicIds} bare />}
-        </div>
-      </Dialog>
     </section>
   )
 }
 
+/** The small secondary buttons under the subject card's Practice button (tinted, not gold). */
+const smallButtonClass =
+  'flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg bg-primary/[0.08] px-3 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
+
 /**
  * Details of the chosen subject, laid out like a patient info card:
  * who it is (subject + body part), answered count and weakest topic, and the score on top;
- * the screen's ONE orange button below.
+ * the screen's ONE orange button below, then two quiet links (weakest topic only, one warm-up question).
  * Uses its own width (container query), not the screen's, so it fits a narrow tablet column too.
  */
-export function SubjectInfoCard({ subject }: { subject: SubjectSummary }) {
+export function SubjectInfoCard({ subject, subjectTopicIds }: { subject: SubjectSummary; subjectTopicIds: number[] }) {
   const organ = ORGANS[subject.code]
   const status = subjectStatus(subject)
   const weakest = subject.topics[0] // topics are sorted weakest first
+  const [warmupOpen, setWarmupOpen] = useState(false)
   return (
-    <section aria-labelledby="subject-info-heading" className="@container shrink-0 rounded-2xl border bg-card p-4 shadow-[0_12px_32px_-24px_rgb(7_71_94/0.45)]">
+    // id + scroll-mt: Board readiness scrolls here when she picks a subject from it (phones).
+    <section id="subject-info" aria-labelledby="subject-info-heading" className="@container shrink-0 scroll-mt-4 rounded-2xl border bg-card p-4 shadow-[0_12px_32px_-24px_rgb(7_71_94/0.45)]">
       {/* key: replay the entrance when another subject is chosen */}
       <div key={subject.subjectId} className="animate-in fade-in space-y-3 duration-300">
         {/* Header: organ picture, names, score */}
@@ -264,28 +239,46 @@ export function SubjectInfoCard({ subject }: { subject: SubjectSummary }) {
           </div>
         </div>
 
-        {/* Actions: the whole subject, or just the weakest topic when it is below 60%.
-            Two equal halves when both show, so the row looks even; one full-width button otherwise. */}
-        <div className={cn('grid gap-2', weakest?.belowPassing && '@sm:grid-cols-2')}>
-          <Link
-            to={`/practice?subject=${subject.subjectId}`}
-            className={cn(heroButtonClass, 'h-11 w-full px-4 text-base whitespace-nowrap focus-visible:ring-ring/50 sm:flex sm:w-full')}
-          >
-            <Play className="size-4 fill-current" aria-hidden />
-            Practice {subject.code}
-          </Link>
+        {/* The ONE practice button on Home. Everything else on Home only chooses which subject it points to. */}
+        <Link
+          to={`/practice?subject=${subject.subjectId}`}
+          className={cn(heroButtonClass, 'h-11 w-full px-4 text-base whitespace-nowrap focus-visible:ring-ring/50 sm:flex sm:w-full')}
+        >
+          <Play className="size-4 fill-current" aria-hidden />
+          Practice {subject.code}
+        </Link>
+
+        {/* Smaller ways in: just the weakest topic (when it's below 60%), or a single warm-up question.
+            Small tinted buttons: clearly tappable, but shorter and without the gold, so the button above stays the main one.
+            Two equal halves when both show, so the row looks even. */}
+        <div className={cn('grid gap-2', weakest?.belowPassing && 'grid-cols-2')}>
           {weakest?.belowPassing && (
-            <Link
-              to={`/practice?subject=${subject.subjectId}&topic=${weakest.topicId}`}
-              title={`Practice ${weakest.name} only`}
-              className="flex h-11 min-w-0 items-center justify-center gap-2 rounded-lg border border-primary/30 bg-card px-4 font-heading text-base font-bold text-primary outline-none hover:border-primary hover:bg-primary/[0.04] focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
+            <Link to={`/practice?subject=${subject.subjectId}&topic=${weakest.topicId}`} title={`Practice ${weakest.name} only`} className={smallButtonClass}>
               <Crosshair className="size-4 shrink-0" aria-hidden />
               <span className="truncate">{weakest.name} only</span>
             </Link>
           )}
+          <button type="button" onClick={() => setWarmupOpen(true)} aria-haspopup="dialog" className={smallButtonClass}>
+            <Dices className="size-4 shrink-0" aria-hidden />
+            <span className="truncate">Warm-up question</span>
+          </button>
         </div>
       </div>
+
+      {/* The mini game: one quick question from this subject. */}
+      <Dialog open={warmupOpen} onClose={() => setWarmupOpen(false)} labelledBy="warmup-heading" variant="sheet" size="lg">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setWarmupOpen(false)}
+            aria-label="Close"
+            className="absolute -top-1 -right-1 z-10 flex size-9 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
+            <X className="size-5" aria-hidden />
+          </button>
+          {warmupOpen && <WarmupCard key={subject.subjectId} subject={subject} subjectTopicIds={subjectTopicIds} bare />}
+        </div>
+      </Dialog>
     </section>
   )
 }

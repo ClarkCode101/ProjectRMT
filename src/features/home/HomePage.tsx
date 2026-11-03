@@ -130,18 +130,28 @@ export default function HomePage() {
           )}
           </div>
         </div>
-        <BodyStage summary={summary} selected={selected} onSelect={setSelectedId} subjectTopicIds={selectedTopicIds} />
+        <BodyStage summary={summary} selected={selected} onSelect={setSelectedId} />
       </div>
 
       <div className="flex flex-col gap-4 md:min-h-0">
-        {selected && <SubjectInfoCard subject={selected} />}
+        {selected && <SubjectInfoCard subject={selected} subjectTopicIds={selectedTopicIds} />}
         <TodayAndVerse
           days={days}
           target={settings.data?.dailyTarget ?? DEFAULT_DAILY_TARGET}
           streak={streak}
           verse={verseOfTheDay(now)}
         />
-        <ReadinessCard stats={stats} summary={summary} />
+        {/* Picking a subject here only changes the card above (and its Practice button), so Home keeps one way to practice. */}
+        <ReadinessCard
+          stats={stats}
+          summary={summary}
+          selectedId={selected?.subjectId ?? null}
+          onSelect={(id) => {
+            setSelectedId(id)
+            // Phones: the subject card is far above, so bring it into view. Laptops: it's already in view, nothing moves.
+            requestAnimationFrame(() => document.getElementById('subject-info')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
+          }}
+        />
       </div>
 
       {/* Streak milestone: a celebration with her note (once per milestone, on this device). */}

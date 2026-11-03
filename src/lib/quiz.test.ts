@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  closestToPassing,
   formatPercent,
   latestMistakes,
   overallStats,
@@ -170,6 +171,38 @@ describe('overallStats', () => {
 
   it('handles an empty subject list', () => {
     expect(overallStats([])).toMatchObject({ accuracy: null, answered: 0, passingSubjects: 0, totalSubjects: 0 })
+  })
+})
+
+describe('closestToPassing', () => {
+  const subject = (code: string, accuracy: number | null) => ({
+    subjectId: code.length,
+    code,
+    name: code,
+    attempts: accuracy === null ? 0 : 10,
+    accuracy,
+    belowPassing: accuracy !== null && accuracy < 0.6,
+    topics: [],
+  })
+
+  it('picks the highest subject that is still below 60%', () => {
+    const result = closestToPassing([subject('CC', 0.4), subject('CM', 0.57), subject('BBIS', 0.63), subject('HEMA', 0.14)])
+    expect(result?.subject.code).toBe('CM')
+    expect(result?.pointsToGo).toBe(3)
+  })
+
+  it('rounds the points to go up, and never says 0', () => {
+    expect(closestToPassing([subject('CC', 0.555)])?.pointsToGo).toBe(5)
+    expect(closestToPassing([subject('CC', 0.5999)])?.pointsToGo).toBe(1)
+  })
+
+  it('skips subjects with no answers yet', () => {
+    expect(closestToPassing([subject('CC', null), subject('HEMA', 0.2)])?.subject.code).toBe('HEMA')
+  })
+
+  it('returns null when nothing answered is below 60%', () => {
+    expect(closestToPassing([subject('CC', 0.8), subject('HEMA', null)])).toBeNull()
+    expect(closestToPassing([])).toBeNull()
   })
 })
 

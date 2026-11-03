@@ -1,9 +1,8 @@
-import { BookOpen, Check, Dices, Flame, X } from 'lucide-react'
+import { BookOpen, Check, ChevronRight, Dices, Flame, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { LowFlag, REFERENCE_RANGE } from '@/components/report'
 import type { DayActivity } from '@/lib/activity'
-import { formatPercent, type OverallStats, type SubjectSummary } from '@/lib/quiz'
+import { closestToPassing, formatPercent, type OverallStats, type SubjectSummary } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
 import type { Verse } from '@/lib/verses'
 import { useWarmupQuestions } from './api'
@@ -11,7 +10,7 @@ import { useWarmupQuestions } from './api'
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
 const cardClass = 'rounded-2xl border bg-card p-4 shadow-[0_12px_32px_-24px_rgb(7_71_94/0.45)]'
 
-// ---------- Readiness: a gauge plus the subjects listed like lab results ----------
+// ---------- Readiness: the gauge, how many subjects pass, and the nearest win ----------
 
 /** Half-circle gauge with a tick at 60%. */
 function Gauge({ rate }: { rate: number | null }) {
@@ -39,80 +38,136 @@ function Gauge({ rate }: { rate: number | null }) {
   )
 }
 
-export function ReadinessCard({ stats, summary }: { stats: OverallStats; summary: SubjectSummary[] }) {
+// Board readiness answers one question, "am I ready?", with as little to read as possible:
+// - the gauge: overall score
+// - "x of 6 subjects passing", with one segment per subject (green = passing, so the count is easy to see)
+// - the nearest win: the subject closest to 60% and how far it is ("3% to go")
+// Per-subject detail lives on the body explorer above and on the Practice rack, so it isn't repeated here.
+// Tapping the nearest win only SELECTS that subject (the subject card's one Practice button then points to it),
+// so Home never shows two practice buttons for two different subjects.
+export function ReadinessCard({
+  stats,
+  summary,
+  selectedId,
+  onSelect,
+}: {
+  stats: OverallStats
+  summary: SubjectSummary[]
+  /** the subject shown in the subject card */
+  selectedId: number | null
+  onSelect: (subjectId: number) => void
+}) {
+  const closest = closestToPassing(summary)
+  const notStarted = summary.find((s) => s.accuracy === null)
+  const allPassing = stats.totalSubjects > 0 && stats.passingSubjects === stats.totalSubjects
+
+  // The nearest win to point at: a subject below 60% closest to passing, else one not started yet.
+  const target = closest
+    ? {
+        label: 'Closest to passing',
+        subject: closest.subject,
+        detail: (
+          <>
+            {' '}
+            <span className="font-bold text-wrong tabular-nums">{formatPercent(closest.subject.accuracy!)}</span>
+            <span className="text-muted-foreground"> · {closest.pointsToGo}% to go</span>
+          </>
+        ),
+      }
+    : notStarted && stats.answered > 0
+      ? { label: 'Not started yet', subject: notStarted, detail: null }
+      : null
+  const targetSelected = target !== null && target.subject.subjectId === selectedId
+
   return (
     <section aria-labelledby="readiness-heading" className={cn(cardClass, '@container shrink-0')}>
-      {/* Wide card: gauge on the left, results on the right (like a lab report summary). Narrow card: stacked. */}
       <h2 id="readiness-heading" className="font-heading text-base font-bold">
         Board readiness
       </h2>
-      <div className="mt-2 grid gap-3 @md:grid-cols-[11rem_minmax(0,1fr)] @md:items-center @md:gap-5">
-        {/* Narrow card: small gauge beside its caption. Wide card: gauge above the caption. */}
-        <div className="flex items-center gap-3 @md:block">
-          <div className="relative flex w-32 shrink-0 justify-center @md:mx-auto @md:w-auto @md:max-w-44 lg:tall:max-w-52">
-            <Gauge rate={stats.accuracy} />
-            <p className="absolute bottom-0 text-center">
-              <span className={cn('block font-heading text-2xl leading-none @md:text-3xl lg:tall:text-4xl font-bold tabular-nums', stats.accuracy !== null && stats.accuracy < 0.6 ? 'text-wrong' : 'text-primary')}>
-                {stats.accuracy === null ? '—' : formatPercent(stats.accuracy)}
-              </span>
-            </p>
-          </div>
-          <p className="text-xs text-muted-foreground @md:mt-1.5 @md:text-center lg:tall:text-sm">
-            {stats.answered === 0 ? (
-              'Answer a few questions to see your score.'
-            ) : (
-              <>
-                <span className="font-bold text-foreground">
-                  {stats.passingSubjects} of {stats.totalSubjects}
-                </span>{' '}
-                subjects passing. The dot marks 60%.
-              </>
-            )}
+      {/* Wide card: gauge on the left, the rest on the right. Narrow card: gauge beside the count, next step below. */}
+      <div className="mt-2 grid gap-4 @md:grid-cols-[10rem_minmax(0,1fr)] @md:items-center @md:gap-6">
+        <div className="relative mx-auto flex w-36 justify-center @md:w-full lg:tall:max-w-48">
+          <Gauge rate={stats.accuracy} />
+          <p className="absolute bottom-0 text-center leading-none">
+            <span className={cn('block font-heading text-3xl font-bold tabular-nums lg:tall:text-4xl', stats.accuracy !== null && stats.accuracy < 0.6 ? 'text-wrong' : 'text-primary')}>
+              {stats.accuracy === null ? '—' : formatPercent(stats.accuracy)}
+            </span>
+            <span className="text-xs text-muted-foreground">overall</span>
           </p>
         </div>
 
-        {/* table-fixed lets long subject names shorten with "…" instead of pushing the columns out. */}
-        <table className="w-full table-fixed text-sm">
-          <caption className="sr-only">Results by subject</caption>
-          <colgroup>
-            <col />
-            <col className="w-18" />
-            <col className="w-0 @md:w-20" />
-          </colgroup>
-          <thead>
-            <tr className="border-b text-left text-xs text-muted-foreground">
-              <th scope="col" className="pb-1.5 font-semibold">Subject</th>
-              <th scope="col" className="pb-1.5 text-right font-semibold">Result</th>
-              <th scope="col" className="hidden pb-1.5 pl-3 text-right font-semibold @md:table-cell">Reference</th>
-            </tr>
-          </thead>
-          <tbody>
-            {summary.map((s) => (
-              <tr key={s.subjectId} className="border-b border-border/60 last:border-0">
-                <th scope="row" className="py-1 text-left font-normal tall:py-1.5 lg:tall:py-2">
-                  <span className="flex min-w-0 items-baseline gap-2">
-                    <span className="w-12 shrink-0 font-heading font-bold">{s.code}</span>
-                    <span className="truncate text-muted-foreground">{s.name}</span>
-                  </span>
-                </th>
-                <td className="py-1 text-right whitespace-nowrap tabular-nums tall:py-1.5 lg:tall:py-2">
-                  {s.accuracy === null ? (
-                    <span className="text-muted-foreground">—</span>
-                  ) : (
-                    <span className={cn('inline-flex items-center gap-1.5 font-bold', s.belowPassing ? 'text-wrong' : 'text-correct')}>
-                      {s.belowPassing && <LowFlag />}
-                      <span>
-                        {Math.round(s.accuracy * 100)}
-                        <span className="font-normal text-muted-foreground">%</span>
-                      </span>
+        <div className="space-y-4">
+          {/* x of 6 passing, one segment per subject */}
+          <div className="space-y-2">
+            <p className="text-sm">
+              <span className="font-heading text-lg font-bold tabular-nums">
+                {stats.passingSubjects} of {stats.totalSubjects}
+              </span>{' '}
+              <span className="text-muted-foreground">subjects passing</span>
+            </p>
+            <ul className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${summary.length}, minmax(0, 1fr))` }} aria-label="Subjects">
+              {summary.map((s) => {
+                const passing = s.accuracy !== null && !s.belowPassing
+                return (
+                  <li key={s.subjectId} className="space-y-1 text-center">
+                    <span aria-hidden className={cn('block h-2 rounded-full', passing ? 'bg-correct' : 'bg-secondary')} />
+                    <span className={cn('block text-[10px] leading-none font-bold @sm:text-xs', passing ? 'text-correct' : 'text-muted-foreground')}>
+                      {s.code}
+                      <span className="sr-only">{passing ? ': passing' : s.accuracy === null ? ': not started' : ': below 60%'}</span>
                     </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+
+          {/* the nearest win (tap = show it in the subject card), or a short line when there's nothing to point at */}
+          <div className="border-t pt-3 text-sm">
+            {target ? (
+              <button
+                type="button"
+                onClick={() => onSelect(target.subject.subjectId)}
+                aria-pressed={targetSelected}
+                className={cn(
+                  '-mx-2 flex w-[calc(100%+1rem)] items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
+                  targetSelected ? 'bg-primary/[0.06]' : 'hover:bg-secondary',
+                )}
+              >
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold tracking-wide text-muted-foreground uppercase">{target.label}</span>
+                  <span className="block">
+                    <span className="font-heading font-bold">{target.subject.code}</span>
+                    {target.detail}
+                  </span>
+                </span>
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-primary">
+                  {targetSelected ? (
+                    <>
+                      <Check className="size-4" aria-hidden />
+                      Showing above
+                    </>
+                  ) : (
+                    <>
+                      Show
+                      <ChevronRight className="size-4" aria-hidden />
+                    </>
                   )}
-                </td>
-                <td className="hidden py-1 pl-3 text-right text-muted-foreground tabular-nums tall:py-1.5 lg:tall:py-2 @md:table-cell">{REFERENCE_RANGE}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </span>
+              </button>
+            ) : stats.answered === 0 ? (
+              <p className="text-muted-foreground">Answer a few questions to see your score.</p>
+            ) : allPassing ? (
+              <p className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold">All six subjects passing. 🎉</span>
+                {/* Not a practice button: a different kind of next step, so it doesn't compete with the subject card. */}
+                <Link to="/mock" className="inline-flex items-center gap-1 font-bold text-primary hover:underline">
+                  Take a mock exam
+                  <ChevronRight className="size-4" aria-hidden />
+                </Link>
+              </p>
+            ) : null}
+          </div>
+        </div>
       </div>
     </section>
   )

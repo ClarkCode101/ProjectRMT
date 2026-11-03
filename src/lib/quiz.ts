@@ -127,6 +127,20 @@ export type OverallStats = {
   weakest: SubjectSummary | null
 }
 
+/**
+ * The subject below 60% that is nearest to passing, and how many percentage points it still needs
+ * (at least 1, rounded up). Home shows it as "Closest to passing", so she sees the nearest win, not every miss.
+ * null when no answered subject is below 60%.
+ */
+export function closestToPassing(summary: readonly SubjectSummary[]): { subject: SubjectSummary; pointsToGo: number } | null {
+  const low = summary.filter((s) => s.accuracy !== null && s.belowPassing)
+  if (low.length === 0) return null
+  const subject = low.reduce((best, s) => (s.accuracy! > best.accuracy! ? s : best))
+  // The small epsilon keeps float noise (e.g. 0.6 - 0.57 = 0.030000000000000027) from rounding 3 up to 4.
+  const pointsToGo = Math.max(1, Math.ceil((PASSING_RATE - subject.accuracy!) * 100 - 1e-9))
+  return { subject, pointsToGo }
+}
+
 /** Totals for the stat tiles on Home and the header on Practice. */
 export function overallStats(summary: readonly SubjectSummary[]): OverallStats {
   const answered = summary.reduce((sum, s) => sum + s.attempts, 0)
