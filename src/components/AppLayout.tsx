@@ -8,7 +8,6 @@ import {
   LogOut,
   NotebookPen,
   Play,
-  RotateCcw,
   Settings,
   Timer,
   type LucideIcon,
@@ -29,7 +28,6 @@ const HOME: NavItem = { to: '/', label: 'Home', icon: House }
 const PRACTICE: NavItem = { to: '/practice', label: 'Practice', icon: NotebookPen }
 const MOCK: NavItem = { to: '/mock', label: 'Mock exam', icon: Timer }
 const FLASHCARDS: NavItem = { to: '/flashcards', label: 'Flashcards', icon: Layers }
-const REVIEW: NavItem = { to: '/mistakes', label: 'Review', icon: RotateCcw }
 const QUESTIONS: NavItem = { to: '/questions', label: 'Questions', icon: Library }
 const REFERENCE: NavItem = { to: '/reference', label: 'Quick reference', icon: BookMarked }
 
@@ -145,7 +143,6 @@ export function AppLayout() {
               <RailLink item={PRACTICE} />
               <RailLink item={MOCK} />
               <RailLink item={FLASHCARDS} />
-              <RailLink item={REVIEW} />
               <RailLink item={QUESTIONS} />
               <RailLink item={REFERENCE} />
             </nav>
@@ -233,7 +230,7 @@ export function AppLayout() {
               <BarTab item={HOME} />
             </li>
             <li>
-              <BarTab item={REVIEW} />
+              <BarTab item={FLASHCARDS} />
             </li>
             <li className="flex justify-center">
               {/* The main action: a raised gold button in the middle of the bar. */}
@@ -274,14 +271,6 @@ export function AppLayout() {
             </h2>
             {email && <p className="text-sm text-muted-foreground">Logged in as {email}</p>}
           </div>
-          <NavLink
-            to="/flashcards"
-            onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
-          >
-            <Layers className="size-5" aria-hidden />
-            Flashcards
-          </NavLink>
           <NavLink
             to="/reference"
             onClick={() => setMoreOpen(false)}

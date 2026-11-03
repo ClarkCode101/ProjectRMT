@@ -12,7 +12,6 @@ const MockPage = lazy(() => import('@/features/mock/MockPage'))
 const FlashcardsPage = lazy(() => import('@/features/flashcards/FlashcardsPage'))
 const ReferencePage = lazy(() => import('@/features/reference/ReferencePage'))
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'))
-const MistakesPage = lazy(() => import('@/features/mistakes/MistakesPage'))
 const QuestionsPage = lazy(() => import('@/features/questions/QuestionsPage'))
 const QuestionEditorPage = lazy(() => import('@/features/questions/QuestionEditorPage'))
 const QuestionUploadPage = lazy(() => import('@/features/questions/QuestionUploadPage'))
@@ -40,7 +39,8 @@ export const router = createBrowserRouter([
       { path: '/flashcards', element: <FlashcardsPage /> },
       { path: '/reference', element: <ReferencePage /> },
       { path: '/settings', element: <SettingsPage /> },
-      { path: '/mistakes', element: <MistakesPage /> },
+      // The old Review Again list; reviewing mistakes is now a quiz (answer first, then see why).
+      { path: '/mistakes', element: <Navigate to="/practice?from=mistakes" replace /> },
       // The old Progress page; its scores now live on Practice (the rack + topic popup).
       { path: '/dashboard', element: <Navigate to="/practice" replace /> },
       { path: '/questions', element: <QuestionsPage /> },

@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Info, Play } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { useFocusMode } from '@/components/layoutContext'
@@ -40,7 +40,7 @@ type Stage =
 
 // /practice                 → choose filters, then quiz
 // /practice?subject=2&topic=7 → setup with that subject (and topic) already chosen
-// /practice?from=mistakes   → one tap to quiz on the "Review Again" list
+// /practice?from=mistakes   → straight into a quiz of her mistakes (no start screen)
 export default function PracticePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const fromMistakes = searchParams.get('from') === 'mistakes'
@@ -58,13 +58,19 @@ export default function PracticePage() {
   // No nav bar or sidebar while a quiz is running.
   useFocusMode(stage.name === 'quiz')
 
-  async function start(filters: QuizFilters, itemCount: number) {
+  /**
+   * Starts a quiz. `ready` = the questions are already in memory (Review again), so only the session
+   * still has to be saved: one request instead of two before the first question shows.
+   */
+  async function start(filters: QuizFilters, itemCount: number, ready?: QuizQuestion[]) {
     setStarting(true)
     setMessage(null)
     try {
       let picked: QuizQuestion[]
-      if (filters.questionIds) {
-        // Review Again: she chose exactly these questions, so use them all, mixed up.
+      if (ready) {
+        picked = shuffle(ready).slice(0, itemCount)
+      } else if (filters.questionIds) {
+        // She chose exactly these questions, so use them all, mixed up.
         picked = shuffle(await fetchQuestions(filters, [])).slice(0, itemCount)
       } else {
         const subjectTopicIds = (topics.data ?? []).filter((t) => t.subject_id === filters.subjectId).map((t) => t.id)
@@ -90,9 +96,28 @@ export default function PracticePage() {
     }
   }
 
+  // Her mistakes already come with everything a quiz needs (see mistakes/api.ts), so they're used as they are.
+  const mistakeQuestions: QuizQuestion[] = (mistakes.data ?? [])
+    .map((m) => ({ id: m.questionId, topic_id: m.topicId, source: m.source, stem: m.stem, choices: m.choices, correct_index: m.correctIndex, explanation: m.explanation }))
+    .filter((q) => q.choices.length >= 2) // same rule as fetchQuestions: skip broken rows
+  const mistakeIds = mistakeQuestions.map((q) => q.id)
+
   function startMistakes(questionIds: string[]) {
-    void start({ source: 'all', subjectId: null, topicId: null, questionIds }, questionIds.length)
+    void start({ source: 'all', subjectId: null, topicId: null, questionIds }, questionIds.length, mistakeQuestions)
   }
+
+  // Review again starts the quiz right away (the button she tapped already showed how many there are).
+  // Only once per visit, so a failed start shows the "Try again" screen instead of retrying in a loop.
+  const autoStarted = useRef(false)
+  useEffect(() => {
+    if (!fromMistakes) {
+      autoStarted.current = false
+      return
+    }
+    if (autoStarted.current || !mistakes.isSuccess || mistakeIds.length === 0 || stage.name !== 'setup') return
+    autoStarted.current = true
+    startMistakes(mistakeIds)
+  })
 
   async function finish(answers: AnswerResult[]) {
     if (stage.name !== 'quiz') return
@@ -136,15 +161,17 @@ export default function PracticePage() {
   }
 
   if (fromMistakes) {
-    if (mistakes.isPending) return <FullPageMessage>Loading your mistakes…</FullPageMessage>
-    const ids = (mistakes.data ?? []).map((m) => m.questionId)
+    const ids = mistakeIds
+    // Loading, or about to jump straight into the quiz (see the effect above).
+    if (mistakes.isPending || (ids.length > 0 && !message)) return <FullPageMessage>Loading your mistakes…</FullPageMessage>
+    // Only shown when there's nothing to review, or the quiz couldn't start (then the button tries again).
     return (
       <div className="mx-auto max-w-xl space-y-4 sm:pt-6">
         {message && <Notice>{message}</Notice>}
         <HeroPanel labelledBy="review-start-heading" className="space-y-4">
           <div>
             <h1 id="review-start-heading" className="text-sm font-semibold text-white/75">
-              Review Again
+              Review again
             </h1>
             <p className="font-heading text-6xl leading-none font-bold tabular-nums">{ids.length}</p>
             <p className="mt-1 text-white/85">
@@ -156,7 +183,7 @@ export default function PracticePage() {
           {ids.length > 0 && (
             <button type="button" className={heroButtonClass} disabled={starting} onClick={() => startMistakes(ids)}>
               <Play className="size-5 fill-current" aria-hidden />
-              {starting ? 'Loading questions…' : `Start ${ids.length} items`}
+              {starting ? 'Loading questions…' : 'Try again'}
             </button>
           )}
         </HeroPanel>

@@ -110,8 +110,8 @@ export function QuizResults({ answers, onRestart }: Props) {
             <h2 id="missed-heading" className="text-lg font-bold">
               Questions you missed ({wrong.length})
             </h2>
-            <Link to="/mistakes" className="text-sm font-semibold text-primary hover:underline">
-              Open Review Again
+            <Link to="/practice?from=mistakes" className="text-sm font-semibold text-primary hover:underline">
+              Review again
             </Link>
           </div>
           <ul className="divide-y overflow-hidden rounded-xl border bg-card">

@@ -361,7 +361,7 @@ export function MockResults({ label, questions, answers, flags, score, durationS
               ))}
             </ul>
           )}
-          <p className="text-xs text-muted-foreground">Tap an item to see the answer and explanation. Wrong answers were added to Review Again.</p>
+          <p className="text-xs text-muted-foreground">Tap an item to see the answer and explanation. Wrong answers come back in Review again, on Practice.</p>
         </section>
       )}
     </div>

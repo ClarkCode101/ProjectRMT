@@ -120,7 +120,7 @@ export default function HomePage() {
           )}
           {mistakeCount > 0 && (
             <Link
-              to="/mistakes"
+              to="/practice?from=mistakes"
               className="inline-flex h-10 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold shadow-[0_8px_20px_-14px_rgb(7_71_94/0.5)] outline-none hover:ring-1 hover:ring-primary focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               <RotateCcw className="size-4" aria-hidden />

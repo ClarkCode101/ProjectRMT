@@ -1,10 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { latestMistakes, parseChoices } from '@/lib/quiz'
+import type { QuestionSource } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 
 export type Mistake = {
   questionId: string
   topicId: number
+  /** built-in or her own (the quiz shows a "Mine" tag) */
+  source: QuestionSource
   stem: string
   choices: string[]
   correctIndex: number
@@ -31,7 +34,8 @@ export function useMistakes() {
 
       const { data: questions, error: qError } = await supabase
         .from('questions')
-        .select('id, topic_id, stem, choices, correct_index, explanation')
+        // Everything a quiz needs, so "Review again" can start without loading the questions a second time.
+        .select('id, topic_id, source, stem, choices, correct_index, explanation')
         .in(
           'id',
           wrong.map((a) => a.question_id),
@@ -46,6 +50,7 @@ export function useMistakes() {
           {
             questionId: q.id,
             topicId: q.topic_id,
+            source: q.source,
             stem: q.stem,
             choices: parseChoices(q.choices),
             correctIndex: q.correct_index,
