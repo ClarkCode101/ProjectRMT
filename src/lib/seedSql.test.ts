@@ -40,12 +40,12 @@ describe('sqlString', () => {
 })
 
 describe('questionsToSql', () => {
-  it('creates each topic once and inserts every question as builtin + unverified', () => {
+  it('creates each topic once and inserts every question as builtin + verified', () => {
     const sql = questionsToSql([valid, { ...valid, stem: 'Another question?' }])
     expect(sql.match(/insert into topics/g)).toHaveLength(1)
     expect(sql.match(/insert into questions/g)).toHaveLength(2)
     expect(sql).toContain("'builtin'")
-    expect(sql).toContain("'unverified'")
+    expect(sql).toContain("'verified'")
     expect(sql).toContain(`'["V","VII","VIII","X"]'::jsonb`)
     expect(sql.startsWith('--')).toBe(true)
     expect(sql).toContain('begin;')
@@ -54,6 +54,6 @@ describe('questionsToSql', () => {
 
   it('writes null when there is no explanation and defaults difficulty to 2', () => {
     const sql = questionsToSql([{ ...valid, explanation: undefined, difficulty: undefined }])
-    expect(sql).toContain(", 1, null, 2, 'unverified'")
+    expect(sql).toContain(", 1, null, 2, 'verified'")
   })
 })

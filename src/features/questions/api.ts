@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { VerifyStatus } from '@/lib/database.types'
+import type { QuestionSource, VerifyStatus } from '@/lib/database.types'
 import { parseChoices } from '@/lib/quiz'
 import { draftToRow, type QuestionDraft } from '@/lib/questions'
 import { supabase } from '@/lib/supabase'
@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase'
 export type BankQuestion = {
   id: string
   owner_id: string | null // null = built-in
+  /** builtin, typed by her (user), or from an uploaded file (upload) */
+  source: QuestionSource
   topic_id: number
   stem: string
   choices: string[]
@@ -16,7 +18,7 @@ export type BankQuestion = {
   status: VerifyStatus
 }
 
-const COLUMNS = 'id, owner_id, topic_id, stem, choices, correct_index, explanation, difficulty, status'
+const COLUMNS = 'id, owner_id, source, topic_id, stem, choices, correct_index, explanation, difficulty, status'
 // Supabase returns at most 1000 rows per request, so load the bank in pages.
 const PAGE_SIZE = 1000
 

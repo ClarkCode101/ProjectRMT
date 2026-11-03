@@ -1,4 +1,4 @@
-import { BadgeCheck, ChevronDown, CircleCheck, CircleX, Pencil, Plus, Search, Trash2, TriangleAlert, Upload } from 'lucide-react'
+import { BadgeCheck, ChevronDown, CircleCheck, CircleX, Flag, Pencil, Plus, Search, Trash2, TriangleAlert, Upload } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import { headerButtonClass, headerSecondaryClass, PageHeader } from '@/components/dashboard'
@@ -34,13 +34,15 @@ export default function QuestionsPage() {
     return <FullPageMessage>Couldn’t load the questions. Check your internet connection, then refresh.</FullPageMessage>
   }
 
-  const toVerify = bank.data.filter((q) => q.status === 'unverified').length
+  // Questions are ready to use by default (the built-in set is fact-checked; ones she types are hers).
+  // Only two kinds "need a look": uploads not checked yet, and ones she reported from a quiz.
+  const needsLook = bank.data.filter((q) => q.status === 'unverified').length
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <PageHeader
         title="Questions"
-        subtitle={`${bank.data.length} questions, ${toVerify} not yet verified.`}
+        subtitle={`${bank.data.length} questions${needsLook > 0 ? ` · ${needsLook} need a look` : ''}.`}
         actions={
           <>
             <Link to="/questions/upload" className={headerSecondaryClass}>
@@ -153,8 +155,7 @@ function QuestionList({
           </FilterSelect>
           <FilterSelect id="q-status" label="Status" value={status} onChange={(v) => onFilter(setStatus)(v as BankFilters['status'])}>
             <option value="all">Any status</option>
-            <option value="unverified">To verify</option>
-            <option value="verified">Verified</option>
+            <option value="unverified">Needs a look</option>
           </FilterSelect>
           <FilterSelect id="q-source" label="Source" value={source} onChange={(v) => onFilter(setSource)(v as BankFilters['source'])}>
             <option value="all">Any source</option>
@@ -219,6 +220,8 @@ function QuestionRow({ question: q }: { question: BankQuestion }) {
   const subject = subjectOf(q.topic_id)
   const isMine = q.owner_id !== null
   const verified = q.status === 'verified'
+  // An unchecked upload is "To check"; anything else that isn't verified was reported from a quiz.
+  const needsLookLabel = q.source === 'upload' ? 'To check' : 'Reported'
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -245,13 +248,12 @@ function QuestionRow({ question: q }: { question: BankQuestion }) {
               <span>
                 <span className="font-heading font-bold text-foreground">{subject.code ?? '—'}</span> {subject.topicName}
               </span>
-              {verified ? (
-                <span className="inline-flex items-center gap-1 font-semibold text-correct">
-                  <BadgeCheck className="size-3.5" aria-hidden />
-                  Verified
+              {/* No badge when it's fine (most of them), so the few that need a look stand out. */}
+              {!verified && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-highlight-soft px-2 py-px font-semibold text-foreground">
+                  {needsLookLabel === 'Reported' && <Flag className="size-3" aria-hidden />}
+                  {needsLookLabel}
                 </span>
-              ) : (
-                <span className="rounded-full bg-highlight-soft px-2 py-px font-semibold text-foreground">To verify</span>
               )}
               {isMine && <span className="rounded-full bg-secondary px-2 py-px font-semibold text-foreground">Mine</span>}
             </span>
@@ -286,14 +288,19 @@ function QuestionRow({ question: q }: { question: BankQuestion }) {
           )}
 
           <div className="flex flex-wrap gap-2 pt-1">
-            <Button
-              className={cn('h-10 rounded-lg', verified && 'bg-card text-foreground ring-1 ring-border hover:bg-secondary')}
-              disabled={busy}
-              onClick={() => run(() => setQuestionStatus(q.id, verified ? 'unverified' : 'verified'))}
-            >
-              <BadgeCheck className="size-4" aria-hidden />
-              {verified ? 'Mark as not verified' : 'Mark as verified'}
-            </Button>
+            {verified ? (
+              // Quiet: most questions are fine; this is only for when she spots a problem here.
+              <Button variant="outline" className="h-10 rounded-lg" disabled={busy} onClick={() => run(() => setQuestionStatus(q.id, 'unverified'))}>
+                <Flag className="size-4" aria-hidden />
+                Report a problem
+              </Button>
+            ) : (
+              // After fixing it (Edit) or checking it, one tap clears the flag.
+              <Button className="h-10 rounded-lg" disabled={busy} onClick={() => run(() => setQuestionStatus(q.id, 'verified'))}>
+                <BadgeCheck className="size-4" aria-hidden />
+                Looks right now
+              </Button>
+            )}
             <Link
               to={`/questions/${q.id}/edit`}
               className={cn('inline-flex h-10 items-center gap-2 rounded-lg border bg-card px-3 text-sm font-semibold hover:border-primary', focusRing)}

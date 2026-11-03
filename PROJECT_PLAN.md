@@ -48,7 +48,7 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 - [x] **Auth**: email login (Supabase Auth); app is private
 - [x] **Question bank**: multiple choice (4 options), tagged by subject → topic
 - [x] **Practice quiz**: filter by subject/topic/source; instant feedback + explanation after each answer
-- [x] **Mistake notebook**: wrong answers are collected automatically into a "Review Again" list
+- [x] **Mistake notebook**: wrong answers are collected automatically and quizzed again from "Review again" on Practice (the list page was removed: answer first, then see why)
 - [x] **Weak-area dashboard**: score per subject and per topic; anything below 60% is highlighted
 - [x] **Built-in seed content import** (JSON → Supabase)
 
@@ -56,7 +56,7 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 - [x] **Manual add question** form
 - [x] **Bulk upload**: PDF / DOCX / pasted text → parse into questions → review screen → save
 - [x] **Duplicate detection** (see §5) with side-by-side compare: `Skip` / `Save anyway` / `Replace`
-- [x] **Verification status**: `unverified` → `verified` (all built-in content starts out unverified)
+- [x] **Verification status**: `verified` by default (built-in set fact-checked, with a reference in each explanation; ones she types are hers). `unverified` = "needs a look": uploads not checked yet, or a question she reported from a quiz ("Report a problem")
 - [x] **Topic coverage map**: question count per topic (✅ enough / ⚠️ few / ❌ none)
 
 ### Phase 3 — Study modes
@@ -81,7 +81,7 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 
 ## 4. Content Sources
 
-1. **Built-in seed questions**: original questions generated with AI, organized per subject/topic, imported as JSON. **Every one starts as `unverified`**, and she verifies them (that doubles as review).
+1. **Built-in seed questions**: original questions generated with AI, organized per subject/topic, imported as JSON. They are **fact-checked against standard references** (cited at the end of each explanation) and start as `verified`, so she doesn't have to check them one by one; anything that looks wrong can be reported from a quiz.
 2. **Open-licensed references**: e.g. OpenStax *Microbiology* and LibreTexts, used as the basis for questions.
 3. **User-fed content**: her own notes and reviewers (manual, or uploaded as PDF/DOCX/text).
 
@@ -416,7 +416,7 @@ mtle-reviewer/
 | `/practice` | Source selector → practice quiz; also the per-subject / per-topic scores (the old `/dashboard` redirects here) |
 | `/mock` | Mock exam setup → exam → results review |
 | `/flashcards` | Due cards (FSRS) |
-| `/mistakes` | Review Again list |
+| `/mistakes` | Redirects to `/practice?from=mistakes` (Review again is a quiz on Practice, not a list page) |
 | `/questions` | Browse, add, edit, verify; coverage map |
 | `/upload` | Upload → parse → duplicate review |
 | `/reference` | Normal values, formulas, mnemonics |
@@ -465,4 +465,4 @@ mtle-reviewer/
 - Store `selected_index` against the **original** choice order (shuffle is display-only, so keep a mapping)
 - Every query must respect RLS; never use the service role key in the frontend
 - Keep components mobile-first (design for ~375px width first)
-- Built-in seed questions are AI-generated → default `status = 'unverified'`
+- Built-in seed questions are AI-generated → fact-check them and add a reference before adding them; they are seeded as `verified`

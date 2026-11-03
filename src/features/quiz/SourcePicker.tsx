@@ -77,8 +77,8 @@ export function SourcePicker({ value, onChange }: { value: SourceChoice; onChang
           className="size-5 shrink-0 accent-primary focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ring/50"
         />
         <span>
-          <span className="font-semibold">Verified only</span>
-          <span className="block text-sm text-muted-foreground">Skip questions you haven’t checked yet</span>
+          <span className="font-semibold">Skip questions that need a look</span>
+          <span className="block text-sm text-muted-foreground">Ones you reported, and uploads you haven’t checked yet</span>
         </span>
       </label>
     </Group>

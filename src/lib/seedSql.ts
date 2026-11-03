@@ -61,7 +61,7 @@ const NORMALIZED_STEM_SQL = (stemLiteral: string) =>
   `md5(trim(regexp_replace(regexp_replace(lower(${stemLiteral}), '[^a-z0-9 ]', ' ', 'g'), '\\s+', ' ', 'g')))`
 
 /**
- * Builds SQL that inserts each question as built-in + unverified.
+ * Builds SQL that inserts each question as built-in + verified (the built-in set is fact-checked, with a reference in each explanation).
  * Missing topics are created. Questions whose stem already exists as built-in
  * are skipped, so running the file twice does not create duplicates.
  */
@@ -89,7 +89,7 @@ export function questionsToSql(questions: SeedQuestion[]): string {
     lines.push(
       [
         'insert into questions (owner_id, topic_id, source, stem, choices, correct_index, explanation, difficulty, status)',
-        `select null, t.id, 'builtin', ${stem}, ${sqlString(JSON.stringify(q.choices))}::jsonb, ${q.correct_index}, ${q.explanation ? sqlString(q.explanation) : 'null'}, ${q.difficulty ?? 2}, 'unverified'`,
+        `select null, t.id, 'builtin', ${stem}, ${sqlString(JSON.stringify(q.choices))}::jsonb, ${q.correct_index}, ${q.explanation ? sqlString(q.explanation) : 'null'}, ${q.difficulty ?? 2}, 'verified'`,
         'from topics t join subjects s on s.id = t.subject_id',
         `where s.code = ${sqlString(q.subject)} and t.name = ${sqlString(q.topic)}`,
         `  and not exists (select 1 from questions x where x.owner_id is null and x.stem_hash = ${NORMALIZED_STEM_SQL(stem)});`,

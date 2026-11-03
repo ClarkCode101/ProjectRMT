@@ -1,4 +1,4 @@
-import { Check, Flame, X } from 'lucide-react'
+import { Check, Flag, Flame, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { SampleRun, type SampleState } from '@/components/report'
@@ -7,6 +7,7 @@ import { ExitButton } from '@/components/ExitButton'
 import { shuffledChoiceOrder } from '@/lib/quiz'
 import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
+import { setQuestionStatus, useRefreshBank } from '@/features/questions/api'
 import { recordAttempt, type QuizQuestion } from './api'
 
 export type AnswerResult = { question: QuizQuestion; selectedIndex: number; isCorrect: boolean }
@@ -43,12 +44,15 @@ function keyToPosition(key: string) {
 export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
   const [confirmExit, setConfirmExit] = useState(false)
   const subjectOf = useSubjectOfTopic()
+  const refreshBank = useRefreshBank()
   // Shuffle each question's choices once, when the quiz starts.
   // choiceOrders[q][displayPosition] = original choice index.
   const [choiceOrders] = useState(() => questions.map((q) => shuffledChoiceOrder(q.choices.length)))
   const [current, setCurrent] = useState(0)
   const [answers, setAnswers] = useState<AnswerResult[]>([])
   const [saveError, setSaveError] = useState(false)
+  // Questions she flagged as wrong or unclear in this quiz ("Report a problem"); 'error' = couldn't save the flag.
+  const [reported, setReported] = useState<Record<string, 'saving' | 'done' | 'error'>>({})
   // When the current question appeared on screen (for time_ms).
   const shownAt = useRef(0)
   useEffect(() => {
@@ -60,6 +64,17 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
   const answer = answers[current] as AnswerResult | undefined
   const isLast = current === questions.length - 1
   const subject = subjectOf(question.topic_id)
+
+  /** Marks the question as "needs a look" (shown as Reported on the Questions page), to fix later. */
+  function report(id: string) {
+    setReported((r) => ({ ...r, [id]: 'saving' }))
+    setQuestionStatus(id, 'unverified')
+      .then(() => {
+        setReported((r) => ({ ...r, [id]: 'done' }))
+        refreshBank() // so the Questions page shows it as Reported
+      })
+      .catch(() => setReported((r) => ({ ...r, [id]: 'error' })))
+  }
 
   function choose(originalIndex: number) {
     if (answer) return // already answered
@@ -205,8 +220,27 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
           <p className={cn('font-heading text-lg font-bold', answer.isCorrect ? 'text-correct' : 'text-wrong')}>
             {answer.isCorrect ? PRAISE[current % PRAISE.length] : ENCOURAGE[current % ENCOURAGE.length]}
           </p>
-          {!answer.isCorrect && <p className="text-sm text-muted-foreground">Added to Review Again.</p>}
+          {!answer.isCorrect && <p className="text-sm text-muted-foreground">It comes back in Review again.</p>}
           {question.explanation && <p className="mt-2 leading-relaxed">{question.explanation}</p>}
+          {/* If something looks wrong (answer, explanation, wording), one tap flags it to fix later. Quiet on purpose. */}
+          <div className="mt-2.5 flex justify-end">
+            {reported[question.id] === 'done' ? (
+              <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                <Check className="size-3.5" aria-hidden />
+                Reported. Fix it later in Questions.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => report(question.id)}
+                disabled={reported[question.id] === 'saving'}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-semibold text-muted-foreground outline-none hover:bg-black/5 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-60"
+              >
+                <Flag className="size-3.5" aria-hidden />
+                {reported[question.id] === 'error' ? 'Couldn’t save. Try again' : 'Report a problem'}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
