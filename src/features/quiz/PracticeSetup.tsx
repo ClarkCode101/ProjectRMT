@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Check, ChevronRight, Play, RotateCcw, Shuffle, SlidersHorizontal, X } from 'lucide-react'
+import { Check, Play, RotateCcw, Shuffle, SlidersHorizontal, Star, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Dialog } from '@/components/Dialog'
@@ -35,33 +35,9 @@ type Props = {
 /** What she picked: nothing yet (just the rack), one subject, or a mix of all. */
 type Choice = { kind: 'none' } | { kind: 'all' } | { kind: 'subject'; subjectId: number }
 
-const ACTION_TONE = {
-  primary: { box: 'border-primary/25 bg-primary/[0.07] hover:border-primary/45 hover:bg-primary/[0.11]', icon: 'bg-primary' },
-  wrong: { box: 'border-wrong/25 bg-wrong-soft/70 hover:border-wrong/45 hover:bg-wrong-soft', icon: 'bg-wrong' },
-} as const
-
-const actionCardClass =
-  'group flex min-h-14 w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left shadow-[0_8px_18px_-12px_rgb(7_71_94/0.5)] outline-none transition hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-0 sm:w-72'
-
-/**
- * The inside of a "start another way" button: a colored icon, a name + one-line hint, and an arrow.
- * Tinted, raised and with an arrow so it clearly reads as a button (the stats in the header are plain text, so they don't).
- */
-function ActionCardBody({ icon, title, hint, tone, badge }: { icon: ReactNode; title: string; hint: string; tone: keyof typeof ACTION_TONE; badge?: number }) {
-  return (
-    <>
-      <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-full text-white', ACTION_TONE[tone].icon)}>{icon}</span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2 font-heading leading-tight font-bold">
-          {title}
-          {badge !== undefined && <span className="rounded-full bg-wrong px-1.5 text-xs font-bold text-white tabular-nums">{badge}</span>}
-        </span>
-        <span className="block text-xs text-muted-foreground">{hint}</span>
-      </span>
-      <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
-    </>
-  )
-}
+/** The small secondary buttons under "Start here" (tinted, not gold; same as the ones on Home's subject card). */
+const smallButtonClass =
+  'flex h-10 items-center justify-center gap-2 rounded-lg bg-primary/[0.08] px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
 
 /**
  * A topic choice (a real radio button, styled as a pill).
@@ -194,63 +170,68 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
   const smartPickLabel = pick?.kind === 'topic' ? `${pick.subjectCode} · ${pick.topicName}` : (pick?.subjectCode ?? 'a mix')
 
   return (
-    // Wide on tablets and laptops so the rack (the one focal point here) can use the space.
-    // Tablets and laptops: exactly one screen tall (100dvh minus AppLayout's top and bottom padding = 2.5rem),
-    // and the rack shrinks to fit, so the page never scrolls. Phones: normal scrolling page.
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 md:h-[calc(100dvh-2.5rem)] md:min-h-[24rem]">
+    // Same layout as Mock exam and Flashcards: header, the scene (the rack on the bench), the gold button
+    // centered under it with small secondary buttons, then one quiet line at the bottom.
+    <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="Practice"
         subtitle={
           <>
             Tap a tube to choose a subject.
-            <RackKey />
+            {/* A quick read of where she stands (the same numbers as Home's Board readiness), as part of the subtitle. */}
+            {overall.answered > 0 && (
+              <>
+                {' '}
+                <span className={cn('font-bold tabular-nums', overall.passingSubjects < overall.totalSubjects ? 'text-wrong' : 'text-correct')}>
+                  {overall.passingSubjects} of {overall.totalSubjects}
+                </span>{' '}
+                subjects passing
+                {overall.accuracy !== null && (
+                  <>
+                    {' · '}Overall{' '}
+                    <span className={cn('font-bold tabular-nums', overall.accuracy < 0.6 ? 'text-wrong' : 'text-correct')}>{formatPercent(overall.accuracy)}</span>
+                  </>
+                )}
+                .
+              </>
+            )}
           </>
-        }
-        actions={
-          // A quick read of where she stands (the same numbers as Home's Board readiness).
-          // Plain text on purpose (no pill or border), so it can't be mistaken for a button.
-          overall.answered > 0 && (
-            <p className="text-sm text-muted-foreground sm:text-right">
-              <span className={cn('font-bold tabular-nums', overall.passingSubjects < overall.totalSubjects ? 'text-wrong' : 'text-correct')}>
-                {overall.passingSubjects} of {overall.totalSubjects}
-              </span>{' '}
-              subjects passing
-              {overall.accuracy !== null && (
-                <>
-                  {' · '}Overall{' '}
-                  <span className={cn('font-bold tabular-nums', overall.accuracy < 0.6 ? 'text-wrong' : 'text-correct')}>{formatPercent(overall.accuracy)}</span>
-                </>
-              )}
-            </p>
-          )
         }
       />
 
-      {/* ---------- The rack, always on the page (the other ways to start are centered under it) ---------- */}
-      <div className="flex min-h-0 flex-col gap-3">
-        <SpecimenRack
-          summary={summary}
-          selectedId={subjectId}
-          onSelect={chooseSubject}
-          recommendedId={performance.isPending ? null : (pick?.subjectId ?? null)}
-          recommendedLabel={smartPickLabel}
-          onRecommendedClick={chooseSmartPick}
-          footerActions={
-            <div className="space-y-2">
-              <p className="text-center text-xs font-semibold tracking-wide text-muted-foreground uppercase">Or start another way</p>
-              <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
-                <button type="button" onClick={chooseMix} className={cn(actionCardClass, ACTION_TONE.primary.box)}>
-                  <ActionCardBody icon={<Shuffle className="size-4.5" aria-hidden />} title="Mix all subjects" hint="A bit of everything" tone="primary" />
-                </button>
-                {mistakeCount > 0 && (
-                  <Link to="/practice?from=mistakes" className={cn(actionCardClass, ACTION_TONE.wrong.box)}>
-                    <ActionCardBody icon={<RotateCcw className="size-4.5" aria-hidden />} title="Review again" hint="Questions you got wrong" tone="wrong" badge={mistakeCount} />
-                  </Link>
-                )}
-              </div>
-            </div>
-          }
-        />
+      {/* ---------- The rack on the bench ---------- */}
+      <SpecimenRack summary={summary} selectedId={subjectId} onSelect={chooseSubject} recommendedId={performance.isPending ? null : (pick?.subjectId ?? null)} />
+
+      {/* ---------- Start: Smart pick as the gold button (the star on the rack marks the same tube), then the other ways ---------- */}
+      <div className="flex flex-col items-center gap-3">
+        <button
+          type="button"
+          onClick={chooseSmartPick}
+          disabled={performance.isPending}
+          title={`Smart pick: ${smartPickLabel}`}
+          className={cn(heroButtonClass, 'w-auto max-w-full px-7 focus-visible:ring-ring/50')}
+        >
+          <Star className="size-5 shrink-0 fill-current" aria-hidden />
+          <span className="truncate">Start here · {smartPickLabel}</span>
+        </button>
+        <div className="flex flex-wrap justify-center gap-2">
+          <button type="button" onClick={chooseMix} className={smallButtonClass}>
+            <Shuffle className="size-4" aria-hidden />
+            Mix all subjects
+          </button>
+          {mistakeCount > 0 && (
+            <Link to="/practice?from=mistakes" className={smallButtonClass}>
+              <RotateCcw className="size-4" aria-hidden />
+              Review again
+              <span className="rounded-full bg-wrong px-1.5 text-xs font-bold text-white tabular-nums">{mistakeCount}</span>
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* ---------- How to read the rack: one quiet line at the bottom (like the run protocol on Mock exam) ---------- */}
+      <div className="flex justify-center border-t border-dashed pt-3">
+        <RackKey />
       </div>
 
       {/* ---------- The popup: big tube on the left, topics + Start on the right ---------- */}

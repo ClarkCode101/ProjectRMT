@@ -1,5 +1,4 @@
-import { ChevronDown } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Star } from 'lucide-react'
 import { LabBench } from '@/components/LabBench'
 import { formatPercent, type SubjectSummary } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
@@ -10,16 +9,14 @@ import { tubeStatus, type TubeStatus } from './tube'
 // - One dashed "60% pass" line runs across every tube, so she sees at a glance who's above it.
 // - The cap is red when the subject is below 60%, green when passing, gray when not started.
 // - The tubes stand in a rack: a top plate they go through, and a base they sit on.
-// - "Start here" marks the subject Smart pick recommends; tapping it opens that subject with the topic picked.
+// - A small gold star marks the subject Smart pick recommends (the gold "Start here" button under the rack opens it).
 // Each tube is a real radio button, so keyboard and screen readers work like any other choice.
 
 /**
  * Size of a tube's glass in the rack. Its width grows with the rack's width (phone → tablet → laptop).
- * Height: on tablets and laptops the Practice page is exactly one screen tall, and every box from the page
- * down to the glass is allowed to shrink (min-h-0). The glass would like to be 24rem tall but shrinks
- * (down to 5rem) so the page fits without scrolling, whatever the screen, font size or zoom.
+ * Height stays compact (at most 13rem), like the other pages' scenes, so the buttons under the rack fit on one screen.
  */
-const RACK_GLASS = 'h-32 w-8 border-2 border-t-0 @md:h-40 @md:w-11 @xl:h-[24rem] @xl:w-14 @3xl:w-15 md:min-h-20 md:shrink'
+const RACK_GLASS = 'h-32 w-8 border-2 border-t-0 @md:h-40 @md:w-11 @xl:h-52 @xl:w-14 @3xl:w-15'
 
 const CAP_COLOR: Record<TubeStatus, string> = { low: 'bg-wrong', passing: 'bg-correct', new: 'bg-border' }
 
@@ -146,63 +143,42 @@ export function SpecimenRack({
   selectedId,
   onSelect,
   recommendedId = null,
-  recommendedLabel = '',
-  onRecommendedClick,
-  footerActions,
 }: {
   summary: SubjectSummary[]
   selectedId: number | null
   onSelect: (subjectId: number) => void
-  /** the subject Smart pick recommends; gets a "Start here" button over its tube */
+  /** the subject Smart pick recommends: a small gold star over its tube (the "Start here" button sits under the rack) */
   recommendedId?: number | null
-  /** what Smart pick would open, e.g. "MICRO · Parasitology" (tooltip + screen readers) */
-  recommendedLabel?: string
-  onRecommendedClick?: () => void
-  /** buttons centered under the rack */
-  footerActions?: ReactNode
 }) {
   return (
-    // Widths follow its own width (container queries); heights can shrink to fit the screen (min-h-0 all the way down).
-    <fieldset className="@container flex min-h-0 flex-col">
+    // Widths follow its own width (container queries). A fixed, compact height, like the Mock exam analyzer and the
+    // Flashcards microscope, so the scene leaves room for the buttons under it.
+    <fieldset className="@container">
       <legend className="sr-only">Subject</legend>
       {/* No card around it: the rack already has its own frame (plate + base), so it stands on the page,
           on a "lab bench" surface, like an object rather than a box of data. */}
-      <div className="flex min-h-0 flex-col">
-        {/* Tubes sit close together in the middle (like a real rack), not spread to the edges. */}
-        {/* Extra top room for the "Start here" tag; extra right room for the "60% pass" label. */}
-        <div className="relative flex min-h-0 justify-center gap-1 px-2 pt-6 pr-9 pb-2 @md:gap-2 @md:px-4 @md:pt-7 @md:pr-12 @xl:gap-4 @xl:pt-8 @xl:pb-4 @3xl:gap-8">
-          {/* The bench: a soft surface from the rack's base down, fading out at the sides, with a shadow under the rack.
-              Its height = the labels under the tubes + half the base (keep in step with the label sizes). */}
-          <LabBench className="h-[3.9rem] @xl:h-[4.9rem] @3xl:h-[5.1rem]" />
-          {summary.map((s, i) => (
-            // The "Start here" button sits next to the tube's label, not inside it (a button inside a label confuses screen readers).
-            <div key={s.subjectId} className="relative flex min-h-0">
-              <Tube
-                subject={s}
-                checked={selectedId === s.subjectId}
-                recommended={recommendedId === s.subjectId}
-                first={i === 0}
-                last={i === summary.length - 1}
-                onChange={() => onSelect(s.subjectId)}
-              />
-              {recommendedId === s.subjectId && onRecommendedClick && (
-                // Plain text with a small arrow pointing down at the tube: no pill or sparkle, so it stays quiet.
-                <button
-                  type="button"
-                  onClick={onRecommendedClick}
-                  title={`Smart pick: ${recommendedLabel}`}
-                  aria-label={`Start here, Smart pick: ${recommendedLabel}`}
-                  className="absolute top-0 left-1/2 z-30 inline-flex -translate-x-1/2 -translate-y-3/4 items-center gap-0.5 rounded-md px-1.5 py-0.5 text-xs font-bold whitespace-nowrap text-primary outline-none hover:underline hover:underline-offset-2 focus-visible:ring-3 focus-visible:ring-ring/40 @xl:text-sm"
-                >
-                  <ChevronDown className="size-3.5 @xl:size-4" aria-hidden />
-                  Start here
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-        {/* The other ways to start, centered under the rack so the whole page shares one center line. */}
-        {footerActions && <div className="shrink-0 pt-4">{footerActions}</div>}
+      {/* Tubes sit close together in the middle (like a real rack), not spread to the edges. */}
+      {/* Extra top room for the star; extra right room for the "60% pass" label. */}
+      <div className="relative flex justify-center gap-1 px-2 pt-6 pr-9 pb-2 @md:gap-2 @md:px-4 @md:pr-12 @xl:gap-4 @3xl:gap-6">
+        {/* The bench: a soft surface from the rack's base down, fading out at the sides, with a shadow under the rack.
+            Its height = the labels under the tubes + half the base (keep in step with the label sizes). */}
+        <LabBench className="h-[3.9rem] @xl:h-[4.9rem] @3xl:h-[5.1rem]" />
+        {summary.map((s, i) => (
+          <div key={s.subjectId} className="relative flex">
+            <Tube
+              subject={s}
+              checked={selectedId === s.subjectId}
+              recommended={recommendedId === s.subjectId}
+              first={i === 0}
+              last={i === summary.length - 1}
+              onChange={() => onSelect(s.subjectId)}
+            />
+            {recommendedId === s.subjectId && (
+              // Just a marker: the matching gold "Start here" button is under the rack. The tube's label says it too.
+              <Star aria-hidden className="pointer-events-none absolute top-0 left-1/2 z-30 size-4 -translate-x-1/2 -translate-y-1/2 fill-highlight text-highlight @xl:size-5" />
+            )}
+          </div>
+        ))}
       </div>
     </fieldset>
   )
