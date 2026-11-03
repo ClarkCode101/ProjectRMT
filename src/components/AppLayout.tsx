@@ -1,7 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ChartNoAxesColumn,
-  ChevronDown,
   Ellipsis,
   House,
   Library,
@@ -9,11 +8,10 @@ import {
   NotebookPen,
   Play,
   RotateCcw,
-  Search,
   type LucideIcon,
 } from 'lucide-react'
-import { Suspense, useState, type FormEvent } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router'
+import { Suspense, useState } from 'react'
+import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '@/features/auth/authContext'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -94,12 +92,10 @@ function RailLink({ item }: { item: NavItem }) {
 
 export function AppLayout() {
   const queryClient = useQueryClient()
-  const navigate = useNavigate()
   const { session } = useAuth()
   const [focusMode, setFocusMode] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
-  const [search, setSearch] = useState('')
 
   const email = session?.user.email ?? ''
   const displayName = email.split('@')[0] || 'Reviewer'
@@ -109,14 +105,6 @@ export function AppLayout() {
     setProfileOpen(false)
     await supabase.auth.signOut()
     queryClient.clear() // forget cached quiz data from this account
-  }
-
-  // The top search looks through the question bank.
-  function submitSearch(event: FormEvent) {
-    event.preventDefault()
-    const text = search.trim()
-    navigate(text ? `/questions?search=${encodeURIComponent(text)}` : '/questions')
-    setSearch('')
   }
 
   return (
@@ -138,7 +126,7 @@ export function AppLayout() {
             </div>
           </header>
 
-          {/* Tablet and computer: round logo, a floating icon rail, and Log out at the bottom. */}
+          {/* Tablet and computer: round logo, a floating icon rail, and your account at the bottom. */}
           <div className="hidden md:block">
             <NavLink
               to="/"
@@ -154,92 +142,66 @@ export function AppLayout() {
               <RailLink item={PROGRESS} />
               <RailLink item={QUESTIONS} />
             </nav>
-            <button
-              type="button"
-              onClick={logOut}
-              aria-label="Log out"
-              className={cn('group fixed bottom-5 left-5 z-10 flex size-14 items-center justify-center rounded-full text-wrong hover:bg-wrong-soft', floating, focusRing)}
-            >
-              <LogOut className="size-5" aria-hidden />
-              <Tooltip>Log out</Tooltip>
-            </button>
-          </div>
-        </>
-      )}
-
-      <div className="mx-auto w-full max-w-6xl px-4 md:px-6 lg:px-8">
-        {!focusMode && (
-          // Top bar: search on the left; Start review and your profile on the right.
-          <div className="hidden items-center gap-3 pt-5 md:flex">
-            <form role="search" onSubmit={submitSearch} className="relative w-full max-w-md">
-              <label htmlFor="top-search" className="sr-only">
-                Search questions
-              </label>
-              <Search className="pointer-events-none absolute top-1/2 left-4 size-4.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <input
-                id="top-search"
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search questions…"
-                className={cn('h-12 w-full rounded-full border-0 pr-4 pl-11 outline-none placeholder:text-muted-foreground focus-visible:ring-3 focus-visible:ring-ring/40', floating)}
-              />
-            </form>
-            <div className="ml-auto flex items-center gap-3">
-              <NavLink
-                to="/practice"
-                className={cn(
-                  'flex h-12 items-center gap-2 rounded-full bg-highlight px-5 font-heading font-bold whitespace-nowrap text-foreground shadow-[0_10px_24px_-14px_rgb(233_162_59/0.9)] hover:brightness-105',
-                  focusRing,
-                )}
+            {/* Your account, bottom-left (like most sidebar apps): tap the avatar to see your full name, email and Log out. */}
+            <div className="fixed bottom-5 left-5 z-30">
+              <button
+                type="button"
+                onClick={() => setProfileOpen((open) => !open)}
+                aria-expanded={profileOpen}
+                aria-haspopup="menu"
+                aria-label={`Account: ${displayName}`}
+                className={cn('group relative flex size-14 items-center justify-center rounded-full', floating, focusRing)}
               >
-                <Play className="size-4 fill-current" aria-hidden />
-                Start review
-              </NavLink>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen((open) => !open)}
-                  aria-expanded={profileOpen}
-                  aria-haspopup="menu"
-                  aria-label="Account menu"
-                  className={cn('flex h-12 items-center gap-2.5 rounded-full pr-3 pl-1.5', floating, focusRing)}
-                >
-                  <span className="flex size-9 items-center justify-center rounded-full bg-primary-deep font-heading font-bold text-white uppercase">
-                    {displayName.charAt(0)}
-                  </span>
-                  <span className="hidden text-left leading-tight lg:block">
-                    <span className="block max-w-36 truncate text-sm font-bold">{displayName}</span>
-                    <span className="block text-xs text-muted-foreground">MTLE reviewer</span>
-                  </span>
-                  <ChevronDown className={cn('size-4 text-muted-foreground transition-transform', profileOpen && 'rotate-180')} aria-hidden />
-                </button>
-                {profileOpen && (
-                  <>
-                    {/* Click anywhere else to close. */}
-                    <button type="button" aria-label="Close menu" tabIndex={-1} className="fixed inset-0 z-20 cursor-default" onClick={() => setProfileOpen(false)} />
-                    <div role="menu" className="animate-in fade-in zoom-in-95 absolute right-0 z-30 mt-2 w-60 rounded-xl border bg-card p-2 shadow-lg duration-100">
-                      <p className="truncate px-2 pt-1 pb-2 text-xs text-muted-foreground">{email}</p>
+                <span className="flex size-10 items-center justify-center rounded-full bg-primary-deep font-heading text-lg font-bold text-white uppercase">
+                  {displayName.charAt(0)}
+                </span>
+                {!profileOpen && <Tooltip>Account</Tooltip>}
+              </button>
+              {profileOpen && (
+                <>
+                  {/* Click anywhere else to close. */}
+                  <button type="button" aria-label="Close menu" tabIndex={-1} className="fixed inset-0 -z-10 cursor-default" onClick={() => setProfileOpen(false)} />
+                  {/* Opens to the right of the avatar, lined up with its bottom. */}
+                  <div
+                    role="menu"
+                    aria-label="Account"
+                    onKeyDown={(e) => e.key === 'Escape' && setProfileOpen(false)}
+                    className="animate-in fade-in slide-in-from-left-2 absolute bottom-0 left-full ml-3 w-72 rounded-xl border bg-card p-2 shadow-lg duration-150"
+                  >
+                    <div className="flex items-center gap-3 px-2 pt-2 pb-3">
+                      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary-deep font-heading text-lg font-bold text-white uppercase">
+                        {displayName.charAt(0)}
+                      </span>
+                      <div className="min-w-0 leading-tight">
+                        {/* Full name and email, not cut off ("break-all" lets a long email wrap). */}
+                        <p className="font-heading font-bold break-all">{displayName}</p>
+                        <p className="mt-0.5 text-sm break-all text-muted-foreground">{email}</p>
+                        <p className="mt-1 text-xs font-semibold text-primary">MTLE reviewer</p>
+                      </div>
+                    </div>
+                    <div className="border-t pt-2">
                       <button
                         type="button"
                         role="menuitem"
                         autoFocus
                         onClick={logOut}
-                        onKeyDown={(e) => e.key === 'Escape' && setProfileOpen(false)}
                         className={cn('flex h-10 w-full items-center gap-2 rounded-lg px-2 text-sm font-semibold text-wrong hover:bg-wrong-soft', focusRing)}
                       >
                         <LogOut className="size-4" aria-hidden />
                         Log out
                       </button>
                     </div>
-                  </>
-                )}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        )}
+        </>
+      )}
 
-        {/* Home's height math (HomePage) counts on: top bar 4.25rem + pt-5 + pb-5 here = about 6.75rem. */}
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-6 lg:px-8">
+        {/* No top bar on tablet/computer (search lives on the Questions page). The one-screen pages
+            (Home, Practice) count on this padding: pt-5 + pb-5 = 2.5rem. */}
         <main className={cn('pb-6 md:pb-5', focusMode ? 'pt-[calc(1rem+env(safe-area-inset-top))] lg:pt-6' : 'pt-2 md:pt-5')}>
           {/* Pages are lazy-loaded; this shows while a page's code downloads. */}
           <Suspense fallback={<FullPageMessage>Loading…</FullPageMessage>}>
