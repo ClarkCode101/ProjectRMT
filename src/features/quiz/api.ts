@@ -1,5 +1,5 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
-import type { Json, QuestionSource } from '@/lib/database.types'
+import type { Json, QuestionSource, SessionMode } from '@/lib/database.types'
 import { parseChoices } from '@/lib/quiz'
 import type { HistoryAttempt } from '@/lib/selection'
 import { supabase } from '@/lib/supabase'
@@ -129,11 +129,11 @@ export function useUploads() {
 }
 
 /** Creates a quiz_sessions row and returns its id. */
-export async function startSession(filters: QuizFilters, totalItems: number): Promise<string> {
+export async function startSession(filters: QuizFilters, totalItems: number, mode: SessionMode = 'practice'): Promise<string> {
   const { data, error } = await supabase
     .from('quiz_sessions')
     .insert({
-      mode: 'practice',
+      mode,
       total_items: totalItems,
       filters: {
         source: filters.source,
@@ -165,6 +165,18 @@ export async function recordAttempt(attempt: {
     is_correct: attempt.isCorrect,
     time_ms: attempt.timeMs,
   })
+  if (error) throw error
+}
+
+/** Saves many answers at once (the mock exam saves them all when she submits). */
+export async function recordAttempts(
+  sessionId: string,
+  attempts: { questionId: string; selectedIndex: number; isCorrect: boolean }[],
+) {
+  if (attempts.length === 0) return
+  const { error } = await supabase.from('attempts').insert(
+    attempts.map((a) => ({ session_id: sessionId, question_id: a.questionId, selected_index: a.selectedIndex, is_correct: a.isCorrect })),
+  )
   if (error) throw error
 }
 

@@ -61,7 +61,7 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 
 ### Phase 3 — Study modes
 - [x] **Question Source selector** used by every mode (see §6)
-- [ ] **Mock exam mode**: timed, 100 items per subject, no feedback until submit, review screen afterwards
+- [x] **Mock exam mode**: timed, 100 items per subject, no feedback until submit, review screen afterwards
 - [ ] **Flashcards** with FSRS spaced repetition (Again / Hard / Good / Easy)
 - [x] **Smart anti-repeat selection** (see §6)
 - [x] **Shuffle choices** every time
@@ -451,7 +451,7 @@ mtle-reviewer/
 9. [x] Manual add/edit/verify questions + coverage map
 10. [x] Upload + parse + duplicate review
 11. [x] Source selector + smart selection
-12. [ ] Mock exam
+12. [x] Mock exam
 13. [ ] Flashcards (ts-fsrs)
 14. [ ] Reference page, planner, streak, encouragements
 15. [ ] PWA + iOS polish
