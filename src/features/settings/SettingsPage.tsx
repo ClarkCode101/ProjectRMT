@@ -1,12 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { CalendarClock, Check, Target } from 'lucide-react'
+import { CalendarClock, Check, RotateCcw, Target } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/button'
 import { countdownLabel, daysUntil, isValidDate } from '@/lib/planner'
 import { cn } from '@/lib/utils'
-import { DAILY_TARGET_CHOICES, saveStudySettings, useStudySettings, type StudySettings } from './api'
+import { DAILY_TARGET_CHOICES, resetProgress, saveStudySettings, useStudySettings, type StudySettings } from './api'
 
 /** One settings block: an icon, a title + hint, and its control. */
 function Section({ icon, title, hint, children }: { icon: ReactNode; title: string; hint: string; children: ReactNode }) {
@@ -123,6 +123,107 @@ function SettingsForm({ initial }: { initial: StudySettings }) {
   )
 }
 
+const CONFIRM_WORD = 'RESET'
+
+/** Danger zone: wipes her progress after she types RESET. Kept apart from the form so it can't be hit by accident. */
+function ResetProgress() {
+  const queryClient = useQueryClient()
+  const [open, setOpen] = useState(false)
+  const [typed, setTyped] = useState('')
+  const [status, setStatus] = useState<'idle' | 'resetting' | 'done' | 'error'>('idle')
+
+  function close() {
+    setOpen(false)
+    setTyped('')
+  }
+
+  async function handleReset(event: FormEvent) {
+    event.preventDefault()
+    if (typed.trim() !== CONFIRM_WORD) return
+    setStatus('resetting')
+    try {
+      await resetProgress()
+      // Every page's stats come from these tables, so refetch everything except her settings.
+      await queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'study-settings' })
+      setStatus('done')
+      close()
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  return (
+    <section className="space-y-4 rounded-2xl border border-destructive/40 bg-card p-5" aria-labelledby="reset-title">
+      <div className="flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <RotateCcw className="size-5" aria-hidden />
+        </span>
+        <div className="space-y-1">
+          <h2 id="reset-title" className="font-heading text-lg font-bold">
+            Reset progress
+          </h2>
+          <p className="text-sm text-muted-foreground">Start fresh. This can’t be undone.</p>
+          <p className="text-sm">
+            <span className="font-semibold">Deletes:</span> quiz and mock exam history, scores, streak, flashcard schedule.
+            <br />
+            <span className="font-semibold">Keeps:</span> your own questions, uploads, exam date and daily goal.
+          </p>
+        </div>
+      </div>
+
+      {open ? (
+        <form onSubmit={handleReset} className="space-y-3 rounded-xl bg-destructive/5 p-4">
+          <label htmlFor="reset-confirm" className="block text-sm font-semibold">
+            Type {CONFIRM_WORD} to confirm
+          </label>
+          <input
+            id="reset-confirm"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            autoComplete="off"
+            autoFocus
+            className="h-12 w-full max-w-xs rounded-lg border border-input bg-background px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" className="h-11 rounded-lg px-4" onClick={close} disabled={status === 'resetting'}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="h-11 rounded-lg bg-destructive px-4 font-heading font-bold text-white hover:bg-destructive/85"
+              disabled={typed.trim() !== CONFIRM_WORD || status === 'resetting'}
+            >
+              {status === 'resetting' ? 'Deleting…' : 'Delete all progress'}
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 rounded-lg border-destructive/50 px-4 font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => {
+            setOpen(true)
+            setStatus('idle')
+          }}
+        >
+          Reset progress…
+        </Button>
+      )}
+
+      <p role="status" className="text-sm">
+        {status === 'done' && (
+          <span className="inline-flex items-center gap-1.5 font-semibold text-correct">
+            <Check className="size-4" aria-hidden />
+            Progress reset. You’re starting fresh.
+          </span>
+        )}
+        {status === 'error' && <span className="text-destructive">Couldn’t reset. Check your internet connection and try again.</span>}
+      </p>
+    </section>
+  )
+}
+
 export default function SettingsPage() {
   const settings = useStudySettings()
   if (settings.isPending) return <FullPageMessage>Loading…</FullPageMessage>
@@ -131,6 +232,7 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader title="Settings" subtitle="Your study plan." />
       <SettingsForm initial={settings.data} />
+      <ResetProgress />
     </div>
   )
 }

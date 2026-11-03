@@ -35,3 +35,32 @@ export async function saveStudySettings(settings: StudySettings) {
     .upsert({ exam_date: settings.examDate, daily_target: settings.dailyTarget }, { onConflict: 'user_id' })
   if (error) throw error
 }
+
+/** Device-only progress keys (unfinished mock exam, milestones already shown). */
+const LOCAL_PROGRESS_KEYS = ['projectrmt:mock-exam', 'projectrmt:seen-milestones']
+const FLASHCARD_SETTINGS_KEY = 'projectrmt:flashcards'
+
+/**
+ * Deletes all of her progress: answers, quiz/mock sessions and flashcard schedule.
+ * Keeps her own questions, uploads and study settings.
+ */
+export async function resetProgress() {
+  const { data } = await supabase.auth.getSession()
+  const userId = data.session?.user.id
+  if (!userId) throw new Error('Not signed in')
+
+  // Attempts first, then the sessions they belong to, then the flashcard schedule.
+  for (const table of ['attempts', 'quiz_sessions', 'review_states'] as const) {
+    const { error } = await supabase.from(table).delete().eq('user_id', userId)
+    if (error) throw error
+  }
+
+  try {
+    LOCAL_PROGRESS_KEYS.forEach((key) => localStorage.removeItem(key))
+    // Keep her "new cards per day" choice; only clear today's count.
+    const flashcards = JSON.parse(localStorage.getItem(FLASHCARD_SETTINGS_KEY) ?? 'null') as Record<string, unknown> | null
+    if (flashcards) localStorage.setItem(FLASHCARD_SETTINGS_KEY, JSON.stringify({ ...flashcards, newDoneToday: 0 }))
+  } catch {
+    // storage blocked: nothing saved on this device to clear
+  }
+}
