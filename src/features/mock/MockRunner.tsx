@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight, Flag, LayoutGrid, Timer, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Check, ChevronLeft, ChevronRight, CircleDashed, Flag, ListChecks, Timer, X } from 'lucide-react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { Button } from '@/components/ui/button'
 import type { QuizQuestion } from '@/features/quiz/api'
@@ -19,64 +19,78 @@ type Props = {
   onLeave: () => void
 }
 
-/** The clock, red in the last 5 minutes. */
+// The exam screen, drawn as the analyzer "running" (it follows the analyzer on the setup screen):
+// - a dark run bar on top (status light, subject, item number, the clock, progress), always in view
+// - below it, only the item on screen
+// - a Review sheet (from the run bar, the R key, or "Review & submit" on the last item) that lists just
+//   the flagged and blank items to jump back to, and is also where she submits
+// The run bar and the item share one column width, so their edges line up.
+
+// Status light color on the dark bar (same as the setup display): brighter than the brand green so it looks lit.
+const LED_ON = 'bg-[#5EE39A]'
+
+/** The clock in the run bar. The whole bar turns red in the last 5 minutes. */
 function Clock({ left, className }: { left: number; className?: string }) {
-  const low = left <= LOW_TIME_SEC
   return (
-    <p className={cn('flex items-center gap-1.5 font-heading font-bold tabular-nums', low && 'text-wrong', className)} aria-live="off">
-      <Timer className={cn('size-[1.1em]', low && 'animate-pulse')} aria-hidden />
+    <p className={cn('flex items-center gap-1.5 font-mono font-bold tabular-nums', className)} aria-live="off">
+      <Timer className="size-[0.9em] opacity-70" aria-hidden />
       {formatClock(left)}
       <span className="sr-only"> left</span>
     </p>
   )
 }
 
-/**
- * The item grid: one square per item. Filled = answered, gold corner = flagged, ring = the one on screen.
- * Tap a square to jump to that item.
- */
-function Navigator({ exam, onJump }: { exam: SavedMock; onJump: (index: number) => void }) {
-  const answered = exam.answers.filter((a) => a !== null).length
-  const flagged = exam.flags.filter(Boolean).length
+/** One group in the Review sheet: a heading and the item numbers to jump to. */
+function ItemGroup({
+  icon,
+  title,
+  items,
+  kind,
+  current,
+  onJump,
+}: {
+  icon: ReactNode
+  title: string
+  /** item indexes (0-based) */
+  items: number[]
+  kind: 'flagged' | 'blank'
+  current: number
+  onJump: (index: number) => void
+}) {
   return (
-    <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        <span className="font-bold text-foreground tabular-nums">{answered}</span> answered ·{' '}
-        <span className="font-bold text-foreground tabular-nums">{exam.answers.length - answered}</span> blank ·{' '}
-        <span className="font-bold text-foreground tabular-nums">{flagged}</span> flagged
-      </p>
-      <ol className="grid grid-cols-10 gap-1" aria-label="Items">
-        {exam.answers.map((answer, i) => {
-          const isCurrent = i === exam.current
-          return (
-            <li key={i}>
-              <button
-                type="button"
-                onClick={() => onJump(i)}
-                aria-current={isCurrent ? 'step' : undefined}
-                aria-label={`Item ${i + 1}${answer !== null ? ', answered' : ', blank'}${exam.flags[i] ? ', flagged' : ''}`}
-                className={cn(
-                  'relative flex aspect-square w-full items-center justify-center rounded-[5px] text-[11px] font-bold tabular-nums outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                  answer !== null ? 'bg-primary text-white' : 'bg-secondary text-muted-foreground hover:bg-primary/15',
-                  isCurrent && 'ring-2 ring-foreground ring-offset-1',
-                )}
-              >
-                {i + 1}
-                {exam.flags[i] && <span className="absolute top-0 right-0 size-2 rounded-tr-[5px] rounded-bl-[3px] bg-highlight" aria-hidden />}
-              </button>
-            </li>
-          )
-        })}
-      </ol>
-    </div>
+    <section className="space-y-2">
+      <h3 className="flex items-center gap-2 text-sm font-bold">
+        {icon}
+        {title} <span className="font-normal text-muted-foreground tabular-nums">({items.length})</span>
+      </h3>
+      {/* Long lists (e.g. many blanks on a 100-item exam) scroll inside, so the buttons below stay in view. */}
+      <ul className="flex max-h-32 flex-wrap gap-1.5 overflow-y-auto p-0.5" aria-label={title}>
+        {items.map((index) => (
+          <li key={index}>
+            <button
+              type="button"
+              onClick={() => onJump(index)}
+              aria-current={index === current ? 'step' : undefined}
+              aria-label={`Go to item ${index + 1}`}
+              className={cn(
+                'flex h-10 min-w-10 items-center justify-center rounded-full border-2 px-2 font-mono text-sm font-bold tabular-nums outline-none hover:border-primary focus-visible:ring-3 focus-visible:ring-ring/40',
+                kind === 'flagged' ? 'border-highlight bg-highlight-soft' : 'border-transparent bg-secondary shadow-[inset_0_2px_3px_rgb(7_71_94/0.18)]',
+                index === current && 'ring-2 ring-foreground ring-offset-2 ring-offset-card',
+              )}
+            >
+              {index + 1}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
 export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Props) {
   const subjectOf = useSubjectOfTopic()
   const [now, setNow] = useState(() => Date.now())
-  const [confirm, setConfirm] = useState<'none' | 'leave' | 'submit'>('none')
-  const [itemsOpen, setItemsOpen] = useState(false)
+  const [open, setOpen] = useState<'none' | 'leave' | 'review'>('none')
 
   // Tick once a second. The time left is always worked out from when the exam started,
   // so it stays right even if the tab was asleep.
@@ -101,8 +115,10 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
   const selected = exam.answers[i]
   const subject = subjectOf(question.topic_id)
   const isLast = i === questions.length - 1
-  const blanks = exam.answers.filter((a) => a === null).length
-  const flagged = exam.flags.filter(Boolean).length
+  const flaggedItems = exam.flags.flatMap((f, index) => (f ? [index] : []))
+  const blankItems = exam.answers.flatMap((a, index) => (a === null ? [index] : []))
+  const answered = questions.length - blankItems.length
+  const low = left <= LOW_TIME_SEC
 
   function update(change: Partial<SavedMock>) {
     onChange({ ...exam, ...change })
@@ -120,17 +136,17 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
   function go(index: number) {
     if (index < 0 || index >= questions.length) return
     update({ current: index })
-    setItemsOpen(false)
+    setOpen('none')
     window.scrollTo({ top: 0 })
   }
   function submitNow() {
     if (submitted.current) return
     submitted.current = true
-    setConfirm('none')
+    setOpen('none')
     onSubmit(exam, false)
   }
 
-  // Keyboard on a computer: A–D picks, ← → moves, F flags.
+  // Keyboard on a computer: A–D picks, ← → moves, F flags, R opens Review.
   // The listener reads the latest handlers through a ref, so it always acts on the item on screen.
   const keys = useRef({ choose, go, toggleFlag, order, i })
   useEffect(() => {
@@ -144,6 +160,7 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
       if (event.key === 'ArrowRight') return k.go(k.i + 1)
       if (event.key === 'ArrowLeft') return k.go(k.i - 1)
       if (event.key.toLowerCase() === 'f') return k.toggleFlag()
+      if (event.key.toLowerCase() === 'r') return setOpen('review')
       const position = LETTERS.indexOf(event.key.toUpperCase())
       if (position !== -1 && position < k.order.length) k.choose(k.order[position])
     }
@@ -152,42 +169,81 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
   }, [])
 
   return (
-    // Laptops: the item on the left, the clock + item grid + Submit on the right.
-    // Phones and tablets: one column; the item grid opens from the "Items" button.
-    <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-8">
-      <div className="min-w-0 space-y-5">
-        <div className="flex items-center justify-between gap-3 text-sm">
+    // One column for everything (run bar + item), narrow enough for comfortable reading lines.
+    <div className="mx-auto max-w-3xl space-y-6">
+      {/* ---------- The run bar: always in view (sticky), the one dark area on this screen ----------
+          Last 5 minutes: the whole bar turns red and the light blinks, a stronger warning than a red number. */}
+      <header
+        className={cn(
+          'sticky top-[calc(0.5rem+env(safe-area-inset-top))] z-20 space-y-2.5 rounded-2xl px-3 pt-2.5 pb-3 text-white shadow-[0_16px_32px_-20px_rgb(7_71_94/0.8)] transition-colors duration-500 sm:px-4',
+          low ? 'bg-wrong' : 'bg-primary-deep',
+        )}
+      >
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             type="button"
-            onClick={() => setConfirm('leave')}
-            className="-ml-2 flex h-10 items-center gap-1 rounded-md px-2 font-semibold text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+            onClick={() => setOpen('leave')}
+            className="-ml-1 flex h-10 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-white/75 outline-none hover:bg-white/10 hover:text-white focus-visible:ring-3 focus-visible:ring-white/60"
           >
             <X className="size-4" aria-hidden />
             Exit
           </button>
-          <p className="font-heading font-semibold text-muted-foreground tabular-nums">
-            Item <span className="text-foreground">{i + 1}</span> of {questions.length}
+          <p className="flex min-w-0 flex-1 items-center gap-2 text-xs font-bold tracking-widest uppercase">
+            <span className={cn('size-2.5 shrink-0 rounded-full shadow-[0_0_10px_2px_rgb(255_255_255/0.25)] ring-2 ring-white/20', low ? 'led-blink bg-white' : LED_ON)} aria-hidden />
+            <span className="truncate">
+              {low ? 'Low time' : 'Running'}
+              <span className="hidden font-semibold text-white/70 md:inline"> · {exam.label}</span>
+            </span>
           </p>
-          <div className="flex items-center gap-2 lg:hidden">
-            <Clock left={left} className="text-base" />
-            <button
-              type="button"
-              onClick={() => setItemsOpen(true)}
-              aria-haspopup="dialog"
-              aria-label="All items"
-              className="flex size-10 items-center justify-center rounded-md border bg-card outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
-            >
-              <LayoutGrid className="size-4.5" aria-hidden />
-            </button>
-          </div>
-          <span className="hidden w-16 lg:block" aria-hidden />
+          <p className="hidden font-mono text-sm font-bold text-white/80 tabular-nums sm:block">
+            Item <span className="text-white">{i + 1}</span>/{questions.length}
+          </p>
+          <Clock left={left} className="text-xl sm:text-2xl" />
+          {/* Review opens only when she asks (also with R), so nothing sits beside the question while she reads.
+              The gold badge says there are flagged items to come back to, without opening it. */}
+          <button
+            type="button"
+            onClick={() => setOpen('review')}
+            aria-haspopup="dialog"
+            aria-keyshortcuts="R"
+            aria-label={`Review${flaggedItems.length > 0 ? `, ${flaggedItems.length} flagged` : ''}`}
+            className="relative flex h-10 shrink-0 items-center gap-2 rounded-lg bg-white/10 px-2.5 text-sm font-semibold outline-none hover:bg-white/15 focus-visible:ring-3 focus-visible:ring-white/60 sm:px-3"
+          >
+            <ListChecks className="size-4.5" aria-hidden />
+            <span className="hidden sm:inline">Review</span>
+            {flaggedItems.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-highlight px-1 text-xs font-bold text-foreground tabular-nums" aria-hidden>
+                {flaggedItems.length}
+              </span>
+            )}
+          </button>
         </div>
+        {/* progress: how many items have an answer */}
+        <div className="flex items-center gap-3">
+          <div
+            className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/15"
+            role="progressbar"
+            aria-label="Answered"
+            aria-valuemin={0}
+            aria-valuemax={questions.length}
+            aria-valuenow={answered}
+          >
+            <div className="h-full rounded-full bg-highlight transition-[width] duration-300" style={{ width: `${(answered / questions.length) * 100}%` }} />
+          </div>
+          <p className="shrink-0 text-xs text-white/75 tabular-nums">
+            <span className="font-bold text-white">{answered}</span> of {questions.length} answered
+          </p>
+        </div>
+      </header>
 
+      {/* ---------- The item on screen ---------- */}
+      <div className="space-y-5">
         {/* key: remount per item so it gets a fresh entrance */}
         <article key={i} className="animate-in fade-in space-y-2 duration-200">
           <p className="text-sm text-muted-foreground">
+            <span className="font-mono font-bold text-foreground tabular-nums sm:hidden">Item {i + 1} · </span>
             <span className="font-heading font-bold text-primary">{subject.code ?? '—'}</span>
-            {subject.topicName && <> {subject.topicName}</>}
+            {subject.topicName && <> · {subject.topicName}</>}
           </p>
           <p className="text-xl leading-snug font-bold sm:text-2xl">{question.stem}</p>
         </article>
@@ -209,10 +265,11 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
                   isSelected ? 'border-primary bg-primary/[0.06] ring-1 ring-primary' : 'hover:border-primary/60',
                 )}
               >
+                {/* A keycap, so it's clear the letter key picks this choice. */}
                 <span
                   className={cn(
-                    'flex size-8 shrink-0 items-center justify-center rounded-lg font-heading text-sm font-bold transition-colors',
-                    isSelected ? 'bg-primary text-white' : 'bg-secondary text-foreground',
+                    'flex size-8 shrink-0 items-center justify-center rounded-md border border-b-[3px] font-mono text-sm font-bold transition-colors',
+                    isSelected ? 'border-primary-deep bg-primary text-white' : 'border-border bg-card text-foreground group-hover:border-primary/50',
                   )}
                 >
                   {LETTERS[displayPos]}
@@ -239,7 +296,7 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
             {exam.flags[i] ? 'Flagged' : 'Flag'}
           </Button>
           {isLast ? (
-            <Button className="ml-auto h-12 flex-1 rounded-xl font-heading text-base font-bold sm:flex-none sm:px-6" onClick={() => setConfirm('submit')}>
+            <Button className="ml-auto h-12 flex-1 rounded-xl font-heading text-base font-bold sm:flex-none sm:px-6" onClick={() => setOpen('review')}>
               Review & submit
             </Button>
           ) : (
@@ -249,74 +306,70 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
             </Button>
           )}
         </div>
-        <p className="hidden text-center text-xs text-muted-foreground md:block">A–D to answer · ← → to move · F to flag. You can change answers until you submit.</p>
+        <p className="hidden text-center text-xs text-muted-foreground md:block">
+          Keys: A–D answer · ← → move · F flag · R review. Answers can change until you submit.
+        </p>
       </div>
 
-      {/* ---------- Laptop side panel ---------- */}
-      <aside className="hidden space-y-5 self-start rounded-2xl border bg-card p-4 lg:sticky lg:top-6 lg:block" aria-label="Exam">
-        <div>
-          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Time left</p>
-          <Clock left={left} className="text-3xl" />
-        </div>
-        <Navigator exam={exam} onJump={go} />
-        <Button className="h-11 w-full rounded-lg font-heading font-bold" onClick={() => setConfirm('submit')}>
-          Submit exam
-        </Button>
-      </aside>
-
-      {/* ---------- Phones and tablets: the item grid in a sheet ---------- */}
-      <Dialog open={itemsOpen} onClose={() => setItemsOpen(false)} labelledBy="items-heading" variant="sheet">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <h2 id="items-heading" className="font-heading text-lg font-bold">
-              All items
+      {/* ---------- Review: only the items worth going back to, and Submit (the one place to submit, besides the last item) ---------- */}
+      <Dialog open={open === 'review'} onClose={() => setOpen('none')} labelledBy="review-heading" variant="sheet">
+        <div className="space-y-5">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="review-heading" className="font-heading text-xl font-bold">
+              Review
             </h2>
-            <Clock left={left} />
-          </div>
-          <Navigator exam={exam} onJump={go} />
-          <Button
-            className="h-11 w-full rounded-lg font-heading font-bold"
-            onClick={() => {
-              setItemsOpen(false)
-              setConfirm('submit')
-            }}
-          >
-            Submit exam
-          </Button>
-        </div>
-      </Dialog>
-
-      <Dialog open={confirm === 'submit'} onClose={() => setConfirm('none')} labelledBy="submit-heading">
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <h2 id="submit-heading" className="text-xl font-bold">
-              Submit your exam?
-            </h2>
-            <p className="text-muted-foreground">
-              {blanks > 0 ? (
-                <>
-                  <span className="font-bold text-wrong">{blanks} blank</span> {blanks === 1 ? 'item counts' : 'items count'} as wrong.{' '}
-                </>
-              ) : (
-                'Every item has an answer. '
-              )}
-              {flagged > 0 && <>You flagged {flagged} to check again. </>}
-              You can’t change answers after this.
+            <p className="text-sm text-muted-foreground tabular-nums">
+              <span className="font-bold text-foreground">{answered}</span> of {questions.length} answered
             </p>
           </div>
-          {/* "Keep answering" first, so the dialog focuses the safe choice. */}
+
+          {flaggedItems.length === 0 && blankItems.length === 0 ? (
+            <p className="flex items-center gap-2 rounded-xl bg-correct-soft px-3.5 py-3 text-sm font-semibold text-correct">
+              <Check className="size-4.5 shrink-0" aria-hidden />
+              Every item has an answer, and nothing is flagged.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {flaggedItems.length > 0 && (
+                <ItemGroup
+                  icon={<Flag className="size-4 fill-highlight text-[#9A5B00]" aria-hidden />}
+                  title="Flagged"
+                  items={flaggedItems}
+                  kind="flagged"
+                  current={i}
+                  onJump={go}
+                />
+              )}
+              {blankItems.length > 0 && (
+                <ItemGroup icon={<CircleDashed className="size-4 text-muted-foreground" aria-hidden />} title="Blank" items={blankItems} kind="blank" current={i} onJump={go} />
+              )}
+            </div>
+          )}
+
+          <p className="text-sm text-muted-foreground">
+            {blankItems.length > 0 && (
+              <>
+                <span className="font-bold text-wrong">
+                  {blankItems.length} blank {blankItems.length === 1 ? 'item counts' : 'items count'} as wrong.
+                </span>{' '}
+              </>
+            )}
+            You can’t change answers after you submit.
+          </p>
+
+          {/* "Keep answering" first, so the safe choice comes before Submit. */}
           <div className="grid gap-2 sm:grid-cols-2">
-            <Button variant="outline" className="h-11 rounded-lg text-base sm:order-1" onClick={() => setConfirm('none')}>
+            <Button variant="outline" className="h-11 rounded-lg text-base" onClick={() => setOpen('none')}>
               Keep answering
             </Button>
-            <Button className="h-11 rounded-lg text-base font-bold sm:order-2" onClick={submitNow}>
-              Submit
+            <Button className="h-11 rounded-lg font-heading text-base font-bold" onClick={submitNow}>
+              Submit exam
             </Button>
           </div>
         </div>
       </Dialog>
 
-      <Dialog open={confirm === 'leave'} onClose={() => setConfirm('none')} labelledBy="leave-heading">
+      <Dialog open={open === 'leave'} onClose={() => setOpen('none')} labelledBy="leave-heading">
         <div className="space-y-4">
           <div className="space-y-1">
             <h2 id="leave-heading" className="text-xl font-bold">
@@ -325,7 +378,7 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
             <p className="text-muted-foreground">Your answers are saved on this device, and you can resume from the Mock exam page. The timer keeps running, like the real exam.</p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
-            <Button className="h-11 rounded-lg text-base font-bold sm:order-2" onClick={() => setConfirm('none')}>
+            <Button className="h-11 rounded-lg text-base font-bold sm:order-2" onClick={() => setOpen('none')}>
               Keep going
             </Button>
             <Button variant="outline" className="h-11 rounded-lg text-base sm:order-1" onClick={onLeave}>
