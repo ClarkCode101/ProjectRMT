@@ -48,6 +48,7 @@ export function useRefreshBank() {
     void queryClient.invalidateQueries({ queryKey: ['question-bank'] })
     void queryClient.invalidateQueries({ queryKey: ['mistakes'] })
     void queryClient.invalidateQueries({ queryKey: ['warmup'] })
+    void queryClient.invalidateQueries({ queryKey: ['question-pool'] })
   }
 }
 

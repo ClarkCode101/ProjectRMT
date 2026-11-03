@@ -141,6 +141,34 @@ export function overallStats(summary: readonly SubjectSummary[]): OverallStats {
   }
 }
 
+export type SmartPick =
+  | { kind: 'topic'; subjectId: number; subjectCode: string; topicId: number; topicName: string; accuracy: number }
+  | { kind: 'subject'; subjectId: number; subjectCode: string }
+
+/**
+ * "Smart pick" on Practice: the single best thing to study next.
+ * 1. The weakest topic below 60% in any subject (more answers wins a tie, since that score is surer).
+ * 2. Otherwise a subject she hasn't started yet.
+ * 3. Otherwise nothing: everything is passing, so she can choose.
+ */
+export function smartPick(summary: readonly SubjectSummary[]): SmartPick | null {
+  const weakTopics = summary.flatMap((s) => s.topics.filter((t) => t.belowPassing).map((t) => ({ subject: s, topic: t })))
+  weakTopics.sort((a, b) => a.topic.accuracy - b.topic.accuracy || b.topic.attempts - a.topic.attempts)
+  const weakest = weakTopics[0]
+  if (weakest) {
+    return {
+      kind: 'topic',
+      subjectId: weakest.subject.subjectId,
+      subjectCode: weakest.subject.code,
+      topicId: weakest.topic.topicId,
+      topicName: weakest.topic.name,
+      accuracy: weakest.topic.accuracy,
+    }
+  }
+  const notStarted = summary.find((s) => s.accuracy === null)
+  return notStarted ? { kind: 'subject', subjectId: notStarted.subjectId, subjectCode: notStarted.code } : null
+}
+
 /** 0.756 -> "76%" */
 export function formatPercent(rate: number): string {
   return `${Math.round(rate * 100)}%`

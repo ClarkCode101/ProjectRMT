@@ -6,6 +6,7 @@ import {
   parseChoices,
   shuffle,
   shuffledChoiceOrder,
+  smartPick,
   summarizePerformance,
 } from './quiz'
 
@@ -177,5 +178,35 @@ describe('formatPercent', () => {
     expect(formatPercent(0.756)).toBe('76%')
     expect(formatPercent(0)).toBe('0%')
     expect(formatPercent(1)).toBe('100%')
+  })
+})
+
+describe('smartPick', () => {
+  const topic = (topicId: number, accuracy: number, attempts = 5) => ({ topicId, name: `T${topicId}`, attempts, accuracy, belowPassing: accuracy < 0.6 })
+  const subject = (subjectId: number, code: string, topics: ReturnType<typeof topic>[], accuracy: number | null = 0.5) => ({
+    subjectId,
+    code,
+    name: code,
+    attempts: topics.reduce((sum, t) => sum + t.attempts, 0),
+    accuracy,
+    belowPassing: accuracy !== null && accuracy < 0.6,
+    topics,
+  })
+
+  it('picks the weakest topic below 60% across all subjects', () => {
+    const pick = smartPick([subject(1, 'CC', [topic(10, 0.4), topic(11, 0.9)]), subject(2, 'HEMA', [topic(20, 0.2)])])
+    expect(pick).toEqual({ kind: 'topic', subjectId: 2, subjectCode: 'HEMA', topicId: 20, topicName: 'T20', accuracy: 0.2 })
+  })
+
+  it('breaks a tie with the topic that has more answers', () => {
+    const pick = smartPick([subject(1, 'CC', [topic(10, 0, 1), topic(11, 0, 6)])])
+    expect(pick).toMatchObject({ kind: 'topic', topicId: 11 })
+  })
+
+  it('falls back to a subject not started yet, then to nothing', () => {
+    const passing = subject(1, 'CC', [topic(10, 0.8)], 0.8)
+    expect(smartPick([passing, subject(2, 'CM', [], null)])).toEqual({ kind: 'subject', subjectId: 2, subjectCode: 'CM' })
+    expect(smartPick([passing])).toBeNull()
+    expect(smartPick([])).toBeNull()
   })
 })

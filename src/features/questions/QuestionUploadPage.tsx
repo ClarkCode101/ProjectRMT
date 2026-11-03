@@ -132,6 +132,8 @@ export default function QuestionUploadPage() {
           void queryClient.invalidateQueries({ queryKey: ['question-bank'] })
           void queryClient.invalidateQueries({ queryKey: ['warmup'] })
           void queryClient.invalidateQueries({ queryKey: ['mistakes'] })
+          void queryClient.invalidateQueries({ queryKey: ['question-pool'] })
+          void queryClient.invalidateQueries({ queryKey: ['uploads'] }) // new file for "One upload"
           setStage({ name: 'done', added, replaced, fileName: stage.fileName })
         }}
       />

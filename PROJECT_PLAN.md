@@ -60,10 +60,10 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 - [x] **Topic coverage map**: question count per topic (✅ enough / ⚠️ few / ❌ none)
 
 ### Phase 3 — Study modes
-- [ ] **Question Source selector** used by every mode (see §6)
+- [x] **Question Source selector** used by every mode (see §6)
 - [ ] **Mock exam mode**: timed, 100 items per subject, no feedback until submit, review screen afterwards
 - [ ] **Flashcards** with FSRS spaced repetition (Again / Hard / Good / Easy)
-- [ ] **Smart anti-repeat selection** (see §6)
+- [x] **Smart anti-repeat selection** (see §6)
 - [x] **Shuffle choices** every time
 
 ### Phase 4 — Extras & personal touch
@@ -139,7 +139,7 @@ Give every candidate question a priority score:
 3. **Always correct** → low priority
 4. Never repeat within the same session
 5. Shuffle the choices on every display
-6. If fewer than N unseen questions remain for a topic → show "Kaunti na lang ang bagong tanong dito — magdagdag?"
+6. If fewer unseen questions remain than the items asked for → show "Only N new questions left here. Add more?" (UI is English only)
 
 **Flashcards** use the FSRS `due` date from `review_states` instead.
 
@@ -450,7 +450,7 @@ mtle-reviewer/
 8. [x] Dashboard (Recharts) — built with simple bars instead of Recharts
 9. [x] Manual add/edit/verify questions + coverage map
 10. [x] Upload + parse + duplicate review
-11. [ ] Source selector + smart selection
+11. [x] Source selector + smart selection
 12. [ ] Mock exam
 13. [ ] Flashcards (ts-fsrs)
 14. [ ] Reference page, planner, streak, encouragements
