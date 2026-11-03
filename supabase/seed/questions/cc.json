@@ -5,7 +5,7 @@
     "stem": "Which method is considered the reference method for glucose determination?",
     "choices": ["Glucose oxidase", "Hexokinase", "Folin-Wu", "o-Toluidine"],
     "correct_index": 1,
-    "explanation": "The hexokinase method is the reference method because it is highly specific and less affected by interferences than glucose oxidase.",
+    "explanation": "The hexokinase method is the reference method because it is highly specific and less affected by interferences than glucose oxidase. Folin-Wu and o-toluidine are older, less specific methods. Reference: StatPearls, Hexokinase Method (ncbi.nlm.nih.gov/books/NBK587446).",
     "difficulty": 1
   },
   {
@@ -14,7 +14,7 @@
     "stem": "Which enzyme is the most specific marker for acute pancreatitis?",
     "choices": ["Amylase", "Lipase", "Alkaline phosphatase", "Gamma-glutamyltransferase"],
     "correct_index": 1,
-    "explanation": "Lipase is more specific to the pancreas than amylase and stays elevated longer after an attack of acute pancreatitis.",
+    "explanation": "Lipase is more specific to the pancreas than amylase and stays elevated longer after an attack of acute pancreatitis. Reference: StatPearls, Biochemistry, Lipase (ncbi.nlm.nih.gov/books/NBK537346).",
     "difficulty": 1
   },
   {
@@ -23,7 +23,7 @@
     "stem": "Which lipoprotein carries most of the cholesterol to peripheral tissues?",
     "choices": ["Chylomicrons", "VLDL", "LDL", "HDL"],
     "correct_index": 2,
-    "explanation": "LDL delivers cholesterol to peripheral cells (the 'bad' cholesterol). HDL does reverse cholesterol transport back to the liver.",
+    "explanation": "LDL delivers cholesterol to peripheral cells (the 'bad' cholesterol). HDL does reverse cholesterol transport back to the liver. Reference: StatPearls, Biochemistry, Cholesterol (ncbi.nlm.nih.gov/books/NBK513326).",
     "difficulty": 1
   },
   {
@@ -32,7 +32,7 @@
     "stem": "Which formula correctly computes the anion gap (without potassium)?",
     "choices": ["Na⁺ − (Cl⁻ + HCO₃⁻)", "(Na⁺ + K⁺) − Cl⁻", "Cl⁻ − (Na⁺ + HCO₃⁻)", "Na⁺ + Cl⁻ − HCO₃⁻"],
     "correct_index": 0,
-    "explanation": "Anion gap = Na⁺ − (Cl⁻ + HCO₃⁻). When potassium is included it becomes (Na⁺ + K⁺) − (Cl⁻ + HCO₃⁻).",
+    "explanation": "Anion gap = Na⁺ − (Cl⁻ + HCO₃⁻). When potassium is included it becomes (Na⁺ + K⁺) − (Cl⁻ + HCO₃⁻). Reference: StatPearls, Biochemistry, Anion Gap (ncbi.nlm.nih.gov/books/NBK539757).",
     "difficulty": 2
   },
   {
@@ -41,7 +41,97 @@
     "stem": "The Jaffe reaction for creatinine uses which reagent?",
     "choices": ["Diacetyl monoxime", "Alkaline picrate", "Phosphotungstic acid", "o-Cresolphthalein complexone"],
     "correct_index": 1,
-    "explanation": "In the Jaffe reaction, creatinine reacts with alkaline picrate to form a red-orange complex. Diacetyl monoxime is for urea, phosphotungstic acid for uric acid, and o-cresolphthalein for calcium.",
+    "explanation": "In the Jaffe reaction, creatinine reacts with alkaline picrate to form a red-orange complex. Diacetyl monoxime is for urea, phosphotungstic acid for uric acid, and o-cresolphthalein for calcium. Reference: Peake & Whiting, Measurement of Serum Creatinine, Clin Biochem Rev 2006 (pmc.ncbi.nlm.nih.gov/articles/PMC1784008).",
     "difficulty": 2
+  },
+  {
+    "subject": "CC",
+    "topic": "Endocrinology",
+    "stem": "What is the best initial screening test for suspected primary thyroid dysfunction?",
+    "choices": ["Free T3", "TSH", "Total T4", "Thyroglobulin"],
+    "correct_index": 1,
+    "explanation": "TSH is the most sensitive indicator of thyroid dysfunction, so it is the first-line screening test; free T4 is added when TSH is abnormal. Reference: StatPearls, Physiology, Thyroid Stimulating Hormone (ncbi.nlm.nih.gov/books/NBK499850).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CC",
+    "topic": "Endocrinology",
+    "stem": "In healthy adults, serum cortisol is normally highest:",
+    "choices": ["Around midnight", "In the late afternoon", "In the early morning, soon after waking", "Right after the evening meal"],
+    "correct_index": 2,
+    "explanation": "Cortisol follows a 24-hour (circadian) rhythm: it peaks in the early morning after waking and is lowest around midnight, so the collection time matters. Reference: Development of 24-Hour Rhythms in Cortisol Secretion, meta-analysis (pmc.ncbi.nlm.nih.gov/articles/PMC11747683).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CC",
+    "topic": "Instrumentation & QC",
+    "stem": "In Westgard multirule quality control, the 1-3s rule is violated when:",
+    "choices": ["Two consecutive controls exceed the same ±2SD limit", "One control result falls outside the mean ±3SD", "One control exceeds +2SD and another exceeds −2SD in the same run", "Ten consecutive results fall on one side of the mean"],
+    "correct_index": 1,
+    "explanation": "1-3s = a single control beyond ±3SD. It is a rejection rule and usually points to random error. 2-2s detects systematic error, R-4s random error within a run, and 10x a shift. Reference: Westgard QC, Westgard Rules (westgard.com/westgard-rules.html).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CC",
+    "topic": "Instrumentation & QC",
+    "stem": "According to Beer's law, the absorbance of a solution is:",
+    "choices": ["Inversely proportional to its concentration", "Directly proportional to its concentration and the light path length", "Independent of the light path length", "Equal to its percent transmittance"],
+    "correct_index": 1,
+    "explanation": "A = εbc: absorbance rises linearly with concentration and path length, so a plot of absorbance against concentration is a straight line through zero (it bends at high concentrations). Reference: Chemistry LibreTexts, Beer-Lambert Law (chem.libretexts.org, Organic Chemistry Glossary).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CC",
+    "topic": "Liver Function",
+    "stem": "An AST:ALT ratio of 2:1 or higher most suggests:",
+    "choices": ["Viral hepatitis", "Alcohol-related liver damage", "Biliary obstruction", "Acute pancreatitis"],
+    "correct_index": 1,
+    "explanation": "AST rises more than ALT in alcohol-related liver disease, so an AST:ALT ratio of 2:1 or more points to it. Reference: StatPearls, Conjugated Hyperbilirubinemia (ncbi.nlm.nih.gov/books/NBK562172) and Alcohol-Associated Liver Disease (ncbi.nlm.nih.gov/books/NBK546632).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CC",
+    "topic": "Liver Function",
+    "stem": "Which enzyme rises most markedly in biliary (obstructive) liver disease?",
+    "choices": ["Alkaline phosphatase", "ALT", "Lipase", "Creatine kinase"],
+    "correct_index": 0,
+    "explanation": "A marked rise in alkaline phosphatase, with normal or only mildly raised transaminases, points to biliary obstruction. Reference: StatPearls, Hyperbilirubinemia (ncbi.nlm.nih.gov/books/NBK544252).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CC",
+    "topic": "Proteins",
+    "stem": "The most abundant protein in human plasma is:",
+    "choices": ["Fibrinogen", "Immunoglobulin G", "Albumin", "Transferrin"],
+    "correct_index": 2,
+    "explanation": "Albumin makes up about half of total plasma protein (3.5–5 g/dL) and most of the plasma oncotic pressure. Reference: StatPearls, Physiology, Albumin (ncbi.nlm.nih.gov/books/NBK459198).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CC",
+    "topic": "Proteins",
+    "stem": "The biuret method for total protein is based on:",
+    "choices": ["Aromatic amino acids absorbing light at 280 nm", "Peptide bonds forming a violet complex with Cu²⁺ in alkaline solution", "Free amino groups reacting with ninhydrin", "Dye binding to albumin only"],
+    "correct_index": 1,
+    "explanation": "In alkaline solution, cupric ions bind the nitrogens of peptide bonds and turn violet; free amino acids do not react. It is simple but relatively insensitive. Reference: Biology LibreTexts, Fundamentals of Biochemistry, 3.3 Proteins: Analyses and Structural Predictions (bio.libretexts.org).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CC",
+    "topic": "Toxicology & TDM",
+    "stem": "In therapeutic drug monitoring, a trough level is collected:",
+    "choices": ["At the time of peak absorption", "Immediately before the next dose", "Exactly 1 hour after an IV dose", "At any random time"],
+    "correct_index": 1,
+    "explanation": "The trough is the lowest concentration, reached just before the next dose; the peak reflects maximum absorption. Reference: Overview of Therapeutic Drug Monitoring (pmc.ncbi.nlm.nih.gov/articles/PMC2687654).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CC",
+    "topic": "Toxicology & TDM",
+    "stem": "Carbon monoxide is toxic mainly because it:",
+    "choices": ["Oxidizes heme iron to the ferric state", "Binds hemoglobin about 200–250 times more strongly than oxygen", "Inhibits acetylcholinesterase", "Lyses red blood cells"],
+    "correct_index": 1,
+    "explanation": "CO forms carboxyhemoglobin, which cannot carry oxygen. Oxidized (ferric) heme iron is methemoglobin, and acetylcholinesterase inhibition is the mechanism of organophosphates. Reference: StatPearls, Carbon Monoxide Poisoning (ncbi.nlm.nih.gov/books/NBK557888).",
+    "difficulty": 1
   }
 ]

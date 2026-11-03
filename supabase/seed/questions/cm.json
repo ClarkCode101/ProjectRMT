@@ -5,7 +5,7 @@
     "stem": "The reagent strip test for urine protein is based on the principle of:",
     "choices": ["Diazo reaction", "Protein error of indicators", "Pseudoperoxidase activity", "Sodium nitroprusside reaction"],
     "correct_index": 1,
-    "explanation": "The protein pad uses the protein error of indicators (e.g. tetrabromophenol blue). Diazo = bilirubin, pseudoperoxidase = blood, nitroprusside = ketones.",
+    "explanation": "The protein pad uses the protein error of indicators (e.g. tetrabromophenol blue). Diazo = bilirubin, pseudoperoxidase = blood, nitroprusside = ketones. Reference: Wikipedia, Urine test strip, Protein testing (en.wikipedia.org/wiki/Urine_test_strip).",
     "difficulty": 1
   },
   {
@@ -14,7 +14,7 @@
     "stem": "Which urine crystal is described as having a 'coffin-lid' shape?",
     "choices": ["Calcium oxalate", "Uric acid", "Triple phosphate", "Cystine"],
     "correct_index": 2,
-    "explanation": "Triple phosphate (ammonium magnesium phosphate) crystals look like coffin lids and are seen in alkaline urine.",
+    "explanation": "Triple phosphate (ammonium magnesium phosphate) crystals look like coffin lids and are seen in alkaline urine. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AAFP 2005 (aafp.org/afp/2005/0315/p1153).",
     "difficulty": 1
   },
   {
@@ -28,7 +28,7 @@
       "Yellow-brown spheres with concentric striations"
     ],
     "correct_index": 0,
-    "explanation": "Cystine forms colorless hexagonal plates in acidic urine. Envelope shapes = calcium oxalate dihydrate; needles = tyrosine; striated spheres = leucine.",
+    "explanation": "Cystine forms colorless hexagonal plates in acidic urine. Envelope shapes = calcium oxalate dihydrate; needles = tyrosine; striated spheres = leucine. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AAFP 2005 (aafp.org/afp/2005/0315/p1153).",
     "difficulty": 2
   },
   {
@@ -37,7 +37,61 @@
     "stem": "The presence of WBC casts in urine is most suggestive of:",
     "choices": ["Acute glomerulonephritis", "Pyelonephritis", "Cystitis", "Nephrotic syndrome"],
     "correct_index": 1,
-    "explanation": "WBC casts form in the tubules, so they point to kidney infection/inflammation such as pyelonephritis. Cystitis (bladder) gives WBCs but no casts; RBC casts suggest glomerulonephritis.",
+    "explanation": "WBC casts form in the tubules, so they point to infection or inflammation within the kidney: pyelonephritis (and also interstitial nephritis). Cystitis (bladder) gives WBCs but no casts; RBC casts suggest glomerulonephritis. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AAFP 2005 (aafp.org/afp/2005/0315/p1153).",
     "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Body Fluids",
+    "stem": "Xanthochromia of cerebrospinal fluid refers to:",
+    "choices": ["A cloudy appearance from many white cells", "A yellowish color, mainly from bilirubin after bleeding into the CSF", "A clot that forms in the collection tube", "A greenish color from bacterial pigment"],
+    "correct_index": 1,
+    "explanation": "Xanthochromia is yellow CSF from bilirubin as red cells break down; it is best seen 6–12 hours after a bleed and supports subarachnoid hemorrhage, though it is not specific for it. Reference: StatPearls, Xanthochromia (ncbi.nlm.nih.gov/books/NBK526048).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Body Fluids",
+    "stem": "Needle-shaped, negatively birefringent crystals in synovial fluid indicate:",
+    "choices": ["Pseudogout (calcium pyrophosphate)", "Gout (monosodium urate)", "Septic arthritis", "Cholesterol crystal effusion"],
+    "correct_index": 1,
+    "explanation": "Monosodium urate crystals of gout are needle-shaped and negatively birefringent under polarized light; finding them is the gold standard for diagnosis. CPPD crystals of pseudogout are positively birefringent. Reference: StatPearls, Gout (ncbi.nlm.nih.gov/books/NBK546606) and Monoarticular Arthritis (ncbi.nlm.nih.gov/books/NBK542164).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Fecalysis",
+    "stem": "The guaiac fecal occult blood test detects blood through:",
+    "choices": ["Antibodies against human globin", "The pseudoperoxidase activity of heme", "Oxidation of bilirubin", "Prussian blue staining of iron"],
+    "correct_index": 1,
+    "explanation": "Heme's pseudoperoxidase activity releases oxygen from hydrogen peroxide, which oxidizes the guaiac chromogen. The fecal immunochemical test (FIT) uses antibodies to human globin instead. Reference: StatPearls, Fecal Occult Blood Test (ncbi.nlm.nih.gov/books/NBK537138).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Fecalysis",
+    "stem": "Compared with guaiac testing, the fecal immunochemical test (FIT):",
+    "choices": ["Reacts with any peroxidase, including plant peroxidases", "Is specific for human globin and needs no dietary restriction", "Does not need a stool sample", "Also measures fecal fat"],
+    "correct_index": 1,
+    "explanation": "FIT targets human globin with antibodies, so food peroxidases don't interfere and no diet restriction is needed; it is also more sensitive for colorectal cancer. Reference: Guaiac-based faecal occult blood tests versus faecal immunochemical tests, Cochrane review (pmc.ncbi.nlm.nih.gov/articles/PMC9169237).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Physical Exam of Urine",
+    "stem": "A urine specific gravity that stays fixed at about 1.010 (isosthenuria) suggests:",
+    "choices": ["Dehydration", "Loss of the kidney's concentrating ability", "Diabetes mellitus", "Normal kidney function"],
+    "correct_index": 1,
+    "explanation": "In intrinsic renal insufficiency the specific gravity is fixed at 1.010, the specific gravity of the glomerular filtrate. Normal values range from 1.003 to 1.030. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AAFP 2005 (aafp.org/afp/2005/0315/p1153).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Physical Exam of Urine",
+    "stem": "Cloudy urine is most often caused by:",
+    "choices": ["Bilirubin", "Precipitated phosphate crystals in alkaline urine (or pyuria)", "Ketones", "Glucose"],
+    "correct_index": 1,
+    "explanation": "Cloudy urine is often from phosphate crystals that precipitate in alkaline urine, but pus (pyuria) can also cause it. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AAFP 2005 (aafp.org/afp/2005/0315/p1153).",
+    "difficulty": 1
   }
 ]

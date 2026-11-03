@@ -2,10 +2,10 @@
   {
     "subject": "BBIS",
     "topic": "ABO & H System",
-    "stem": "Individuals with the Bombay (Oh) phenotype lack which antigen on their red cells?",
+    "stem": "The Bombay (Oh) phenotype is defined by the absence of which antigen on red cells?",
     "choices": ["A antigen only", "B antigen only", "H antigen", "D antigen"],
     "correct_index": 2,
-    "explanation": "Bombay individuals (hh) cannot make H antigen, the precursor of A and B, so they have no A, B, or H antigens and produce anti-A, anti-B, and anti-H.",
+    "explanation": "Bombay individuals (hh) cannot make H antigen, the precursor of A and B, so they have no A, B, or H antigens and produce anti-A, anti-B, and anti-H. Reference: Dean, Blood Groups and Red Cell Antigens, The Hh blood group (ncbi.nlm.nih.gov/books/NBK2268).",
     "difficulty": 2
   },
   {
@@ -14,7 +14,7 @@
     "stem": "Anti-D produced after exposure to D-positive red cells is mostly of which immunoglobulin class?",
     "choices": ["IgM", "IgG", "IgA", "IgE"],
     "correct_index": 1,
-    "explanation": "Immune anti-D is mainly IgG. That is why it can cross the placenta and cause hemolytic disease of the fetus and newborn (HDFN).",
+    "explanation": "Immune anti-D is mainly IgG. That is why it can cross the placenta and cause hemolytic disease of the fetus and newborn (HDFN). Reference: Dean, Blood Groups and Red Cell Antigens, Hemolytic disease of the newborn (ncbi.nlm.nih.gov/books/NBK2266).",
     "difficulty": 1
   },
   {
@@ -23,7 +23,7 @@
     "stem": "Which test detects red cells that were sensitized with antibody or complement in vivo?",
     "choices": ["Indirect antiglobulin test", "Direct antiglobulin test", "Antibody screen", "Immediate spin crossmatch"],
     "correct_index": 1,
-    "explanation": "The DAT tests the patient's red cells directly for bound IgG or complement (in vivo sensitization). The IAT detects in vitro sensitization.",
+    "explanation": "The DAT tests the patient's red cells directly for bound IgG or complement (in vivo sensitization). The IAT detects in vitro sensitization. Reference: StatPearls, Rh Blood Group System (ncbi.nlm.nih.gov/books/NBK594252).",
     "difficulty": 1
   },
   {
@@ -32,7 +32,7 @@
     "stem": "Which immunoglobulin is the first to appear in a primary immune response?",
     "choices": ["IgM", "IgG", "IgA", "IgD"],
     "correct_index": 0,
-    "explanation": "IgM appears first in a primary response. IgG dominates the secondary (anamnestic) response.",
+    "explanation": "IgM appears first in a primary response. IgG dominates the secondary (anamnestic) response. Reference: OpenStax Microbiology, 18.4 B Lymphocytes and Humoral Immunity (openstax.org/books/microbiology/pages/18-4-b-lymphocytes-and-humoral-immunity).",
     "difficulty": 1
   },
   {
@@ -41,7 +41,43 @@
     "stem": "Platelet concentrates are stored at:",
     "choices": ["1–6 °C", "20–24 °C with continuous gentle agitation", "−18 °C or colder", "37 °C"],
     "correct_index": 1,
-    "explanation": "Platelets are kept at room temperature (20–24 °C) with continuous agitation to keep them viable. Cold storage causes them to lose function.",
+    "explanation": "Platelets are kept at room temperature (20–24 °C) with continuous gentle agitation to keep them viable. Cold storage causes them to lose function. Reference: Platelet Storage: Problems, Improvements, and New Perspectives, section 3.1 (pmc.ncbi.nlm.nih.gov/articles/PMC11277025).",
+    "difficulty": 1
+  },
+  {
+    "subject": "BBIS",
+    "topic": "Serologic Tests",
+    "stem": "Which of these syphilis tests is nontreponemal?",
+    "choices": ["TP-PA", "FTA-ABS", "RPR", "Treponemal EIA"],
+    "correct_index": 2,
+    "explanation": "RPR and VDRL are nontreponemal tests. TP-PA, FTA-ABS, and EIAs/CIAs detect antibodies to Treponema pallidum itself. A presumptive diagnosis needs one test of each kind. Reference: CDC STI Treatment Guidelines, Syphilis (cdc.gov/std/treatment-guidelines/syphilis.htm).",
+    "difficulty": 1
+  },
+  {
+    "subject": "BBIS",
+    "topic": "Serologic Tests",
+    "stem": "Which syphilis test is used to monitor the response to treatment?",
+    "choices": ["Quantitative nontreponemal titer (RPR or VDRL)", "TP-PA", "FTA-ABS", "Treponemal EIA"],
+    "correct_index": 0,
+    "explanation": "Nontreponemal titers usually fall and often become nonreactive after successful treatment, so they are followed over time; treponemal tests usually stay reactive. Titers from RPR and VDRL can't be compared directly. Reference: CDC STI Treatment Guidelines, Syphilis (cdc.gov/std/treatment-guidelines/syphilis.htm).",
+    "difficulty": 2
+  },
+  {
+    "subject": "BBIS",
+    "topic": "Transfusion Reactions & HDFN",
+    "stem": "The most frequent cause of an acute hemolytic transfusion reaction is:",
+    "choices": ["Bacterial contamination of the unit", "ABO incompatibility from a clerical error or patient misidentification", "Anti-IgA antibodies in the recipient", "Circulatory overload"],
+    "correct_index": 1,
+    "explanation": "Most acute hemolytic reactions come from ABO-incompatible blood given because of a clerical error or wrong patient identification. Anti-IgA causes anaphylaxis, and overload is TACO. Reference: What every physician should know about transfusion reactions (pmc.ncbi.nlm.nih.gov/articles/PMC1913131); StatPearls, ABO Blood Group System (ncbi.nlm.nih.gov/books/NBK580518).",
+    "difficulty": 1
+  },
+  {
+    "subject": "BBIS",
+    "topic": "Transfusion Reactions & HDFN",
+    "stem": "Rh immune globulin should be given to a D-negative mother who delivered a D-positive baby within:",
+    "choices": ["24 hours", "72 hours", "7 days", "28 days"],
+    "correct_index": 1,
+    "explanation": "RhIG is given within 72 hours of delivery (with a routine dose at 26–28 weeks) to prevent anti-D. A standard 300 µg dose covers about 15 mL of fetal red cells; a Kleihauer-Betke test guides extra doses for larger bleeds. Reference: StatPearls, Rho(D) Immune Globulin (ncbi.nlm.nih.gov/books/NBK557884) and Kleihauer-Betke Test (ncbi.nlm.nih.gov/books/NBK430876).",
     "difficulty": 1
   }
 ]

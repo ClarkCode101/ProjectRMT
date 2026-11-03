@@ -5,7 +5,7 @@
     "stem": "Which coagulation factor is known as the stable factor?",
     "choices": ["Factor V", "Factor VII", "Factor VIII", "Factor X"],
     "correct_index": 1,
-    "explanation": "Factor VII is called the stable factor because it is not consumed during clotting and is stable in stored plasma.",
+    "explanation": "Factor VII is also known as proconvertin or the stable factor. It is a vitamin K-dependent factor of the extrinsic pathway. Reference: PubMed 40727517 (Factor VII, also known as stable factor or proconvertin).",
     "difficulty": 2
   },
   {
@@ -14,7 +14,7 @@
     "stem": "Hemophilia A is caused by a deficiency of which coagulation factor?",
     "choices": ["Factor IX", "Factor VIII", "Factor XI", "Factor XII"],
     "correct_index": 1,
-    "explanation": "Hemophilia A is an X-linked deficiency of Factor VIII. Hemophilia B (Christmas disease) is a Factor IX deficiency.",
+    "explanation": "Hemophilia A is an X-linked deficiency of Factor VIII. Hemophilia B (Christmas disease) is a Factor IX deficiency. Reference: StatPearls, Bleeding Disorders (ncbi.nlm.nih.gov/books/NBK541050) and Hemophilia B (ncbi.nlm.nih.gov/books/NBK560792).",
     "difficulty": 1
   },
   {
@@ -28,7 +28,7 @@
       "(RBC count ÷ Hct in %) × 10"
     ],
     "correct_index": 1,
-    "explanation": "MCV = (Hct ÷ RBC count in millions/µL) × 10. Hgb ÷ RBC × 10 is MCH, and Hgb ÷ Hct × 100 is MCHC.",
+    "explanation": "MCV = (Hct ÷ RBC count in millions/µL) × 10. Hgb ÷ RBC × 10 is MCH, and Hgb ÷ Hct × 100 is MCHC. Reference: StatPearls, Mean Corpuscular Volume (ncbi.nlm.nih.gov/books/NBK545275).",
     "difficulty": 1
   },
   {
@@ -37,7 +37,7 @@
     "stem": "Howell-Jolly bodies are red cell inclusions composed of:",
     "choices": ["Denatured hemoglobin", "Nuclear remnants (DNA)", "Ribosomal RNA", "Iron granules"],
     "correct_index": 1,
-    "explanation": "Howell-Jolly bodies are DNA remnants, often seen after splenectomy. Denatured Hgb = Heinz bodies; RNA = basophilic stippling; iron = Pappenheimer bodies.",
+    "explanation": "Howell-Jolly bodies are DNA remnants, often seen after splenectomy. Denatured Hgb = Heinz bodies; RNA = basophilic stippling; iron = Pappenheimer bodies. Reference: StatPearls, Erythrocyte Inclusions (ncbi.nlm.nih.gov/books/NBK594259).",
     "difficulty": 2
   },
   {
@@ -51,7 +51,61 @@
       "Hairy cell leukemia"
     ],
     "correct_index": 2,
-    "explanation": "Auer rods are fused primary (azurophilic) granules found in myeloid blasts, so they point to AML rather than lymphoid leukemias.",
+    "explanation": "Auer rods are fused primary (azurophilic) granules found in myeloid blasts, so they point to AML rather than lymphoid leukemias. Reference: StatPearls, Laboratory Evaluation of Acute Leukemia (ncbi.nlm.nih.gov/books/NBK611988).",
     "difficulty": 2
+  },
+  {
+    "subject": "HEMA",
+    "topic": "Anemias",
+    "stem": "Which iron profile is typical of iron deficiency anemia?",
+    "choices": ["High ferritin, low TIBC", "Low serum iron, high TIBC, low ferritin", "Normal serum iron, TIBC, and ferritin", "Low serum iron, low TIBC, high ferritin"],
+    "correct_index": 1,
+    "explanation": "Iron deficiency gives low serum iron, high TIBC, and low ferritin, with microcytic, hypochromic cells. Anemia of chronic disease has a high ferritin, and thalassemia has normal iron studies. Ferritin is an acute-phase reactant, so inflammation can hide a low value. Reference: StatPearls, Chronic Anemia (ncbi.nlm.nih.gov/books/NBK568790) and Iron Deficiency and Microcytic Hypochromic Anemia (ncbi.nlm.nih.gov/books/NBK560876).",
+    "difficulty": 1
+  },
+  {
+    "subject": "HEMA",
+    "topic": "Anemias",
+    "stem": "Anemia with macrocytosis and hypersegmented neutrophils on the smear suggests:",
+    "choices": ["Iron deficiency anemia", "Megaloblastic anemia from vitamin B12 or folate deficiency", "Thalassemia minor", "Hereditary spherocytosis"],
+    "correct_index": 1,
+    "explanation": "Anemia with macrocytosis and hypersegmented neutrophils is megaloblastic anemia, mainly caused by vitamin B12 or folate deficiency. Reference: StatPearls, Macrocytic Anemia (ncbi.nlm.nih.gov/books/NBK459295).",
+    "difficulty": 1
+  },
+  {
+    "subject": "HEMA",
+    "topic": "Hematology Procedures",
+    "stem": "The anticoagulant of choice for a CBC and peripheral blood smear is:",
+    "choices": ["Sodium citrate (light blue top)", "EDTA (lavender top)", "Lithium heparin (green top)", "Sodium fluoride (gray top)"],
+    "correct_index": 1,
+    "explanation": "EDTA (lavender top) prevents clotting by binding calcium and preserves cell morphology, so it is used for the CBC and smear. Reference: StatPearls, Laboratory Tube Collection (ncbi.nlm.nih.gov/books/NBK555991).",
+    "difficulty": 1
+  },
+  {
+    "subject": "HEMA",
+    "topic": "Hematology Procedures",
+    "stem": "For PT and aPTT, blood is drawn into a 3.2% sodium citrate (light blue) tube at a blood-to-citrate ratio of:",
+    "choices": ["1:1", "4:1", "9:1", "1:9"],
+    "correct_index": 2,
+    "explanation": "Citrate binds calcium to keep the sample from clotting. The tube must be filled to at least 90% so the 9:1 blood-to-citrate ratio is kept; underfilling falsely prolongs results, especially the aPTT. Reference: StatPearls, Prothrombin Time (ncbi.nlm.nih.gov/books/NBK544269).",
+    "difficulty": 2
+  },
+  {
+    "subject": "HEMA",
+    "topic": "Hematopoiesis",
+    "stem": "Erythropoietin is produced mainly by the:",
+    "choices": ["Liver", "Peritubular interstitial cells of the kidney", "Bone marrow stroma", "Spleen"],
+    "correct_index": 1,
+    "explanation": "Most erythropoietin comes from peritubular interstitial fibroblasts in the kidney, released mainly in response to hypoxia. That is why chronic kidney disease causes anemia. Reference: StatPearls, Anemia (ncbi.nlm.nih.gov/books/NBK499994).",
+    "difficulty": 1
+  },
+  {
+    "subject": "HEMA",
+    "topic": "Hematopoiesis",
+    "stem": "In a healthy adult, red blood cells are produced in the:",
+    "choices": ["Yolk sac", "Liver", "Spleen", "Bone marrow"],
+    "correct_index": 3,
+    "explanation": "Hematopoiesis starts in the yolk sac, shifts to the fetal liver (and spleen), and the bone marrow takes over near the end of gestation. In adults it normally occurs only in the bone marrow. Reference: StatPearls, Embryology, Hematopoiesis (ncbi.nlm.nih.gov/books/NBK544245).",
+    "difficulty": 1
   }
 ]
