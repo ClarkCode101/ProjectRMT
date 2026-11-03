@@ -5,6 +5,8 @@ import { FullPageMessage } from '@/components/FullPageMessage'
 import { useFocusMode } from '@/components/layoutContext'
 import { fetchQuestions, finishSession, questionPoolOptions, recordAttempts, startSession, type QuizFilters, type QuizQuestion } from '@/features/quiz/api'
 import { buildMockExam, parseSavedMock, SAVED_MOCK_KEY, scoreMock, secondsLeft, timeLimitSec, type MockScore, type SavedMock } from '@/lib/mockExam'
+import { NOTES } from '@/data/encouragements'
+import { pickNote } from '@/lib/planner'
 import { shuffledChoiceOrder } from '@/lib/quiz'
 import { useTopics } from '@/lib/referenceData'
 import { MockResults } from './MockResults'
@@ -200,6 +202,7 @@ export default function MockPage() {
         timedOut={stage.timedOut}
         onRetrySave={stage.saveFailed ? () => void retrySave() : null}
         saving={busy}
+        note={pickNote(NOTES, stage.score.passed ? 'mock_passed' : 'mock_done', stage.exam.sessionId)}
         onNewExam={() => {
           setMessage(null)
           setStage({ name: 'setup' })

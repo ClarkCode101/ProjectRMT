@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import {
+  BookMarked,
   ChartNoAxesColumn,
   Ellipsis,
   House,
@@ -9,6 +10,7 @@ import {
   NotebookPen,
   Play,
   RotateCcw,
+  Settings,
   Timer,
   type LucideIcon,
 } from 'lucide-react'
@@ -31,6 +33,7 @@ const FLASHCARDS: NavItem = { to: '/flashcards', label: 'Flashcards', icon: Laye
 const REVIEW: NavItem = { to: '/mistakes', label: 'Review', icon: RotateCcw }
 const PROGRESS: NavItem = { to: '/dashboard', label: 'Progress', icon: ChartNoAxesColumn }
 const QUESTIONS: NavItem = { to: '/questions', label: 'Questions', icon: Library }
+const REFERENCE: NavItem = { to: '/reference', label: 'Quick reference', icon: BookMarked }
 
 const focusRing = 'outline-none focus-visible:ring-3 focus-visible:ring-ring/40'
 const floating = 'bg-card shadow-[0_12px_32px_-16px_rgb(7_71_94/0.35)]'
@@ -147,6 +150,7 @@ export function AppLayout() {
               <RailLink item={REVIEW} />
               <RailLink item={PROGRESS} />
               <RailLink item={QUESTIONS} />
+              <RailLink item={REFERENCE} />
             </nav>
             {/* Your account, bottom-left (like most sidebar apps): tap the avatar to see your full name, email and Log out. */}
             <div className="fixed bottom-5 left-5 z-30">
@@ -185,7 +189,16 @@ export function AppLayout() {
                         <p className="mt-1 text-xs font-semibold text-primary">MTLE reviewer</p>
                       </div>
                     </div>
-                    <div className="border-t pt-2">
+                    <div className="space-y-0.5 border-t pt-2">
+                      <NavLink
+                        to="/settings"
+                        role="menuitem"
+                        onClick={() => setProfileOpen(false)}
+                        className={cn('flex h-10 w-full items-center gap-2 rounded-lg px-2 text-sm font-semibold hover:bg-secondary', focusRing)}
+                      >
+                        <Settings className="size-4" aria-hidden />
+                        Settings
+                      </NavLink>
                       <button
                         type="button"
                         role="menuitem"
@@ -279,6 +292,22 @@ export function AppLayout() {
           >
             <Layers className="size-5" aria-hidden />
             Flashcards
+          </NavLink>
+          <NavLink
+            to="/reference"
+            onClick={() => setMoreOpen(false)}
+            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
+          >
+            <BookMarked className="size-5" aria-hidden />
+            Quick reference
+          </NavLink>
+          <NavLink
+            to="/settings"
+            onClick={() => setMoreOpen(false)}
+            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
+          >
+            <Settings className="size-5" aria-hidden />
+            Settings
           </NavLink>
           <NavLink
             to="/questions"

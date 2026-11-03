@@ -1,6 +1,7 @@
 import { Check, ChevronDown, Flag, Minus, RotateCcw, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { NoteCard } from '@/components/NoteCard'
 import { HeroPanel, heroButtonClass, RangeBar, REFERENCE_RANGE } from '@/components/report'
 import type { QuizQuestion } from '@/features/quiz/api'
 import { formatClock, type MockScore } from '@/lib/mockExam'
@@ -22,6 +23,8 @@ type Props = {
   onRetrySave: (() => void) | null
   saving: boolean
   onNewExam: () => void
+  /** a personal note from src/data/encouragements.ts, if there is one */
+  note: string | null
 }
 
 function resultMessage(rate: number) {
@@ -101,7 +104,7 @@ function ScoreRow({ name, code, correct, total }: { name: string; code?: string;
 /** In a mixed exam, only the weakest few topics are listed (the subject rows above give the big picture). */
 const WEAKEST_TOPICS_SHOWN = 8
 
-export function MockResults({ label, questions, answers, flags, score, durationSec, timedOut, onRetrySave, saving, onNewExam }: Props) {
+export function MockResults({ label, questions, answers, flags, score, durationSec, timedOut, onRetrySave, saving, onNewExam, note }: Props) {
   const topics = useTopics()
   const subjectOf = useSubjectOfTopic()
   const topicName = new Map((topics.data ?? []).map((t) => [t.id, t.name]))
@@ -177,6 +180,8 @@ export function MockResults({ label, questions, answers, flags, score, durationS
           </Link>
         </div>
       </HeroPanel>
+
+      {note && <NoteCard message={note} />}
 
       {onRetrySave && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-wrong/40 bg-wrong-soft px-4 py-3 text-sm">

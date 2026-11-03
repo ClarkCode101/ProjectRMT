@@ -68,10 +68,10 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 
 ### Phase 4 — Extras & personal touch
 - [ ] **Image-based questions** (blood smears, parasite ova, urine crystals, colonies)
-- [ ] **Quick reference page**: searchable normal values, formulas (MCV, MCH, MCHC…), mnemonics
-- [ ] **Study planner**: exam-date countdown + daily targets
-- [ ] **Streak tracker**
-- [ ] **Encouragement messages** written by me, shown after a mock exam, on streak milestones, etc. 💌
+- [x] **Quick reference page**: searchable normal values, formulas (MCV, MCH, MCHC…), mnemonics
+- [x] **Study planner**: exam-date countdown + daily targets
+- [x] **Streak tracker**
+- [x] **Encouragement messages** written by me, shown after a mock exam, on streak milestones, etc. 💌
 - [ ] **PWA**: installable, offline quiz from cached questions
 - [ ] **iOS install guide banner** (shown only on iOS Safari)
 - [ ] *(optional)* Semantic duplicate check with pgvector + embeddings
@@ -453,7 +453,7 @@ mtle-reviewer/
 11. [x] Source selector + smart selection
 12. [x] Mock exam
 13. [x] Flashcards (ts-fsrs)
-14. [ ] Reference page, planner, streak, encouragements
+14. [x] Reference page, planner, streak, encouragements (notes live in src/data/encouragements.ts, not the encouragements table)
 15. [ ] Image-based questions (blood smears, parasite ova, urine crystals, colonies) — moved up from Phase 4
 16. [ ] PWA + iOS polish
 17. [x] Deploy to Vercel/Netlify — deployed on Cloudflare Pages instead

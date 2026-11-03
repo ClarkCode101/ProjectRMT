@@ -1,14 +1,20 @@
-import { RotateCcw } from 'lucide-react'
+import { CalendarClock, Flame, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
+import { NoteCard } from '@/components/NoteCard'
+import { Button } from '@/components/ui/button'
+import { NOTES } from '@/data/encouragements'
 import { useTopicPerformance } from '@/features/dashboard/api'
 import { useMistakes } from '@/features/mistakes/api'
+import { DEFAULT_DAILY_TARGET, useStudySettings } from '@/features/settings/api'
 import { currentStreak, dailyActivity } from '@/lib/activity'
+import { countdownLabel, daysUntil, milestoneKey, milestoneReached, pickNote } from '@/lib/planner'
 import { overallStats, summarizePerformance, type SubjectSummary } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
 import { verseOfTheDay } from '@/lib/verses'
-import { DEFAULT_DAILY_TARGET, useAttemptHistory, useDailyTarget } from './api'
+import { useAttemptHistory } from './api'
 import { BodyStage, SubjectInfoCard } from './BodyExplorer'
 import { ReadinessCard, TodayAndVerse } from './HomeCards'
 
@@ -28,7 +34,25 @@ function pickFocus(summary: SubjectSummary[]): SubjectSummary | undefined {
   )
 }
 
-// Setting her own daily target and exam date comes in Step 14 (planner).
+// Streak milestones she has already seen, on this device (so each note shows once).
+const SEEN_MILESTONES_KEY = 'projectrmt:seen-milestones'
+
+function readSeen(): string[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(SEEN_MILESTONES_KEY) ?? '[]') as unknown
+    return Array.isArray(list) ? list.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+function markSeen(key: string) {
+  try {
+    localStorage.setItem(SEEN_MILESTONES_KEY, JSON.stringify([...readSeen(), key].slice(-30)))
+  } catch {
+    // storage blocked: the note may show again, that's all
+  }
+}
+
 export default function HomePage() {
   const mistakes = useMistakes()
   const performance = useTopicPerformance()
@@ -37,9 +61,10 @@ export default function HomePage() {
   // Read the clock once when the page opens, not on every re-render.
   const [now] = useState(() => new Date())
   const attempts = useAttemptHistory()
-  const dailyTarget = useDailyTarget()
+  const settings = useStudySettings()
   // null = nothing tapped yet, so show the subject that needs the most work.
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [seenMilestones, setSeenMilestones] = useState(readSeen)
 
   if (performance.isPending || subjects.isPending || topics.isPending) return <FullPageMessage>Loading…</FullPageMessage>
   if (performance.isError || subjects.isError || topics.isError) {
@@ -51,6 +76,24 @@ export default function HomePage() {
   const selected = summary.find((s) => s.subjectId === selectedId) ?? pickFocus(summary)
   const selectedTopicIds = topics.data.filter((t) => t.subject_id === selected?.subjectId).map((t) => t.id)
   const mistakeCount = mistakes.data?.length ?? 0
+
+  // Planner: days to the board exam.
+  const examDate = settings.data?.examDate ?? null
+  const countdown = examDate ? countdownLabel(daysUntil(examDate, now)) : null
+
+  // Streak milestone reached today (3, 7, 14, 30…): show her note once.
+  const days = dailyActivity(attempts.data ?? [], now)
+  const streak = currentStreak(attempts.data ?? [], now)
+  const milestone = milestoneReached(streak, (days.at(-1)?.answered ?? 0) > 0)
+  const milestoneSeenKey = milestone === null ? null : milestoneKey(milestone, now)
+  const showMilestone = milestoneSeenKey !== null && !seenMilestones.includes(milestoneSeenKey)
+  const milestoneNote = milestoneSeenKey ? pickNote(NOTES, 'streak', milestoneSeenKey) : null
+
+  function closeMilestone() {
+    if (!milestoneSeenKey) return
+    markSeen(milestoneSeenKey)
+    setSeenMilestones((list) => [...list, milestoneSeenKey])
+  }
 
   return (
     // Tablet and up: two columns that exactly fill the screen height, so nothing scrolls.
@@ -64,6 +107,17 @@ export default function HomePage() {
             <h1 className="text-2xl leading-tight font-bold">{greeting(now.getHours())}</h1>
             <p className="text-sm text-muted-foreground">Turn the body and tap an organ to explore a subject.</p>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+          {/* Planner: the countdown, or a nudge to set the exam date */}
+          {settings.isSuccess && (
+            <Link
+              to="/settings"
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold shadow-[0_8px_20px_-14px_rgb(7_71_94/0.5)] outline-none hover:ring-1 hover:ring-primary focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              <CalendarClock className="size-4 text-primary" aria-hidden />
+              {countdown ?? (examDate ? 'Set your next exam date' : 'Set your exam date')}
+            </Link>
+          )}
           {mistakeCount > 0 && (
             <Link
               to="/mistakes"
@@ -74,6 +128,7 @@ export default function HomePage() {
               <span className="rounded-full bg-wrong-soft px-1.5 font-bold text-wrong tabular-nums">{mistakeCount}</span>
             </Link>
           )}
+          </div>
         </div>
         <BodyStage summary={summary} selected={selected} onSelect={setSelectedId} subjectTopicIds={selectedTopicIds} />
       </div>
@@ -81,13 +136,32 @@ export default function HomePage() {
       <div className="flex flex-col gap-4 md:min-h-0">
         {selected && <SubjectInfoCard subject={selected} />}
         <TodayAndVerse
-          days={dailyActivity(attempts.data ?? [], now)}
-          target={dailyTarget.data ?? DEFAULT_DAILY_TARGET}
-          streak={currentStreak(attempts.data ?? [], now)}
+          days={days}
+          target={settings.data?.dailyTarget ?? DEFAULT_DAILY_TARGET}
+          streak={streak}
           verse={verseOfTheDay(now)}
         />
         <ReadinessCard stats={stats} summary={summary} />
       </div>
+
+      {/* Streak milestone: a celebration with her note (once per milestone, on this device). */}
+      <Dialog open={showMilestone} onClose={closeMilestone} labelledBy="milestone-heading">
+        <div className="space-y-4 text-center">
+          <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-highlight-soft">
+            <Flame className="size-7 text-highlight" aria-hidden />
+          </span>
+          <div>
+            <h2 id="milestone-heading" className="font-heading text-2xl font-bold">
+              {milestone}-day streak!
+            </h2>
+            <p className="text-muted-foreground">You’ve studied {milestone} days in a row.</p>
+          </div>
+          {milestoneNote && <NoteCard message={milestoneNote} className="text-left" />}
+          <Button className="h-11 w-full rounded-lg font-heading text-base font-bold" onClick={closeMilestone}>
+            Keep going
+          </Button>
+        </div>
+      </Dialog>
     </div>
   )
 }

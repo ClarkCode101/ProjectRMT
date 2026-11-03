@@ -1,6 +1,9 @@
 import { RotateCcw } from 'lucide-react'
 import { Link } from 'react-router'
 import { MistakeItem } from '@/components/MistakeItem'
+import { NoteCard } from '@/components/NoteCard'
+import { NOTES } from '@/data/encouragements'
+import { pickNote, shouldShowRandomNote } from '@/lib/planner'
 import { HeroPanel, heroButtonClass, RangeBar, REFERENCE_RANGE, SampleRun } from '@/components/report'
 import { formatPercent, PASSING_RATE } from '@/lib/quiz'
 import { useSubjectOfTopic } from '@/lib/referenceData'
@@ -22,6 +25,9 @@ export function QuizResults({ answers, onRestart }: Props) {
   const rate = answers.length > 0 ? score / answers.length : 0
   const passed = rate >= PASSING_RATE
   const wrong = answers.filter((a) => !a.isCorrect)
+  // Now and then (about 1 session in 3), a personal note. The same session always gets the same answer.
+  const seed = answers.map((a) => a.question.id).join(',')
+  const note = answers.length > 0 && shouldShowRandomNote(seed) ? pickNote(NOTES, 'random', seed) : null
 
   // Score per subject within this session, in the order subjects first appeared.
   const bySubject = new Map<string, { correct: number; total: number }>()
@@ -72,6 +78,8 @@ export function QuizResults({ answers, onRestart }: Props) {
           </Link>
         </div>
       </HeroPanel>
+
+      {note && <NoteCard message={note} />}
 
       {bySubject.size > 1 && (
         <section aria-labelledby="by-subject-heading" className="space-y-3">

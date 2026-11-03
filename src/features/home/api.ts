@@ -1,27 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { attemptHistoryOptions, fetchQuestions } from '@/features/quiz/api'
 import { shuffle, shuffledChoiceOrder } from '@/lib/quiz'
-import { supabase } from '@/lib/supabase'
-
-/** Used until she sets her own target (the planner comes in Step 14). Same default as the database. */
-export const DEFAULT_DAILY_TARGET = 50
 
 /** All her answers (which question, right or wrong, when): for today's count, the week and the streak. */
 export function useAttemptHistory() {
   return useQuery(attemptHistoryOptions)
-}
-
-/** How many questions she wants to answer per day. */
-export function useDailyTarget() {
-  return useQuery({
-    queryKey: ['study-settings'],
-    queryFn: async (): Promise<number> => {
-      // RLS returns only her own row; there is none until she saves settings.
-      const { data, error } = await supabase.from('study_settings').select('daily_target').maybeSingle()
-      if (error) throw error
-      return data?.daily_target && data.daily_target > 0 ? data.daily_target : DEFAULT_DAILY_TARGET
-    },
-  })
 }
 
 /**
