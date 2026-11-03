@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react'
-import { LabBench } from '@/components/LabBench'
 import { tubeStatus, type TubeStatus } from '@/features/quiz/tube'
 import { formatPercent, type SubjectSummary } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
@@ -115,12 +114,11 @@ export function AnalyzerRotor({
   }
 
   return (
-    <fieldset disabled={disabled} className={cn('relative shrink-0 px-4 pb-8', dimmed && 'opacity-50')}>
+    // The rotor sits in a round window in the analyzer's body (MockSetup draws the body and the bench).
+    <fieldset disabled={disabled} className={cn('relative shrink-0 rounded-full bg-primary-deep/[0.07] p-2 shadow-[inset_0_3px_8px_rgb(7_71_94/0.25)]', dimmed && 'opacity-50')}>
       <legend className="sr-only">Subject</legend>
-      {/* The same bench the Practice rack stands on; its top edge meets the rotor's bottom. */}
-      <LabBench className="h-11" />
-      {/* 16rem on the smallest phones (so it fits on a 320px screen), then 18rem, then 20rem */}
-      <div className="relative mx-auto size-64 min-[400px]:size-72 sm:size-80">
+      {/* 15rem on the smallest phones (so it fits inside the machine on a 320px screen), then 17rem, then 18rem */}
+      <div className="relative mx-auto size-60 min-[400px]:size-68 sm:size-72">
         {/* the rotor's well: a raised ring with a soft shadow, so it reads as a part of the machine */}
         <div
           aria-hidden
