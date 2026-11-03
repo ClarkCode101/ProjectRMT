@@ -127,7 +127,7 @@ export type OverallStats = {
   weakest: SubjectSummary | null
 }
 
-/** Totals for the stat tiles on Home and Progress. */
+/** Totals for the stat tiles on Home and the header on Practice. */
 export function overallStats(summary: readonly SubjectSummary[]): OverallStats {
   const answered = summary.reduce((sum, s) => sum + s.attempts, 0)
   const correct = summary.reduce((sum, s) => sum + (s.accuracy ?? 0) * s.attempts, 0)

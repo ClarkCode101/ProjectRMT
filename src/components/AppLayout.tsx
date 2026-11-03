@@ -1,7 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import {
   BookMarked,
-  ChartNoAxesColumn,
   Ellipsis,
   House,
   Layers,
@@ -31,7 +30,6 @@ const PRACTICE: NavItem = { to: '/practice', label: 'Practice', icon: NotebookPe
 const MOCK: NavItem = { to: '/mock', label: 'Mock exam', icon: Timer }
 const FLASHCARDS: NavItem = { to: '/flashcards', label: 'Flashcards', icon: Layers }
 const REVIEW: NavItem = { to: '/mistakes', label: 'Review', icon: RotateCcw }
-const PROGRESS: NavItem = { to: '/dashboard', label: 'Progress', icon: ChartNoAxesColumn }
 const QUESTIONS: NavItem = { to: '/questions', label: 'Questions', icon: Library }
 const REFERENCE: NavItem = { to: '/reference', label: 'Quick reference', icon: BookMarked }
 
@@ -148,7 +146,6 @@ export function AppLayout() {
               <RailLink item={MOCK} />
               <RailLink item={FLASHCARDS} />
               <RailLink item={REVIEW} />
-              <RailLink item={PROGRESS} />
               <RailLink item={QUESTIONS} />
               <RailLink item={REFERENCE} />
             </nav>
@@ -252,7 +249,7 @@ export function AppLayout() {
               </NavLink>
             </li>
             <li>
-              <BarTab item={PROGRESS} />
+              <BarTab item={MOCK} />
             </li>
             <li>
               <button
@@ -277,14 +274,6 @@ export function AppLayout() {
             </h2>
             {email && <p className="text-sm text-muted-foreground">Logged in as {email}</p>}
           </div>
-          <NavLink
-            to="/mock"
-            onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
-          >
-            <Timer className="size-5" aria-hidden />
-            Mock exam
-          </NavLink>
           <NavLink
             to="/flashcards"
             onClick={() => setMoreOpen(false)}

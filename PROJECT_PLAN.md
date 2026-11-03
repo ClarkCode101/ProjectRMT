@@ -413,11 +413,10 @@ mtle-reviewer/
 |---|---|
 | `/login` | Login |
 | `/` | Home: countdown, streak, today's target, quick start buttons |
-| `/practice` | Source selector → practice quiz |
+| `/practice` | Source selector → practice quiz; also the per-subject / per-topic scores (the old `/dashboard` redirects here) |
 | `/mock` | Mock exam setup → exam → results review |
 | `/flashcards` | Due cards (FSRS) |
 | `/mistakes` | Review Again list |
-| `/dashboard` | Per-subject / per-topic performance, 60% line |
 | `/questions` | Browse, add, edit, verify; coverage map |
 | `/upload` | Upload → parse → duplicate review |
 | `/reference` | Normal values, formulas, mnemonics |
