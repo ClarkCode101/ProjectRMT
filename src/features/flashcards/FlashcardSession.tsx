@@ -1,4 +1,5 @@
-import { Microscope, X } from 'lucide-react'
+import { Microscope } from 'lucide-react'
+import { ExitButton } from '@/components/ExitButton'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { QuizQuestion } from '@/features/quiz/api'
 import { cardToRow, formatInterval, GRADES, LEARN_AHEAD_MS, makeScheduler, previewIntervals, Rating, review, rowToCard, State, type Card, type Grade, type ReviewRow } from '@/lib/fsrs'
@@ -106,14 +107,7 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
     <div className="mx-auto max-w-2xl space-y-5">
       {/* Exit, and simply how many are left (cards rated "Again" come back, so the count can go up again). */}
       <div className="flex items-center gap-3 text-sm">
-        <button
-          type="button"
-          onClick={() => onExit(stats)}
-          className="-ml-2 flex h-10 shrink-0 items-center gap-1 rounded-md px-2 font-semibold text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
-        >
-          <X className="size-4" aria-hidden />
-          Exit
-        </button>
+        <ExitButton onClick={() => onExit(stats)} />
         <div
           className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary"
           role="progressbar"

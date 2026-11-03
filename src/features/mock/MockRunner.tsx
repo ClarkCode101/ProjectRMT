@@ -1,7 +1,8 @@
-import { Check, ChevronLeft, ChevronRight, CircleDashed, Flag, ListChecks, Timer, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, CircleDashed, Flag, ListChecks, Timer } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { Button } from '@/components/ui/button'
+import { ExitButton } from '@/components/ExitButton'
 import type { QuizQuestion } from '@/features/quiz/api'
 import { formatClock, LOW_TIME_SEC, secondsLeft, type SavedMock } from '@/lib/mockExam'
 import { useSubjectOfTopic } from '@/lib/referenceData'
@@ -180,14 +181,7 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
         )}
       >
         <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            onClick={() => setOpen('leave')}
-            className="-ml-1 flex h-10 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-white/75 outline-none hover:bg-white/10 hover:text-white focus-visible:ring-3 focus-visible:ring-white/60"
-          >
-            <X className="size-4" aria-hidden />
-            Exit
-          </button>
+          <ExitButton onClick={() => setOpen('leave')} tone="dark" />
           <p className="flex min-w-0 flex-1 items-center gap-2 text-xs font-bold tracking-widest uppercase">
             <span className={cn('size-2.5 shrink-0 rounded-full shadow-[0_0_10px_2px_rgb(255_255_255/0.25)] ring-2 ring-white/20', low ? 'led-blink bg-white' : LED_ON)} aria-hidden />
             <span className="truncate">

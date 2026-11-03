@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { SampleRun, type SampleState } from '@/components/report'
 import { Button } from '@/components/ui/button'
+import { ExitButton } from '@/components/ExitButton'
 import { shuffledChoiceOrder } from '@/lib/quiz'
 import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
@@ -123,14 +124,7 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
     <div className="mx-auto max-w-2xl space-y-5">
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3 text-sm tabular-nums">
-          <button
-            type="button"
-            onClick={askToExit}
-            className="-ml-2 flex h-10 items-center gap-1 rounded-md px-2 font-semibold text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
-          >
-            <X className="size-4" aria-hidden />
-            Exit
-          </button>
+          <ExitButton onClick={askToExit} />
           <p className="font-heading font-semibold text-muted-foreground">
             <span className="text-foreground">{current + 1}</span> of {questions.length}
           </p>
