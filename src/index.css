@@ -163,6 +163,26 @@
   animation: analyzer-spin 900ms cubic-bezier(0.5, 0, 0.25, 1) both;
 }
 
+/* Mock exam results: the printout feeds down out of the analyzer's slot. */
+@keyframes printout-feed {
+  from { transform: translateY(-100%); }
+}
+.printout-feed {
+  animation: printout-feed 900ms cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+/* The printout's stamp lands after the paper is out. */
+.printout-feed .stamp {
+  animation-delay: 850ms;
+}
+
+/* The torn bottom edge of the printout: a row of small paper-colored triangles. */
+.paper-tear {
+  height: 10px;
+  background:
+    linear-gradient(135deg, var(--card) 50%, transparent 50%) 0 0 / 14px 10px repeat-x,
+    linear-gradient(225deg, var(--card) 50%, transparent 50%) 0 0 / 14px 10px repeat-x;
+}
+
 /* The analyzer's status light while a run starts. */
 @keyframes led-blink {
   50% { opacity: 0.25; }
