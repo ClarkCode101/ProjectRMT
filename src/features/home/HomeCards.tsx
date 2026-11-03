@@ -1,10 +1,11 @@
-import { Check, Dices, X } from 'lucide-react'
-import { useState } from 'react'
+import { BookOpen, Check, Dices, Flame, X } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { LowFlag, REFERENCE_RANGE } from '@/components/report'
 import type { DayActivity } from '@/lib/activity'
 import { formatPercent, type OverallStats, type SubjectSummary } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
+import type { Verse } from '@/lib/verses'
 import { useWarmupQuestions } from './api'
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
@@ -117,72 +118,142 @@ export function ReadinessCard({ stats, summary }: { stats: OverallStats; summary
   )
 }
 
-// ---------- Last 7 days ----------
+// ---------- Today (daily goal + streak) and the verse of the day ----------
 
-/** Dotted chart background, like the grid on an analyzer printout. */
-const dotGrid = 'bg-[radial-gradient(var(--border)_1px,transparent_1px)] bg-size-[8px_8px]'
-
-export function TrendCards({ days }: { days: DayActivity[] }) {
-  const answered = days.reduce((sum, d) => sum + d.answered, 0)
-  const correct = days.reduce((sum, d) => sum + d.correct, 0)
-  const maxAnswered = Math.max(...days.map((d) => d.answered), 1)
-
-  // Accuracy line: only days with answers get a point.
-  const points = days.flatMap((d, i) => (d.accuracy === null ? [] : [{ x: (i / (days.length - 1)) * 100, y: 100 - d.accuracy * 100 }]))
-  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x} ${p.y}`).join(' ')
-
+/** Shared header for the two cards in this row, so they line up: title on the left, a small chip on the right. */
+function RowCardHeader({ id, title, chip }: { id: string; title: string; chip: ReactNode }) {
   return (
-    // From tablet size up these two cards take whatever height is left in the column, and their charts stretch with them.
-    <div className="grid grid-cols-2 gap-3 md:min-h-32 md:flex-1 lg:gap-4">
-      <section aria-labelledby="answered-heading" className={cn(cardClass, 'flex flex-col')}>
-        <div className="flex flex-wrap items-baseline justify-between gap-x-2">
-          <h2 id="answered-heading" className="text-sm font-semibold">
-            Answered <span className="block text-xs font-normal text-muted-foreground">Last 7 days</span>
-          </h2>
-          <p className="font-heading text-2xl font-bold tabular-nums">{answered}</p>
-        </div>
-        <div className={cn('mt-2 flex h-20 items-end gap-1.5 rounded-md p-1 md:h-auto md:min-h-8 md:flex-1', dotGrid)}>
-          {days.map((d) => (
-            <div key={d.date} className="flex h-full flex-1 flex-col justify-end" title={`${d.label}: ${d.answered} answered`}>
-              <div
-                className={cn('w-full rounded-t-[3px]', d.answered > 0 ? 'bg-primary' : 'bg-border')}
-                style={{ height: d.answered > 0 ? `${Math.max((d.answered / maxAnswered) * 100, 8)}%` : '3px' }}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="mt-1 flex text-[10px] text-muted-foreground" aria-hidden>
-          {days.map((d) => (
-            <span key={d.date} className="flex-1 text-center">
-              {d.label.charAt(0)}
-            </span>
-          ))}
-        </div>
-        <p className="sr-only">{days.map((d) => `${d.label} ${d.answered}`).join(', ')}</p>
-      </section>
+    <div className="flex items-center justify-between gap-2">
+      <h2 id={id} className="font-heading text-base font-bold">
+        {title}
+      </h2>
+      {chip}
+    </div>
+  )
+}
 
-      <section aria-labelledby="accuracy-heading" className={cn(cardClass, 'flex flex-col')}>
-        <div className="flex flex-wrap items-baseline justify-between gap-x-2">
-          <h2 id="accuracy-heading" className="text-sm font-semibold">
-            Accuracy <span className="block text-xs font-normal text-muted-foreground">Last 7 days</span>
-          </h2>
-          <p className="font-heading text-2xl font-bold tabular-nums">{answered > 0 ? formatPercent(correct / answered) : '—'}</p>
+const chipClass = 'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold'
+
+/** A ring that fills up toward today's goal, with today's count in the middle. Green once the goal is reached. */
+function GoalRing({ done, target }: { done: number; target: number }) {
+  const pct = Math.min(100, Math.round((done / target) * 100))
+  return (
+    <div className="relative grid size-20 shrink-0 place-items-center tall:size-24">
+      <svg viewBox="0 0 44 44" className="absolute inset-0 size-full -rotate-90" aria-hidden>
+        <circle cx="22" cy="22" r="19" fill="none" stroke="var(--secondary)" strokeWidth="4" />
+        {pct > 0 && (
+          <circle
+            cx="22"
+            cy="22"
+            r="19"
+            fill="none"
+            stroke={done >= target ? 'var(--correct)' : 'var(--primary)'}
+            strokeWidth="4"
+            strokeLinecap="round"
+            pathLength={100}
+            strokeDasharray={`${pct} 100`}
+            className="transition-[stroke-dasharray] duration-700"
+          />
+        )}
+      </svg>
+      <span className="font-heading text-2xl font-bold tabular-nums tall:text-3xl">{done}</span>
+    </div>
+  )
+}
+
+function todayMessage(done: number, target: number) {
+  if (done === 0) return 'Start with a few questions'
+  if (done >= target) return 'Goal reached. Great work!'
+  return `${target - done} more to go today`
+}
+
+/** `days`: the last 7 days, today last. */
+function TodayCard({ days, target, streak }: { days: DayActivity[]; target: number; streak: number }) {
+  const done = days.at(-1)?.answered ?? 0
+  return (
+    <section aria-labelledby="today-heading" className={cn(cardClass, 'flex flex-col gap-3')}>
+      <RowCardHeader
+        id="today-heading"
+        title="Today"
+        chip={
+          <p className={cn(chipClass, streak > 0 ? 'bg-highlight-soft text-[#9A5B00]' : 'bg-secondary text-muted-foreground')}>
+            <Flame className="size-3.5" aria-hidden />
+            {streak > 0 ? `${streak}-day streak` : 'No streak yet'}
+          </p>
+        }
+      />
+
+      <div className="flex flex-1 items-center gap-4">
+        <GoalRing done={done} target={target} />
+        <div className="min-w-0">
+          <p className="font-semibold tabular-nums">of {target} answered</p>
+          <p className={cn('mt-0.5 text-sm', done >= target ? 'font-semibold text-correct' : 'text-muted-foreground')}>{todayMessage(done, target)}</p>
         </div>
-        <div className={cn('relative mt-2 h-20 rounded-md md:h-auto md:min-h-8 md:flex-1', dotGrid)}>
-          <svg viewBox="-4 -6 108 112" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible" aria-hidden>
-            <line x1="0" x2="100" y1="40" y2="40" stroke="var(--muted-foreground)" strokeDasharray="3 3" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-            {points.length > 1 && (
-              <path d={`${line} L${points.at(-1)!.x} 100 L${points[0].x} 100 Z`} fill="var(--primary)" fillOpacity="0.12" />
-            )}
-            {points.length > 0 && <path d={line} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
-          </svg>
-          {points.length === 0 && <p className="absolute inset-0 grid place-items-center text-xs text-muted-foreground">No answers yet</p>}
-        </div>
-        <p className="mt-1 text-[10px] text-muted-foreground max-md:block md:hidden tall:block">Dashed line: 60%</p>
-        <p className="sr-only">
-          {days.map((d) => `${d.label} ${d.accuracy === null ? 'no answers' : formatPercent(d.accuracy)}`).join(', ')}
-        </p>
-      </section>
+      </div>
+
+      {/* This week: a filled dot for every day with at least one answer. */}
+      <ol className="flex justify-between" aria-label="This week">
+        {days.map((d, i) => {
+          const isToday = i === days.length - 1
+          return (
+            <li key={d.date} className="flex flex-col items-center gap-1" title={`${d.label}: ${d.answered} answered`}>
+              <span
+                className={cn(
+                  'size-3 rounded-full border-2',
+                  d.answered > 0 ? 'border-primary bg-primary' : 'border-border bg-card',
+                  isToday && d.answered === 0 && 'border-primary/60',
+                )}
+                aria-hidden
+              />
+              <span className={cn('text-[10px] text-muted-foreground', isToday && 'font-bold text-foreground')} aria-hidden>
+                {d.label.charAt(0)}
+              </span>
+              <span className="sr-only">
+                {isToday ? 'Today' : d.label}: {d.answered > 0 ? `${d.answered} answered` : 'no answers'}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
+    </section>
+  )
+}
+
+function VerseCard({ verse }: { verse: Verse }) {
+  const short = verse.text.length <= 110
+  return (
+    <section aria-labelledby="verse-heading" className={cn(cardClass, 'flex flex-col gap-3')}>
+      <RowCardHeader
+        id="verse-heading"
+        title="Verse of the day"
+        chip={
+          <p className={cn(chipClass, 'bg-secondary text-muted-foreground')} title="World English Bible">
+            <BookOpen className="size-3.5" aria-hidden />
+            WEB
+          </p>
+        }
+      />
+      {/* Centered in the space left, with a thin blue line on the left like a printed quotation. */}
+      <figure className="my-auto border-l-[3px] border-primary/70 pl-3.5">
+        {/* Short verses get the bigger heading font; long ones stay smaller so the card keeps a tidy size. */}
+        <blockquote className={cn('text-pretty', short ? 'font-heading text-lg leading-snug font-semibold' : verse.text.length > 160 ? 'text-sm leading-relaxed' : 'leading-relaxed')}>
+          {verse.text}
+        </blockquote>
+        <figcaption className="mt-2 text-sm font-bold text-primary">{verse.reference}</figcaption>
+      </figure>
+    </section>
+  )
+}
+
+export function TodayAndVerse({ days, target, streak, verse }: { days: DayActivity[]; target: number; streak: number; verse: Verse }) {
+  return (
+    // From tablet size up this row takes whatever height is left in the column.
+    // Side by side when the column is wide enough, stacked when it is narrow.
+    <div className="@container md:min-h-min md:flex-1">
+      <div className="grid h-full gap-3 @md:grid-cols-2 lg:gap-4">
+        <TodayCard days={days} target={target} streak={streak} />
+        <VerseCard verse={verse} />
+      </div>
     </div>
   )
 }

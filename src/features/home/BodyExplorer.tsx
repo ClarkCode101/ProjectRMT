@@ -1,27 +1,17 @@
-import { ChevronLeft, ChevronRight, Dices, Play, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Crosshair, Dices, Play, X } from 'lucide-react'
 import { lazy, Suspense, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Dialog } from '@/components/Dialog'
-import { heroButtonClass } from '@/components/report'
+import { heroButtonClass, LowFlag } from '@/components/report'
 import { formatPercent, type SubjectSummary } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
 import type { Body3DControls, OrganAnchor } from './Body3D'
 import { WarmupCard } from './HomeCards'
+import { OrganIcon } from './OrganIcon'
 import { ORGANS, STATUS_COLOR, STATUS_TEXT, subjectStatus } from './organs'
 
 // three.js is big, so the 3D body downloads separately, after the rest of Home shows.
 const Body3D = lazy(() => import('./Body3D'))
-
-/** Small flat picture of a subject's organ. */
-export function OrganIcon({ code, className }: { code: string; className?: string }) {
-  const organ = ORGANS[code]
-  if (!organ) return null
-  return (
-    <svg viewBox={organ.iconBox} className={className} aria-hidden>
-      {organ.icon}
-    </svg>
-  )
-}
 
 /**
  * The centerpiece of Home: a 3D body you can turn, with a card for each subject around it.
@@ -225,48 +215,75 @@ export function BodyStage({
 }
 
 /**
- * Details of the chosen subject, laid out like a patient info card.
+ * Details of the chosen subject, laid out like a patient info card:
+ * who it is (subject + body part), answered count and weakest topic, and the score on top;
+ * the screen's ONE orange button below.
  * Uses its own width (container query), not the screen's, so it fits a narrow tablet column too.
  */
 export function SubjectInfoCard({ subject }: { subject: SubjectSummary }) {
   const organ = ORGANS[subject.code]
   const status = subjectStatus(subject)
-  const weakest = subject.topics[0]
+  const weakest = subject.topics[0] // topics are sorted weakest first
   return (
     <section aria-labelledby="subject-info-heading" className="@container shrink-0 rounded-2xl border bg-card p-4 shadow-[0_12px_32px_-24px_rgb(7_71_94/0.45)]">
-      {/* On short screens the title is only for screen readers, to save a line. */}
-      <h2 id="subject-info-heading" className="sr-only font-heading text-base font-bold tall:not-sr-only">
-        Subject info
-      </h2>
       {/* key: replay the entrance when another subject is chosen */}
-      <div key={subject.subjectId} className="animate-in fade-in grid gap-3 tall:mt-2 duration-300 @md:grid-cols-[4.5rem_minmax(0,1fr)_9rem] @md:gap-4 tall:@md:grid-cols-[6rem_minmax(0,1fr)_9.5rem]">
-        <div className="hidden aspect-square items-center justify-center self-start rounded-xl bg-[linear-gradient(160deg,#0B2536,#07475E)] @md:flex">
-          <OrganIcon code={subject.code} className="size-11 drop-shadow-[0_0_12px_rgb(255_255_255/0.25)] tall:size-16" />
-        </div>
-        <div className="min-w-0">
-          <p className="font-heading text-lg leading-tight font-bold">{subject.name}</p>
-          {organ && <p className="hidden text-xs text-muted-foreground tall:block">{organ.about}</p>}
-          <dl className="mt-1.5 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 text-sm">
-            <dt className="text-muted-foreground">Body part</dt>
-            <dd className="truncate text-right font-semibold">{organ?.name ?? '—'}</dd>
-            <dt className="text-muted-foreground">Answered</dt>
-            <dd className="text-right font-semibold tabular-nums">{subject.attempts}</dd>
-            <dt className="text-muted-foreground">Weakest</dt>
-            <dd className="truncate text-right font-semibold">{weakest ? `${weakest.name} ${formatPercent(weakest.accuracy)}` : '—'}</dd>
-          </dl>
-        </div>
-        <div className="flex flex-col gap-1.5 rounded-xl bg-background p-2.5">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-xs text-muted-foreground">Score</span>
-            <span className={cn('text-xs font-semibold', STATUS_COLOR[status])}>{STATUS_TEXT[status]}</span>
+      <div key={subject.subjectId} className="animate-in fade-in space-y-3 duration-300">
+        {/* Header: organ picture, names, score */}
+        <div className="flex items-start gap-3 @md:gap-4">
+          <div className="hidden size-16 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(160deg,#0B2536,#07475E)] @md:flex tall:size-18">
+            <OrganIcon code={subject.code} className="size-10 drop-shadow-[0_0_12px_rgb(255_255_255/0.25)] tall:size-12" />
           </div>
-          <p className={cn('font-heading text-3xl leading-none font-bold tabular-nums', status === 'low' && 'text-wrong')}>
-            {subject.accuracy === null ? '—' : formatPercent(subject.accuracy)}
-          </p>
-          <Link to={`/practice?subject=${subject.subjectId}`} className={cn(heroButtonClass, 'mt-auto flex h-9 w-full px-3 text-sm whitespace-nowrap sm:w-full')}>
-            <Play className="size-3.5 fill-current" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              {subject.code}
+              {organ && <> · {organ.name}</>}
+            </p>
+            {/* Long names (HTMLE) stop at two lines; the full name is in the tooltip. */}
+            <h2 id="subject-info-heading" title={subject.name} className="line-clamp-2 font-heading text-lg leading-tight font-bold">
+              {subject.name}
+            </h2>
+            <p className="mt-0.5 truncate text-sm text-muted-foreground tabular-nums">
+              {subject.attempts === 0 ? 'Nothing answered yet' : `${subject.attempts} answered`}
+              {weakest && (
+                <>
+                  {' · Weakest: '}
+                  <span className="font-semibold text-foreground">{weakest.name}</span>{' '}
+                  <span className={cn('font-semibold', weakest.belowPassing ? 'text-wrong' : 'text-foreground')}>{formatPercent(weakest.accuracy)}</span>
+                </>
+              )}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className={cn('font-heading text-3xl leading-none font-bold tabular-nums tall:text-4xl', status === 'low' && 'text-wrong')}>
+              {subject.accuracy === null ? '—' : formatPercent(subject.accuracy)}
+            </p>
+            <p className={cn('mt-1 flex items-center justify-end gap-1.5 text-xs font-semibold whitespace-nowrap', STATUS_COLOR[status])}>
+              {status === 'low' && <LowFlag />}
+              {STATUS_TEXT[status]}
+            </p>
+          </div>
+        </div>
+
+        {/* Actions: the whole subject, or just the weakest topic when it is below 60%.
+            Two equal halves when both show, so the row looks even; one full-width button otherwise. */}
+        <div className={cn('grid gap-2', weakest?.belowPassing && '@sm:grid-cols-2')}>
+          <Link
+            to={`/practice?subject=${subject.subjectId}`}
+            className={cn(heroButtonClass, 'h-11 w-full px-4 text-base whitespace-nowrap focus-visible:ring-ring/50 sm:flex sm:w-full')}
+          >
+            <Play className="size-4 fill-current" aria-hidden />
             Practice {subject.code}
           </Link>
+          {weakest?.belowPassing && (
+            <Link
+              to={`/practice?subject=${subject.subjectId}&topic=${weakest.topicId}`}
+              title={`Practice ${weakest.name} only`}
+              className="flex h-11 min-w-0 items-center justify-center gap-2 rounded-lg border border-primary/30 bg-card px-4 font-heading text-base font-bold text-primary outline-none hover:border-primary hover:bg-primary/[0.04] focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <Crosshair className="size-4 shrink-0" aria-hidden />
+              <span className="truncate">{weakest.name} only</span>
+            </Link>
+          )}
         </div>
       </div>
     </section>

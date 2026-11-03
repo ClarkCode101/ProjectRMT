@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activityStart, dailyActivity, localDateKey } from './activity'
+import { activityStart, currentStreak, dailyActivity, localDateKey } from './activity'
 
 // Local-time dates, so the tests pass in any time zone.
 const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h).toISOString()
@@ -51,5 +51,30 @@ describe('dailyActivity', () => {
       today,
     )
     expect(days.reduce((sum, d) => sum + d.answered, 0)).toBe(0)
+  })
+})
+
+/** An answer given at noon on that local date. */
+const on = (y: number, m: number, d: number, h = 12) => ({ created_at: at(y, m, d, h) })
+
+describe('currentStreak', () => {
+  it('counts days in a row ending today', () => {
+    const attempts = [on(2026, 11, 2), on(2026, 11, 2, 8), on(2026, 11, 1), on(2026, 10, 31), on(2026, 10, 29)]
+    expect(currentStreak(attempts, today)).toBe(3) // Nov 2, Nov 1, Oct 31 (Oct 30 missing)
+  })
+
+  it('keeps the streak alive when nothing is answered yet today', () => {
+    expect(currentStreak([on(2026, 11, 1), on(2026, 10, 31)], today)).toBe(2)
+  })
+
+  it('is 0 when the last answer was two or more days ago, or there are none', () => {
+    expect(currentStreak([on(2026, 10, 31)], today)).toBe(0)
+    expect(currentStreak([], today)).toBe(0)
+    expect(currentStreak([{ created_at: null }], today)).toBe(0)
+  })
+
+  it('crosses month boundaries', () => {
+    const attempts = [on(2026, 11, 2), on(2026, 11, 1), on(2026, 10, 31), on(2026, 10, 30)]
+    expect(currentStreak(attempts, today)).toBe(4)
   })
 })

@@ -55,3 +55,19 @@ export function dailyActivity(
   for (const entry of result) entry.accuracy = entry.answered > 0 ? entry.correct / entry.answered : null
   return result
 }
+
+/**
+ * Days in a row with at least one answer, counting back from today.
+ * If she hasn't answered anything yet today, the streak is still alive: count from yesterday.
+ */
+export function currentStreak(attempts: readonly { created_at: string | null }[], today: Date): number {
+  const activeDays = new Set(attempts.flatMap((a) => (a.created_at ? [localDateKey(new Date(a.created_at))] : [])))
+  const day = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  if (!activeDays.has(localDateKey(day))) day.setDate(day.getDate() - 1)
+  let streak = 0
+  while (activeDays.has(localDateKey(day))) {
+    streak++
+    day.setDate(day.getDate() - 1)
+  }
+  return streak
+}
