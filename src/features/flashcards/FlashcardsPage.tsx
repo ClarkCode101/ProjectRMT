@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Play, SlidersHorizontal, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { CalendarClock, House, Microscope, SlidersHorizontal, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
@@ -10,11 +10,14 @@ import { HeroPanel, heroButtonClass } from '@/components/report'
 import { DEFAULT_SOURCE, questionPoolOptions, type QuizQuestion, type SourceChoice } from '@/features/quiz/api'
 import { SourcePicker } from '@/features/quiz/SourcePicker'
 import { localDateKey } from '@/lib/activity'
-import { buildDeck, dueByTomorrow } from '@/lib/fsrs'
+import { buildDeck, dueByTomorrow, maxIntervalForExam } from '@/lib/fsrs'
+import { daysUntil } from '@/lib/planner'
+import { useStudySettings } from '@/features/settings/api'
 import { useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { reviewStatesOptions } from './api'
 import { FlashcardSession, type SessionStats } from './FlashcardSession'
+import { MicroscopeScene, type TraySlide } from './MicroscopeScene'
 
 // ---------- Settings kept on this device: new cards per day, and how many new ones she has done today ----------
 
@@ -46,6 +49,9 @@ type Stage = { name: 'setup' } | { name: 'session'; deck: QuizQuestion[] } | { n
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
+/** How long the "look into the microscope" scene plays before the session (matches .microscope-look in index.css). */
+const LOOK_MS = 1000
+
 export default function FlashcardsPage() {
   const queryClient = useQueryClient()
   const subjects = useSubjects()
@@ -58,6 +64,11 @@ export default function FlashcardsPage() {
   const [sourceChoice, setSourceChoice] = useState<SourceChoice>(DEFAULT_SOURCE)
   const [optionsOpen, setOptionsOpen] = useState(false)
   const [settings, setSettings] = useState(() => readSettings(today))
+  // The board exam date: no card is scheduled to come back after it.
+  const study = useStudySettings()
+  const examDate = study.data?.examDate ?? null
+  const daysToExam = examDate ? daysUntil(examDate, now) : null
+  const maxIntervalDays = maxIntervalForExam(daysToExam)
   // Remember the settings on this device whenever they change.
   useEffect(() => writeSettings(settings), [settings])
   useFocusMode(stage.name === 'session')
@@ -74,6 +85,23 @@ export default function FlashcardsPage() {
   const deck = deckFor(subjectId)
   const total = deck.due.length + deck.fresh.length
   const optionsChanged = sourceChoice.source !== 'all' || sourceChoice.verifiedOnly
+
+  // Look: the lamp turns on and the view zooms into the eyepiece, then the session starts.
+  const [looking, setLooking] = useState(false)
+  const lookTimer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(lookTimer.current), [])
+
+  function look() {
+    if (looking) return
+    const start = () => {
+      setLooking(false)
+      setStage({ name: 'session', deck: [...deck.due, ...deck.fresh] })
+    }
+    // Reduced motion: no scene, start right away.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return start()
+    setLooking(true)
+    lookTimer.current = window.setTimeout(start, LOOK_MS)
+  }
 
   function updateSettings(change: Partial<DeviceSettings>) {
     setSettings((s) => ({ ...s, ...change }))
@@ -93,6 +121,7 @@ export default function FlashcardsPage() {
         onNewStudied={() => setSettings((s) => ({ ...s, newDoneToday: s.newDoneToday + 1 }))}
         onDone={(stats) => finish(stats, true)}
         onExit={(stats) => finish(stats, false)}
+        maxIntervalDays={maxIntervalDays}
       />
     )
   }
@@ -103,11 +132,11 @@ export default function FlashcardsPage() {
       <div className="mx-auto max-w-xl space-y-4 sm:pt-6">
         <HeroPanel labelledBy="done-heading" className="space-y-4">
           <span className="flex size-12 items-center justify-center rounded-full bg-white/15">
-            <Check className="size-6" aria-hidden />
+            <Microscope className="size-6" aria-hidden />
           </span>
           <div>
             <h1 id="done-heading" className="font-heading text-3xl font-bold">
-              Done for now
+              All slides read
             </h1>
             <p className="mt-1 text-white/85">
               You reviewed {plural(stage.stats.reviewed, 'card')}
@@ -115,16 +144,18 @@ export default function FlashcardsPage() {
             </p>
           </div>
           {reviewStates.isSuccess && <p className="rounded-md bg-white/10 px-3 py-2 text-sm">{plural(tomorrow, 'card')} due by the end of tomorrow.</p>}
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+          {/* Same pair as the mock exam results: gold main button + a see-through secondary one of the same size. */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             <Link to="/" className={heroButtonClass}>
+              <House className="size-5" aria-hidden />
               Back to Home
             </Link>
             <button
               type="button"
               onClick={() => setStage({ name: 'setup' })}
-              className="rounded-md px-2 py-2.5 text-sm font-semibold text-white/85 underline-offset-4 outline-none hover:text-white hover:underline focus-visible:ring-3 focus-visible:ring-white/60"
+              className="flex h-12 items-center justify-center gap-2 rounded-lg bg-white/10 px-5 font-heading text-base font-bold text-white outline-none hover:bg-white/15 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px"
             >
-              See today’s deck
+              Back to the microscope
             </button>
           </div>
         </HeroPanel>
@@ -136,118 +167,89 @@ export default function FlashcardsPage() {
   if (pool.isError || reviewStates.isError) return <FullPageMessage>Couldn’t load your cards. Check your internet connection, then refresh.</FullPageMessage>
 
   const minutes = Math.max(1, Math.round(total * 0.4)) // about 25 seconds a card
+  const allDeck = subjectId === null ? deck : deckFor(null)
+  const slides: TraySlide[] = [
+    { key: 'all', code: 'All', name: 'All six subjects', due: allDeck.due.length },
+    ...(subjects.data ?? []).map((s) => ({ key: String(s.id), code: s.code, name: s.name, due: deckFor(s.id).due.length })),
+  ]
+  const chosenCode = subjects.data?.find((s) => s.id === subjectId)?.code ?? 'All subjects'
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader title="Flashcards" subtitle="Cards come back right before you’d forget them." />
+    // Phones: extra room at the bottom so the sticky start bar never covers the last slides.
+    <div className="mx-auto max-w-4xl space-y-6 max-md:pb-24">
+      <PageHeader title="Flashcards" subtitle="Load a slide, then look through the microscope." />
 
-      {/* ---------- Subject filter, with how many cards each has today ---------- */}
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Subject">
-        {[{ id: null as number | null, code: 'All' }, ...(subjects.data ?? []).map((s) => ({ id: s.id as number | null, code: s.code }))].map((s) => {
-          const count = s.id === subjectId ? total : (() => {
-            const d = deckFor(s.id)
-            return d.due.length + d.fresh.length
-          })()
-          const active = subjectId === s.id
-          return (
-            <button
-              key={s.code}
-              type="button"
-              onClick={() => setSubjectId(s.id)}
-              aria-pressed={active}
-              className={cn(
-                'inline-flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
-                active ? 'border-primary bg-primary text-white' : 'bg-card hover:border-primary/50',
-              )}
-            >
-              {s.code}
-              <span className={cn('tabular-nums', active ? 'text-white/80' : 'text-muted-foreground')}>{count}</span>
-            </button>
-          )
-        })}
-      </div>
+      {/* ---------- The microscope and the slides on the bench: pick a subject ---------- */}
+      <MicroscopeScene
+        slides={slides}
+        selectedKey={subjectId === null ? 'all' : String(subjectId)}
+        onSelect={(key) => setSubjectId(key === 'all' ? null : Number(key))}
+        viewLabel={
+          total === 0
+            ? `${subjectId === null ? 'All' : chosenCode} · all caught up`
+            : `${subjectId === null ? 'All' : chosenCode} · ${deck.due.length} due${deck.fresh.length > 0 ? ` · ${deck.fresh.length} new` : ''}`
+        }
+        looking={looking}
+      />
 
-      {/* ---------- Today's deck: the one colored thing on this screen ---------- */}
-      <HeroPanel labelledBy="deck-heading" className="space-y-5">
-        <div className="flex items-start gap-5">
-          {/* A small stack of index cards, just decoration */}
-          <div className="relative hidden h-20 w-16 shrink-0 sm:block" aria-hidden>
-            <span className="absolute inset-0 translate-x-2 -translate-y-2 rotate-6 rounded-lg bg-white/20" />
-            <span className="absolute inset-0 translate-x-1 -translate-y-1 rotate-3 rounded-lg bg-white/35" />
-            <span className="absolute inset-0 rounded-lg bg-white" />
-          </div>
-          <div className="min-w-0">
-            <h2 id="deck-heading" className="text-sm font-semibold text-white/70">
-              Today’s deck
-            </h2>
-            <p className="font-heading text-4xl leading-tight font-bold tabular-nums">
-              {deck.due.length} <span className="text-xl font-semibold text-white/80">due</span>
-              <span className="mx-2 text-white/40">·</span>
-              {deck.fresh.length} <span className="text-xl font-semibold text-white/80">new</span>
-            </p>
-            <p className="text-white/80">
-              {total === 0
-                ? settings.newDoneToday >= settings.newPerDay
-                  ? 'All caught up, and you’ve done today’s new cards. Come back tomorrow.'
-                  : 'All caught up here. Try another subject or source.'
-                : `About ${plural(minutes, 'minute')}.`}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          <span className="text-white/80">New cards a day</span>
-          <div className="flex rounded-lg bg-white/10 p-1" role="group" aria-label="New cards a day">
-            {NEW_PER_DAY_CHOICES.map((n) => (
-              <button
-                key={n}
-                type="button"
-                onClick={() => updateSettings({ newPerDay: n })}
-                aria-pressed={settings.newPerDay === n}
-                className={cn(
-                  'h-8 min-w-10 rounded-md px-2 font-bold tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-white/70',
-                  settings.newPerDay === n ? 'bg-white text-primary-deep' : 'text-white/80 hover:text-white',
-                )}
-              >
-                {n}
-              </button>
-            ))}
-          </div>
-          {settings.newDoneToday > 0 && <span className="text-white/60">{settings.newDoneToday} done today</span>}
-        </div>
-
-        <div className="flex items-center gap-2">
+      {/* ---------- Start: just ⚙ + the gold Look button, centered under the scene (same center line).
+          The counts already sit on the field of view's label, so they aren't repeated here.
+          Phones: a small floating bar that sticks above the bottom nav, so Look is always in reach. ---------- */}
+      <section aria-label="Start" className="flex flex-col items-center gap-1.5">
+        <div className="flex items-center gap-2 max-md:sticky max-md:bottom-[calc(4.75rem+env(safe-area-inset-bottom))] max-md:z-10 max-md:rounded-2xl max-md:bg-card/90 max-md:p-2 max-md:shadow-[0_12px_28px_-12px_rgb(7_71_94/0.5)] max-md:backdrop-blur">
           <button
             type="button"
             onClick={() => setOptionsOpen(true)}
-            aria-label={optionsChanged ? 'Question options (changed)' : 'Question options'}
-            className="relative flex size-12 shrink-0 items-center justify-center rounded-lg bg-white/10 outline-none hover:bg-white/15 focus-visible:ring-3 focus-visible:ring-white/60"
+            aria-label={optionsChanged ? 'Flashcard options (changed)' : 'Flashcard options'}
+            className="relative flex size-12 shrink-0 items-center justify-center rounded-lg border bg-card text-muted-foreground outline-none hover:border-primary/50 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             <SlidersHorizontal className="size-5" aria-hidden />
             {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
           </button>
           <button
             type="button"
-            className={cn(heroButtonClass, 'flex-1 sm:flex-none')}
-            disabled={total === 0}
-            onClick={() => setStage({ name: 'session', deck: [...deck.due, ...deck.fresh] })}
+            className={cn(heroButtonClass, 'w-auto px-7 focus-visible:ring-ring/50')}
+            disabled={total === 0 || looking}
+            onClick={look}
           >
-            <Play className="size-5 fill-current" aria-hidden />
-            Start {plural(total, 'card')}
+            <Microscope className="size-5" aria-hidden />
+            {looking ? 'Focusing…' : total === 0 ? 'Nothing to look at' : `Look · ${plural(total, 'card')}`}
           </button>
         </div>
-      </HeroPanel>
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          {total === 0
+            ? settings.newDoneToday >= settings.newPerDay
+              ? 'All caught up. Come back tomorrow.'
+              : 'Nothing due here. Try another slide.'
+            : `About ${plural(minutes, 'minute')}`}
+        </p>
+      </section>
 
-      <p className="text-sm text-muted-foreground">
-        <span className="font-semibold text-foreground">How it works:</span> read the question, think of the answer, then flip the card and rate how well you knew it. “Again”
-        brings it back in a few minutes; “Easy” pushes it days or weeks away.
-      </p>
+      {/* Why the intervals may look shorter near the exam, or a nudge to set the date so they can. */}
+      {study.isSuccess && (
+        <p className="text-center text-sm text-muted-foreground">
+          <CalendarClock className="mr-1 inline size-4 align-[-3px] text-primary" aria-hidden />
+          {maxIntervalDays !== undefined ? (
+            <>
+              No card is scheduled after your board exam
+              {daysToExam !== null && daysToExam > 0 && <> ({plural(daysToExam, 'day')} away)</>}.
+            </>
+          ) : (
+            <>
+              <Link to="/settings" className="font-semibold text-primary hover:underline">
+                Set your exam date
+              </Link>{' '}
+              so no card is scheduled after it.
+            </>
+          )}
+        </p>
+      )}
 
       <Dialog open={optionsOpen} onClose={() => setOptionsOpen(false)} labelledBy="fc-options-heading" variant="sheet">
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 id="fc-options-heading" className="font-heading text-lg font-bold">
-              Question options
+              Flashcard options
             </h2>
             <button
               type="button"
@@ -258,6 +260,29 @@ export default function FlashcardsPage() {
               <X className="size-5" aria-hidden />
             </button>
           </div>
+          {/* Changed rarely, so it lives here instead of next to Start. */}
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-semibold">New cards a day</legend>
+            <div className="flex items-center gap-3">
+              <div className="flex rounded-lg bg-secondary p-1">
+                {NEW_PER_DAY_CHOICES.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => updateSettings({ newPerDay: n })}
+                    aria-pressed={settings.newPerDay === n}
+                    className={cn(
+                      'h-9 min-w-12 rounded-md px-2 font-bold tabular-nums outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
+                      settings.newPerDay === n ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              {settings.newDoneToday > 0 && <span className="text-sm text-muted-foreground tabular-nums">{settings.newDoneToday} done today</span>}
+            </div>
+          </fieldset>
           <SourcePicker value={sourceChoice} onChange={setSourceChoice} />
           <button
             type="button"

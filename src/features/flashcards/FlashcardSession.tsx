@@ -1,7 +1,7 @@
-import { X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Microscope, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { QuizQuestion } from '@/features/quiz/api'
-import { cardToRow, formatInterval, GRADES, LEARN_AHEAD_MS, previewIntervals, Rating, review, rowToCard, State, type Card, type Grade, type ReviewRow } from '@/lib/fsrs'
+import { cardToRow, formatInterval, GRADES, LEARN_AHEAD_MS, makeScheduler, previewIntervals, Rating, review, rowToCard, State, type Card, type Grade, type ReviewRow } from '@/lib/fsrs'
 import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { saveReview } from './api'
@@ -16,13 +16,16 @@ type Props = {
   onNewStudied: () => void
   onDone: (stats: SessionStats) => void
   onExit: (stats: SessionStats) => void
+  /** the longest a card may be put away, so nothing comes back after the board exam (see maxIntervalForExam) */
+  maxIntervalDays?: number
 }
 
+// Quiet rating buttons: neutral, except Again (light red: it comes right back) and Good (the usual choice, light blue).
 const GRADE_LOOK: Record<Grade, { label: string; key: string; className: string }> = {
-  [Rating.Again]: { label: 'Again', key: '1', className: 'border-wrong/40 bg-wrong-soft text-wrong hover:border-wrong' },
-  [Rating.Hard]: { label: 'Hard', key: '2', className: 'border-highlight/60 bg-highlight-soft text-[#8A5200] hover:border-highlight' },
-  [Rating.Good]: { label: 'Good', key: '3', className: 'border-primary/40 bg-primary/[0.08] text-primary hover:border-primary' },
-  [Rating.Easy]: { label: 'Easy', key: '4', className: 'border-correct/40 bg-correct-soft text-correct hover:border-correct' },
+  [Rating.Again]: { label: 'Again', key: '1', className: 'border-wrong/35 bg-card text-wrong hover:border-wrong hover:bg-wrong-soft' },
+  [Rating.Hard]: { label: 'Hard', key: '2', className: 'border-border bg-card text-foreground hover:border-primary/50' },
+  [Rating.Good]: { label: 'Good', key: '3', className: 'border-primary/40 bg-primary/[0.06] text-primary hover:border-primary' },
+  [Rating.Easy]: { label: 'Easy', key: '4', className: 'border-border bg-card text-foreground hover:border-primary/50' },
 }
 
 /** The current time. Only called from click / key handlers and the first setup, never while drawing. */
@@ -33,8 +36,9 @@ function stateGroup(card: Card | undefined) {
   return card.state === State.Review ? 'review' : 'learning'
 }
 
-export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit }: Props) {
+export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, maxIntervalDays }: Props) {
   const subjectOf = useSubjectOfTopic()
+  const scheduler = useMemo(() => makeScheduler(true, maxIntervalDays), [maxIntervalDays])
   const [queue, setQueue] = useState(deck)
   const [revealed, setRevealed] = useState(false)
   const [saveError, setSaveError] = useState(false)
@@ -46,16 +50,13 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit }:
 
   const question = queue[0]
   const card = question ? cards.get(question.id) : undefined
-  const intervals = card ? previewIntervals(card, shownAt) : null
+  const intervals = card ? previewIntervals(card, shownAt, scheduler) : null
   const subject = question ? subjectOf(question.topic_id) : undefined
-
-  const left = { new: 0, learning: 0, review: 0 }
-  for (const q of queue) left[stateGroup(cards.get(q.id))]++
 
   function rate(grade: Grade) {
     if (!question || !card || !revealed) return
     const now = currentTime()
-    const next = review(card, grade, now)
+    const next = review(card, grade, now, scheduler)
     const wasNew = card.state === State.New
 
     saveReview(cardToRow(question.id, next)).catch(() => setSaveError(true))
@@ -98,65 +99,84 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit }:
 
   if (!question || !card || !intervals) return null
 
+  const done = stats.reviewed
+  const progress = done / (done + queue.length)
+
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <div className="flex items-center justify-between gap-3 text-sm">
+      {/* Exit, and simply how many are left (cards rated "Again" come back, so the count can go up again). */}
+      <div className="flex items-center gap-3 text-sm">
         <button
           type="button"
           onClick={() => onExit(stats)}
-          className="-ml-2 flex h-10 items-center gap-1 rounded-md px-2 font-semibold text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+          className="-ml-2 flex h-10 shrink-0 items-center gap-1 rounded-md px-2 font-semibold text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
         >
           <X className="size-4" aria-hidden />
           Exit
         </button>
-        {/* What's left, by kind (like Anki's three numbers). */}
-        <p className="flex items-center gap-3 font-semibold tabular-nums" aria-label={`${left.new} new, ${left.learning} learning, ${left.review} review left`}>
-          <span className="text-primary">{left.new} new</span>
-          <span className="text-[#8A5200]">{left.learning} learning</span>
-          <span className="text-correct">{left.review} review</span>
+        <div
+          className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary"
+          role="progressbar"
+          aria-label="Cards done"
+          aria-valuemin={0}
+          aria-valuemax={done + queue.length}
+          aria-valuenow={done}
+        >
+          <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${progress * 100}%` }} />
+        </div>
+        <p className="shrink-0 font-semibold tabular-nums">
+          {queue.length} <span className="font-normal text-muted-foreground">left</span>
         </p>
       </div>
 
-      {/* The card flips over to show the answer. key: each card mounts face-up, so the next answer never shows mid-flip. */}
-      <div key={`${question.id}-${stats.reviewed}`} className="animate-in fade-in [perspective:1400px] duration-200">
-        <div className={cn('grid transition-transform duration-500 [transform-style:preserve-3d]', revealed && '[transform:rotateY(180deg)]')}>
-          {/* ---------- front: the question ---------- */}
-          <section
-            aria-hidden={revealed}
-            className="flex min-h-72 flex-col rounded-2xl border bg-card p-6 shadow-[0_18px_40px_-28px_rgb(7_71_94/0.55)] [grid-area:1/1] [backface-visibility:hidden] sm:min-h-80 sm:p-8"
-          >
-            <p className="text-sm text-muted-foreground">
-              <span className="font-heading font-bold text-primary">{subject?.code ?? '—'}</span>
-              {subject?.topicName && <> {subject.topicName}</>}
-              {stateGroup(card) === 'new' && <span className="ml-2 rounded-[4px] bg-primary/10 px-1.5 text-xs font-bold text-primary">NEW</span>}
-            </p>
-            <p className="my-auto py-6 text-center text-xl leading-snug font-bold text-balance sm:text-2xl">{question.stem}</p>
-            <p className="text-center text-xs text-muted-foreground">Think of the answer, then flip the card.</p>
-          </section>
+      {/* ---------- The slide under the microscope ----------
+          The answer is on the slide from the start but out of focus (blurred). "Focus" brings it into focus.
+          key: each card mounts out of focus, so the next answer never shows sharp for a moment. */}
+      <article
+        key={`${question.id}-${stats.reviewed}`}
+        className="animate-in fade-in overflow-hidden rounded-2xl border bg-card shadow-[0_18px_40px_-28px_rgb(7_71_94/0.55)] duration-200"
+      >
+        {/* the slide's frosted label end */}
+        <p className="flex items-center gap-2 border-b border-primary/10 bg-secondary/70 px-5 py-2.5 text-sm text-muted-foreground sm:px-7">
+          <span aria-hidden className="h-3.5 w-5 shrink-0 rounded-[3px] border border-primary/25 bg-card" />
+          <span className="font-heading font-bold text-primary">{subject?.code ?? '—'}</span>
+          {subject?.topicName && <span className="truncate">· {subject.topicName}</span>}
+          {stateGroup(card) === 'new' && <span className="ml-auto shrink-0 rounded-[4px] bg-primary/10 px-1.5 text-xs font-bold text-primary">NEW</span>}
+        </p>
 
-          {/* ---------- back: the answer ---------- */}
-          <section
-            aria-hidden={!revealed}
-            className="flex min-h-72 flex-col gap-4 rounded-2xl border bg-card p-6 shadow-[0_18px_40px_-28px_rgb(7_71_94/0.55)] [grid-area:1/1] [transform:rotateY(180deg)] [backface-visibility:hidden] sm:min-h-80 sm:p-8"
-          >
-            <p className="text-sm leading-snug text-muted-foreground">{question.stem}</p>
-            <div className="rounded-xl bg-correct-soft px-4 py-3">
-              <p className="text-xs font-bold tracking-wide text-correct uppercase">Answer</p>
-              <p className="font-heading text-xl font-bold text-correct sm:text-2xl">{question.choices[question.correct_index]}</p>
+        <div className="space-y-5 px-5 py-6 sm:px-7 sm:py-8">
+          <p className="text-center text-xl leading-snug font-bold text-balance sm:text-2xl">{question.stem}</p>
+
+          {/* the answer: blurred until focused (hidden from screen readers until then) */}
+          <div className="relative">
+            <div
+              aria-hidden={!revealed}
+              className={cn('space-y-3 transition-[filter,opacity] duration-500 ease-out', !revealed && 'pointer-events-none opacity-60 blur-[10px] select-none')}
+            >
+              <div className="rounded-xl bg-correct-soft px-4 py-3">
+                <p className="text-xs font-bold tracking-wide text-correct uppercase">Answer</p>
+                <p className="font-heading text-xl font-bold text-correct sm:text-2xl">{question.choices[question.correct_index]}</p>
+              </div>
+              {question.explanation && <p className="leading-relaxed text-foreground/90">{question.explanation}</p>}
             </div>
-            {question.explanation && <p className="leading-relaxed text-foreground/90">{question.explanation}</p>}
-          </section>
+            {!revealed && (
+              <p className="absolute inset-0 flex items-center justify-center">
+                <span className="rounded-full bg-card/90 px-3 py-1 text-xs font-semibold text-muted-foreground shadow-sm">Out of focus. Think of the answer first.</span>
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </article>
 
       {!revealed ? (
         <button
           type="button"
           onClick={() => setRevealed(true)}
           autoFocus
-          className="h-13 w-full rounded-xl bg-primary font-heading text-lg font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-primary font-heading text-lg font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          Show answer
+          <Microscope className="size-5" aria-hidden />
+          Focus
         </button>
       ) : (
         <div className="space-y-2">
@@ -185,7 +205,7 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit }:
           </div>
         </div>
       )}
-      <p className="hidden text-center text-xs text-muted-foreground md:block">Space to flip · 1–4 to rate</p>
+      <p className="hidden text-center text-xs text-muted-foreground md:block">Space to focus · 1–4 to rate</p>
 
       {saveError && (
         <p role="alert" className="text-sm text-destructive">

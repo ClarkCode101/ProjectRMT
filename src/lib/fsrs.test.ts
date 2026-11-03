@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { buildDeck, cardToRow, dueByTomorrow, formatInterval, makeScheduler, previewIntervals, Rating, review, rowToCard, State, type ReviewRow } from './fsrs'
+import {
+  buildDeck,
+  cardToRow,
+  dueByTomorrow,
+  formatInterval,
+  makeScheduler,
+  maxIntervalForExam,
+  previewIntervals,
+  Rating,
+  review,
+  rowToCard,
+  State,
+  type ReviewRow,
+} from './fsrs'
 
 const f = makeScheduler(false) // no fuzz, so results are repeatable
 const NOW = new Date('2026-11-03T08:00:00Z')
@@ -69,15 +82,49 @@ describe('review / previewIntervals', () => {
   })
 })
 
+describe('maxIntervalForExam / capped scheduler', () => {
+  it('allows at most the day before the exam', () => {
+    expect(maxIntervalForExam(40)).toBe(39)
+    expect(maxIntervalForExam(2)).toBe(1)
+  })
+
+  it('never goes below 1 day, even on the eve or day of the exam', () => {
+    expect(maxIntervalForExam(1)).toBe(1)
+    expect(maxIntervalForExam(0)).toBe(1)
+  })
+
+  it('has no limit without an exam date, or once it has passed', () => {
+    expect(maxIntervalForExam(null)).toBeUndefined()
+    expect(maxIntervalForExam(-3)).toBeUndefined()
+  })
+
+  it('keeps every button within the limit', () => {
+    const capped = makeScheduler(false, 3)
+    const newCard = previewIntervals(rowToCard(undefined, NOW), NOW, capped)
+    const knownCard = previewIntervals(rowToCard(row('q1', 0, { stability: 40, scheduled_days: 40 }), NOW), NOW, capped)
+    for (const ms of [...Object.values(newCard), ...Object.values(knownCard)]) expect(ms).toBeLessThanOrEqual(3 * DAY)
+  })
+
+  it('leaves the short learning steps alone', () => {
+    const capped = previewIntervals(rowToCard(undefined, NOW), NOW, makeScheduler(false, 3))
+    const normal = previewIntervals(rowToCard(undefined, NOW), NOW, f)
+    expect(capped[Rating.Again]).toBe(normal[Rating.Again])
+    expect(capped[Rating.Good]).toBe(normal[Rating.Good])
+  })
+})
+
 describe('formatInterval', () => {
-  it('uses the shortest sensible unit', () => {
-    expect(formatInterval(30_000)).toBe('<1m')
-    expect(formatInterval(10 * MIN)).toBe('10m')
-    expect(formatInterval(3 * 60 * MIN)).toBe('3h')
-    expect(formatInterval(4 * DAY)).toBe('4d')
-    expect(formatInterval(60 * DAY)).toBe('2mo')
-    expect(formatInterval(365 * DAY)).toBe('1y')
-    expect(formatInterval(400 * DAY)).toBe('1.1y')
+  it('uses the shortest sensible unit, spelled out', () => {
+    expect(formatInterval(30_000)).toBe('<1 min')
+    expect(formatInterval(10 * MIN)).toBe('10 min')
+    expect(formatInterval(60 * MIN)).toBe('1 hour')
+    expect(formatInterval(3 * 60 * MIN)).toBe('3 hours')
+    expect(formatInterval(DAY)).toBe('1 day')
+    expect(formatInterval(4 * DAY)).toBe('4 days')
+    expect(formatInterval(30 * DAY)).toBe('1 month')
+    expect(formatInterval(60 * DAY)).toBe('2 months')
+    expect(formatInterval(365 * DAY)).toBe('1 year')
+    expect(formatInterval(400 * DAY)).toBe('1.1 years')
   })
 })
 

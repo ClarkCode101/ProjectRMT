@@ -4,6 +4,10 @@
 import { createEmptyCard, fsrs, generatorParameters, Rating, State, type Card, type FSRS, type Grade } from 'ts-fsrs'
 import { shuffle, type RandomFn } from './quiz'
 
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const DAY = 24 * HOUR
+
 export { Rating, State }
 export type { Card, Grade }
 
@@ -24,9 +28,39 @@ export type ReviewRow = {
   last_review: string | null
 }
 
-/** fuzz = a little randomness in long intervals so cards don't all bunch up on one day (off in tests). */
-export function makeScheduler(fuzz = true): FSRS {
-  return fsrs(generatorParameters({ enable_fuzz: fuzz }))
+/** The FSRS scheduler plus our own hard limit on how far away a card may be put. */
+export type Scheduler = { fsrs: FSRS; maxIntervalDays?: number }
+
+/**
+ * fuzz = a little randomness in long intervals so cards don't all bunch up on one day (off in tests).
+ * maxIntervalDays = the longest a card may be put away (see maxIntervalForExam); none = no limit of ours.
+ */
+export function makeScheduler(fuzz = true, maxIntervalDays?: number): Scheduler {
+  return {
+    fsrs: fsrs(generatorParameters({ enable_fuzz: fuzz, ...(maxIntervalDays !== undefined && { maximum_interval: maxIntervalDays }) })),
+    maxIntervalDays,
+  }
+}
+
+/**
+ * Keeps a card within the limit. Needed on top of FSRS's own maximum_interval, because FSRS also keeps
+ * Hard < Good < Easy at least a day apart and may push Good / Easy a day or two past the maximum.
+ */
+function withinLimit(card: Card, now: Date, s: Scheduler): Card {
+  if (s.maxIntervalDays === undefined) return card
+  const latest = now.getTime() + s.maxIntervalDays * DAY
+  return card.due.getTime() > latest ? { ...card, due: new Date(latest), scheduled_days: s.maxIntervalDays } : card
+}
+
+/**
+ * The longest interval allowed so no card comes back AFTER the board exam: at most the day before it.
+ * Far from the exam this changes nothing (intervals are shorter anyway); close to it, every card is
+ * brought back before exam day. No exam date, or it has passed → no limit (undefined).
+ * daysToExam: 0 = today, 1 = tomorrow (from planner.daysUntil).
+ */
+export function maxIntervalForExam(daysToExam: number | null): number | undefined {
+  if (daysToExam === null || daysToExam < 0) return undefined
+  return Math.max(1, daysToExam - 1)
 }
 
 const scheduler = makeScheduler()
@@ -70,28 +104,31 @@ export function cardToRow(questionId: string, card: Card): ReviewRow {
 }
 
 /** The card after she presses Again / Hard / Good / Easy. */
-export function review(card: Card, grade: Grade, now: Date, f: FSRS = scheduler): Card {
-  return f.next(card, now, grade).card
+export function review(card: Card, grade: Grade, now: Date, s: Scheduler = scheduler): Card {
+  return withinLimit(s.fsrs.next(card, now, grade).card, now, s)
 }
 
 /** How long until the card comes back for each button (ms), for the labels under the buttons. */
-export function previewIntervals(card: Card, now: Date, f: FSRS = scheduler): Record<Grade, number> {
-  const preview = f.repeat(card, now)
-  return Object.fromEntries(GRADES.map((g) => [g, preview[g].card.due.getTime() - now.getTime()])) as Record<Grade, number>
+export function previewIntervals(card: Card, now: Date, s: Scheduler = scheduler): Record<Grade, number> {
+  const preview = s.fsrs.repeat(card, now)
+  return Object.fromEntries(GRADES.map((g) => [g, withinLimit(preview[g].card, now, s).due.getTime() - now.getTime()])) as Record<Grade, number>
 }
 
-const MINUTE = 60_000
-const HOUR = 60 * MINUTE
-const DAY = 24 * HOUR
+/** "1 day" / "9 days" */
+const count = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`
 
-/** 30 s → "<1m", 10 min → "10m", 3 h → "3h", 4 days → "4d", 2 months → "2mo", 400 days → "1.1y". */
+/**
+ * Spelled out so "1m" can't be read as a month:
+ * 30 s → "<1 min", 10 min → "10 min", 3 h → "3 hours", 4 days → "4 days", 2 months → "2 months", 400 days → "1.1 years".
+ */
 export function formatInterval(ms: number): string {
-  if (ms < MINUTE) return '<1m'
-  if (ms < HOUR) return `${Math.round(ms / MINUTE)}m`
-  if (ms < DAY) return `${Math.round(ms / HOUR)}h`
-  if (ms < 30 * DAY) return `${Math.round(ms / DAY)}d`
-  if (ms < 365 * DAY) return `${Math.round(ms / (30 * DAY))}mo`
-  return `${(ms / (365 * DAY)).toFixed(1).replace(/\.0$/, '')}y`
+  if (ms < MINUTE) return '<1 min'
+  if (ms < HOUR) return `${Math.round(ms / MINUTE)} min`
+  if (ms < DAY) return count(Math.round(ms / HOUR), 'hour')
+  if (ms < 30 * DAY) return count(Math.round(ms / DAY), 'day')
+  if (ms < 365 * DAY) return count(Math.round(ms / (30 * DAY)), 'month')
+  const years = (ms / (365 * DAY)).toFixed(1).replace(/\.0$/, '')
+  return `${years} ${years === '1' ? 'year' : 'years'}`
 }
 
 /**
