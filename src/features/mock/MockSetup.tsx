@@ -1,16 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
-import { Check, EyeOff, Flag, Play, SlidersHorizontal, Target, Timer, X } from 'lucide-react'
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { EyeOff, Flag, Info, Play, SlidersHorizontal, Target, Timer, X } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { PageHeader } from '@/components/dashboard'
-import { HeroPanel, heroButtonClass } from '@/components/report'
+import { heroButtonClass } from '@/components/report'
 import { useTopicPerformance } from '@/features/dashboard/api'
 import { DEFAULT_SOURCE, questionPoolOptions, type QuizFilters, type SourceChoice } from '@/features/quiz/api'
 import { SourcePicker } from '@/features/quiz/SourcePicker'
 import { formatClock, MOCK_ITEM_COUNTS, secondsLeft, timeLimitSec, type SavedMock } from '@/lib/mockExam'
-import { formatPercent, summarizePerformance } from '@/lib/quiz'
+import { summarizePerformance } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
+import { AnalyzerRotor, type RotorPhase } from './AnalyzerRotor'
+
+// Mock exam setup, drawn as an analyzer (Practice is the specimen rack; this is the machine for a full run):
+// the rotor on the left picks the subject, the display on the right shows the run and has Start.
 
 type Props = {
   onStart: (filters: QuizFilters, itemCount: number, label: string) => void
@@ -21,33 +25,37 @@ type Props = {
   onDiscard: () => void
 }
 
-/** One row in the subject list (a real radio button). */
-function SubjectRow({ checked, onChange, children }: { checked: boolean; onChange: () => void; children: ReactNode }) {
+// The start scene, about 1.7 seconds in all (see AnalyzerRotor):
+// spin (the rotor turns twice and slows down) → land (the other tubes fade) → load (the chosen tube slides to the center).
+/** Keep in step with .analyzer-spin in index.css. */
+const SPIN_MS = 900
+const LAND_MS = 200
+/** Keep in step with LOAD_TRANSITION in AnalyzerRotor.tsx. */
+const LOAD_MS = 600
+
+/** The run's rules, printed along the bottom of the machine (short, like a label on real equipment). */
+const RULES = [
+  { icon: Timer, text: 'Auto-submits at 0:00' },
+  { icon: EyeOff, text: 'Answers after you submit' },
+  { icon: Flag, text: 'Flag items, come back later' },
+  { icon: Target, text: 'Pass: 60% or higher' },
+]
+
+// Status light colors. Brighter than the app's --correct / --wrong on purpose: a light on the dark display
+// has to look lit, and the darker brand greens and reds are hard to see on deep blue.
+const LED = { on: 'bg-[#5EE39A]', paused: 'bg-highlight', off: 'bg-[#FF8A95]' }
+
+type Status = { text: string; light: string; blink?: boolean }
+
+/** A small label + value on the display. */
+function Readout({ label, value }: { label: string; value: string }) {
   return (
-    <label
-      className={cn(
-        'flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border bg-card px-4 py-2.5 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
-        checked ? 'border-primary bg-primary/[0.05] ring-1 ring-primary' : 'hover:border-primary/50',
-      )}
-    >
-      <input type="radio" name="mock-subject" checked={checked} onChange={onChange} className="sr-only" />
-      <span
-        className={cn('flex size-5 shrink-0 items-center justify-center rounded-full border-2', checked ? 'border-primary bg-primary text-white' : 'border-border')}
-        aria-hidden
-      >
-        {checked && <Check className="size-3" strokeWidth={3} />}
-      </span>
-      {children}
-    </label>
+    <div className="rounded-lg bg-white/10 px-3 py-2">
+      <dt className="text-[11px] font-semibold tracking-widest text-white/60 uppercase">{label}</dt>
+      <dd className="font-mono text-2xl font-bold tabular-nums">{value}</dd>
+    </div>
   )
 }
-
-const RULES = [
-  { icon: Timer, text: 'Timed. It submits by itself when time runs out.' },
-  { icon: EyeOff, text: 'No answers shown until you submit.' },
-  { icon: Flag, text: 'Flag items and come back to them.' },
-  { icon: Target, text: '60% or higher to pass.' },
-]
 
 export function MockSetup({ onStart, starting, saved, onResume, onDiscard }: Props) {
   const subjects = useSubjects()
@@ -59,6 +67,7 @@ export function MockSetup({ onStart, starting, saved, onResume, onDiscard }: Pro
   const [itemCount, setItemCount] = useState<number>(100)
   const [sourceChoice, setSourceChoice] = useState<SourceChoice>(DEFAULT_SOURCE)
   const [optionsOpen, setOptionsOpen] = useState(false)
+  const [phase, setPhase] = useState<RotorPhase>('idle')
 
   const chosen = summary.find((s) => s.subjectId === subjectId)
   const label = chosen?.code ?? 'All subjects'
@@ -70,150 +79,175 @@ export function MockSetup({ onStart, starting, saved, onResume, onDiscard }: Pro
   const optionsChanged = sourceChoice.source !== 'all' || sourceChoice.verifiedOnly
 
   // An exam left part-way: offer to resume it first (only one at a time).
-  // The clock is read once when the page opens (the exact second doesn't matter on this card).
+  // The clock is read once when the page opens (the exact second doesn't matter here).
   const [openedAt] = useState(() => Date.now())
   const savedLeft = saved ? secondsLeft(saved, openedAt) : 0
   const savedAnswered = saved ? saved.answers.filter((a) => a !== null).length : 0
 
+  // If starting fails (e.g. no internet), put the rotor back so the error message above can be read.
+  const wasStarting = useRef(starting)
+  useEffect(() => {
+    if (wasStarting.current && !starting) setPhase('idle')
+    wasStarting.current = starting
+  }, [starting])
+
+  const timers = useRef<number[]>([])
+  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), [])
+
+  const busy = starting || phase !== 'idle'
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    if (saved) return // finish or discard the saved one first
-    onStart(filters, itemCount, label)
+    if (saved || busy) return // finish or discard the saved one first
+    // Reduced motion: no scene, start right away.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return onStart(filters, itemCount, label)
+    setPhase('spin')
+    timers.current = [
+      window.setTimeout(() => setPhase('land'), SPIN_MS),
+      window.setTimeout(() => setPhase('load'), SPIN_MS + LAND_MS),
+      window.setTimeout(() => onStart(filters, itemCount, label), SPIN_MS + LAND_MS + LOAD_MS),
+    ]
   }
+
+  // The status light at the top of the display. Color is never the only signal: the word says it too.
+  const status: Status = saved
+    ? { text: 'Run paused', light: LED.paused }
+    : phase === 'load'
+      ? { text: `Loading ${label}`, light: LED.on, blink: true }
+      : busy
+        ? { text: 'Running', light: LED.on, blink: true }
+      : available === 0
+        ? { text: 'No samples', light: LED.off }
+        : { text: 'Ready', light: LED.on }
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-5xl space-y-6">
-      <PageHeader title="Mock exam" subtitle="Timed, like the real board exam. Answers are shown only after you submit." />
+      <PageHeader title="Mock exam" subtitle="Load a subject into the analyzer, then start the run. Timed like the real board exam." />
 
-      {saved && (
-        <section aria-labelledby="resume-heading" className="flex flex-col gap-3 rounded-2xl border border-highlight/60 bg-highlight-soft p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 id="resume-heading" className="font-heading text-lg font-bold">
-              You have a mock exam in progress
-            </h2>
-            <p className="text-sm text-foreground/80 tabular-nums">
-              {saved.label} · {savedAnswered} of {saved.answers.length} answered · {savedLeft > 0 ? `${formatClock(savedLeft)} left` : 'time is up'}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onDiscard}
-              className="h-11 rounded-lg border bg-card px-4 text-sm font-semibold outline-none hover:border-wrong/60 hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40"
-            >
-              Discard
-            </button>
-            <button
-              type="button"
-              onClick={onResume}
-              disabled={starting}
-              className="h-11 rounded-lg bg-primary px-5 font-heading font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-60"
-            >
-              {savedLeft > 0 ? 'Resume' : 'See results'}
-            </button>
-          </div>
-        </section>
-      )}
-
-      <div className={cn('grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-8', saved && 'pointer-events-none opacity-50')} aria-disabled={Boolean(saved)}>
-        {/* ---------- Subject ---------- */}
-        <fieldset className="space-y-2.5" disabled={Boolean(saved)}>
-          <legend className="mb-2.5 font-heading text-lg font-bold">Subject</legend>
-          <SubjectRow checked={subjectId === null} onChange={() => setSubjectId(null)}>
-            <span className="min-w-0 flex-1">
-              <span className="block font-heading font-bold">All subjects</span>
-              <span className="block text-sm text-muted-foreground">A mixed exam from all six</span>
-            </span>
-          </SubjectRow>
-          <div className="grid gap-2.5 sm:grid-cols-2">
-            {summary.map((s) => (
-              <SubjectRow key={s.subjectId} checked={subjectId === s.subjectId} onChange={() => setSubjectId(s.subjectId)}>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline justify-between gap-2">
-                    <span className="font-heading font-bold">{s.code}</span>
-                    <span className={cn('text-sm font-semibold tabular-nums', s.accuracy === null ? 'font-normal text-muted-foreground' : s.belowPassing ? 'text-wrong' : 'text-correct')}>
-                      {s.accuracy === null ? 'New' : formatPercent(s.accuracy)}
-                    </span>
-                  </span>
-                  <span className="block truncate text-sm text-muted-foreground" title={s.name}>
-                    {s.name}
-                  </span>
-                </span>
-              </SubjectRow>
+      {/* ---------- The analyzer: rotor + display ----------
+          No card around it, like the rack on Practice: the rotor stands on the lab bench as an object,
+          and the dark display is the one action area on the page. */}
+      <section aria-label="Analyzer">
+        {/* name plate and vents, pure decoration */}
+        <div aria-hidden className="mb-4 flex items-center justify-between gap-3 border-b border-dashed pb-3 sm:mb-6">
+          <span className="font-heading text-xs font-bold tracking-[0.2em] text-muted-foreground uppercase">RMT-6 Analyzer</span>
+          <span className="flex gap-1">
+            {[0, 1, 2, 3].map((i) => (
+              <span key={i} className="h-3.5 w-1 rounded-full bg-secondary shadow-[inset_0_1px_1px_rgb(7_71_94/0.2)]" />
             ))}
-          </div>
-        </fieldset>
+          </span>
+        </div>
 
-        {/* ---------- The exam slip: what she's about to take, and Start (the one colored thing here) ---------- */}
-        <HeroPanel labelledBy="slip-heading" className="space-y-5 lg:sticky lg:top-6">
-          <div>
-            <p className="text-xs font-semibold tracking-wide text-white/60 uppercase">Exam slip</p>
-            <h2 id="slip-heading" className="font-heading text-2xl font-bold">
-              {chosen?.name ?? 'All subjects'}
-            </h2>
-          </div>
+        <div className="grid items-center gap-6 md:grid-cols-[auto_minmax(0,1fr)] md:gap-8">
+          <AnalyzerRotor summary={summary} selectedId={subjectId} onSelect={setSubjectId} phase={phase} disabled={Boolean(saved) || busy} dimmed={Boolean(saved)} />
 
-          <fieldset className="space-y-2" disabled={Boolean(saved)}>
-            <legend className="mb-2 text-sm font-semibold text-white/80">Items</legend>
-            <div className="flex rounded-lg bg-white/10 p-1">
-              {MOCK_ITEM_COUNTS.map((n) => (
-                <label
-                  key={n}
-                  className={cn(
-                    'flex h-10 flex-1 cursor-pointer items-center justify-center rounded-md font-heading font-bold tabular-nums transition-colors has-focus-visible:ring-2 has-focus-visible:ring-white/70',
-                    itemCount === n ? 'bg-white text-primary-deep' : 'text-white/80 hover:text-white',
-                  )}
-                >
-                  <input type="radio" name="mock-count" checked={itemCount === n} onChange={() => setItemCount(n)} className="sr-only" />
-                  {n}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <dl className="grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-lg bg-white/10 px-3 py-2">
-              <dt className="text-white/70">Time limit</dt>
-              <dd className="font-heading text-xl font-bold tabular-nums">{formatClock(timeLimitSec(examItems))}</dd>
-            </div>
-            <div className="rounded-lg bg-white/10 px-3 py-2">
-              <dt className="text-white/70">Questions</dt>
-              <dd className="font-heading text-xl font-bold tabular-nums">{available === null ? '…' : examItems}</dd>
-            </div>
-          </dl>
-          {available !== null && available < itemCount && (
-            <p className="rounded-md bg-white/10 px-3 py-2 text-sm text-white/90">
-              {available === 0 ? 'No questions here yet. Try another subject or source.' : `Only ${available} questions here, so the exam has ${available} items.`}
+          {/* ---------- The display ---------- */}
+          <div className="space-y-4 rounded-2xl bg-primary-deep p-4 text-white shadow-[inset_0_2px_10px_rgb(0_0_0/0.35)] sm:p-5">
+            <p className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase" aria-live="polite">
+              {/* ring-white/20 + a soft glow so the light looks lit */}
+              <span className={cn('size-2.5 rounded-full shadow-[0_0_10px_2px_rgb(255_255_255/0.25)] ring-2 ring-white/20', status.light, status.blink && 'led-blink')} aria-hidden />
+              {status.text}
             </p>
-          )}
 
-          <ul className="space-y-2 text-sm text-white/85">
+            {saved ? (
+              // A paused run: resume it or throw it away before loading a new one.
+              <div className="space-y-4">
+                <div>
+                  <h2 className="font-heading text-xl font-bold">You have a mock exam in progress</h2>
+                  <p className="mt-1 text-sm text-white/75">Finish or discard it before starting a new one.</p>
+                </div>
+                <dl className="grid grid-cols-2 gap-3">
+                  <Readout label="Answered" value={`${savedAnswered}/${saved.answers.length}`} />
+                  <Readout label="Time left" value={savedLeft > 0 ? formatClock(savedLeft) : '0:00'} />
+                </dl>
+                <p className="text-sm text-white/75">Loaded: {saved.label}</p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={onDiscard}
+                    className="h-12 rounded-lg bg-white/10 px-4 text-sm font-semibold outline-none hover:bg-wrong focus-visible:ring-3 focus-visible:ring-white/60"
+                  >
+                    Discard
+                  </button>
+                  <button type="button" onClick={onResume} disabled={starting} className={cn(heroButtonClass, 'flex-1 sm:flex')}>
+                    <Play className="size-5 fill-current" aria-hidden />
+                    {savedLeft > 0 ? 'Resume' : 'See results'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <p className="text-[11px] font-semibold tracking-widest text-white/60 uppercase">Loaded</p>
+                  <h2 className="font-heading text-xl leading-tight font-bold sm:text-2xl">{chosen?.name ?? 'All six subjects'}</h2>
+                </div>
+
+                <dl className="grid grid-cols-2 gap-3">
+                  <Readout label="Run time" value={formatClock(timeLimitSec(examItems))} />
+                  <Readout label="Questions" value={available === null ? '…' : String(examItems)} />
+                </dl>
+
+                <fieldset disabled={busy}>
+                  <legend className="mb-2 text-[11px] font-semibold tracking-widest text-white/60 uppercase">Items</legend>
+                  <div className="flex rounded-lg bg-white/10 p-1">
+                    {MOCK_ITEM_COUNTS.map((n) => (
+                      <label
+                        key={n}
+                        className={cn(
+                          'flex h-10 flex-1 cursor-pointer items-center justify-center rounded-md font-mono font-bold tabular-nums transition-colors has-focus-visible:ring-2 has-focus-visible:ring-white/70',
+                          itemCount === n ? 'bg-white text-primary-deep' : 'text-white/80 hover:text-white',
+                        )}
+                      >
+                        <input type="radio" name="mock-count" checked={itemCount === n} onChange={() => setItemCount(n)} className="sr-only" />
+                        {n}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                {available !== null && available < itemCount && (
+                  // Plain text with an icon (not a box), so it reads as a note and not as another readout.
+                  <p className="flex items-start gap-2 text-sm text-white/85">
+                    <Info className="mt-0.5 size-4 shrink-0 text-highlight" aria-hidden />
+                    {available === 0 ? 'No questions here yet. Try another subject or source.' : `Only ${available} questions here, so the exam has ${available} items.`}
+                  </p>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setOptionsOpen(true)}
+                    disabled={busy}
+                    aria-label={optionsChanged ? 'Question options (changed)' : 'Question options'}
+                    className="relative flex size-12 shrink-0 items-center justify-center rounded-lg bg-white/10 outline-none hover:bg-white/15 focus-visible:ring-3 focus-visible:ring-white/60"
+                  >
+                    <SlidersHorizontal className="size-5" aria-hidden />
+                    {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
+                  </button>
+                  <button type="submit" className={cn(heroButtonClass, 'flex-1 sm:flex')} disabled={busy || available === 0}>
+                    <Play className="size-5 fill-current" aria-hidden />
+                    {busy ? 'Starting run…' : `Start run · ${examItems} items`}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ---------- The run's rules: printed along the machine's bottom edge (mirrors the name plate on top).
+            Plain text, no boxes, so they read as information and not as things to tap. ---------- */}
+        <div className="mt-4 border-t border-dashed pt-3 sm:mt-6">
+          <h2 className="sr-only">Run protocol</h2>
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground lg:flex lg:flex-wrap lg:justify-between">
             {RULES.map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-start gap-2.5">
-                <Icon className="mt-0.5 size-4 shrink-0 text-white/60" aria-hidden />
+              <li key={text} className="flex items-center gap-2">
+                <Icon className="size-4 shrink-0 text-primary" aria-hidden />
                 {text}
               </li>
             ))}
           </ul>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setOptionsOpen(true)}
-              disabled={Boolean(saved)}
-              aria-label={optionsChanged ? 'Question options (changed)' : 'Question options'}
-              className="relative flex size-12 shrink-0 items-center justify-center rounded-lg bg-white/10 outline-none hover:bg-white/15 focus-visible:ring-3 focus-visible:ring-white/60"
-            >
-              <SlidersHorizontal className="size-5" aria-hidden />
-              {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
-            </button>
-            <button type="submit" className={cn(heroButtonClass, 'flex-1 sm:flex sm:w-full')} disabled={starting || Boolean(saved) || available === 0}>
-              <Play className="size-5 fill-current" aria-hidden />
-              {starting ? 'Preparing…' : `Start ${examItems} items`}
-            </button>
-          </div>
-        </HeroPanel>
-      </div>
+        </div>
+      </section>
 
       <Dialog open={optionsOpen} onClose={() => setOptionsOpen(false)} labelledBy="mock-options-heading" variant="sheet">
         <div className="space-y-4">

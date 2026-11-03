@@ -152,3 +152,21 @@
   transform-origin: top;
   animation: pour-stream 650ms ease-out 400ms both;
 }
+
+/* Mock exam analyzer: the rotor spins when she presses Start run, the first part of the start scene
+   (keep in step with SPIN_MS in MockSetup.tsx). Two full turns, so the tubes end where they started. */
+@keyframes analyzer-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(720deg); }
+}
+.analyzer-spin {
+  animation: analyzer-spin 900ms cubic-bezier(0.5, 0, 0.25, 1) both;
+}
+
+/* The analyzer's status light while a run starts. */
+@keyframes led-blink {
+  50% { opacity: 0.25; }
+}
+.led-blink {
+  animation: led-blink 600ms steps(1) infinite;
+}

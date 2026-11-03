@@ -1,5 +1,6 @@
 import { ChevronDown } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { LabBench } from '@/components/LabBench'
 import { formatPercent, type SubjectSummary } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
 import { tubeStatus, type TubeStatus } from './tube'
@@ -172,12 +173,7 @@ export function SpecimenRack({
         <div className="relative flex min-h-0 justify-center gap-1 px-2 pt-6 pr-9 pb-2 @md:gap-2 @md:px-4 @md:pt-7 @md:pr-12 @xl:gap-4 @xl:pt-8 @xl:pb-4 @3xl:gap-8">
           {/* The bench: a soft surface from the rack's base down, fading out at the sides, with a shadow under the rack.
               Its height = the labels under the tubes + half the base (keep in step with the label sizes). */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-[3.9rem] rounded-b-3xl border-t border-primary/15 bg-linear-to-b from-primary/[0.09] to-transparent [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)] @xl:h-[4.9rem] @3xl:h-[5.1rem]"
-          >
-            <div className="absolute inset-x-[20%] -top-2.5 h-5 rounded-[50%] bg-primary-deep/20 blur-md" />
-          </div>
+          <LabBench className="h-[3.9rem] @xl:h-[4.9rem] @3xl:h-[5.1rem]" />
           {summary.map((s, i) => (
             // The "Start here" button sits next to the tube's label, not inside it (a button inside a label confuses screen readers).
             <div key={s.subjectId} className="relative flex min-h-0">
