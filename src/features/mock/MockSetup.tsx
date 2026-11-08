@@ -12,6 +12,8 @@ import { formatClock, MOCK_ITEM_COUNTS, secondsLeft, timeLimitSec, type SavedMoc
 import { formatPercent, overallStats, summarizePerformance } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
+import type { Book } from '@/features/questions/booksApi'
+import { BOOK_SPINE } from '@/lib/books'
 import { AnalyzerRotor, type RotorPhase } from './AnalyzerRotor'
 
 // Mock exam setup, laid out like Practice (one screen, read top to bottom):
@@ -25,6 +27,12 @@ type Props = {
   saved: SavedMock | null
   onResume: () => void
   onDiscard: () => void
+  /** start with this subject at the top of the rotor (from "Study → Mock exam" on a subject's book) */
+  initialSubjectId?: number | null
+  /** run the exam on one of her books instead of a subject (from "Study → Mock exam" on her book) */
+  book?: Book | null
+  /** leave the book and pick from the subjects again */
+  onLeaveBook?: () => void
 }
 
 // The start scene, about 1.7 seconds in all (see AnalyzerRotor):
@@ -43,24 +51,27 @@ const RULES = [
   { icon: Target, text: 'Pass: 60% or higher' },
 ]
 
-export function MockSetup({ onStart, starting, saved, onResume, onDiscard }: Props) {
+export function MockSetup({ onStart, starting, saved, onResume, onDiscard, initialSubjectId = null, book = null, onLeaveBook }: Props) {
   const subjects = useSubjects()
   const topics = useTopics()
   const performance = useTopicPerformance()
   const summary = summarizePerformance(performance.data ?? [], subjects.data ?? [], topics.data ?? [])
   const overall = overallStats(summary)
 
-  const [subjectId, setSubjectId] = useState<number | null>(null)
+  const [subjectId, setSubjectId] = useState<number | null>(initialSubjectId)
   const [itemCount, setItemCount] = useState<number>(100)
   const [sourceChoice, setSourceChoice] = useState<SourceChoice>(DEFAULT_SOURCE)
   const [optionsOpen, setOptionsOpen] = useState(false)
   const [phase, setPhase] = useState<RotorPhase>('idle')
 
-  const chosen = summary.find((s) => s.subjectId === subjectId)
-  const label = chosen?.code ?? 'All subjects'
+  const chosen = book ? undefined : summary.find((s) => s.subjectId === subjectId)
+  const label = book?.title ?? chosen?.code ?? 'All subjects'
   const subjectTopicIds = (topics.data ?? []).filter((t) => t.subject_id === subjectId).map((t) => t.id)
-  const filters: QuizFilters = { ...sourceChoice, subjectId, topicId: null }
-  const pool = useQuery({ ...questionPoolOptions(filters, subjectTopicIds), enabled: subjectId === null || topics.isSuccess })
+  // Her book: exactly its questions. Otherwise: the chosen subject (or all), from the chosen source.
+  const filters: QuizFilters = book
+    ? { ...sourceChoice, subjectId: null, topicId: null, questionIds: [...book.questionIds], bookId: book.id }
+    : { ...sourceChoice, subjectId, topicId: null }
+  const pool = useQuery({ ...questionPoolOptions(filters, subjectTopicIds), enabled: book !== null || subjectId === null || topics.isSuccess })
   const available = pool.data?.length ?? null
   const examItems = available === null ? itemCount : Math.min(itemCount, available)
   const optionsChanged = sourceChoice.source !== 'all' || sourceChoice.verifiedOnly
@@ -94,8 +105,8 @@ export function MockSetup({ onStart, starting, saved, onResume, onDiscard }: Pro
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (saved || busy) return // finish or discard the saved one first
-    // Reduced motion: no scene, start right away.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return onStart(filters, itemCount, label)
+    // Reduced motion, or her book (no rotor to spin): start right away.
+    if (book || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return onStart(filters, itemCount, label)
     setPhase('spin')
     timers.current = [
       window.setTimeout(() => setPhase('land'), SPIN_MS),
@@ -122,6 +133,24 @@ export function MockSetup({ onStart, starting, saved, onResume, onDiscard }: Pro
 
       {/* ---------- The rotor (with ‹ › right beside it) ---------- */}
       <section aria-label="Analyzer" className="flex min-h-0 flex-1">
+        {book ? (
+          // her book is "loaded" instead of a subject: its binder cover in the middle
+          <div className="flex flex-1 items-center justify-center">
+            <span
+              aria-hidden
+              className="relative flex h-52 w-40 flex-col items-center justify-center gap-3 overflow-hidden rounded-l-[4px] rounded-r-xl border border-primary/15 bg-card pl-5 text-primary-deep shadow-[0_18px_30px_-16px_rgb(7_71_94/0.6)] md:h-64 md:w-48"
+            >
+              <span className="absolute inset-y-0 left-0 w-3.5" style={{ background: BOOK_SPINE[book.color] }} />
+              <span
+                className="flex size-14 items-center justify-center rounded-full border-2 bg-secondary/60 font-heading text-2xl font-black"
+                style={{ borderColor: BOOK_SPINE[book.color], color: BOOK_SPINE[book.color] }}
+              >
+                {book.title.charAt(0).toUpperCase()}
+              </span>
+              <span className="line-clamp-2 px-3 text-center font-heading text-sm font-bold uppercase">{book.title}</span>
+            </span>
+          </div>
+        ) : (
         <AnalyzerRotor
           summary={summary}
           selectedId={subjectId}
@@ -132,6 +161,7 @@ export function MockSetup({ onStart, starting, saved, onResume, onDiscard }: Pro
           onPrev={() => go(-1)}
           onNext={() => go(1)}
         />
+        )}
       </section>
 
       {/* ---------- Name plate. No dots here (unlike Practice): the rotor already shows all seven and the ▼ marks the chosen one. ---------- */}
@@ -147,15 +177,24 @@ export function MockSetup({ onStart, starting, saved, onResume, onDiscard }: Pro
             </>
           ) : (
             <>
-              <p key={label} className="animate-in fade-in slide-in-from-bottom-2 font-heading text-4xl leading-none font-black tracking-wide duration-300 md:text-5xl">
-                {chosen?.code ?? 'FULL BOARD'}
+              <p key={label} className="animate-in fade-in slide-in-from-bottom-2 truncate px-4 font-heading text-4xl leading-none font-black tracking-wide duration-300 md:text-5xl">
+                {book?.title ?? chosen?.code ?? 'FULL BOARD'}
               </p>
               {/* one line always (truncate), so a long subject name can't wrap and push the rotor around */}
-              <p title={chosen?.name} className="mt-2 truncate px-4 text-sm text-muted-foreground">
-                {chosen?.name ?? 'All six subjects'}
-                {' · '}
-                <span className={cn('font-bold tabular-nums', plateColor)}>{plateAccuracy === null ? 'Not started' : `Score ${formatPercent(plateAccuracy)}`}</span>
-              </p>
+              {book ? (
+                <p className="mt-2 truncate px-4 text-sm text-muted-foreground">
+                  Your book · {book.questionIds.size} questions ·{' '}
+                  <button type="button" onClick={onLeaveBook} className="rounded-sm font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
+                    Choose a subject instead
+                  </button>
+                </p>
+              ) : (
+                <p title={chosen?.name} className="mt-2 truncate px-4 text-sm text-muted-foreground">
+                  {chosen?.name ?? 'All six subjects'}
+                  {' · '}
+                  <span className={cn('font-bold tabular-nums', plateColor)}>{plateAccuracy === null ? 'Not started' : `Score ${formatPercent(plateAccuracy)}`}</span>
+                </p>
+              )}
             </>
           )}
         </div>
@@ -238,7 +277,7 @@ export function MockSetup({ onStart, starting, saved, onResume, onDiscard }: Pro
               : available === 0
                 ? 'No questions here yet. Try another subject or source.'
                 : available < itemCount
-                  ? `Only ${available} questions available in ${label}`
+                  ? `Only ${available} question${available === 1 ? '' : 's'} available in ${label}`
                   : `${available} questions available`}
           </p>
         </div>
@@ -258,7 +297,7 @@ export function MockSetup({ onStart, starting, saved, onResume, onDiscard }: Pro
         </ul>
       </div>
 
-      <Dialog open={optionsOpen} onClose={() => setOptionsOpen(false)} labelledBy="mock-options-heading" variant="sheet">
+      <Dialog open={optionsOpen} onClose={() => setOptionsOpen(false)} labelledBy="mock-options-heading" variant="sheet" closeOnBackdrop={false}>
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 id="mock-options-heading" className="font-heading text-lg font-bold">
@@ -273,7 +312,14 @@ export function MockSetup({ onStart, starting, saved, onResume, onDiscard }: Pro
               <X className="size-5" aria-hidden />
             </button>
           </div>
-          <SourcePicker value={sourceChoice} onChange={setSourceChoice} />
+          <SourcePicker
+            value={sourceChoice}
+            onChange={(next) => {
+              // Mine or one of her books: load all of it (FULL BOARD), so she can start right away, even with one question.
+              if ((next.source === 'mine' || next.source === 'book') && (next.source !== sourceChoice.source || next.bookId !== sourceChoice.bookId)) setSubjectId(null)
+              setSourceChoice(next)
+            }}
+          />
           <button
             type="button"
             onClick={() => setOptionsOpen(false)}

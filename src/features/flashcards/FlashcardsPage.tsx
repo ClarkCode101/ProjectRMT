@@ -1,11 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarClock, House, Microscope, SlidersHorizontal, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { PageHeader } from '@/components/dashboard'
 import { SwipeCarousel } from '@/components/SwipeCarousel'
+import { useBooks } from '@/features/questions/booksApi'
 import { useFocusMode } from '@/components/layoutContext'
 import { HeroPanel, heroButtonClass } from '@/components/report'
 import { DEFAULT_SOURCE, questionPoolOptions, type QuizQuestion, type SourceChoice } from '@/features/quiz/api'
@@ -56,15 +57,23 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 /** How long the "look into the lens" scene plays before the session (matches .lens-look in index.css). */
 const LOOK_MS = 1000
 
+// /flashcards → choose a slide (subject lens) and look
+// /flashcards?subject=ID → that subject's lens in the middle; /flashcards?book=ID → only the cards in one of her books
+// (both from "Study → Flashcards" inside a book on Questions)
 export default function FlashcardsPage() {
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const subjectParam = Number(searchParams.get('subject'))
+  const bookParam = searchParams.get('book')
+  const books = useBooks({ enabled: bookParam !== null })
+  const book = bookParam === null ? null : (books.data?.find((b) => b.id === bookParam) ?? null)
   const subjects = useSubjects()
   const topics = useTopics()
   const [now] = useState(() => new Date())
   const today = localDateKey(now)
 
   const [stage, setStage] = useState<Stage>({ name: 'setup' })
-  const [subjectId, setSubjectId] = useState<number | null>(null)
+  const [subjectId, setSubjectId] = useState<number | null>(Number.isInteger(subjectParam) && subjectParam > 0 ? subjectParam : null)
   const [sourceChoice, setSourceChoice] = useState<SourceChoice>(DEFAULT_SOURCE)
   const [optionsOpen, setOptionsOpen] = useState(false)
   const [settings, setSettings] = useState(() => readSettings(today))
@@ -77,14 +86,22 @@ export default function FlashcardsPage() {
   useEffect(() => writeSettings(settings), [settings])
   useFocusMode(stage.name === 'session')
 
-  // Every subject's questions, loaded once; the subject chips just filter this list.
-  const pool = useQuery(questionPoolOptions({ ...sourceChoice, subjectId: null, topicId: null }, []))
+  // Every subject's questions, loaded once; the lenses just filter this list.
+  // Her book: exactly its questions (including the ones that live only in it, which "all subjects" leaves out).
+  const pool = useQuery({
+    ...questionPoolOptions(
+      book ? { ...sourceChoice, subjectId: null, topicId: null, questionIds: [...book.questionIds], bookId: book.id } : { ...sourceChoice, subjectId: null, topicId: null },
+      [],
+    ),
+    enabled: bookParam === null || books.isSuccess,
+  })
   const reviewStates = useQuery(reviewStatesOptions)
   const states = useMemo(() => new Map((reviewStates.data ?? []).map((r) => [r.question_id, r])), [reviewStates.data])
   const subjectOfTopic = useMemo(() => new Map((topics.data ?? []).map((t) => [t.id, t.subject_id])), [topics.data])
 
   const newLeftToday = Math.max(0, settings.newPerDay - settings.newDoneToday)
-  const inSubject = (q: QuizQuestion, id: number | null) => id === null || subjectOfTopic.get(q.topic_id) === id
+  // Her book: only its questions. Otherwise: one subject, or all.
+  const inSubject = (q: QuizQuestion, id: number | null) => (book ? book.questionIds.has(q.id) : id === null || subjectOfTopic.get(q.topic_id) === id)
   const deckFor = (id: number | null) => buildDeck((pool.data ?? []).filter((q) => inSubject(q, id)), states, now, newLeftToday)
   const deck = deckFor(subjectId)
   const total = deck.due.length + deck.fresh.length
@@ -167,7 +184,7 @@ export default function FlashcardsPage() {
     )
   }
 
-  if (pool.isPending || reviewStates.isPending || subjects.isPending) return <FullPageMessage>Loading your cards…</FullPageMessage>
+  if (pool.isPending || reviewStates.isPending || subjects.isPending || (bookParam !== null && books.isPending)) return <FullPageMessage>Loading your cards…</FullPageMessage>
   if (pool.isError || reviewStates.isError) return <FullPageMessage>Couldn’t load your cards. Check your internet connection, then refresh.</FullPageMessage>
 
   const minutes = Math.max(1, Math.round(total * 0.4)) // about 25 seconds a card
@@ -185,9 +202,40 @@ export default function FlashcardsPage() {
     // Phone: minus the top bar (3.5rem), main's padding (0.5 + 1.5rem) and the bottom nav (5.5rem).
     // Tablet/computer: minus main's padding (pt-5 + pb-5 = 2.5rem). min-h: on a very short screen it scrolls instead of squashing.
     <div className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[30rem] max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-[32rem]">
-      <PageHeader title="Flashcards" subtitle="Swipe the lens to choose a slide." />
+      <PageHeader title="Flashcards" subtitle={book ? 'The cards in your book.' : 'Swipe the lens to choose a slide.'} />
 
-      {/* ---------- The lenses: one big view in the middle, swipe to switch (the same picker as Practice) ---------- */}
+      {book ? (
+        // ---------- Her book: one lens (no swiping), then its name and counts ----------
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={look}
+            disabled={total === 0 || looking}
+            aria-label={`Look at the cards in ${book.title}`}
+            className="w-56 rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-default md:w-72"
+          >
+            <FieldOfView code="All" looking={looking} />
+          </button>
+          <div className="text-center">
+            <p className="truncate px-4 font-heading text-4xl leading-none font-black tracking-wide md:text-5xl">{book.title}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Your book ·{' '}
+              {total === 0 ? (
+                <span className="font-bold text-correct">All caught up</span>
+              ) : (
+                <span className="font-bold text-primary tabular-nums">
+                  {deck.due.length} due{deck.fresh.length > 0 && ` · ${deck.fresh.length} new`}
+                </span>
+              )}{' '}
+              ·{' '}
+              <button type="button" onClick={() => setSearchParams({})} className="rounded-sm font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
+                All slides
+              </button>
+            </p>
+          </div>
+        </div>
+      ) : (
+      /* ---------- The lenses: one big view in the middle, swipe to switch (the same picker as Practice) ---------- */
       <SwipeCarousel
         items={lenses}
         index={lensIndex}
@@ -213,10 +261,11 @@ export default function FlashcardsPage() {
           )
         }
       />
+      )}
 
-      {/* ---------- Start: ⚙ + the gold Look button, centered under the lenses ---------- */}
+      {/* ---------- Start: ⚙, new cards a day, and the gold Look button, centered under the lenses ---------- */}
       <section aria-label="Start" className="flex shrink-0 flex-col items-center gap-1.5">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <button
             type="button"
             onClick={() => setOptionsOpen(true)}
@@ -226,6 +275,30 @@ export default function FlashcardsPage() {
             <SlidersHorizontal className="size-5" aria-hidden />
             {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
           </button>
+          {/* How many NEW cards a day (due ones always come): physical-looking keys like Items on Mock exam; the chosen one is pressed in. */}
+          <fieldset disabled={looking} className="flex items-center gap-2">
+            <legend className="sr-only">New cards a day</legend>
+            {/* One word, like "Items" on Mock exam. Not "Items": it's only the NEW cards; due ones are added on top. */}
+            <span aria-hidden title="New cards a day" className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
+              New
+            </span>
+            <div className="flex gap-1.5">
+              {NEW_PER_DAY_CHOICES.map((n) => (
+                <label
+                  key={n}
+                  className={cn(
+                    'flex h-12 min-w-12 cursor-pointer items-center justify-center rounded-lg border font-mono font-bold tabular-nums transition-[translate,box-shadow,background-color] has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
+                    settings.newPerDay === n
+                      ? 'translate-y-0.5 border-primary-deep bg-primary text-white shadow-[inset_0_2px_3px_rgb(0_0_0/0.25)]'
+                      : 'border-primary/20 bg-card text-foreground shadow-[0_3px_0_rgb(7_71_94/0.18)] hover:border-primary/50',
+                  )}
+                >
+                  <input type="radio" name="new-per-day" checked={settings.newPerDay === n} onChange={() => updateSettings({ newPerDay: n })} className="sr-only" />
+                  {n}
+                </label>
+              ))}
+            </div>
+          </fieldset>
           <button
             type="button"
             className={cn(heroButtonClass, 'w-auto px-7 focus-visible:ring-ring/50')}
@@ -243,6 +316,7 @@ export default function FlashcardsPage() {
               ? 'All caught up. Come back tomorrow.'
               : 'Nothing due here. Try another slide.'
             : `About ${plural(minutes, 'minute')}`}
+          {settings.newDoneToday > 0 && ` · ${settings.newDoneToday} new done today`}
         </p>
       </section>
 
@@ -266,7 +340,7 @@ export default function FlashcardsPage() {
         </p>
       )}
 
-      <Dialog open={optionsOpen} onClose={() => setOptionsOpen(false)} labelledBy="fc-options-heading" variant="sheet">
+      <Dialog open={optionsOpen} onClose={() => setOptionsOpen(false)} labelledBy="fc-options-heading" variant="sheet" closeOnBackdrop={false}>
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 id="fc-options-heading" className="font-heading text-lg font-bold">
@@ -281,30 +355,14 @@ export default function FlashcardsPage() {
               <X className="size-5" aria-hidden />
             </button>
           </div>
-          {/* Changed rarely, so it lives here instead of next to Start. */}
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-semibold">New cards a day</legend>
-            <div className="flex items-center gap-3">
-              <div className="flex rounded-lg bg-secondary p-1">
-                {NEW_PER_DAY_CHOICES.map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => updateSettings({ newPerDay: n })}
-                    aria-pressed={settings.newPerDay === n}
-                    className={cn(
-                      'h-9 min-w-12 rounded-md px-2 font-bold tabular-nums outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
-                      settings.newPerDay === n ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-              {settings.newDoneToday > 0 && <span className="text-sm text-muted-foreground tabular-nums">{settings.newDoneToday} done today</span>}
-            </div>
-          </fieldset>
-          <SourcePicker value={sourceChoice} onChange={setSourceChoice} />
+          <SourcePicker
+            value={sourceChoice}
+            onChange={(next) => {
+              // Mine or one of her books: the ALL lens, so every card in it is there (book-only ones have no subject).
+              if ((next.source === 'mine' || next.source === 'book') && (next.source !== sourceChoice.source || next.bookId !== sourceChoice.bookId)) setSubjectId(null)
+              setSourceChoice(next)
+            }}
+          />
           <button
             type="button"
             onClick={() => setOptionsOpen(false)}

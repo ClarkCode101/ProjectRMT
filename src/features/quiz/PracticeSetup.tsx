@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/dashboard'
 import { heroButtonClass } from '@/components/report'
 import { useTopicPerformance } from '@/features/dashboard/api'
 import { useMistakes } from '@/features/mistakes/api'
+import { GENERAL_TOPIC } from '@/lib/books'
 import { formatPercent, overallStats, smartPick, summarizePerformance } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
 import { buildHistory, countUnseen, sessionMix } from '@/lib/selection'
@@ -102,7 +103,10 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
 
   // Topic chips grouped by status, so she can see where to focus at a glance.
   // Weakest first inside "Needs work" and "Passing"; A–Z inside "Not started".
-  const topicChips = topicsInSubject.map((t) => ({ ...t, performance: chosenSubject?.topics.find((p) => p.topicId === t.id) }))
+  // A subject's "General" topic only gets a chip once it has questions (its questions are always in "All topics").
+  const topicChips = topicsInSubject
+    .filter((t) => t.name !== GENERAL_TOPIC || pool.data?.some((q) => q.topic_id === t.id))
+    .map((t) => ({ ...t, performance: chosenSubject?.topics.find((p) => p.topicId === t.id) }))
   const byScore = (a: (typeof topicChips)[number], b: (typeof topicChips)[number]) => (a.performance?.accuracy ?? 0) - (b.performance?.accuracy ?? 0)
   const topicGroups = [
     { label: 'Needs work', topics: topicChips.filter((t) => t.performance?.belowPassing).sort(byScore) },
@@ -155,6 +159,19 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
     if (!target) return
     if (target.key === MIX_KEY) chooseMix()
     else chooseSubject(Number(target.key))
+  }
+
+  /**
+   * Mine or one of her books: show all of it (the mix), so she can start right away, even with one question.
+   * (Its book-only questions have no subject, so a subject would leave them out.) She can still pick a subject after.
+   */
+  function chooseSource(next: SourceChoice) {
+    const switched = next.source !== sourceChoice.source || next.bookId !== sourceChoice.bookId
+    setSourceChoice(next)
+    if (switched && (next.source === 'mine' || next.source === 'book')) {
+      setFocusKey(MIX_KEY)
+      if (choice.kind !== 'none') chooseMix()
+    }
   }
 
   function handleSubmit(event: FormEvent) {
@@ -350,7 +367,7 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
         </form>
       </SubjectPopup>
 
-      <Dialog open={optionsOpen} onClose={() => setOptionsOpen(false)} labelledBy="options-heading" variant="sheet">
+      <Dialog open={optionsOpen} onClose={() => setOptionsOpen(false)} labelledBy="options-heading" variant="sheet" closeOnBackdrop={false}>
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h2 id="options-heading" className="font-heading text-lg font-bold">
@@ -365,7 +382,7 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
               <X className="size-5" aria-hidden />
             </button>
           </div>
-          <SourcePicker value={sourceChoice} onChange={setSourceChoice} />
+          <SourcePicker value={sourceChoice} onChange={chooseSource} />
           <button
             type="button"
             onClick={() => setOptionsOpen(false)}

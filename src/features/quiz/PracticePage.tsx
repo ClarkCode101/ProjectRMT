@@ -7,6 +7,7 @@ import { useFocusMode } from '@/components/layoutContext'
 import { HeroPanel, heroButtonClass } from '@/components/report'
 import { Button } from '@/components/ui/button'
 import { useMistakes } from '@/features/mistakes/api'
+import { useBooks } from '@/features/questions/booksApi'
 import { shuffle } from '@/lib/quiz'
 import { useTopics } from '@/lib/referenceData'
 import { buildHistory, pickQuestions } from '@/lib/selection'
@@ -38,12 +39,20 @@ type Stage =
   | { name: 'quiz'; sessionId: string; questions: QuizQuestion[]; startedAt: number }
   | { name: 'results'; answers: AnswerResult[] }
 
+/** "Practice this book" quizzes the whole book, up to this many (mixed up), so a huge book stays a doable session. */
+const BOOK_SESSION_MAX = 50
+
 // /practice                 → choose filters, then quiz
 // /practice?subject=2&topic=7 → setup with that subject (and topic) already chosen
 // /practice?from=mistakes   → straight into a quiz of her mistakes (no start screen)
+// /practice?book=ID         → straight into a quiz of one of her books ("Practice this book" on Questions)
 export default function PracticePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const fromMistakes = searchParams.get('from') === 'mistakes'
+  const bookParam = searchParams.get('book')
+  const books = useBooks({ enabled: bookParam !== null })
+  const book = books.data?.find((b) => b.id === bookParam)
+  const bookIds = book ? [...book.questionIds] : []
   const subjectParam = Number(searchParams.get('subject'))
   const initialSubjectId = Number.isInteger(subjectParam) && subjectParam > 0 ? subjectParam : null
   const topicParam = Number(searchParams.get('topic'))
@@ -106,6 +115,11 @@ export default function PracticePage() {
     void start({ source: 'all', subjectId: null, topicId: null, questionIds }, questionIds.length, mistakeQuestions)
   }
 
+  function startBook() {
+    if (!book) return
+    void start({ source: 'all', subjectId: null, topicId: null, questionIds: bookIds, bookId: book.id }, Math.min(bookIds.length, BOOK_SESSION_MAX))
+  }
+
   // Review again starts the quiz right away (the button she tapped already showed how many there are).
   // Only once per visit, so a failed start shows the "Try again" screen instead of retrying in a loop.
   const autoStarted = useRef(false)
@@ -117,6 +131,18 @@ export default function PracticePage() {
     if (autoStarted.current || !mistakes.isSuccess || mistakeIds.length === 0 || stage.name !== 'setup') return
     autoStarted.current = true
     startMistakes(mistakeIds)
+  })
+
+  // Practice this book does the same, once its book has loaded.
+  const bookAutoStarted = useRef(false)
+  useEffect(() => {
+    if (bookParam === null) {
+      bookAutoStarted.current = false
+      return
+    }
+    if (bookAutoStarted.current || !book || bookIds.length === 0 || stage.name !== 'setup') return
+    bookAutoStarted.current = true
+    startBook()
   })
 
   async function finish(answers: AnswerResult[]) {
@@ -158,6 +184,43 @@ export default function PracticePage() {
   }
   if (stage.name === 'results') {
     return <QuizResults answers={stage.answers} onRestart={restart} />
+  }
+
+  if (bookParam !== null) {
+    // Loading, or about to jump straight into the quiz (see the effect above).
+    if (books.isPending || (bookIds.length > 0 && !message)) return <FullPageMessage>Opening your book…</FullPageMessage>
+    // Only shown when the book is gone or empty, or the quiz couldn't start (then the button tries again).
+    return (
+      <div className="mx-auto max-w-xl space-y-4 sm:pt-6">
+        {message && <Notice>{message}</Notice>}
+        <HeroPanel labelledBy="book-start-heading" className="space-y-4">
+          <div>
+            <h1 id="book-start-heading" className="text-sm font-semibold text-white/75">
+              Practice this book
+            </h1>
+            <p className="font-heading text-3xl leading-tight font-bold">{book?.title ?? 'Book not found'}</p>
+            <p className="mt-1 text-white/85">
+              {books.isError
+                ? 'Couldn’t load your books. Check your internet connection and try again.'
+                : !book
+                  ? 'This book isn’t on your shelf anymore.'
+                  : bookIds.length === 0
+                    ? 'This book is empty. Add questions to it on the Questions page first.'
+                    : `${bookIds.length} questions${bookIds.length > BOOK_SESSION_MAX ? `, ${BOOK_SESSION_MAX} at a time` : ''}.`}
+            </p>
+          </div>
+          {book && bookIds.length > 0 && (
+            <button type="button" className={heroButtonClass} disabled={starting} onClick={startBook}>
+              <Play className="size-5 fill-current" aria-hidden />
+              {starting ? 'Loading questions…' : 'Try again'}
+            </button>
+          )}
+        </HeroPanel>
+        <Button variant="ghost" className="h-12 w-full rounded-lg text-base" onClick={restart}>
+          Choose a subject instead
+        </Button>
+      </div>
+    )
   }
 
   if (fromMistakes) {

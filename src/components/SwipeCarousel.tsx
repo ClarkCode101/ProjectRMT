@@ -40,6 +40,7 @@ export function SwipeCarousel<T extends CarouselEntry>({
   align = 'bottom',
   bench = true,
   disabled = false,
+  compact = false,
 }: {
   items: T[]
   /** the item in the middle */
@@ -59,6 +60,8 @@ export function SwipeCarousel<T extends CarouselEntry>({
   bench?: boolean
   /** true while the page's start scene plays: no switching */
   disabled?: boolean
+  /** smaller name plate and arrows, for use inside a dialog (e.g. the Question source picker) */
+  compact?: boolean
 }) {
   const count = items.length
   const stageRef = useRef<HTMLDivElement>(null)
@@ -226,7 +229,13 @@ export function SwipeCarousel<T extends CarouselEntry>({
 
       {/* ---------- The name plate under the middle one (one line of detail, truncated so it can't wrap and shift the stage) ---------- */}
       <div aria-live="polite" className="text-center">
-        <p key={item.key} className="animate-in fade-in slide-in-from-bottom-2 font-heading text-4xl leading-none font-black tracking-wide duration-300 md:text-5xl">
+        <p
+          key={item.key}
+          className={cn(
+            'animate-in fade-in slide-in-from-bottom-2 truncate px-4 font-heading leading-none font-black tracking-wide duration-300',
+            compact ? 'text-xl' : 'text-4xl md:text-5xl',
+          )}
+        >
           {item.code}
         </p>
         <p title={item.name} className="mt-2 truncate px-4 text-sm text-muted-foreground">

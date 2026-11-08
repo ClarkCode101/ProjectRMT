@@ -1,8 +1,10 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Info } from 'lucide-react'
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { useFocusMode } from '@/components/layoutContext'
+import { useBooks } from '@/features/questions/booksApi'
 import { fetchQuestions, finishSession, questionPoolOptions, recordAttempts, startSession, type QuizFilters, type QuizQuestion } from '@/features/quiz/api'
 import { buildMockExam, parseSavedMock, SAVED_MOCK_KEY, scoreMock, secondsLeft, timeLimitSec, type MockScore, type SavedMock } from '@/lib/mockExam'
 import { NOTES } from '@/data/encouragements'
@@ -52,7 +54,15 @@ type Stage =
     }
 
 // /mock → setup (or resume) → timed exam → results + review
+// /mock?subject=ID → that subject at the top of the rotor; /mock?book=ID → one of her books loaded instead
+// (both from "Study → Mock exam" inside a book on Questions)
 export default function MockPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const subjectParam = Number(searchParams.get('subject'))
+  const initialSubjectId = Number.isInteger(subjectParam) && subjectParam > 0 ? subjectParam : null
+  const bookParam = searchParams.get('book')
+  const books = useBooks({ enabled: bookParam !== null })
+  const book = bookParam === null ? null : (books.data?.find((b) => b.id === bookParam) ?? null)
   const queryClient = useQueryClient()
   const topics = useTopics()
   const [stage, setStage] = useState<Stage>({ name: 'setup' })
@@ -212,7 +222,7 @@ export default function MockPage() {
     )
   }
 
-  if (topics.isPending) return <FullPageMessage>Loading…</FullPageMessage>
+  if (topics.isPending || (bookParam !== null && books.isPending)) return <FullPageMessage>Loading…</FullPageMessage>
 
   return (
     <div className="space-y-4">
@@ -222,7 +232,18 @@ export default function MockPage() {
           {message}
         </p>
       )}
-      <MockSetup onStart={(f, n, label) => void start(f, n, label)} starting={busy} saved={saved} onResume={() => void resume()} onDiscard={discard} />
+      <MockSetup
+        // key: a different subject or book in the address starts the setup fresh
+        key={`${initialSubjectId}-${book?.id ?? ''}`}
+        onStart={(f, n, label) => void start(f, n, label)}
+        starting={busy}
+        saved={saved}
+        onResume={() => void resume()}
+        onDiscard={discard}
+        initialSubjectId={initialSubjectId}
+        book={book}
+        onLeaveBook={() => setSearchParams({})}
+      />
     </div>
   )
 }

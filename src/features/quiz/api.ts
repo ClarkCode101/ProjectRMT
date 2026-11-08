@@ -4,8 +4,11 @@ import { parseChoices } from '@/lib/quiz'
 import type { HistoryAttempt } from '@/lib/selection'
 import { supabase } from '@/lib/supabase'
 
-/** Question source (PROJECT_PLAN.md §6). 'upload' = one specific file she uploaded, see `uploadId`. */
-export type SourceFilter = 'all' | 'builtin' | 'mine' | 'upload'
+/**
+ * Question source (PROJECT_PLAN.md §6). 'upload' = one specific file she uploaded, see `uploadId`.
+ * 'book' = the questions in one of her books (migration 0004), see `bookId`.
+ */
+export type SourceFilter = 'all' | 'builtin' | 'mine' | 'upload' | 'book'
 
 export type QuizFilters = {
   source: SourceFilter
@@ -14,14 +17,19 @@ export type QuizFilters = {
   verifiedOnly?: boolean
   subjectId: number | null
   topicId: number | null
-  /** when set, only these questions (used by "Review mistakes") */
+  /** when set, only these questions (used by "Review mistakes" and "Practice this book") */
   questionIds?: string[]
+  /**
+   * One of her books: with questionIds, the book they came from ("Practice this book"); with source 'book',
+   * the book to take questions from (then narrowed by subject/topic). Saved with the session.
+   */
+  bookId?: string | null
 }
 
 /** What the source picker on every study mode sets. */
-export type SourceChoice = { source: SourceFilter; uploadId: string | null; verifiedOnly: boolean }
+export type SourceChoice = { source: SourceFilter; uploadId: string | null; bookId: string | null; verifiedOnly: boolean }
 
-export const DEFAULT_SOURCE: SourceChoice = { source: 'all', uploadId: null, verifiedOnly: false }
+export const DEFAULT_SOURCE: SourceChoice = { source: 'all', uploadId: null, bookId: null, verifiedOnly: false }
 
 export type QuizQuestion = {
   id: string
@@ -43,6 +51,8 @@ function toQuizQuestion(row: QuestionRow): QuizQuestion {
 
 // Supabase returns at most 1000 rows per request, so bigger lists are loaded in pages.
 const PAGE_SIZE = 1000
+/** How many question ids go in one request (each id is 36 letters of the request's address). */
+const ID_BATCH = 100
 
 /**
  * Loads candidate questions. RLS already limits this to built-in + her own questions.
@@ -51,6 +61,24 @@ const PAGE_SIZE = 1000
  */
 export async function fetchQuestions(filters: QuizFilters, subjectTopicIds: number[]): Promise<QuizQuestion[]> {
   if (!filters.questionIds && filters.source === 'upload' && !filters.uploadId) return [] // no file chosen yet
+
+  // Exact questions (a book, her mistakes, a saved mock).
+  if (filters.questionIds) return fetchByIds(filters.questionIds, false)
+
+  // One of her books as the source: its questions, narrowed to the chosen subject or topic.
+  if (filters.source === 'book') {
+    if (!filters.bookId) return [] // no book chosen yet
+    const { data, error } = await supabase.from('book_questions').select('question_id').eq('book_id', filters.bookId)
+    if (error) throw error
+    const inBook = await fetchByIds(
+      data.map((r) => r.question_id),
+      Boolean(filters.verifiedOnly),
+    )
+    if (filters.topicId !== null) return inBook.filter((q) => q.topic_id === filters.topicId)
+    if (filters.subjectId !== null) return inBook.filter((q) => subjectTopicIds.includes(q.topic_id))
+    return inBook
+  }
+
   const all: QuizQuestion[] = []
   for (let from = 0; ; from += PAGE_SIZE) {
     let query = supabase
@@ -59,17 +87,15 @@ export async function fetchQuestions(filters: QuizFilters, subjectTopicIds: numb
       .order('id') // a fixed order so pages don't overlap
       .range(from, from + PAGE_SIZE - 1)
 
-    if (filters.questionIds) {
-      query = query.in('id', filters.questionIds)
-    } else {
-      if (filters.topicId !== null) query = query.eq('topic_id', filters.topicId)
-      else if (filters.subjectId !== null) query = query.in('topic_id', subjectTopicIds)
+    // Questions that live only in her books (migration 0006) come up only through her books, or "Mine" (all of hers).
+    if (filters.source !== 'mine') query = query.eq('in_subject', true)
+    if (filters.topicId !== null) query = query.eq('topic_id', filters.topicId)
+    else if (filters.subjectId !== null) query = query.in('topic_id', subjectTopicIds)
 
-      if (filters.source === 'builtin') query = query.is('owner_id', null)
-      if (filters.source === 'mine') query = query.not('owner_id', 'is', null)
-      if (filters.source === 'upload' && filters.uploadId) query = query.eq('upload_id', filters.uploadId)
-      if (filters.verifiedOnly) query = query.eq('status', 'verified')
-    }
+    if (filters.source === 'builtin') query = query.is('owner_id', null)
+    if (filters.source === 'mine') query = query.not('owner_id', 'is', null)
+    if (filters.source === 'upload' && filters.uploadId) query = query.eq('upload_id', filters.uploadId)
+    if (filters.verifiedOnly) query = query.eq('status', 'verified')
 
     const { data, error } = await query
     if (error) throw error
@@ -80,13 +106,49 @@ export async function fetchQuestions(filters: QuizFilters, subjectTopicIds: numb
 }
 
 /**
+ * These exact questions, asked for in batches: every id goes into the request's address, and a long list
+ * (a big book) would make it too long for the server.
+ */
+async function fetchByIds(ids: readonly string[], verifiedOnly: boolean): Promise<QuizQuestion[]> {
+  const all: QuizQuestion[] = []
+  for (let i = 0; i < ids.length; i += ID_BATCH) {
+    let query = supabase.from('questions').select(QUESTION_COLUMNS).in('id', ids.slice(i, i + ID_BATCH))
+    if (verifiedOnly) query = query.eq('status', 'verified')
+    const { data, error } = await query
+    if (error) throw error
+    all.push(...data.map(toQuizQuestion).filter((q) => q.choices.length >= 2))
+  }
+  return all
+}
+
+/** How many questions each fixed source has (for the Question source covers). RLS limits "all" to built-in + hers. */
+export function useSourceCounts() {
+  return useQuery({
+    queryKey: ['source-counts'],
+    queryFn: async () => {
+      const [builtin, mine, mineInSubjects] = await Promise.all([
+        supabase.from('questions').select('id', { count: 'exact', head: true }).eq('in_subject', true).is('owner_id', null),
+        // "Mine" = every question she added, the book-only ones too
+        supabase.from('questions').select('id', { count: 'exact', head: true }).not('owner_id', 'is', null),
+        supabase.from('questions').select('id', { count: 'exact', head: true }).eq('in_subject', true).not('owner_id', 'is', null),
+      ])
+      if (builtin.error) throw builtin.error
+      if (mine.error) throw mine.error
+      if (mineInSubjects.error) throw mineInSubjects.error
+      return { builtin: builtin.count ?? 0, mine: mine.count ?? 0, mineInSubjects: mineInSubjects.count ?? 0 }
+    },
+  })
+}
+
+/**
  * The questions that match the filters, shared by the setup screen (to count them)
  * and the Start button (to pick from them), so they are only loaded once.
  */
 export function questionPoolOptions(filters: QuizFilters, subjectTopicIds: number[]) {
-  const { source, uploadId = null, verifiedOnly = false, subjectId, topicId } = filters
+  const { source, uploadId = null, verifiedOnly = false, subjectId, topicId, bookId = null } = filters
   return queryOptions({
-    queryKey: ['question-pool', { source, uploadId, verifiedOnly, subjectId, topicId }],
+    // bookId: a book's pool (its questionIds) must not share a cache entry with "all subjects"
+    queryKey: ['question-pool', { source, uploadId, verifiedOnly, subjectId, topicId, bookId }],
     queryFn: () => fetchQuestions(filters, subjectTopicIds),
   })
 }
@@ -141,7 +203,8 @@ export async function startSession(filters: QuizFilters, totalItems: number, mod
         verified_only: Boolean(filters.verifiedOnly),
         subject_id: filters.subjectId,
         topic_id: filters.topicId,
-        from_mistakes: Boolean(filters.questionIds),
+        from_mistakes: Boolean(filters.questionIds) && !filters.bookId,
+        book_id: filters.bookId ?? null,
       },
     })
     .select('id')
