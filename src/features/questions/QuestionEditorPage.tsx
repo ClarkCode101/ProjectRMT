@@ -1,4 +1,4 @@
-import { ArrowLeft, CircleCheck, Info } from 'lucide-react'
+import { ArrowLeft, CircleCheck, Info, Plus } from 'lucide-react'
 import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Dialog } from '@/components/Dialog'
@@ -9,10 +9,12 @@ import { heroButtonClass } from '@/components/report'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { CHOICE_COUNT, CHOICE_LETTERS, emptyDraft, readPastedQuestion, stillNeeded, validateDraft, type DraftErrors, type QuestionDraft } from '@/lib/questions'
-import { useSubjects, useTopics } from '@/lib/referenceData'
+import { useBookTopicId, useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { addQuestion, findSimilar, updateQuestion, useQuestionBank, useRefreshBank, type BankQuestion, type SimilarQuestion } from './api'
-import { CorrectToggle, TopicPicker } from './QuestionFormParts'
+import { BOOK_SPINE, CHAPTER_MAX, chapterList, cleanChapter, GENERAL_TOPIC } from '@/lib/books'
+import { addToBook, useBooks, useRefreshBooks, type Book } from './booksApi'
+import { ChipRadio, CorrectToggle, SubjectChips, TopicPicker } from './QuestionFormParts'
 
 // scroll-mb: when the keyboard moves to a box, it stops above the bar stuck to the bottom instead of behind it.
 const fieldClass =
@@ -21,17 +23,24 @@ const fieldClass =
 /** What the note under the Question box says after a paste. */
 type PasteNote = { kind: 'filled'; before: QuestionDraft; raw: string } | { kind: 'many'; count: number }
 
-// /questions/new            → add a new question (?topic=ID pre-selects the topic)
-// /questions/:id/edit       → edit one (hers or a built-in)
+// /questions/new                → add a new question, choosing its subject and topic
+// /questions/new?subject=ID     → from inside a subject's book: the subject is already set, only the topic is asked
+// /questions/new?topic=ID       → the same, with the topic set too
+// /questions/new?book=ID        → from inside one of her books: chapter first, a (remembered) subject, topic optional
+// /questions/:id/edit           → edit one (hers or a built-in)
 export default function QuestionEditorPage() {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const bank = useQuestionBank()
   const subjects = useSubjects()
   const topics = useTopics()
+  const bookParam = id ? null : searchParams.get('book')
+  const books = useBooks({ enabled: bookParam !== null })
   // No nav here: it gives the bottom bar room, and the form has one clear way out (← Questions).
   useFocusMode(true)
 
-  if (bank.isPending || subjects.isPending || topics.isPending) return <FullPageMessage>Loading…</FullPageMessage>
+  // Her book has to be loaded before the form starts, since it decides how the form is laid out.
+  if (bank.isPending || subjects.isPending || topics.isPending || (bookParam !== null && books.isPending)) return <FullPageMessage>Loading…</FullPageMessage>
   if (bank.isError || subjects.isError || topics.isError) {
     return <FullPageMessage>Couldn’t load the question. Check your internet connection, then refresh.</FullPageMessage>
   }
@@ -39,8 +48,32 @@ export default function QuestionEditorPage() {
   const existing = id ? bank.data.find((q) => q.id === id) : undefined
   if (id && !existing) return <FullPageMessage>This question doesn’t exist anymore.</FullPageMessage>
 
+  const book = bookParam === null ? undefined : books.data?.find((b) => b.id === bookParam)
+
   // key: start a fresh form when moving between questions.
-  return <EditorForm key={id ?? 'new'} existing={existing} subjects={subjects.data} topics={topics.data} />
+  return <EditorForm key={id ?? 'new'} existing={existing} book={book} subjects={subjects.data} topics={topics.data} />
+}
+
+// ---------- The subject she last used in each of her books, so it's already set next time (kept on this device) ----------
+const BOOK_SUBJECT_KEY = 'projectrmt:book-subject'
+
+function rememberedSubject(bookId: string): number | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(BOOK_SUBJECT_KEY) ?? '{}') as Record<string, unknown>
+    const id = Number(saved[bookId])
+    return Number.isInteger(id) && id > 0 ? id : null
+  } catch {
+    return null
+  }
+}
+
+function rememberSubject(bookId: string, subjectId: number) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(BOOK_SUBJECT_KEY) ?? '{}') as Record<string, unknown>
+    localStorage.setItem(BOOK_SUBJECT_KEY, JSON.stringify({ ...saved, [bookId]: subjectId }))
+  } catch {
+    // storage blocked: it just won't be remembered
+  }
 }
 
 function draftFrom(q: BankQuestion): QuestionDraft {
@@ -59,6 +92,11 @@ function focusFirstProblem(draft: QuestionDraft, errors: DraftErrors, subjectCho
   if (selector) document.querySelector<HTMLElement>(selector)?.focus()
 }
 
+/** Her book's page on Questions, opened at a chapter if there is one. */
+function bookAddress(bookId: string, chapter: string | null) {
+  return `/questions?${new URLSearchParams(chapter ? { book: bookId, chapter } : { book: bookId })}`
+}
+
 /** Has she written something that would be lost? On a new question, just picking a topic doesn't count. */
 function hasUnsavedWork(draft: QuestionDraft, saved: QuestionDraft, isNew: boolean) {
   const comparable = (d: QuestionDraft) => JSON.stringify({ ...d, topicId: isNew ? null : d.topicId })
@@ -67,25 +105,49 @@ function hasUnsavedWork(draft: QuestionDraft, saved: QuestionDraft, isNew: boole
 
 function EditorForm({
   existing,
+  book,
   subjects,
   topics,
 }: {
   existing: BankQuestion | undefined
+  /** opened from inside one of her books (?book=ID): a new question goes into that book too */
+  book: Book | undefined
   subjects: { id: number; code: string; name: string }[]
   topics: { id: number; subject_id: number; name: string }[]
 }) {
   const navigate = useNavigate()
-  const refresh = useRefreshBank()
+  const refreshBank = useRefreshBank()
+  const refreshBooks = useRefreshBooks()
   const [searchParams] = useSearchParams()
+  const generalOf = (subject: number | null) => topics.find((t) => t.subject_id === subject && t.name === GENERAL_TOPIC)?.id ?? null
+  // Written in her own book: no board subject to pick, it goes under the hidden "Your books" topic (migration 0007).
+  // (Until 0007 is run there's no such topic: then she still picks a subject, as before.)
+  const bookTopicId = useBookTopicId()
+
+  // Where she came from decides what the form asks (see the routes above).
+  const topicParam = topics.find((t) => t.id === Number(searchParams.get('topic')))
+  const subjectParam = subjects.find((s) => s.id === Number(searchParams.get('subject')))?.id
+  const fromSubject = existing || book ? null : (topicParam?.subject_id ?? subjectParam ?? null)
 
   const [draft, setDraft] = useState<QuestionDraft>(() => {
     if (existing) return draftFrom(existing)
-    const topicParam = Number(searchParams.get('topic'))
-    return emptyDraft(topics.some((t) => t.id === topicParam) ? topicParam : null)
+    // her book: the hidden "Your books" topic (or, before migration 0007, the subject she used last time in it)
+    if (book) return emptyDraft(bookTopicId ?? generalOf(rememberedSubject(book.id)))
+    return emptyDraft(topicParam?.id ?? null)
   })
   // The form as it was last opened or saved, to tell whether there's unsaved work.
   const [savedDraft, setSavedDraft] = useState(draft)
-  const [subjectId, setSubjectId] = useState<number | null>(() => topics.find((t) => t.id === draft.topicId)?.subject_id ?? null)
+  const [subjectId, setSubjectId] = useState<number | null>(
+    () => topics.find((t) => t.id === draft.topicId)?.subject_id ?? fromSubject ?? (book ? rememberedSubject(book.id) : null),
+  )
+  // From a subject's book the subject is set; "Change" unlocks the full subject + topic picker.
+  const [subjectLocked, setSubjectLocked] = useState(fromSubject !== null)
+  // Her book: the topic stays "General" unless she asks to pick one.
+  const [pickingTopic, setPickingTopic] = useState(false)
+  // In its subject's book (counted in its score and quizzes)? Written in her own book: no, it lives only there.
+  const inSubject = existing ? existing.in_subject : !book
+  // Lives only in her books: no subject or topic to ask about (written in her book, or editing one that was).
+  const bookOnly = existing ? !existing.in_subject : book !== undefined && bookTopicId !== null
   // Errors only show after the first save attempt, so she isn't scolded while typing.
   const [showErrors, setShowErrors] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -97,9 +159,26 @@ function EditorForm({
   // Which button she pressed, remembered in case the "looks similar" dialog comes up first.
   const [addingAnother, setAddingAnother] = useState(false)
   const stemRef = useRef<HTMLTextAreaElement>(null)
+  // Her book's chapter for this question (writing in a book only). Opened from a chapter (?chapter=…) = that one.
+  const [chapter, setChapter] = useState(() => searchParams.get('chapter') ?? '')
+  const [chapterError, setChapterError] = useState<string | null>(null)
+  const cleaned = cleanChapter(chapter)
+  const cleanedChapter = 'error' in cleaned ? null : cleaned.chapter
+  const existingChapters = book ? chapterList(book.chapters).chapters : []
+  // Typing a new chapter name (instead of tapping one she already has). With no chapters yet, it's the only way.
+  const [typingChapter, setTypingChapter] = useState(() => chapter !== '' && !existingChapters.some((c) => c.name === chapter))
+
+  /** Her book: picking the subject also sets its "General" topic, and remembers the subject for next time. */
+  function chooseBookSubject(id: number) {
+    setSubjectId(id)
+    setPickingTopic(false)
+    update({ topicId: generalOf(id) })
+    if (book) rememberSubject(book.id, id)
+  }
 
   const errors: DraftErrors = showErrors ? validateDraft(draft) : {}
-  const needed = stillNeeded(draft)
+  // In her book the topic takes care of itself once a subject is chosen, so ask for the subject instead.
+  const needed = stillNeeded(draft).map((n) => (book && n === 'a topic' ? 'a subject' : n))
   const isBuiltin = existing !== undefined && existing.owner_id === null
 
   // ---------- Leaving with unsaved work asks first: ← Questions, the phone's Back button, or closing the tab ----------
@@ -160,11 +239,18 @@ function EditorForm({
     setSaving(true)
     setSaveError(null)
     try {
-      if (existing) await updateQuestion(existing.id, draft)
-      else await addQuestion(draft)
-      refresh()
+      if (existing) {
+        await updateQuestion(existing.id, draft)
+      } else {
+        const newId = await addQuestion(draft, inSubject)
+        // The question is already saved here. If putting it in the book fails, don't report a failed save
+        // (trying again would make a duplicate); she can still add it with "Add to book".
+        if (book) await addToBook(book.id, [newId], cleanedChapter).catch(() => {})
+      }
+      refreshBank()
+      if (book) refreshBooks()
       if (thenAddAnother) {
-        // Keep the subject and topic (she's usually adding several to the same one); clear the rest.
+        // Keep the subject, topic and chapter (she's usually adding several to the same one); clear the rest.
         const next = emptyDraft(draft.topicId)
         setDraft(next)
         setSavedDraft(next)
@@ -176,10 +262,12 @@ function EditorForm({
         stemRef.current?.focus({ preventScroll: true })
         return
       }
-      // Back to the drawer and folder this question is filed in, so she can see it there.
+      // Back to where this question now lives (her book, or its subject and topic), so she can see it there.
       // Replace: the Back button shouldn't reopen the form she just saved.
       justSaved.current = true
-      navigate(`/questions?topic=${draft.topicId}`, { replace: true, state: { saved: existing ? 'updated' : 'added' } })
+      // A question that lives only in her book isn't on its topic's list, so go back to where she came from instead.
+      if (!book && !inSubject) return navigate(-1)
+      navigate(book ? bookAddress(book.id, cleanedChapter) : `/questions?topic=${draft.topicId}`, { replace: true, state: { saved: existing ? 'updated' : 'added' } })
     } catch {
       setSaveError('Couldn’t save. Check your internet connection and try again.')
       setSaving(false)
@@ -189,6 +277,11 @@ function EditorForm({
   async function attemptSave(thenAddAnother: boolean) {
     setAddingAnother(thenAddAnother)
     setShowErrors(true)
+    if (book && 'error' in cleaned) {
+      setChapterError(cleaned.error)
+      document.getElementById('chapter')?.focus()
+      return
+    }
     const problems = validateDraft(draft)
     if (Object.keys(problems).length > 0) {
       focusFirstProblem(draft, problems, subjectId !== null)
@@ -217,17 +310,31 @@ function EditorForm({
     void attemptSave(false)
   }
 
-  // Leaving goes back to the drawer she came from, not all the way to the cabinet.
-  const leaveTo = draft.topicId ? `/questions?topic=${draft.topicId}` : '/questions'
+  // Leaving goes back to the book or subject she came from, not all the way to the shelves.
+  const leaveTo = book
+    ? bookAddress(book.id, searchParams.get('chapter'))
+    : draft.topicId
+      ? `/questions?topic=${draft.topicId}`
+      : fromSubject !== null
+        ? `/questions?subject=${fromSubject}`
+        : '/questions'
 
   return (
     <form onSubmit={handleSubmit} noValidate className="mx-auto max-w-2xl space-y-6">
       <div className="space-y-3">
-        <Link to={leaveTo} className={backLinkClass}>
-          <ArrowLeft className="size-4" aria-hidden />
-          Questions
+        <Link to={leaveTo} className={cn(backLinkClass, 'max-w-full')}>
+          <ArrowLeft className="size-4 shrink-0" aria-hidden />
+          <span className="truncate">{book ? book.title : 'Questions'}</span>
         </Link>
         <h1 className="text-2xl leading-tight font-bold sm:text-3xl">{existing ? 'Edit question' : 'Add a question'}</h1>
+        {book && (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span aria-hidden className="h-4 w-1.5 shrink-0 rounded-[1px]" style={{ background: BOOK_SPINE[book.color] }} />
+            <span>
+              Goes into your book <span className="font-semibold text-foreground">{book.title}</span> only, not into a subject.
+            </span>
+          </p>
+        )}
         {isBuiltin && (
           <p className="flex items-start gap-2 rounded-md border border-highlight/50 bg-highlight-soft p-3 text-sm">
             <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
@@ -242,18 +349,163 @@ function EditorForm({
         )}
       </div>
 
-      <TopicPicker
-        subjects={subjects}
-        topics={topics}
-        subjectId={subjectId}
-        topicId={draft.topicId}
-        error={errors.topic}
-        onSubjectChange={(id) => {
-          setSubjectId(id)
-          update({ topicId: null }) // topic list changes with the subject
-        }}
-        onTopicChange={(id) => update({ topicId: id })}
-      />
+      {book ? (
+        <>
+          {/* ---------- Her book: chapter first (it takes the topic's place), then which subject ---------- */}
+          <fieldset className="space-y-2" aria-describedby={chapterError ? 'chapter-error' : undefined}>
+            <legend className="mb-2 flex flex-wrap items-baseline gap-x-2">
+              <span className="font-bold">Topic</span>
+              <span className="text-sm text-muted-foreground">optional, your own name for a group in this book</span>
+            </legend>
+            {existingChapters.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <ChipRadio
+                  name="chapter"
+                  checked={!typingChapter && chapter === ''}
+                  onChange={() => {
+                    setTypingChapter(false)
+                    setChapter('')
+                    setChapterError(null)
+                  }}
+                >
+                  None
+                </ChipRadio>
+                {existingChapters.map((c) => (
+                  <ChipRadio
+                    key={c.name}
+                    name="chapter"
+                    checked={!typingChapter && chapter === c.name}
+                    onChange={() => {
+                      setTypingChapter(false)
+                      setChapter(c.name)
+                      setChapterError(null)
+                    }}
+                  >
+                    {c.name}
+                  </ChipRadio>
+                ))}
+                <ChipRadio
+                  name="chapter"
+                  checked={typingChapter}
+                  onChange={() => {
+                    setTypingChapter(true)
+                    setChapter('')
+                    requestAnimationFrame(() => document.getElementById('chapter')?.focus())
+                  }}
+                >
+                  <Plus className="-ml-0.5 size-4" aria-hidden />
+                  New topic
+                </ChipRadio>
+              </div>
+            )}
+            {(typingChapter || existingChapters.length === 0) && (
+              <>
+                <Label htmlFor="chapter" className="sr-only">
+                  New topic name
+                </Label>
+                <input
+                  id="chapter"
+                  value={chapter}
+                  maxLength={CHAPTER_MAX + 20}
+                  placeholder="e.g. Enzymes, or Week 3 drills"
+                  onChange={(e) => {
+                    setChapter(e.target.value)
+                    setChapterError(null)
+                  }}
+                  aria-invalid={Boolean(chapterError)}
+                  className={cn(fieldClass, 'h-11')}
+                />
+              </>
+            )}
+            {chapterError && <ErrorText id="chapter-error">{chapterError}</ErrorText>}
+          </fieldset>
+
+          {/* Before migration 0007 only: every question still needs a subject, so ask for one (remembered per book). */}
+          {!bookOnly && (
+          <>
+          <fieldset aria-describedby={errors.topic && subjectId === null ? 'topic-error' : undefined}>
+            <legend className="mb-2 font-bold">For which subject?</legend>
+            <SubjectChips subjects={subjects} subjectId={subjectId} onChange={chooseBookSubject} />
+            {errors.topic && subjectId === null && <ErrorText id="topic-error">Choose a subject.</ErrorText>}
+          </fieldset>
+
+          {/* The topic is optional here ("General"); a specific one only if she asks for it. */}
+          {subjectId !== null &&
+            (pickingTopic ? (
+              <TopicPicker
+                subjects={subjects}
+                topics={topics}
+                subjectId={subjectId}
+                topicId={draft.topicId}
+                showSubjects={false}
+                error={errors.topic}
+                onSubjectChange={chooseBookSubject}
+                onTopicChange={(id) => update({ topicId: id })}
+              />
+            ) : (
+              <p className="-mt-2 text-sm text-muted-foreground">
+                Topic: <span className="font-semibold text-foreground">{topics.find((t) => t.id === draft.topicId)?.name ?? GENERAL_TOPIC}</span>
+                {' · '}
+                <button
+                  type="button"
+                  onClick={() => setPickingTopic(true)}
+                  className="rounded-sm font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+                >
+                  Pick a topic
+                </button>
+              </p>
+            ))}
+          </>
+          )}
+        </>
+      ) : bookOnly ? (
+        <p className="rounded-lg border-l-4 border-primary bg-card px-3 py-2 text-sm text-muted-foreground">
+          This question lives only in your books, so it has no subject or topic.
+        </p>
+      ) : subjectLocked && subjectId !== null ? (
+        <>
+          {/* ---------- From a subject's book: the subject is set, only the topic is asked ---------- */}
+          <div className="flex items-center justify-between gap-3 rounded-lg border-l-4 border-primary bg-card py-2 pr-1 pl-3">
+            <p className="min-w-0 text-sm">
+              Goes into{' '}
+              <span className="font-heading font-bold">
+                {subjects.find((s) => s.id === subjectId)?.code} · {subjects.find((s) => s.id === subjectId)?.name}
+              </span>
+            </p>
+            <button
+              type="button"
+              onClick={() => setSubjectLocked(false)}
+              aria-label="Change the subject"
+              className="h-9 shrink-0 rounded-md bg-primary/[0.08] px-3 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              Change
+            </button>
+          </div>
+          <TopicPicker
+            subjects={subjects}
+            topics={topics}
+            subjectId={subjectId}
+            topicId={draft.topicId}
+            showSubjects={false}
+            error={errors.topic}
+            onSubjectChange={(id) => setSubjectId(id)}
+            onTopicChange={(id) => update({ topicId: id })}
+          />
+        </>
+      ) : (
+        <TopicPicker
+          subjects={subjects}
+          topics={topics}
+          subjectId={subjectId}
+          topicId={draft.topicId}
+          error={errors.topic}
+          onSubjectChange={(id) => {
+            setSubjectId(id)
+            update({ topicId: null }) // the topic list changes with the subject
+          }}
+          onTopicChange={(id) => update({ topicId: id })}
+        />
+      )}
 
       <Field id="stem" label="Question" error={errors.stem}>
         <textarea

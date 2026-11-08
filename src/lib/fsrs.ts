@@ -167,3 +167,13 @@ export function dueByTomorrow(states: Iterable<ReviewRow>, now: Date): number {
   for (const row of states) if (new Date(row.due).getTime() < endOfTomorrow) count++
   return count
 }
+
+/** How many of these questions are due for review right now (for "12 due" on a book's Flashcards option). */
+export function countDue(questionIds: Iterable<string>, states: ReadonlyMap<string, Pick<ReviewRow, 'due'>>, now: Date): number {
+  let count = 0
+  for (const id of questionIds) {
+    const row = states.get(id)
+    if (row && new Date(row.due).getTime() <= now.getTime()) count++
+  }
+  return count
+}

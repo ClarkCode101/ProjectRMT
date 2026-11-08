@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildDeck,
   cardToRow,
+  countDue,
   dueByTomorrow,
   formatInterval,
   makeScheduler,
@@ -153,5 +154,23 @@ describe('dueByTomorrow', () => {
   it('counts cards due before the end of tomorrow', () => {
     expect(dueByTomorrow([row('a', MIN), row('b', 10 * DAY), row('c', -DAY)], NOW)).toBe(2)
     expect(dueByTomorrow([], NOW)).toBe(0)
+  })
+})
+
+describe('countDue', () => {
+  const now = new Date('2026-11-08T12:00:00')
+  const states = new Map([
+    ['past', { due: '2026-11-07T12:00:00' }],
+    ['now', { due: '2026-11-08T12:00:00' }],
+    ['later', { due: '2026-11-09T12:00:00' }],
+  ])
+
+  it('counts cards due now or earlier, only among the given questions', () => {
+    expect(countDue(['past', 'now', 'later', 'never-seen'], states, now)).toBe(2)
+    expect(countDue(['later'], states, now)).toBe(0)
+  })
+
+  it('is 0 for no questions', () => {
+    expect(countDue([], states, now)).toBe(0)
   })
 })

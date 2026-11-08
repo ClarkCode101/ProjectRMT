@@ -162,6 +162,14 @@ describe('summarizeCoverage', () => {
   it('works with no questions at all', () => {
     expect(summarizeCoverage([], subjects, topics).every((s) => s.total === 0)).toBe(true)
   })
+
+  it('leaves out an empty "General" topic, but shows it once it has questions', () => {
+    const withGeneral = [...topics, { id: 12, subject_id: 1, name: 'General' }]
+    expect(summarizeCoverage([], subjects, withGeneral)[0].topics.map((t) => t.name)).not.toContain('General')
+    const result = summarizeCoverage([{ topic_id: 12 }], subjects, withGeneral)[0]
+    expect(result.topics.map((t) => t.name)).toContain('General')
+    expect(result.total).toBe(1)
+  })
 })
 
 describe('filterQuestions', () => {

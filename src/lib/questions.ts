@@ -1,5 +1,6 @@
 // Plain functions for the Questions page (add / edit / verify / coverage), kept here so they can be tested.
 
+import { GENERAL_TOPIC } from './books'
 import { parseQuestions } from './parsers/questionParser'
 
 export const CHOICE_COUNT = 4
@@ -116,7 +117,11 @@ export type SubjectCoverage = {
   topics: { topicId: number; name: string; count: number; level: CoverageLevel }[]
 }
 
-/** Question count per topic, grouped by subject. Topics with the fewest questions come first. */
+/**
+ * Question count per topic, grouped by subject. Topics with the fewest questions come first.
+ * A subject's "General" topic (for questions that fit no specific one) is left out while it's empty,
+ * so it never shows up as a gap to fill.
+ */
 export function summarizeCoverage(
   questions: { topic_id: number }[],
   subjects: { id: number; code: string; name: string }[],
@@ -132,6 +137,7 @@ export function summarizeCoverage(
         const count = countByTopic.get(t.id) ?? 0
         return { topicId: t.id, name: t.name, count, level: coverageLevel(count) }
       })
+      .filter((t) => !(t.name === GENERAL_TOPIC && t.count === 0))
       .sort((a, b) => a.count - b.count || a.name.localeCompare(b.name))
     return {
       subjectId: s.id,

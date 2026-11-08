@@ -16,9 +16,11 @@ export type BankQuestion = {
   explanation: string | null
   difficulty: number | null
   status: VerifyStatus
+  /** false = lives only in her book (migration 0006) */
+  in_subject: boolean
 }
 
-const COLUMNS = 'id, owner_id, source, topic_id, stem, choices, correct_index, explanation, difficulty, status'
+const COLUMNS = 'id, owner_id, source, topic_id, stem, choices, correct_index, explanation, difficulty, status, in_subject'
 // Supabase returns at most 1000 rows per request, so load the bank in pages.
 const PAGE_SIZE = 1000
 
@@ -51,18 +53,41 @@ export function useRefreshBank() {
     void queryClient.invalidateQueries({ queryKey: ['mistakes'] })
     void queryClient.invalidateQueries({ queryKey: ['warmup'] })
     void queryClient.invalidateQueries({ queryKey: ['question-pool'] })
+    void queryClient.invalidateQueries({ queryKey: ['source-counts'] })
+    // a question moved in or out of its subject (in_subject) changes that subject's score
+    void queryClient.invalidateQueries({ queryKey: ['topic-performance'] })
   }
 }
 
-/** Adds one of her own questions. She wrote it herself, so it starts as verified. */
-export async function addQuestion(draft: QuestionDraft) {
-  const { error } = await supabase.from('questions').insert({ ...draftToRow(draft), source: 'user', status: 'verified' })
+/**
+ * Adds one of her own questions and returns its id. She wrote it herself, so it starts as verified.
+ * `inSubject` false = it lives only in her book (migration 0006).
+ */
+export async function addQuestion(draft: QuestionDraft, inSubject = true): Promise<string> {
+  const { data, error } = await supabase
+    .from('questions')
+    .insert({ ...draftToRow(draft), source: 'user', status: 'verified', in_subject: inSubject })
+    .select('id')
+    .single()
+  if (error) throw error
+  return data.id
+}
+
+/** Saves changes to a question (hers, or a built-in one she is fixing). `inSubject` only for her own questions. */
+export async function updateQuestion(id: string, draft: QuestionDraft, inSubject?: boolean) {
+  const { error } = await supabase
+    .from('questions')
+    .update({ ...draftToRow(draft), ...(inSubject !== undefined && { in_subject: inSubject }) })
+    .eq('id', id)
   if (error) throw error
 }
 
-/** Saves changes to a question (hers, or a built-in one she is fixing). */
-export async function updateQuestion(id: string, draft: QuestionDraft) {
-  const { error } = await supabase.from('questions').update(draftToRow(draft)).eq('id', id)
+/**
+ * Where one of her questions lives: in a subject's book under `topicId` (inSubject true), or only in her books
+ * (inSubject false, under the hidden "Your books" topic, migration 0007).
+ */
+export async function setQuestionPlace(id: string, topicId: number, inSubject: boolean) {
+  const { error } = await supabase.from('questions').update({ topic_id: topicId, in_subject: inSubject }).eq('id', id)
   if (error) throw error
 }
 
