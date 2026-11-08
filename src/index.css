@@ -183,40 +183,16 @@
     linear-gradient(225deg, var(--card) 50%, transparent 50%) 0 0 / 14px 10px repeat-x;
 }
 
-/* Flashcards microscope: a newly chosen slide slides onto the stage. */
-@keyframes slide-load {
-  from { transform: translateX(-28px); opacity: 0; }
+/* Flashcards lens: pressing Look focuses (a quick blur, then sharp and brighter) and then dives into the lens,
+   as if she leaned into the eyepiece (keep in step with LOOK_MS in FlashcardsPage.tsx). */
+@keyframes lens-look {
+  0%   { transform: scale(1); filter: brightness(1) blur(0); opacity: 1; }
+  25%  { transform: scale(1.04); filter: brightness(1) blur(2px); }
+  50%  { transform: scale(1.1); filter: brightness(1.12) blur(0); opacity: 1; }
+  100% { transform: scale(2.6); filter: brightness(1.2) blur(0); opacity: 0; }
 }
-.slide-load {
-  animation: slide-load 350ms ease-out both;
-}
-
-/* Flashcards microscope: pressing Look turns the lamp on, the beam lights up, and the view zooms into
-   the eyepiece (keep in step with LOOK_MS in FlashcardsPage.tsx). */
-@keyframes microscope-look {
-  0%, 35% { transform: scale(1); opacity: 1; }
-  100%    { transform: scale(2.6); opacity: 0; }
-}
-.microscope-look {
-  transform-box: view-box;
-  transform-origin: 36% 6%; /* the eyepiece */
-  animation: microscope-look 1000ms ease-in both;
-}
-/* ...and the field of view comes into focus: a little brighter and bigger, as if she leaned in. */
-@keyframes view-look {
-  0%   { transform: scale(1); filter: brightness(1) blur(0); }
-  30%  { filter: brightness(1) blur(2px); }
-  100% { transform: scale(1.12); filter: brightness(1.12) blur(0); }
-}
-.view-look {
-  animation: view-look 1000ms ease-out both;
-}
-@keyframes microscope-beam {
-  from { opacity: 0; }
-  to   { opacity: 0.35; }
-}
-.microscope-beam {
-  animation: microscope-beam 300ms ease-out both;
+.lens-look {
+  animation: lens-look 1000ms ease-in both;
 }
 
 /* Questions cabinet: the chosen drawer slides out. */

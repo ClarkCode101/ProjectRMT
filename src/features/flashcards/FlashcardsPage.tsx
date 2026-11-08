@@ -5,6 +5,7 @@ import { Link } from 'react-router'
 import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { PageHeader } from '@/components/dashboard'
+import { SwipeCarousel } from '@/components/SwipeCarousel'
 import { useFocusMode } from '@/components/layoutContext'
 import { HeroPanel, heroButtonClass } from '@/components/report'
 import { DEFAULT_SOURCE, questionPoolOptions, type QuizQuestion, type SourceChoice } from '@/features/quiz/api'
@@ -17,7 +18,10 @@ import { useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { reviewStatesOptions } from './api'
 import { FlashcardSession, type SessionStats } from './FlashcardSession'
-import { MicroscopeScene, type TraySlide } from './MicroscopeScene'
+import { FieldOfView } from './FieldOfView'
+
+/** One lens on the carousel: a subject (or All), what it looks like under the microscope, and its card counts. */
+type Lens = { key: string; code: string; name: string; picture: string; due: number; fresh: number }
 
 // ---------- Settings kept on this device: new cards per day, and how many new ones she has done today ----------
 
@@ -49,7 +53,7 @@ type Stage = { name: 'setup' } | { name: 'session'; deck: QuizQuestion[] } | { n
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
-/** How long the "look into the microscope" scene plays before the session (matches .microscope-look in index.css). */
+/** How long the "look into the lens" scene plays before the session (matches .lens-look in index.css). */
 const LOOK_MS = 1000
 
 export default function FlashcardsPage() {
@@ -86,7 +90,7 @@ export default function FlashcardsPage() {
   const total = deck.due.length + deck.fresh.length
   const optionsChanged = sourceChoice.source !== 'all' || sourceChoice.verifiedOnly
 
-  // Look: the lamp turns on and the view zooms into the eyepiece, then the session starts.
+  // Look: the middle lens focuses and dives in, then the session starts.
   const [looking, setLooking] = useState(false)
   const lookTimer = useRef<number | undefined>(undefined)
   useEffect(() => () => window.clearTimeout(lookTimer.current), [])
@@ -155,7 +159,7 @@ export default function FlashcardsPage() {
               onClick={() => setStage({ name: 'setup' })}
               className="flex h-12 items-center justify-center gap-2 rounded-lg bg-white/10 px-5 font-heading text-base font-bold text-white outline-none hover:bg-white/15 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px"
             >
-              Back to the microscope
+              Back to the slides
             </button>
           </div>
         </HeroPanel>
@@ -167,36 +171,52 @@ export default function FlashcardsPage() {
   if (pool.isError || reviewStates.isError) return <FullPageMessage>Couldn’t load your cards. Check your internet connection, then refresh.</FullPageMessage>
 
   const minutes = Math.max(1, Math.round(total * 0.4)) // about 25 seconds a card
-  const allDeck = subjectId === null ? deck : deckFor(null)
-  const slides: TraySlide[] = [
-    { key: 'all', code: 'All', name: 'All six subjects', due: allDeck.due.length },
-    ...(subjects.data ?? []).map((s) => ({ key: String(s.id), code: s.code, name: s.name, due: deckFor(s.id).due.length })),
-  ]
-  const chosenCode = subjects.data?.find((s) => s.id === subjectId)?.code ?? 'All subjects'
+  // One lens per subject, plus All first. Each shows what that subject looks like under the microscope.
+  const lenses: Lens[] = [{ key: 'all', code: 'ALL', name: 'All six subjects', picture: 'All' }, ...(subjects.data ?? []).map((s) => ({ key: String(s.id), code: s.code, name: s.name, picture: s.code }))].map(
+    (l) => {
+      const d = deckFor(l.key === 'all' ? null : Number(l.key))
+      return { ...l, due: d.due.length, fresh: d.fresh.length }
+    },
+  )
+  const lensIndex = Math.max(0, lenses.findIndex((l) => l.key === (subjectId === null ? 'all' : String(subjectId))))
 
   return (
-    // Phones: extra room at the bottom so the sticky start bar never covers the last slides.
-    <div className="mx-auto max-w-4xl space-y-6 max-md:pb-24">
-      <PageHeader title="Flashcards" subtitle="Load a slide, then look through the microscope." />
+    // One screen tall, no scrolling (same as Practice and Mock exam): the lenses take whatever height is left.
+    // Phone: minus the top bar (3.5rem), main's padding (0.5 + 1.5rem) and the bottom nav (5.5rem).
+    // Tablet/computer: minus main's padding (pt-5 + pb-5 = 2.5rem). min-h: on a very short screen it scrolls instead of squashing.
+    <div className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[30rem] max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-[32rem]">
+      <PageHeader title="Flashcards" subtitle="Swipe the lens to choose a slide." />
 
-      {/* ---------- The microscope and the slides on the bench: pick a subject ---------- */}
-      <MicroscopeScene
-        slides={slides}
-        selectedKey={subjectId === null ? 'all' : String(subjectId)}
-        onSelect={(key) => setSubjectId(key === 'all' ? null : Number(key))}
-        viewLabel={
-          total === 0
-            ? `${subjectId === null ? 'All' : chosenCode} · all caught up`
-            : `${subjectId === null ? 'All' : chosenCode} · ${deck.due.length} due${deck.fresh.length > 0 ? ` · ${deck.fresh.length} new` : ''}`
+      {/* ---------- The lenses: one big view in the middle, swipe to switch (the same picker as Practice) ---------- */}
+      <SwipeCarousel
+        items={lenses}
+        index={lensIndex}
+        onIndexChange={(i) => setSubjectId(lenses[i].key === 'all' ? null : Number(lenses[i].key))}
+        onOpen={look}
+        label="Slides"
+        align="center"
+        bench={false}
+        disabled={looking}
+        renderFigure={(l, { centered }) => (
+          // Side lenses carry their due count (the middle one has it in the name plate). Nothing due = dimmer.
+          <div className={cn('w-60 md:w-80', !centered && l.due === 0 && 'opacity-60 grayscale-[35%]')}>
+            <FieldOfView code={l.picture} label={centered ? undefined : l.due === 0 ? 'Caught up' : `${l.due} due`} looking={centered && looking} />
+          </div>
+        )}
+        renderDetail={(l) =>
+          l.due + l.fresh === 0 ? (
+            <span className="font-bold text-correct">All caught up</span>
+          ) : (
+            <span className="font-bold text-primary tabular-nums">
+              {l.due} due{l.fresh > 0 && ` · ${l.fresh} new`}
+            </span>
+          )
         }
-        looking={looking}
       />
 
-      {/* ---------- Start: just ⚙ + the gold Look button, centered under the scene (same center line).
-          The counts already sit on the field of view's label, so they aren't repeated here.
-          Phones: a small floating bar that sticks above the bottom nav, so Look is always in reach. ---------- */}
-      <section aria-label="Start" className="flex flex-col items-center gap-1.5">
-        <div className="flex items-center gap-2 max-md:sticky max-md:bottom-[calc(4.75rem+env(safe-area-inset-bottom))] max-md:z-10 max-md:rounded-2xl max-md:bg-card/90 max-md:p-2 max-md:shadow-[0_12px_28px_-12px_rgb(7_71_94/0.5)] max-md:backdrop-blur">
+      {/* ---------- Start: ⚙ + the gold Look button, centered under the lenses ---------- */}
+      <section aria-label="Start" className="flex shrink-0 flex-col items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setOptionsOpen(true)}
@@ -216,7 +236,8 @@ export default function FlashcardsPage() {
             {looking ? 'Focusing…' : total === 0 ? 'Nothing to look at' : `Look · ${plural(total, 'card')}`}
           </button>
         </div>
-        <p className="text-xs text-muted-foreground" aria-live="polite">
+        {/* always one line (h-4), so the lenses above don't change size */}
+        <p className="h-4 text-xs text-muted-foreground" aria-live="polite">
           {total === 0
             ? settings.newDoneToday >= settings.newPerDay
               ? 'All caught up. Come back tomorrow.'
@@ -225,9 +246,9 @@ export default function FlashcardsPage() {
         </p>
       </section>
 
-      {/* Why the intervals may look shorter near the exam, or a nudge to set the date so they can. */}
+      {/* Why the intervals may look shorter near the exam, or a nudge to set the date so they can. One quiet line at the bottom. */}
       {study.isSuccess && (
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="shrink-0 border-t border-dashed pt-3 text-center text-sm text-muted-foreground">
           <CalendarClock className="mr-1 inline size-4 align-[-3px] text-primary" aria-hidden />
           {maxIntervalDays !== undefined ? (
             <>

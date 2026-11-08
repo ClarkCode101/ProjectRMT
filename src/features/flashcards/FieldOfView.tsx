@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
 // What she "sees" through the microscope on the Flashcards page: a round field of view with simple
 // drawings of what a slide from that subject looks like (decoration, but it also hints at the subject):
@@ -166,36 +166,44 @@ const PICTURES: Record<string, { background: string; cells: () => ReactNode }> =
   },
 }
 
-/** The round view through the eyepiece. `label` sits on the bottom edge (e.g. "HEMA · 3 due"). */
-export function FieldOfView({ code, label, looking }: { code: string; label: string; looking: boolean }) {
+/**
+ * The round view through the eyepiece. `label` (optional) sits on the bottom edge, e.g. "12 due".
+ * `looking` = she pressed Look: the view dives in (lens-look in index.css).
+ */
+export function FieldOfView({ code, label, looking = false }: { code: string; label?: string; looking?: boolean }) {
   const picture = PICTURES[code] ?? PICTURES.All
+  // Unique ids per lens: the Flashcards carousel shows several at once, and SVG ids must not repeat on a page.
+  // (letters/digits only: React's ids can contain ":" or "«»", which break url(#…) references)
+  const id = `fov${useId().replace(/[^a-zA-Z0-9]/g, '')}`
   return (
-    <div className={looking ? 'view-look relative' : 'relative'}>
+    <div className={looking ? 'lens-look relative' : 'relative'}>
       <svg viewBox="0 0 200 200" className="w-full drop-shadow-[0_18px_28px_rgb(7_71_94/0.35)]" aria-hidden>
         <defs>
-          <clipPath id="fov-clip">
+          <clipPath id={`${id}-clip`}>
             <circle cx="100" cy="100" r="94" />
           </clipPath>
           {/* dark edge, like looking through a real eyepiece */}
-          <radialGradient id="fov-vignette">
+          <radialGradient id={`${id}-vignette`}>
             <stop offset="0.62" stopColor="#07222D" stopOpacity="0" />
             <stop offset="1" stopColor="#07222D" stopOpacity="0.75" />
           </radialGradient>
         </defs>
-        <g clipPath="url(#fov-clip)">
+        <g clipPath={`url(#${id}-clip)`}>
           {/* key: a new slide fades in with its own picture */}
           <g key={code} className="animate-in fade-in zoom-in-95 origin-center duration-300 [transform-box:fill-box]">
             <rect width="200" height="200" fill={picture.background} />
             {picture.cells()}
           </g>
-          <rect width="200" height="200" fill="url(#fov-vignette)" />
+          <rect width="200" height="200" fill={`url(#${id}-vignette)`} />
         </g>
         {/* the eyepiece rim */}
         <circle cx="100" cy="100" r="95" fill="none" stroke="var(--primary-deep)" strokeWidth="8" />
       </svg>
-      <p className="absolute inset-x-0 bottom-[8%] flex justify-center">
-        <span className="rounded-full bg-primary-deep px-2.5 py-0.5 text-xs font-bold whitespace-nowrap sm:px-3 sm:py-1 sm:text-sm text-white shadow-md tabular-nums">{label}</span>
-      </p>
+      {label && (
+        <p className="absolute inset-x-0 bottom-[8%] flex justify-center">
+          <span className="rounded-full bg-primary-deep px-3 py-1 text-base font-bold whitespace-nowrap text-white tabular-nums shadow-md">{label}</span>
+        </p>
+      )}
     </div>
   )
 }
