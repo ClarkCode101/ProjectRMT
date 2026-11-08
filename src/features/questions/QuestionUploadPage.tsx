@@ -1,17 +1,18 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, CircleCheck, ClipboardPaste, FileUp, Info } from 'lucide-react'
 import { useState, type DragEvent } from 'react'
-import { Link, useLocation } from 'react-router'
+import { Link, useLocation, useSearchParams } from 'react-router'
 import { backLinkClass, headerButtonClass, PageHeader } from '@/components/dashboard'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { heroButtonClass } from '@/components/report'
 import { ACCEPTED_FILES, extractText, UnreadableFileError } from '@/lib/parsers/extractText'
 import { parseQuestions } from '@/lib/parsers/questionParser'
-import { useSubjects, useTopics } from '@/lib/referenceData'
+import { useBookTopicId, useSubjects, useTopics } from '@/lib/referenceData'
 import { toReviewItems, withMatches, type ReviewItem } from '@/lib/uploadReview'
 import { cn } from '@/lib/utils'
 import { checkDuplicates } from './uploadApi'
-import { UploadReview, UploadSteps } from './UploadReview'
+import { useBooks } from './booksApi'
+import { UploadReview, UploadSteps, type UploadTarget } from './UploadReview'
 
 type Stage =
   | { name: 'pick' }
@@ -32,9 +33,16 @@ const smallButtonClass =
   'flex h-10 items-center justify-center gap-2 rounded-lg bg-primary/[0.08] px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
 
 // /questions/upload: pick a file (or paste text) → review what was found → save.
+// ?subject=ID (from a subject's book): the subject is set, only the topic is asked.
+// ?book=ID (from one of her books): no subject; they go into that book, under her own topics there.
 export default function QuestionUploadPage() {
   const subjects = useSubjects()
   const topics = useTopics()
+  const [searchParams] = useSearchParams()
+  const subjectParam = Number(searchParams.get('subject'))
+  const bookParam = searchParams.get('book')
+  const books = useBooks({ enabled: bookParam !== null })
+  const bookTopicId = useBookTopicId()
   const queryClient = useQueryClient()
   const [stage, setStage] = useState<Stage>({ name: 'pick' })
   const [items, setItems] = useState<ReviewItem[]>([])
@@ -46,8 +54,16 @@ export default function QuestionUploadPage() {
   const [dragging, setDragging] = useState(false)
   const [checkFailures, setCheckFailures] = useState(0)
 
-  if (subjects.isPending || topics.isPending) return <FullPageMessage>Loading…</FullPageMessage>
+  if (subjects.isPending || topics.isPending || (bookParam !== null && books.isPending)) return <FullPageMessage>Loading…</FullPageMessage>
   if (subjects.isError || topics.isError) return <FullPageMessage>Couldn’t load subjects. Check your internet connection, then refresh.</FullPageMessage>
+
+  // Where the questions go, and where to go back to.
+  const book = bookParam === null ? undefined : books.data?.find((b) => b.id === bookParam)
+  const subject = subjects.data.find((s) => s.id === subjectParam)
+  const target: UploadTarget =
+    book && bookTopicId !== null ? { kind: 'book', book, topicId: bookTopicId } : subject ? { kind: 'subject', subjectId: subject.id } : { kind: 'free' }
+  const backTo = book ? `/questions?book=${book.id}` : subject ? `/questions?subject=${subject.id}` : '/questions'
+  const backLabel = book?.title ?? subject?.code ?? 'Questions'
 
   async function read(fileName: string, getText: () => Promise<string>) {
     setError(null)
@@ -114,7 +130,8 @@ export default function QuestionUploadPage() {
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-            <Link to="/questions?view=all&needs=1" className={headerButtonClass}>
+            {/* back to the book they went into (with its "Needs a look" filter), or all questions */}
+            <Link to={target.kind === 'free' ? '/questions?view=all&needs=1' : `${backTo}&needs=1`} className={headerButtonClass}>
               Check them now
             </Link>
             <button type="button" onClick={startOver} className="h-12 rounded-lg px-4 font-semibold text-white/90 hover:bg-white/10 sm:h-11">
@@ -129,6 +146,7 @@ export default function QuestionUploadPage() {
   if (stage.name === 'review') {
     return (
       <UploadReview
+        target={target}
         fileName={stage.fileName}
         skippedText={stage.skippedText}
         items={items}
@@ -143,6 +161,8 @@ export default function QuestionUploadPage() {
           void queryClient.invalidateQueries({ queryKey: ['mistakes'] })
           void queryClient.invalidateQueries({ queryKey: ['question-pool'] })
           void queryClient.invalidateQueries({ queryKey: ['uploads'] }) // new file for "One upload"
+          void queryClient.invalidateQueries({ queryKey: ['books'] }) // they went into her book
+          void queryClient.invalidateQueries({ queryKey: ['source-counts'] })
           setStage({ name: 'done', added, replaced, fileName: stage.fileName })
         }}
       />
@@ -153,9 +173,9 @@ export default function QuestionUploadPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <Link to="/questions" className={backLinkClass}>
-        <ArrowLeft className="size-4" aria-hidden />
-        Questions
+      <Link to={backTo} className={cn(backLinkClass, 'max-w-full')}>
+        <ArrowLeft className="size-4 shrink-0" aria-hidden />
+        <span className="truncate">{backLabel}</span>
       </Link>
       <PageHeader title="Upload questions" subtitle="Nothing is saved until you review it. Your file stays on your device." />
       <UploadSteps current={1} />

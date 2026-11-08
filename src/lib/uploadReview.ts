@@ -21,6 +21,8 @@ export type ReviewItem = {
   decision: Decision
   /** which existing question "Replace" overwrites */
   replaceId: string | null
+  /** uploading into her own book: its topic there (her own name); null = the one chosen for the whole upload */
+  chapter: string | null
 }
 
 export type ReviewStatus = 'fix' | 'repeat' | 'checking' | 'duplicate' | 'ready'
@@ -50,6 +52,7 @@ export function toReviewItems(parsed: ParsedQuestion[]): ReviewItem[] {
       repeatOf,
       decision: 'skip',
       replaceId: null,
+      chapter: null,
     }
     item.decision = isContentValid(item) && repeatOf === null ? 'save' : 'skip'
     return item
@@ -94,12 +97,18 @@ export function summarize(items: ReviewItem[]) {
   }
 }
 
-/** What to write: new questions, and existing ones to overwrite. Each gets its own topic or the upload's topic. */
-export function plannedWrites(items: ReviewItem[], uploadTopicId: number) {
+/**
+ * What to write: new questions, and existing ones to overwrite. Each gets its own topic or the upload's topic,
+ * and (uploading into her own book) its own topic in the book or the upload's: `insertChapters[i]` goes with `inserts[i]`.
+ */
+export function plannedWrites(items: ReviewItem[], uploadTopicId: number, uploadChapter: string | null = null) {
   const withTopic = (item: ReviewItem): QuestionDraft => ({ ...item.draft, topicId: item.draft.topicId ?? uploadTopicId })
+  const chapterOf = (item: ReviewItem) => item.chapter ?? uploadChapter
   const chosen = items.filter(willSave)
+  const added = chosen.filter((i) => i.decision === 'save')
   return {
-    inserts: chosen.filter((i) => i.decision === 'save').map(withTopic),
-    replacements: chosen.filter((i) => i.decision === 'replace').map((i) => ({ id: i.replaceId!, draft: withTopic(i) })),
+    inserts: added.map(withTopic),
+    insertChapters: added.map(chapterOf),
+    replacements: chosen.filter((i) => i.decision === 'replace').map((i) => ({ id: i.replaceId!, draft: withTopic(i), chapter: chapterOf(i) })),
   }
 }

@@ -60,6 +60,20 @@ describe('summarize and plannedWrites', () => {
     const writes = plannedWrites(custom, 4)
     expect(writes.inserts).toHaveLength(1)
     expect(writes.inserts[0].topicId).toBe(9)
-    expect(writes.replacements).toEqual([{ id: 'old-1', draft: expect.objectContaining({ topicId: 4, stem: 'Same question?' }) }])
+    expect(writes.replacements).toEqual([{ id: 'old-1', draft: expect.objectContaining({ topicId: 4, stem: 'Same question?' }), chapter: null }])
+  })
+})
+
+describe('plannedWrites into her own book', () => {
+  const [first, second] = toReviewItems([parsed('One?'), parsed('Two?')]).map((i) => withMatches(i, []))
+
+  it('gives each new question the topic chosen for the upload, unless it has its own', () => {
+    const writes = plannedWrites([first, { ...second, chapter: 'Week 2' }], 7, 'Week 1')
+    expect(writes.inserts.map((d) => d.topicId)).toEqual([7, 7])
+    expect(writes.insertChapters).toEqual(['Week 1', 'Week 2'])
+  })
+
+  it('leaves the chapter empty when none is chosen', () => {
+    expect(plannedWrites([first], 7).insertChapters).toEqual([null])
   })
 })

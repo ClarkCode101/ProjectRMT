@@ -18,7 +18,9 @@ import {
   type ReviewStatus,
 } from '@/lib/uploadReview'
 import { cn } from '@/lib/utils'
-import { CorrectToggle, TopicPicker } from './QuestionFormParts'
+import { ChipRadio, CorrectToggle, TopicPicker } from './QuestionFormParts'
+import type { Book } from './booksApi'
+import { CHAPTER_MAX, chapterList, cleanChapter } from '@/lib/books'
 import { saveUpload } from './uploadApi'
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
@@ -58,7 +60,15 @@ export function UploadSteps({ current }: { current: 1 | 2 }) {
   )
 }
 
+/**
+ * Where an upload goes, from where she opened Upload:
+ * free = she picks a subject and topic; subject = from a subject's book (only the topic is asked);
+ * book = from one of her own books (no subject: they live only in that book, under her own topics there).
+ */
+export type UploadTarget = { kind: 'free' } | { kind: 'subject'; subjectId: number } | { kind: 'book'; book: Book; topicId: number }
+
 type Props = {
+  target: UploadTarget
   fileName: string
   skippedText: string
   items: ReviewItem[]
@@ -70,9 +80,18 @@ type Props = {
   onSaved: (added: number, replaced: number) => void
 }
 
-export function UploadReview({ fileName, skippedText, items, onChange, checkFailures, subjects, topics, onStartOver, onSaved }: Props) {
-  const [subjectId, setSubjectId] = useState<number | null>(null)
-  const [topicId, setTopicId] = useState<number | null>(null)
+export function UploadReview({ target, fileName, skippedText, items, onChange, checkFailures, subjects, topics, onStartOver, onSaved }: Props) {
+  const book = target.kind === 'book' ? target.book : null
+  const [subjectId, setSubjectId] = useState<number | null>(target.kind === 'subject' ? target.subjectId : null)
+  // Her book: every question goes under the hidden "Your books" topic, so there's nothing to pick there.
+  const [topicId, setTopicId] = useState<number | null>(target.kind === 'book' ? target.topicId : null)
+  // From a subject's book the subject is set; "Change" opens the full subject + topic picker.
+  const [subjectLocked, setSubjectLocked] = useState(target.kind === 'subject')
+  // Her book: the topic in the book for the whole upload (her own name, optional); each question can have its own.
+  const [uploadChapter, setUploadChapter] = useState('')
+  const [typingChapter, setTypingChapter] = useState(false)
+  const existingChapters = book ? chapterList(book.chapters).chapters.map((c) => c.name) : []
+  const cleanedChapter = cleanChapter(uploadChapter)
   const [filter, setFilter] = useState<Filter>('all')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -112,10 +131,14 @@ export function UploadReview({ fileName, skippedText, items, onChange, checkFail
 
   async function save() {
     if (topicId === null) return
+    if ('error' in cleanedChapter) {
+      setSaveError(cleanedChapter.error)
+      return
+    }
     setSaving(true)
     setSaveError(null)
     try {
-      const result = await saveUpload(fileName, plannedWrites(items, topicId))
+      const result = await saveUpload(fileName, plannedWrites(items, topicId, book ? cleanedChapter.chapter : null), book?.id ?? null)
       onSaved(result.added, result.replaced)
     } catch (e) {
       setSaveError(e instanceof Error && e.message.startsWith('Added') ? e.message : 'Couldn’t save. Check your internet connection and try again.')
@@ -138,25 +161,120 @@ export function UploadReview({ fileName, skippedText, items, onChange, checkFail
       <UploadSteps current={2} />
 
       {/* 1. Where they go */}
-      <section aria-labelledby="topic-heading" className="space-y-3">
-        <div>
-          <h2 id="topic-heading" className="font-heading text-lg font-bold">
-            Topic for these questions
-          </h2>
-          <p className="text-sm text-muted-foreground">You can change the topic of a single question when you open it below.</p>
-        </div>
-        <TopicPicker
-          subjects={subjects}
-          topics={topics}
-          subjectId={subjectId}
-          topicId={topicId}
-          onSubjectChange={(id) => {
-            setSubjectId(id)
-            setTopicId(null)
-          }}
-          onTopicChange={setTopicId}
-        />
-      </section>
+      {book ? (
+        // ---------- Into her own book: no subject; her own topic for all of them (optional), each can have its own ----------
+        <section aria-labelledby="topic-heading" className="space-y-3">
+          <div>
+            <h2 id="topic-heading" className="font-heading text-lg font-bold">
+              Topic in your book
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              They go into your book <span className="font-semibold text-foreground">{book.title}</span> only, not into a subject. Optional; you can
+              give one question its own topic below.
+            </p>
+          </div>
+          <fieldset className="min-w-0 space-y-2">
+            <legend className="sr-only">Topic for all of them</legend>
+            {existingChapters.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <ChipRadio
+                  name="upload-chapter"
+                  checked={!typingChapter && uploadChapter === ''}
+                  onChange={() => {
+                    setTypingChapter(false)
+                    setUploadChapter('')
+                  }}
+                >
+                  None
+                </ChipRadio>
+                {existingChapters.map((c) => (
+                  <ChipRadio
+                    key={c}
+                    name="upload-chapter"
+                    checked={!typingChapter && uploadChapter === c}
+                    onChange={() => {
+                      setTypingChapter(false)
+                      setUploadChapter(c)
+                    }}
+                  >
+                    {c}
+                  </ChipRadio>
+                ))}
+                <ChipRadio
+                  name="upload-chapter"
+                  checked={typingChapter}
+                  onChange={() => {
+                    setTypingChapter(true)
+                    setUploadChapter('')
+                    requestAnimationFrame(() => document.getElementById('upload-chapter')?.focus())
+                  }}
+                >
+                  <Plus className="-ml-0.5 size-4" aria-hidden />
+                  New topic
+                </ChipRadio>
+              </div>
+            )}
+            {(typingChapter || existingChapters.length === 0) && (
+              <>
+                <label htmlFor="upload-chapter" className="sr-only">
+                  New topic name
+                </label>
+                <input
+                  id="upload-chapter"
+                  value={uploadChapter}
+                  maxLength={CHAPTER_MAX + 20}
+                  placeholder="e.g. Enzymes, or Week 3 drills"
+                  onChange={(e) => setUploadChapter(e.target.value)}
+                  className={cn(fieldClass, 'h-11')}
+                />
+              </>
+            )}
+          </fieldset>
+        </section>
+      ) : (
+        <section aria-labelledby="topic-heading" className="space-y-3">
+          <div>
+            <h2 id="topic-heading" className="font-heading text-lg font-bold">
+              Topic for these questions
+            </h2>
+            <p className="text-sm text-muted-foreground">Pick one for all of them; you can give one question its own topic below.</p>
+          </div>
+          {subjectLocked && subjectId !== null ? (
+            <>
+              {/* From a subject's book: the subject is set, only the topic is asked */}
+              <div className="flex items-center justify-between gap-3 rounded-lg border-l-4 border-primary bg-card py-2 pr-1 pl-3">
+                <p className="min-w-0 text-sm">
+                  Goes into{' '}
+                  <span className="font-heading font-bold">
+                    {subjects.find((s) => s.id === subjectId)?.code} · {subjects.find((s) => s.id === subjectId)?.name}
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSubjectLocked(false)}
+                  aria-label="Change the subject"
+                  className="h-9 shrink-0 rounded-md bg-primary/[0.08] px-3 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40"
+                >
+                  Change
+                </button>
+              </div>
+              <TopicPicker subjects={subjects} topics={topics} subjectId={subjectId} topicId={topicId} showSubjects={false} onSubjectChange={setSubjectId} onTopicChange={setTopicId} />
+            </>
+          ) : (
+            <TopicPicker
+              subjects={subjects}
+              topics={topics}
+              subjectId={subjectId}
+              topicId={topicId}
+              onSubjectChange={(id) => {
+                setSubjectId(id)
+                setTopicId(null)
+              }}
+              onTopicChange={setTopicId}
+            />
+          )}
+        </section>
+      )}
 
       {checkFailures > 0 && (
         <p role="status" className="flex items-start gap-2 rounded-md border border-highlight/50 bg-highlight-soft p-3 text-sm">
@@ -189,7 +307,17 @@ export function UploadReview({ fileName, skippedText, items, onChange, checkFail
         ) : (
           <ul className="divide-y overflow-hidden rounded-xl border bg-card">
             {shown.map((item) => (
-              <ReviewRow key={item.key} item={item} items={items} topics={topics} subjects={subjects} onUpdate={(change) => update(item.key, change)} />
+              <ReviewRow
+                key={item.key}
+                item={item}
+                items={items}
+                topics={topics}
+                subjects={subjects}
+                subjectId={subjectId}
+                bookChapters={book ? [...new Set([...existingChapters, ...(cleanedChapter && 'chapter' in cleanedChapter && cleanedChapter.chapter ? [cleanedChapter.chapter] : [])])] : null}
+                uploadChapter={book && 'chapter' in cleanedChapter ? cleanedChapter.chapter : null}
+                onUpdate={(change) => update(item.key, change)}
+              />
             ))}
           </ul>
         )}
@@ -280,12 +408,21 @@ function ReviewRow({
   items,
   topics,
   subjects,
+  subjectId,
+  bookChapters,
+  uploadChapter,
   onUpdate,
 }: {
   item: ReviewItem
   items: ReviewItem[]
   topics: { id: number; subject_id: number; name: string }[]
   subjects: { id: number; code: string }[]
+  /** the subject chosen for the upload (its topics are offered for one question) */
+  subjectId: number | null
+  /** uploading into her book: the topics she has there (null = not into her book) */
+  bookChapters: string[] | null
+  /** her book: the topic chosen for the whole upload */
+  uploadChapter: string | null
   onUpdate: (change: (item: ReviewItem) => ReviewItem) => void
 }) {
   const status = itemStatus(item)
@@ -332,7 +469,9 @@ function ReviewRow({
 
           <DecisionPicker item={item} disabled={errors.length > 0} onChange={(decision) => onUpdate((i) => ({ ...i, decision }))} />
 
-          <ItemEditor item={item} topics={topics} subjects={subjects} onUpdate={onUpdate} />
+          <ItemTopic item={item} topics={topics} subjects={subjects} subjectId={subjectId} bookChapters={bookChapters} uploadChapter={uploadChapter} onUpdate={onUpdate} />
+
+          <ItemEditor item={item} onUpdate={onUpdate} />
         </div>
       </details>
     </li>
@@ -393,21 +532,10 @@ function DecisionPicker({ item, disabled, onChange }: { item: ReviewItem; disabl
   )
 }
 
-/** Fix the question right here: text, choices (exactly four), the answer, explanation and topic. */
-function ItemEditor({
-  item,
-  topics,
-  subjects,
-  onUpdate,
-}: {
-  item: ReviewItem
-  topics: { id: number; subject_id: number; name: string }[]
-  subjects: { id: number; code: string }[]
-  onUpdate: (change: (item: ReviewItem) => ReviewItem) => void
-}) {
+/** Fix the question right here: text, choices (exactly four), the answer and explanation. */
+function ItemEditor({ item, onUpdate }: { item: ReviewItem; onUpdate: (change: (item: ReviewItem) => ReviewItem) => void }) {
   const id = (name: string) => `item-${item.key}-${name}`
   const { draft } = item
-  const subjectCode = (subjectId: number) => subjects.find((s) => s.id === subjectId)?.code ?? ''
 
   // Opens by itself only if the question needs fixing when first shown (and then stays open while she types).
   const [startOpen] = useState(() => Object.keys(contentErrors(item)).length > 0)
@@ -488,23 +616,74 @@ function ItemEditor({
           />
         </EditorField>
 
-        <EditorField id={id('topic')} label="Topic" hint="if different from the one above">
-          <NativeSelect
-            id={id('topic')}
-            value={draft.topicId ?? ''}
-            onChange={(e) => setDraft({ topicId: e.target.value ? Number(e.target.value) : null })}
-            className="bg-card text-sm"
-          >
-            <option value="">Same as the upload</option>
-            {topics.map((t) => (
-              <option key={t.id} value={t.id}>
-                {subjectCode(t.subject_id)}: {t.name}
-              </option>
-            ))}
-          </NativeSelect>
-        </EditorField>
       </div>
     </details>
+  )
+}
+
+/**
+ * This one question's topic, if it shouldn't be the one chosen for the whole upload:
+ * her own topic name (into her book), or one of the subject's topics.
+ */
+function ItemTopic({
+  item,
+  topics,
+  subjects,
+  subjectId,
+  bookChapters,
+  uploadChapter,
+  onUpdate,
+}: {
+  item: ReviewItem
+  topics: { id: number; subject_id: number; name: string }[]
+  subjects: { id: number; code: string }[]
+  subjectId: number | null
+  bookChapters: string[] | null
+  uploadChapter: string | null
+  onUpdate: (change: (item: ReviewItem) => ReviewItem) => void
+}) {
+  const id = `item-${item.key}-topic`
+  if (bookChapters) {
+    return (
+      <EditorField id={id} label="Topic for this question" hint={`empty = same as above${uploadChapter ? ` (${uploadChapter})` : ''}`}>
+        <input
+          id={id}
+          list={`${id}-list`}
+          value={item.chapter ?? ''}
+          maxLength={CHAPTER_MAX + 20}
+          placeholder={uploadChapter ?? 'No topic'}
+          onChange={(e) => onUpdate((i) => ({ ...i, chapter: e.target.value.trim() === '' ? null : e.target.value }))}
+          className={cn(fieldClass, 'h-11 text-sm')}
+        />
+        <datalist id={`${id}-list`}>
+          {bookChapters.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
+      </EditorField>
+    )
+  }
+  // A subject's topics (the upload's subject), or every board subject's when none is chosen yet.
+  const subjectIds = new Set(subjects.map((s) => s.id))
+  const choices = topics.filter((t) => (subjectId === null ? subjectIds.has(t.subject_id) : t.subject_id === subjectId))
+  const subjectCode = (sid: number) => subjects.find((s) => s.id === sid)?.code ?? ''
+  return (
+    <EditorField id={id} label="Topic for this question" hint="if different from the one above">
+      <NativeSelect
+        id={id}
+        value={item.draft.topicId ?? ''}
+        onChange={(e) => onUpdate((i) => ({ ...i, draft: { ...i.draft, topicId: e.target.value ? Number(e.target.value) : null } }))}
+        className="bg-card text-sm"
+      >
+        <option value="">Same as the upload</option>
+        {choices.map((t) => (
+          <option key={t.id} value={t.id}>
+            {subjectId === null ? `${subjectCode(t.subject_id)}: ` : ''}
+            {t.name}
+          </option>
+        ))}
+      </NativeSelect>
+    </EditorField>
   )
 }
 

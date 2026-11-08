@@ -534,7 +534,10 @@ function EditorForm({
         {pasteNote?.kind === 'many' && (
           <p role="status" className="rounded-md bg-highlight-soft px-3 py-2 text-sm font-semibold">
             This looks like {pasteNote.count} questions. To add several at once, use{' '}
-            <Link to="/questions/upload" state={{ pastedText: draft.stem }} className="rounded-sm text-primary underline underline-offset-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
+            <Link
+              // Upload keeps where she came from: her book, or the subject she's adding to
+              to={book ? `/questions/upload?book=${book.id}` : subjectId !== null ? `/questions/upload?subject=${subjectId}` : '/questions/upload'}
+              state={{ pastedText: draft.stem }} className="rounded-sm text-primary underline underline-offset-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
               Upload
             </Link>
             .

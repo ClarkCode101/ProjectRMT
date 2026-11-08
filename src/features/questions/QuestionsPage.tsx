@@ -269,7 +269,13 @@ function QuestionBankView({
       ) : (
         <>
           {/* ---------- Inside a book: a slim bar on top, then the binder page ---------- */}
-          <DrawerBar title={book?.title ?? subject?.code ?? 'All questions'} addTo={addTo} addLabel={addLabel} />
+          <DrawerBar
+            title={book?.title ?? subject?.code ?? 'All questions'}
+            addTo={addTo}
+            addLabel={addLabel}
+            // Upload from inside a book: into that book (her book), or with its subject already set
+            uploadTo={book ? `/questions/upload?book=${book.id}` : subject ? `/questions/upload?subject=${subject.subjectId}` : '/questions/upload'}
+          />
 
           <OpenBinder
             color={book ? BOOK_SPINE[book.color] : subject ? (SUBJECT_COLOR[subject.code] ?? BOOK_SPINE.teal) : BOOK_SPINE.teal}

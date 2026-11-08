@@ -2,6 +2,7 @@ import { draftToRow, type QuestionDraft } from '@/lib/questions'
 import { supabase } from '@/lib/supabase'
 import type { Match } from '@/lib/uploadReview'
 import { findSimilar } from './api'
+import { addToBook } from './booksApi'
 
 /**
  * Runs the duplicate check for many questions, a few at a time (not hundreds of requests at once).
@@ -31,11 +32,14 @@ export async function checkDuplicates(
  * Saves the reviewed questions:
  * 1. an `uploads` record for the file (the file itself is not stored, migration 0003),
  * 2. the new questions in one insert, marked as from this upload and "unverified",
- * 3. each replaced question overwritten with the new text (also back to "unverified").
+ * 3. each replaced question overwritten with the new text (also back to "unverified"),
+ * 4. uploading into one of her books (`bookId`): the new ones live only in that book (in_subject false), and every
+ *    saved question goes into the book, under its topic there (chapter).
  */
 export async function saveUpload(
   fileName: string,
-  writes: { inserts: QuestionDraft[]; replacements: { id: string; draft: QuestionDraft }[] },
+  writes: { inserts: QuestionDraft[]; insertChapters: (string | null)[]; replacements: { id: string; draft: QuestionDraft; chapter: string | null }[] },
+  bookId: string | null = null,
 ): Promise<{ added: number; replaced: number }> {
   const { data: upload, error: uploadError } = await supabase
     .from('uploads')
@@ -44,10 +48,19 @@ export async function saveUpload(
     .single()
   if (uploadError) throw uploadError
 
+  // The new questions' ids, in the same order as the inserts (to put them in her book).
+  let newIds: string[] = []
   if (writes.inserts.length > 0) {
-    const rows = writes.inserts.map((draft) => ({ ...draftToRow(draft), source: 'upload' as const, upload_id: upload.id, status: 'unverified' as const }))
-    const { error } = await supabase.from('questions').insert(rows)
+    const rows = writes.inserts.map((draft) => ({
+      ...draftToRow(draft),
+      source: 'upload' as const,
+      upload_id: upload.id,
+      status: 'unverified' as const,
+      ...(bookId !== null && { in_subject: false }),
+    }))
+    const { data, error } = await supabase.from('questions').insert(rows).select('id')
     if (error) throw error
+    newIds = data.map((r) => r.id)
   }
 
   let replaced = 0
@@ -58,6 +71,15 @@ export async function saveUpload(
       .eq('id', id)
     if (error) throw new Error(`Added ${writes.inserts.length} questions, but only ${replaced} of ${writes.replacements.length} replacements were saved.`)
     replaced++
+  }
+
+  if (bookId !== null) {
+    // Into her book, one call per topic there (questions that share a topic go in together).
+    const byChapter = new Map<string | null, string[]>()
+    const put = (id: string, chapter: string | null) => byChapter.set(chapter, [...(byChapter.get(chapter) ?? []), id])
+    newIds.forEach((id, i) => put(id, writes.insertChapters[i] ?? null))
+    writes.replacements.forEach((r) => put(r.id, r.chapter))
+    for (const [chapter, ids] of byChapter) await addToBook(bookId, ids, chapter)
   }
   return { added: writes.inserts.length, replaced }
 }
