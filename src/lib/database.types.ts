@@ -14,6 +14,8 @@ type Table<Row, Required extends keyof Row = never> = {
 export type QuestionSource = 'builtin' | 'user' | 'upload'
 export type VerifyStatus = 'unverified' | 'verified'
 export type SessionMode = 'practice' | 'mock' | 'flashcard'
+/** The spine colors she can pick for a book (migration 0004 checks the same list). */
+export type BookColor = 'teal' | 'red' | 'green' | 'gold' | 'purple' | 'slate'
 
 export type Database = {
   public: {
@@ -49,6 +51,8 @@ export type Database = {
           image_path: string | null
           difficulty: number | null
           status: VerifyStatus
+          /** false = lives only in her book (migration 0006): not in its subject's lists, scores or quizzes */
+          in_subject: boolean
           normalized_stem: string | null
           stem_hash: string | null
           created_at: string | null
@@ -104,6 +108,11 @@ export type Database = {
         { id: number; subject_id: number | null; title: string; value: string; notes: string | null },
         'title' | 'value'
       >
+      // migration 0004: her own books (named collections of questions, like playlists)
+      books: Table<{ id: string; owner_id: string; title: string; color: BookColor; library: number; created_at: string }, 'title'>
+      libraries: Table<{ owner_id: string; slot: number; name: string }, 'slot' | 'name'>
+      // chapter: migration 0005 (her own name for a group of questions inside the book; null = none)
+      book_questions: Table<{ book_id: string; question_id: string; added_at: string; chapter: string | null }, 'book_id' | 'question_id'>
     }
     Views: {
       topic_performance: {
