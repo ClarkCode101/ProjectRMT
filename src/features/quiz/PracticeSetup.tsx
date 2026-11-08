@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Check, Play, RotateCcw, Shuffle, SlidersHorizontal, Star, X } from 'lucide-react'
+import { Check, Play, RotateCcw, SlidersHorizontal, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Dialog } from '@/components/Dialog'
@@ -14,9 +14,10 @@ import { cn } from '@/lib/utils'
 import { attemptHistoryOptions, DEFAULT_SOURCE, questionPoolOptions, type QuizFilters, type SourceChoice } from './api'
 import { PourScene } from './PourScene'
 import { SourcePicker } from './SourcePicker'
-import { RackKey, SpecimenRack } from './SpecimenRack'
-import { SubjectPopup, type PopupItem } from './SubjectPopup'
+import { SubjectCarousel, type CarouselItem } from './SubjectCarousel'
+import { SubjectPopup } from './SubjectPopup'
 import { tubeStatus } from './tube'
+import { TubeKey } from './TubeFigure'
 
 const ITEM_COUNTS = [10, 20, 50]
 const MIX_KEY = 'mix'
@@ -35,7 +36,7 @@ type Props = {
 /** What she picked: nothing yet (just the rack), one subject, or a mix of all. */
 type Choice = { kind: 'none' } | { kind: 'all' } | { kind: 'subject'; subjectId: number }
 
-/** The small secondary buttons under "Start here" (tinted, not gold; same as the ones on Home's subject card). */
+/** The small secondary button under "Choose" (tinted, not gold; same as the ones on Home's subject card). */
 const smallButtonClass =
   'flex h-10 items-center justify-center gap-2 rounded-lg bg-primary/[0.08] px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
 
@@ -70,6 +71,8 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
   const [itemCount, setItemCount] = useState(10)
   const [optionsOpen, setOptionsOpen] = useState(false)
   const [pouring, setPouring] = useState(false)
+  // The tube in the middle of the carousel (not chosen yet, just in focus). null = start on Smart pick's subject.
+  const [focusKey, setFocusKey] = useState<string | null>(initialSubjectId === null ? null : String(initialSubjectId))
 
   const subjectId = choice.kind === 'subject' ? choice.subjectId : null
   const topicsInSubject = (topics.data ?? []).filter((t) => t.subject_id === subjectId)
@@ -107,13 +110,18 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
     { label: 'Not started', topics: topicChips.filter((t) => !t.performance).sort((a, b) => a.name.localeCompare(b.name)) },
   ].filter((g) => g.topics.length > 0)
 
-  // The tubes she can swipe through in the popup: every subject, then the mix.
+  // The tubes she can swipe through on the carousel: every subject, then the mix.
   const overall = overallStats(summary)
-  const popupItems: PopupItem[] = [
+  const items: CarouselItem[] = [
     ...summary.map((s) => ({ key: String(s.subjectId), code: s.code, name: s.name, accuracy: s.accuracy, belowPassing: s.belowPassing })),
     { key: MIX_KEY, code: 'MIX', name: 'All six subjects', accuracy: overall.accuracy, belowPassing: overall.accuracy !== null && overall.accuracy < 0.6 },
   ]
-  const popupIndex = Math.max(0, popupItems.findIndex((p) => p.key === (subjectId === null ? MIX_KEY : String(subjectId))))
+  const indexOf = (key: string | null) => items.findIndex((p) => p.key === key)
+  const focusIndex = Math.max(0, indexOf(focusKey ?? (pick ? String(pick.subjectId) : null)))
+  // The chosen one (popup open), for the popup and the pour scene.
+  const currentItem = items[Math.max(0, indexOf(subjectId === null ? MIX_KEY : String(subjectId)))]
+  // Show the carousel once the scores are in, so the tubes don't jump from empty to full.
+  const ready = subjects.isSuccess && !performance.isPending
 
   // If starting fails (e.g. no internet), close the popup so the error message on the page can be seen.
   const wasStarting = useRef(starting)
@@ -129,7 +137,6 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
   useEffect(() => () => window.clearTimeout(pourTimer.current), [])
 
   // What the pour scene shows: this subject's tube (or the overall score for a mix), labelled with the topic.
-  const currentItem = popupItems[popupIndex]
   const pourLabel = choice.kind === 'all' ? 'Mix' : (chosenTopic?.name ?? chosenSubject?.code ?? '')
 
   function chooseSubject(id: number) {
@@ -142,14 +149,10 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
     setTopicId(null)
   }
 
-  function chooseSmartPick() {
-    if (!pick) return chooseMix()
-    setChoice({ kind: 'subject', subjectId: pick.subjectId })
-    setTopicId(pick.kind === 'topic' ? pick.topicId : null)
-  }
-
-  function swipeTo(index: number) {
-    const target = popupItems[index]
+  /** Open the tube in the middle of the carousel. */
+  function openFocused() {
+    const target = items[focusIndex]
+    if (!target) return
     if (target.key === MIX_KEY) chooseMix()
     else chooseSubject(Number(target.key))
   }
@@ -166,18 +169,17 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
 
   const busy = starting || pouring
 
-  // What Smart pick ("Start here" on the rack) would open.
-  const smartPickLabel = pick?.kind === 'topic' ? `${pick.subjectCode} · ${pick.topicName}` : (pick?.subjectCode ?? 'a mix')
-
   return (
-    // Same layout as Mock exam and Flashcards: header, the scene (the rack on the bench), the gold button
-    // centered under it with small secondary buttons, then one quiet line at the bottom.
-    <div className="mx-auto max-w-5xl space-y-6">
+    // Header, the carousel, the gold button under it (+ Review again), then one quiet line at the bottom.
+    // One screen tall, no scrolling (like Home): the carousel takes whatever height is left.
+    // Phone: minus the top bar (3.5rem), main's padding (0.5 + 1.5rem) and the bottom nav (5.5rem).
+    // Tablet/computer: minus main's padding (pt-5 + pb-5 = 2.5rem). min-h: on a very short screen it scrolls instead of squashing.
+    <div className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[30rem] max-w-5xl flex-col gap-4 md:h-[calc(100dvh-2.5rem)] md:min-h-[32rem] md:gap-5">
       <PageHeader
         title="Practice"
         subtitle={
           <>
-            Tap a tube to choose a subject.
+            Swipe the tubes to choose a subject.
             {/* A quick read of where she stands (the same numbers as Home's Board readiness), as part of the subtitle. */}
             {overall.answered > 0 && (
               <>
@@ -199,66 +201,58 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
         }
       />
 
-      {/* ---------- The rack on the bench ---------- */}
-      <SpecimenRack summary={summary} selectedId={subjectId} onSelect={chooseSubject} recommendedId={performance.isPending ? null : (pick?.subjectId ?? null)} />
+      {/* ---------- The carousel: one big tube in the middle, swipe to switch ---------- */}
+      {ready ? (
+        <SubjectCarousel
+          items={items}
+          index={focusIndex}
+          onIndexChange={(i) => setFocusKey(items[i].key)}
+          onOpen={openFocused}
+        />
+      ) : (
+        // Takes the carousel's place (same flexible height) while the scores load.
+        <div aria-hidden className="min-h-0 flex-1 animate-pulse rounded-3xl bg-primary/[0.04]" />
+      )}
 
-      {/* ---------- Start: Smart pick as the gold button (the star on the rack marks the same tube), then the other ways ---------- */}
-      <div className="flex flex-col items-center gap-3">
-        <button
-          type="button"
-          onClick={chooseSmartPick}
-          disabled={performance.isPending}
-          title={`Smart pick: ${smartPickLabel}`}
-          className={cn(heroButtonClass, 'w-auto max-w-full px-7 focus-visible:ring-ring/50')}
-        >
-          <Star className="size-5 shrink-0 fill-current" aria-hidden />
-          <span className="truncate">Start here · {smartPickLabel}</span>
+      {/* ---------- One gold button: open the tube in the middle. Review again is the smaller way in. ---------- */}
+      <div className="flex shrink-0 flex-col items-center gap-3">
+        <button type="button" onClick={openFocused} disabled={!ready} className={cn(heroButtonClass, 'w-auto max-w-full px-8 focus-visible:ring-ring/50')}>
+          <Play className="size-5 shrink-0 fill-current" aria-hidden />
+          <span className="truncate">Choose {items[focusIndex]?.code ?? ''}</span>
         </button>
-        <div className="flex flex-wrap justify-center gap-2">
-          <button type="button" onClick={chooseMix} className={smallButtonClass}>
-            <Shuffle className="size-4" aria-hidden />
-            Mix all subjects
-          </button>
-          {mistakeCount > 0 && (
-            <Link to="/practice?from=mistakes" className={smallButtonClass}>
-              <RotateCcw className="size-4" aria-hidden />
-              Review again
-              <span className="rounded-full bg-wrong px-1.5 text-xs font-bold text-white tabular-nums">{mistakeCount}</span>
-            </Link>
-          )}
-        </div>
+        {mistakeCount > 0 && (
+          <Link to="/practice?from=mistakes" className={smallButtonClass}>
+            <RotateCcw className="size-4" aria-hidden />
+            Review again
+            <span className="rounded-full bg-wrong px-1.5 text-xs font-bold text-white tabular-nums">{mistakeCount}</span>
+          </Link>
+        )}
       </div>
 
-      {/* ---------- How to read the rack: one quiet line at the bottom (like the run protocol on Mock exam) ---------- */}
-      <div className="flex justify-center border-t border-dashed pt-3">
-        <RackKey />
+      {/* ---------- How to read the tubes: one quiet line at the bottom (like the run protocol on Mock exam) ---------- */}
+      <div className="shrink-0 border-t border-dashed pt-3">
+        <TubeKey />
       </div>
 
-      {/* ---------- The popup: big tube on the left, topics + Start on the right ---------- */}
+      {/* ---------- The popup: topics + Start for the chosen tube ---------- */}
       <SubjectPopup
         open={choice.kind !== 'none'}
         onClose={() => setChoice({ kind: 'none' })}
-        items={popupItems}
-        index={popupIndex}
-        onIndexChange={swipeTo}
+        item={currentItem}
         disabled={busy}
         overlay={pouring && currentItem && <PourScene status={tubeStatus(currentItem.accuracy, currentItem.belowPassing)} level={currentItem.accuracy ?? 0} label={pourLabel} />}
       >
         {/* flex-1 + mt-auto on the Start bar: Start always sits at the bottom of the popup, lined up with the tube side. */}
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5">
           {choice.kind === 'all' && (
-            <div className="pr-10">
-              <p className="font-heading text-xl leading-tight font-bold">A mix of all six subjects</p>
-              <p className="mt-1 text-sm text-muted-foreground">Questions from every subject. New ones and your old mistakes come first.</p>
-            </div>
+            <p className="text-sm text-muted-foreground">Questions from every subject. New ones and your old mistakes come first.</p>
           )}
 
           {/* ---------- Topic ---------- */}
           {chosenSubject && (
             <fieldset key={chosenSubject.subjectId} className="animate-in fade-in space-y-4 duration-300">
               <legend className="sr-only">Topic in {chosenSubject.name}</legend>
-              {/* pr-10 leaves room for the popup's ✕ in the corner */}
-              <p className="pr-10 font-heading text-xl leading-tight font-bold">Choose a topic</p>
+              <p className="font-heading text-lg leading-tight font-bold">Choose a topic</p>
 
               {/* One row per status (plus "All" first). Narrow: label above its chips. Wider: label in a column on the left. */}
               <div className="space-y-3">
