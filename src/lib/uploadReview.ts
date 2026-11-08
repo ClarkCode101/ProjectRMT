@@ -47,7 +47,7 @@ export function toReviewItems(parsed: ParsedQuestion[]): ReviewItem[] {
 
     const item: ReviewItem = {
       key,
-      draft: { topicId: null, stem: q.stem, choices: q.choices, correctIndex: q.correctIndex, explanation: q.explanation, difficulty: 2 },
+      draft: { topicId: null, stem: q.stem, choices: q.choices, correctIndex: q.correctIndex, explanation: q.explanation, choiceNotes: q.choices.map(() => ''), difficulty: 2 },
       matches: null,
       repeatOf,
       decision: 'skip',

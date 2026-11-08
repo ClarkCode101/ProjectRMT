@@ -12,11 +12,21 @@ export type QuestionDraft = {
   choices: string[]
   correctIndex: number | null
   explanation: string
+  /** One optional note per choice, same order as `choices` (migration 0008). '' = no note. */
+  choiceNotes: string[]
   difficulty: 1 | 2 | 3
 }
 
 export function emptyDraft(topicId: number | null = null): QuestionDraft {
-  return { topicId, stem: '', choices: Array(CHOICE_COUNT).fill(''), correctIndex: null, explanation: '', difficulty: 2 }
+  return {
+    topicId,
+    stem: '',
+    choices: Array(CHOICE_COUNT).fill(''),
+    correctIndex: null,
+    explanation: '',
+    choiceNotes: Array(CHOICE_COUNT).fill(''),
+    difficulty: 2,
+  }
 }
 
 export type DraftErrors = Partial<Record<'topic' | 'stem' | 'choices' | 'correct', string>>
@@ -43,12 +53,15 @@ export function validateDraft(draft: QuestionDraft): DraftErrors {
 /** The row to save, with extra spaces trimmed. Only call after validateDraft() found no errors. */
 export function draftToRow(draft: QuestionDraft) {
   const explanation = draft.explanation.trim()
+  const notes = draft.choices.map((_, i) => (draft.choiceNotes[i] ?? '').trim())
   return {
     topic_id: draft.topicId!,
     stem: draft.stem.trim(),
     choices: draft.choices.map((c) => c.trim()),
     correct_index: draft.correctIndex!,
     explanation: explanation === '' ? null : explanation,
+    // No notes at all = null, so the answer screen looks the way it always did.
+    choice_notes: notes.some((n) => n !== '') ? notes : null,
     difficulty: draft.difficulty,
   }
 }

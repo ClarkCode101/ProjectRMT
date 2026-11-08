@@ -78,8 +78,9 @@ function rememberSubject(bookId: string, subjectId: number) {
 
 function draftFrom(q: BankQuestion): QuestionDraft {
   const choices = [...q.choices, ...Array(CHOICE_COUNT).fill('')].slice(0, CHOICE_COUNT)
+  const choiceNotes = [...(q.choice_notes ?? []), ...Array(CHOICE_COUNT).fill('')].slice(0, CHOICE_COUNT)
   const difficulty = q.difficulty === 1 || q.difficulty === 3 ? q.difficulty : 2
-  return { topicId: q.topic_id, stem: q.stem, choices, correctIndex: q.correct_index, explanation: q.explanation ?? '', difficulty }
+  return { topicId: q.topic_id, stem: q.stem, choices, correctIndex: q.correct_index, explanation: q.explanation ?? '', choiceNotes, difficulty }
 }
 
 /** After a failed save, jump to the first thing that needs fixing, so she doesn't have to hunt for it. */
@@ -202,6 +203,13 @@ function EditorForm({
     setDraft((d) => ({ ...d, choices: d.choices.map((c, i) => (i === index ? value : c)) }))
   }
 
+  function setChoiceNote(index: number, value: string) {
+    setDraft((d) => ({ ...d, choiceNotes: d.choiceNotes.map((n, i) => (i === index ? value : n)) }))
+  }
+
+  // The note boxes stay folded away until she asks for them, unless the question already has notes.
+  const [showNotes, setShowNotes] = useState(() => draft.choiceNotes.some((n) => n.trim() !== ''))
+
   /**
    * Pasting a whole question into an empty form fills in the rest. Anything else pastes as normal text,
    * and it never overwrites what she already typed. Only for new questions.
@@ -228,11 +236,15 @@ function EditorForm({
     stemRef.current?.focus()
   }
 
-  /** Enter in a choice moves to the next box instead of saving by accident. */
-  function handleChoiceKeyDown(event: KeyboardEvent<HTMLInputElement>, index: number) {
+  /**
+   * Enter in a choice (or its note) moves to the next box instead of saving by accident:
+   * choice A → note A → choice B … when the notes are open, choice A → choice B when they aren't.
+   */
+  function handleChoiceKeyDown(event: KeyboardEvent<HTMLInputElement>, index: number, inNote = false) {
     if (event.key !== 'Enter') return
     event.preventDefault()
-    document.getElementById(index < CHOICE_COUNT - 1 ? `choice-${index + 1}` : 'explanation')?.focus()
+    const next = showNotes && !inNote ? `choice-note-${index}` : index < CHOICE_COUNT - 1 ? `choice-${index + 1}` : 'explanation'
+    document.getElementById(next)?.focus()
   }
 
   async function save(thenAddAnother: boolean) {
@@ -553,27 +565,61 @@ function EditorForm({
         {draft.choices.map((choice, i) => {
           const isCorrect = draft.correctIndex === i
           return (
-            <div key={i} className="flex items-center gap-2">
-              <span aria-hidden className={cn('w-5 shrink-0 text-center font-heading text-lg font-bold', isCorrect && 'text-correct')}>
-                {CHOICE_LETTERS[i]}
-              </span>
-              <Label htmlFor={`choice-${i}`} className="sr-only">
-                Choice {CHOICE_LETTERS[i]}
-              </Label>
-              <input
-                id={`choice-${i}`}
-                value={choice}
-                onChange={(e) => setChoice(i, e.target.value)}
-                onKeyDown={(e) => handleChoiceKeyDown(e, i)}
-                aria-invalid={Boolean(errors.choices) && choice.trim() === ''}
-                className={cn(fieldClass, 'h-11 min-w-0 flex-1', isCorrect && 'border-correct')}
-              />
-              <CorrectToggle name="correct" letter={CHOICE_LETTERS[i]} checked={isCorrect} onChange={() => update({ correctIndex: i })} />
+            <div key={i} className={cn(showNotes && 'pb-1.5')}>
+              <div className="flex items-center gap-2">
+                <span aria-hidden className={cn('w-5 shrink-0 text-center font-heading text-lg font-bold', isCorrect && 'text-correct')}>
+                  {CHOICE_LETTERS[i]}
+                </span>
+                <Label htmlFor={`choice-${i}`} className="sr-only">
+                  Choice {CHOICE_LETTERS[i]}
+                </Label>
+                <input
+                  id={`choice-${i}`}
+                  value={choice}
+                  onChange={(e) => setChoice(i, e.target.value)}
+                  onKeyDown={(e) => handleChoiceKeyDown(e, i)}
+                  aria-invalid={Boolean(errors.choices) && choice.trim() === ''}
+                  className={cn(fieldClass, 'h-11 min-w-0 flex-1', isCorrect && 'border-correct')}
+                />
+                <CorrectToggle name="correct" letter={CHOICE_LETTERS[i]} checked={isCorrect} onChange={() => update({ correctIndex: i })} />
+              </div>
+              {/* The note sits right under its own choice, lined up with the choice box (same as on the answer screen). */}
+              {showNotes && (
+                <div className="mt-1.5 pr-13 pl-7 sm:pr-28">
+                  <Label htmlFor={`choice-note-${i}`} className="sr-only">
+                    Note for choice {CHOICE_LETTERS[i]}
+                  </Label>
+                  <input
+                    id={`choice-note-${i}`}
+                    value={draft.choiceNotes[i] ?? ''}
+                    onChange={(e) => setChoiceNote(i, e.target.value)}
+                    onKeyDown={(e) => handleChoiceKeyDown(e, i, true)}
+                    placeholder={isCorrect ? 'Why this is the answer (optional)' : 'What this choice really is, or why it’s wrong (optional)'}
+                    className={cn(fieldClass, 'h-9 text-sm')}
+                  />
+                </div>
+              )}
             </div>
           )
         })}
         {errors.choices && <ErrorText id="choices-error">{errors.choices}</ErrorText>}
         {errors.correct && <ErrorText id="correct-error">{errors.correct}</ErrorText>}
+        {!showNotes && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowNotes(true)
+              requestAnimationFrame(() => document.getElementById('choice-note-0')?.focus())
+            }}
+            className="inline-flex items-center gap-1.5 rounded-sm pt-1 text-sm font-semibold text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
+            <Plus className="size-4" aria-hidden />
+            Add a note for each choice
+          </button>
+        )}
+        {showNotes && (
+          <p className="pt-1 text-sm text-muted-foreground">Notes are optional. Each one shows under its choice after you answer.</p>
+        )}
       </fieldset>
 
       <Field id="explanation" label="Explanation" hint="optional, shown after each answer">

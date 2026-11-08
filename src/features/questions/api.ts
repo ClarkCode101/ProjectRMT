@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { QuestionSource, VerifyStatus } from '@/lib/database.types'
-import { parseChoices } from '@/lib/quiz'
+import { parseChoiceNotes, parseChoices } from '@/lib/quiz'
 import { draftToRow, type QuestionDraft } from '@/lib/questions'
 import { supabase } from '@/lib/supabase'
 
@@ -14,13 +14,15 @@ export type BankQuestion = {
   choices: string[]
   correct_index: number
   explanation: string | null
+  /** one note per choice, or null when it has none (migration 0008) */
+  choice_notes: string[] | null
   difficulty: number | null
   status: VerifyStatus
   /** false = lives only in her book (migration 0006) */
   in_subject: boolean
 }
 
-const COLUMNS = 'id, owner_id, source, topic_id, stem, choices, correct_index, explanation, difficulty, status, in_subject'
+const COLUMNS = 'id, owner_id, source, topic_id, stem, choices, correct_index, explanation, choice_notes, difficulty, status, in_subject'
 // Supabase returns at most 1000 rows per request, so load the bank in pages.
 const PAGE_SIZE = 1000
 
@@ -38,7 +40,12 @@ export function useQuestionBank() {
           .order('id')
           .range(from, from + PAGE_SIZE - 1)
         if (error) throw error
-        all.push(...data.map((row) => ({ ...row, choices: parseChoices(row.choices) })))
+        all.push(
+          ...data.map((row) => {
+            const choices = parseChoices(row.choices)
+            return { ...row, choices, choice_notes: parseChoiceNotes(row.choice_notes, choices.length) }
+          }),
+        )
         if (data.length < PAGE_SIZE) return all
       }
     },

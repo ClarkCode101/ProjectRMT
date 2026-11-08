@@ -19,6 +19,7 @@ function goodDraft(): QuestionDraft {
     choices: ['Factor V', ' Factor VII ', 'Factor VIII', 'Factor X'],
     correctIndex: 1,
     explanation: '   ',
+    choiceNotes: ['', '', '', ''],
     difficulty: 2,
   }
 }
@@ -123,8 +124,18 @@ describe('draftToRow', () => {
       choices: ['Factor V', 'Factor VII', 'Factor VIII', 'Factor X'],
       correct_index: 1,
       explanation: null,
+      choice_notes: null,
       difficulty: 2,
     })
+  })
+
+  it('saves choice notes trimmed, in choice order, keeping empty ones as blanks', () => {
+    const row = draftToRow({ ...goodDraft(), choiceNotes: [' Labile factor ', 'Stable in storage', '', 'Stuart-Prower'] })
+    expect(row.choice_notes).toEqual(['Labile factor', 'Stable in storage', '', 'Stuart-Prower'])
+  })
+
+  it('saves no notes (null) when every note box is blank', () => {
+    expect(draftToRow({ ...goodDraft(), choiceNotes: ['  ', '', ' ', ''] }).choice_notes).toBeNull()
   })
 })
 
