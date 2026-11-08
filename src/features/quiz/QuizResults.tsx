@@ -120,8 +120,10 @@ export function QuizResults({ answers, onRestart }: Props) {
                 key={question.id}
                 subject={subjectOf(question.topic_id)}
                 stem={question.stem}
-                yourAnswer={question.choices[selectedIndex]}
-                correctAnswer={question.choices[question.correct_index]}
+                choices={question.choices}
+                selectedIndex={selectedIndex}
+                correctIndex={question.correct_index}
+                choiceNotes={question.choice_notes}
                 explanation={question.explanation}
               />
             ))}

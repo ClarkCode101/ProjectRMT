@@ -1,6 +1,7 @@
 import { Check, ChevronDown, ChevronRight, Flag, House, Minus, RotateCcw, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { AnswerReview } from '@/components/AnswerReview'
 import { NoteCard } from '@/components/NoteCard'
 import { HeroPanel, heroButtonClass, LowFlag, RangeBar } from '@/components/report'
 import type { QuizQuestion } from '@/features/quiz/api'
@@ -63,20 +64,7 @@ function ReviewItem({ number, question, answer, flagged }: { number: number; que
           <ChevronDown className="mt-1 size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
         </summary>
         <div className="space-y-3 px-4 pb-4 sm:px-5 sm:pl-15">
-          <dl className="grid gap-1.5 text-sm">
-            {status !== 'right' && (
-              <div className={cn('flex flex-wrap gap-x-2 rounded-md px-3 py-2', status === 'wrong' ? 'bg-wrong-soft' : 'bg-secondary')}>
-                <dt className={cn('w-24 shrink-0 font-semibold', status === 'wrong' ? 'text-wrong' : 'text-muted-foreground')}>Your answer</dt>
-                <dd className={cn('min-w-0', status === 'wrong' ? 'text-wrong line-through decoration-1' : 'text-muted-foreground italic')}>
-                  {answer === null ? 'No answer' : question.choices[answer]}
-                </dd>
-              </div>
-            )}
-            <div className="flex flex-wrap gap-x-2 rounded-md bg-correct-soft px-3 py-2">
-              <dt className="w-24 shrink-0 font-semibold text-correct">{status === 'right' ? 'Your answer' : 'Correct'}</dt>
-              <dd className="min-w-0 font-bold text-correct">{question.choices[question.correct_index]}</dd>
-            </div>
-          </dl>
+          <AnswerReview choices={question.choices} correctIndex={question.correct_index} selectedIndex={answer} notes={question.choice_notes} />
           {question.explanation && <p className="leading-relaxed text-foreground/90">{question.explanation}</p>}
         </div>
       </details>

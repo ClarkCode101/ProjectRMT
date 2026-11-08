@@ -1,22 +1,27 @@
 import { ChevronDown } from 'lucide-react'
+import { AnswerReview } from './AnswerReview'
 
 /**
  * One missed question as a row that opens on tap.
  * Closed: just the subject and the question, so a long list stays calm to scan.
- * Open: what she picked, the right answer, and the explanation.
+ * Open: what she picked, the right answer (with their notes, if any), the other choices' notes, and the explanation.
  * Use inside a <ul className="divide-y ...">.
  */
 export function MistakeItem({
   subject,
   stem,
-  yourAnswer,
-  correctAnswer,
+  choices,
+  selectedIndex,
+  correctIndex,
+  choiceNotes,
   explanation,
 }: {
   subject: { code?: string; topicName?: string }
   stem: string
-  yourAnswer: string | undefined
-  correctAnswer: string | undefined
+  choices: string[]
+  selectedIndex: number
+  correctIndex: number
+  choiceNotes: string[] | null
   explanation: string | null
 }) {
   return (
@@ -34,18 +39,7 @@ export function MistakeItem({
         </summary>
 
         <div className="space-y-3 px-4 pb-4 sm:px-5">
-          <dl className="grid gap-1.5 text-sm">
-            {yourAnswer !== undefined && (
-              <div className="flex flex-wrap gap-x-2 rounded-md bg-wrong-soft px-3 py-2">
-                <dt className="w-24 shrink-0 font-semibold text-wrong">Your answer</dt>
-                <dd className="min-w-0 text-wrong line-through decoration-1">{yourAnswer}</dd>
-              </div>
-            )}
-            <div className="flex flex-wrap gap-x-2 rounded-md bg-correct-soft px-3 py-2">
-              <dt className="w-24 shrink-0 font-semibold text-correct">Correct</dt>
-              <dd className="min-w-0 font-bold text-correct">{correctAnswer}</dd>
-            </div>
-          </dl>
+          <AnswerReview choices={choices} correctIndex={correctIndex} selectedIndex={selectedIndex} notes={choiceNotes} />
           {explanation && <p className="leading-relaxed text-foreground/90">{explanation}</p>}
         </div>
       </details>
