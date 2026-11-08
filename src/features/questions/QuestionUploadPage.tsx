@@ -1,16 +1,17 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, CircleCheck, ClipboardPaste, FileUp, Info } from 'lucide-react'
 import { useState, type DragEvent } from 'react'
-import { Link } from 'react-router'
-import { headerButtonClass, headerSecondaryClass, PageHeader } from '@/components/dashboard'
+import { Link, useLocation } from 'react-router'
+import { backLinkClass, headerButtonClass, PageHeader } from '@/components/dashboard'
 import { FullPageMessage } from '@/components/FullPageMessage'
+import { heroButtonClass } from '@/components/report'
 import { ACCEPTED_FILES, extractText, UnreadableFileError } from '@/lib/parsers/extractText'
 import { parseQuestions } from '@/lib/parsers/questionParser'
 import { useSubjects, useTopics } from '@/lib/referenceData'
 import { toReviewItems, withMatches, type ReviewItem } from '@/lib/uploadReview'
 import { cn } from '@/lib/utils'
 import { checkDuplicates } from './uploadApi'
-import { UploadReview } from './UploadReview'
+import { UploadReview, UploadSteps } from './UploadReview'
 
 type Stage =
   | { name: 'pick' }
@@ -26,6 +27,10 @@ D. Factor X
 Answer: B
 Explanation: Factor VII is stable in stored plasma.`
 
+/** The small tinted buttons, same as on the cabinet screen. */
+const smallButtonClass =
+  'flex h-10 items-center justify-center gap-2 rounded-lg bg-primary/[0.08] px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
+
 // /questions/upload: pick a file (or paste text) → review what was found → save.
 export default function QuestionUploadPage() {
   const subjects = useSubjects()
@@ -34,7 +39,10 @@ export default function QuestionUploadPage() {
   const [stage, setStage] = useState<Stage>({ name: 'pick' })
   const [items, setItems] = useState<ReviewItem[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [pasted, setPasted] = useState('')
+  // Text sent over from the Add a question form, when she pasted several questions there.
+  const sentText = (useLocation().state as { pastedText?: string } | null)?.pastedText ?? ''
+  const [pasted, setPasted] = useState(sentText)
+  const [pasting, setPasting] = useState(sentText !== '')
   const [dragging, setDragging] = useState(false)
   const [checkFailures, setCheckFailures] = useState(0)
 
@@ -86,6 +94,7 @@ export default function QuestionUploadPage() {
   function startOver() {
     setItems([])
     setPasted('')
+    setPasting(false)
     setError(null)
     setStage({ name: 'pick' })
   }
@@ -101,12 +110,12 @@ export default function QuestionUploadPage() {
             </h1>
             {stage.replaced > 0 && <p className="text-white/85">{stage.replaced} existing {stage.replaced === 1 ? 'question was' : 'questions were'} replaced.</p>}
             <p className="mt-2 text-white/85">
-              From {stage.fileName}. They are marked <span className="font-semibold text-white">To verify</span>, since a computer read them. Check each one in Questions.
+              A computer read them, so they’re marked <span className="font-semibold text-white">Needs a look</span>. Check that each one is right.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-            <Link to="/questions" className={headerButtonClass}>
-              Go to Questions
+            <Link to="/questions?view=all&needs=1" className={headerButtonClass}>
+              Check them now
             </Link>
             <button type="button" onClick={startOver} className="h-12 rounded-lg px-4 font-semibold text-white/90 hover:bg-white/10 sm:h-11">
               Upload another
@@ -143,12 +152,13 @@ export default function QuestionUploadPage() {
   const reading = stage.name === 'reading'
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
-      <Link to="/questions" className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
+    <div className="mx-auto max-w-3xl space-y-5">
+      <Link to="/questions" className={backLinkClass}>
         <ArrowLeft className="size-4" aria-hidden />
         Questions
       </Link>
-      <PageHeader title="Upload questions" subtitle="Read questions from a PDF, a Word file or pasted text. The file stays on your device; only the questions you choose are saved." />
+      <PageHeader title="Upload questions" subtitle="Nothing is saved until you review it. Your file stays on your device." />
+      <UploadSteps current={1} />
 
       {error && (
         <p role="alert" className="flex items-start gap-2 rounded-md bg-wrong-soft px-3 py-2.5 text-sm font-semibold text-wrong">
@@ -157,69 +167,77 @@ export default function QuestionUploadPage() {
         </p>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Drop zone. The whole box is the file picker's label, so a tap anywhere opens it. */}
-        <label
-          onDragOver={(e) => {
-            e.preventDefault()
-            setDragging(true)
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={onDrop}
-          className={cn(
-            'flex min-h-56 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed bg-card p-6 text-center transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
-            dragging ? 'border-primary bg-primary/5' : 'border-input hover:border-primary',
-            reading && 'pointer-events-none opacity-60',
-          )}
-        >
-          <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <FileUp className="size-7" aria-hidden />
-          </span>
-          <span>
-            <span className="block font-heading text-lg font-bold">{reading ? `Reading ${stage.fileName}…` : 'Choose a file'}</span>
-            <span className="block text-sm text-muted-foreground">or drop it here. PDF, Word (.docx) or .txt</span>
-          </span>
-          <input
-            type="file"
-            accept={ACCEPTED_FILES}
-            disabled={reading}
-            onChange={(e) => {
-              pickFile(e.target.files?.[0])
-              e.target.value = '' // so the same file can be picked again
-            }}
-            className="sr-only"
-          />
-        </label>
-
+      {pasting ? (
         <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
           <label htmlFor="paste" className="flex items-center gap-2 font-heading text-lg font-bold">
             <ClipboardPaste className="size-5 text-primary" aria-hidden />
-            Or paste text
+            Paste your questions
           </label>
           <textarea
             id="paste"
+            autoFocus
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
-            placeholder={EXAMPLE}
-            className="min-h-40 flex-1 rounded-lg border border-input bg-background px-3 py-2.5 text-sm leading-relaxed outline-none placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="min-h-56 rounded-lg border border-input bg-background px-3 py-2.5 leading-relaxed outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
-          <button
-            type="button"
-            disabled={reading || pasted.trim() === ''}
-            onClick={() => void read('Pasted text', async () => pasted)}
-            className={cn(headerSecondaryClass, 'disabled:opacity-50')}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <button type="button" onClick={() => setPasting(false)} className={smallButtonClass}>
+              <FileUp className="size-4" aria-hidden />
+              Choose a file instead
+            </button>
+            <button type="button" disabled={reading || pasted.trim() === ''} onClick={() => void read('Pasted text', async () => pasted)} className={cn(heroButtonClass, 'w-auto px-7 focus-visible:ring-ring/50')}>
+              {reading ? 'Reading…' : 'Read text'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-3">
+          {/* Drop zone. The whole box is the file picker's label, so a tap anywhere opens it. */}
+          <label
+            onDragOver={(e) => {
+              e.preventDefault()
+              setDragging(true)
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+            className={cn(
+              'relative flex min-h-52 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed bg-card p-6 text-center transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
+              dragging ? 'border-primary bg-primary/5' : 'border-input hover:border-primary',
+              reading && 'pointer-events-none opacity-60',
+            )}
           >
-            Read pasted text
+            <span className={cn(heroButtonClass, 'w-auto px-7')}>
+              <FileUp className="size-5" aria-hidden />
+              {reading ? `Reading ${stage.fileName}…` : 'Choose a file'}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              <span className="max-md:hidden">or drop it here · </span>PDF, Word (.docx) or .txt
+            </span>
+            <input
+              type="file"
+              accept={ACCEPTED_FILES}
+              disabled={reading}
+              onChange={(e) => {
+                pickFile(e.target.files?.[0])
+                e.target.value = '' // so the same file can be picked again
+              }}
+              className="sr-only"
+            />
+          </label>
+          <button type="button" disabled={reading} onClick={() => setPasting(true)} className={smallButtonClass}>
+            <ClipboardPaste className="size-4" aria-hidden />
+            Paste text instead
           </button>
         </div>
-      </div>
+      )}
 
-      <details className="group rounded-2xl border bg-card">
-        <summary className="cursor-pointer list-none px-4 py-3 font-semibold outline-none hover:bg-secondary/50 focus-visible:ring-3 focus-visible:ring-ring/40 [&::-webkit-details-marker]:hidden">
-          How should the questions look?
-        </summary>
-        <div className="grid gap-4 px-4 pb-4 text-sm md:grid-cols-2">
-          <pre className="overflow-x-auto rounded-lg bg-background p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap">{EXAMPLE}</pre>
+      {/* Always in view: this is why a file reads well or doesn't, so she should see it before choosing one. */}
+      <section aria-labelledby="format-heading" className="space-y-2 border-t border-dashed pt-4">
+        <h2 id="format-heading" className="font-heading text-lg font-bold">
+          Your questions should look like this
+        </h2>
+        <div className="grid gap-4 text-sm md:grid-cols-2">
+          <pre className="overflow-x-auto rounded-lg border bg-card p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap">{EXAMPLE}</pre>
           <ul className="list-disc space-y-1.5 pl-5 text-muted-foreground">
             <li>Each question starts with a number: “1.”, “1)” or “Q1.”</li>
             <li>Choices start with A. to D. (or a), (a)). They can also be on one line.</li>
@@ -228,7 +246,7 @@ export default function QuestionUploadPage() {
             <li>Scanned PDFs (pictures of pages) can’t be read. Copy the text and paste it instead.</li>
           </ul>
         </div>
-      </details>
+      </section>
     </div>
   )
 }

@@ -1,5 +1,7 @@
 // Plain functions for the Questions page (add / edit / verify / coverage), kept here so they can be tested.
 
+import { parseQuestions } from './parsers/questionParser'
+
 export const CHOICE_COUNT = 4
 
 /** What the add/edit form holds. */
@@ -48,6 +50,49 @@ export function draftToRow(draft: QuestionDraft) {
     explanation: explanation === '' ? null : explanation,
     difficulty: draft.difficulty,
   }
+}
+
+export const CHOICE_LETTERS = ['A', 'B', 'C', 'D']
+
+/** What's left to fill in, in plain words, for the live "Still needed" line on the form. Empty = ready to save. */
+export function stillNeeded(draft: QuestionDraft): string[] {
+  const needed: string[] = []
+  if (draft.topicId === null) needed.push('a topic')
+  if (draft.stem.trim() === '') needed.push('the question')
+
+  const emptyLetters = CHOICE_LETTERS.filter((_, i) => (draft.choices[i] ?? '').trim() === '')
+  if (emptyLetters.length === CHOICE_COUNT) needed.push('the four choices')
+  else if (emptyLetters.length > 0) needed.push(`${emptyLetters.length === 1 ? 'choice' : 'choices'} ${emptyLetters.join(', ')}`)
+  else if (validateDraft(draft).choices) needed.push('four different choices')
+
+  if (draft.correctIndex === null) needed.push('the correct answer (tap ○)')
+  return needed
+}
+
+// ---------- Pasting a whole question into the form ----------
+
+export type PastedQuestion =
+  | { kind: 'plain' } // just text: paste it as usual
+  | { kind: 'many'; count: number } // several questions: those belong in Upload
+  | { kind: 'one'; stem: string; choices: string[]; correctIndex: number | null; explanation: string }
+
+// "1. Which..." but not "2.5 mg/dL is..." (a number that is part of the question).
+const STARTS_NUMBERED = /^\s*(?:q(?:uestion)?\s*)?\d{1,3}\s*[.):]\s*(?=\D)/i
+const CHOICE_A_MARK = /(^|\s)\*?\(?a[.)]\s/gi
+
+/** Reads pasted text with the same parser as Upload. Only a complete four-choice question counts as "one". */
+export function readPastedQuestion(text: string): PastedQuestion {
+  const choiceSets = text.match(CHOICE_A_MARK)?.length ?? 0
+  if (choiceSets === 0) return { kind: 'plain' }
+
+  // The parser finds questions by their numbers; one copied from notes often has none.
+  const { questions } = parseQuestions(STARTS_NUMBERED.test(text) ? text : `1. ${text}`)
+  const withChoices = questions.filter((q) => q.choices.length > 0)
+  if (withChoices.length > 1 || choiceSets > 1) return { kind: 'many', count: Math.max(withChoices.length, choiceSets) }
+
+  const question = withChoices[0]
+  if (!question || !question.stem || question.choices.length !== CHOICE_COUNT) return { kind: 'plain' }
+  return { kind: 'one', stem: question.stem, choices: question.choices, correctIndex: question.correctIndex, explanation: question.explanation }
 }
 
 // ---------- Coverage map ----------

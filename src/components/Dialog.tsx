@@ -41,7 +41,10 @@ export function Dialog({
     <dialog
       ref={ref}
       aria-labelledby={labelledBy}
-      onClose={onClose}
+      // Ignore a late "close" from the last time it closed, if it has already been opened again.
+      onClose={() => {
+        if (!ref.current?.open) onClose()
+      }}
       // A click on the dialog element itself (not its content) means the dimmed backdrop was clicked.
       onClick={(event) => {
         if (closeOnBackdrop && event.target === ref.current) onClose()

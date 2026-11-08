@@ -25,3 +25,7 @@ export const headerButtonClass =
 /** Classes for a secondary (white, outlined) button in a PageHeader. */
 export const headerSecondaryClass =
   'inline-flex h-12 items-center justify-center gap-2 rounded-lg border bg-card px-4 text-base font-semibold outline-none hover:border-primary focus-visible:ring-3 focus-visible:ring-ring/40 sm:h-11'
+
+/** Classes for the "← Back" link at the top of a task screen: an outline, so it reads as a button. */
+export const backLinkClass =
+  'inline-flex h-10 items-center gap-1.5 rounded-lg border bg-card pr-3.5 pl-2.5 text-sm font-semibold outline-none hover:border-primary/50 focus-visible:ring-3 focus-visible:ring-ring/40'

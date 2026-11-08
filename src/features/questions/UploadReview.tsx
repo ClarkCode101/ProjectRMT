@@ -1,9 +1,11 @@
 import { AlertTriangle, Check, ChevronDown, Copy, Plus, Save, X } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { useBlocker } from 'react-router'
 import { headerSecondaryClass, PageHeader } from '@/components/dashboard'
+import { Dialog } from '@/components/Dialog'
 import { NativeSelect } from '@/components/NativeSelect'
 import { heroButtonClass } from '@/components/report'
-import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 import { CHOICE_COUNT } from '@/lib/questions'
 import {
   contentErrors,
@@ -16,6 +18,7 @@ import {
   type ReviewStatus,
 } from '@/lib/uploadReview'
 import { cn } from '@/lib/utils'
+import { CorrectToggle, TopicPicker } from './QuestionFormParts'
 import { saveUpload } from './uploadApi'
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
@@ -31,6 +34,28 @@ const STATUS: Record<ReviewStatus, { label: string; className: string }> = {
   duplicate: { label: 'Possible duplicate', className: 'bg-highlight-soft text-[#7A4700]' },
   repeat: { label: 'Repeated in this file', className: 'bg-highlight-soft text-[#7A4700]' },
   checking: { label: 'Checking…', className: 'bg-secondary text-muted-foreground' },
+}
+
+/** Where she is in the upload: choose, review, save. Says up front that nothing is saved without a review. */
+export function UploadSteps({ current }: { current: 1 | 2 }) {
+  const steps = ['Choose', 'Review', 'Save']
+  return (
+    <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold">
+      {steps.map((step, i) => (
+        <li key={step} aria-current={i + 1 === current ? 'step' : undefined} className={cn('flex items-center gap-2', i + 1 === current ? 'text-primary' : 'text-muted-foreground')}>
+          {i > 0 && (
+            <span aria-hidden className="text-muted-foreground/60">
+              →
+            </span>
+          )}
+          <span className={cn('flex size-6 items-center justify-center rounded-full text-xs tabular-nums', i + 1 === current ? 'bg-primary text-white' : 'bg-secondary')}>
+            {i + 1 < current ? <Check className="size-3.5" strokeWidth={3} aria-hidden /> : i + 1}
+          </span>
+          {step}
+        </li>
+      ))}
+    </ol>
+  )
 }
 
 type Props = {
@@ -51,6 +76,25 @@ export function UploadReview({ fileName, skippedText, items, onChange, checkFail
   const [filter, setFilter] = useState<Filter>('all')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [confirmStartOver, setConfirmStartOver] = useState(false)
+
+  // Nothing here is saved yet, so leaving (Back, the nav, Start over, closing the tab) asks first.
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => currentLocation.pathname !== nextLocation.pathname)
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [])
+
+  function keepReviewing() {
+    setConfirmStartOver(false)
+    if (blocker.state === 'blocked') blocker.reset()
+  }
+
+  function discard() {
+    if (blocker.state === 'blocked') blocker.proceed()
+    else onStartOver()
+  }
 
   const counts = summarize(items)
   const shown = items.filter((item) => {
@@ -85,58 +129,33 @@ export function UploadReview({ fileName, skippedText, items, onChange, checkFail
         title={`Review ${counts.total} ${counts.total === 1 ? 'question' : 'questions'}`}
         subtitle={`Found in ${fileName}. Nothing is saved until you press Save.`}
         actions={
-          <button type="button" onClick={onStartOver} className={headerSecondaryClass}>
+          <button type="button" onClick={() => setConfirmStartOver(true)} className={headerSecondaryClass}>
             Start over
           </button>
         }
       />
 
+      <UploadSteps current={2} />
+
       {/* 1. Where they go */}
-      <section aria-labelledby="topic-heading" className="rounded-2xl border bg-card p-4">
-        <h2 id="topic-heading" className="font-heading text-lg font-bold">
-          Topic for these questions
-        </h2>
-        <p className="text-sm text-muted-foreground">You can change the topic of a single question when you open it below.</p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="upload-subject">Subject</Label>
-            <NativeSelect
-              id="upload-subject"
-              value={subjectId ?? ''}
-              onChange={(e) => {
-                setSubjectId(e.target.value ? Number(e.target.value) : null)
-                setTopicId(null)
-              }}
-              className="bg-card"
-            >
-              <option value="">Choose a subject</option>
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code}: {s.name}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="upload-topic">Topic</Label>
-            <NativeSelect
-              id="upload-topic"
-              value={topicId ?? ''}
-              disabled={subjectId === null}
-              onChange={(e) => setTopicId(e.target.value ? Number(e.target.value) : null)}
-              className="bg-card"
-            >
-              <option value="">{subjectId === null ? 'Choose a subject first' : 'Choose a topic'}</option>
-              {topics
-                .filter((t) => t.subject_id === subjectId)
-                .map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-            </NativeSelect>
-          </div>
+      <section aria-labelledby="topic-heading" className="space-y-3">
+        <div>
+          <h2 id="topic-heading" className="font-heading text-lg font-bold">
+            Topic for these questions
+          </h2>
+          <p className="text-sm text-muted-foreground">You can change the topic of a single question when you open it below.</p>
         </div>
+        <TopicPicker
+          subjects={subjects}
+          topics={topics}
+          subjectId={subjectId}
+          topicId={topicId}
+          onSubjectChange={(id) => {
+            setSubjectId(id)
+            setTopicId(null)
+          }}
+          onTopicChange={setTopicId}
+        />
       </section>
 
       {checkFailures > 0 && (
@@ -213,6 +232,26 @@ export function UploadReview({ fileName, skippedText, items, onChange, checkFail
           </button>
         </div>
       </div>
+
+      <Dialog open={blocker.state === 'blocked' || confirmStartOver} onClose={keepReviewing} labelledBy="discard-review-heading">
+        <div className="space-y-4">
+          <div>
+            <h2 id="discard-review-heading" className="text-xl font-bold">
+              Discard these questions?
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">Nothing has been saved yet, and any fixes you made here will be lost.</p>
+          </div>
+          {/* "Keep" comes first so it gets the focus when the dialog opens. */}
+          <div className="flex flex-col gap-2 sm:flex-row-reverse">
+            <Button type="button" variant="outline" className="h-11 flex-1 rounded-lg" onClick={keepReviewing}>
+              Keep reviewing
+            </Button>
+            <Button type="button" className="h-11 flex-1 rounded-lg bg-wrong text-white hover:bg-wrong/90" onClick={discard}>
+              Discard
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   )
 }
@@ -394,21 +433,16 @@ function ItemEditor({
         </EditorField>
 
         <fieldset className="space-y-2">
-          <legend className="mb-1.5 text-sm font-semibold">Choices (tap the letter of the correct one)</legend>
+          <legend className="mb-1.5 text-sm">
+            <span className="font-semibold">Choices</span> <span className="text-muted-foreground">Tap ○ to mark the correct one</span>
+          </legend>
           {draft.choices.map((choice, i) => {
             const isCorrect = draft.correctIndex === i
             return (
               <div key={i} className="flex items-center gap-2">
-                <label
-                  className={cn(
-                    'flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg border font-heading font-bold has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
-                    isCorrect ? 'border-correct bg-correct text-white' : 'bg-card hover:border-correct',
-                  )}
-                >
-                  <input type="radio" name={id('correct')} checked={isCorrect} onChange={() => setDraft({ correctIndex: i })} className="sr-only" />
-                  <span className="sr-only">Mark choice {LETTERS[i]} as correct</span>
-                  {isCorrect ? <Check className="size-4" strokeWidth={3} aria-hidden /> : <span aria-hidden>{LETTERS[i]}</span>}
-                </label>
+                <span aria-hidden className={cn('w-4 shrink-0 text-center font-heading font-bold', isCorrect && 'text-correct')}>
+                  {LETTERS[i]}
+                </span>
                 <label htmlFor={id(`choice-${i}`)} className="sr-only">
                   Choice {LETTERS[i]}
                 </label>
@@ -416,14 +450,15 @@ function ItemEditor({
                   id={id(`choice-${i}`)}
                   value={choice}
                   onChange={(e) => setDraft({ choices: draft.choices.map((c, j) => (j === i ? e.target.value : c)) })}
-                  className={cn(fieldClass, 'h-10 text-sm', isCorrect && 'border-correct')}
+                  className={cn(fieldClass, 'h-11 min-w-0 flex-1 text-sm', isCorrect && 'border-correct')}
                 />
+                <CorrectToggle name={id('correct')} letter={LETTERS[i]} checked={isCorrect} onChange={() => setDraft({ correctIndex: i })} compact />
                 {draft.choices.length > CHOICE_COUNT && (
                   <button
                     type="button"
                     onClick={() => removeChoice(i)}
                     aria-label={`Remove choice ${LETTERS[i]}`}
-                    className={cn('flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-wrong-soft hover:text-wrong', focusRing)}
+                    className={cn('flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-wrong-soft hover:text-wrong', focusRing)}
                   >
                     <X className="size-4" aria-hidden />
                   </button>

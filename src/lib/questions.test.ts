@@ -5,6 +5,8 @@ import {
   emptyDraft,
   ENOUGH_QUESTIONS,
   filterQuestions,
+  readPastedQuestion,
+  stillNeeded,
   summarizeCoverage,
   validateDraft,
   type QuestionDraft,
@@ -20,6 +22,71 @@ function goodDraft(): QuestionDraft {
     difficulty: 2,
   }
 }
+
+describe('stillNeeded', () => {
+  it('lists everything on an empty form', () => {
+    expect(stillNeeded(emptyDraft())).toEqual(['a topic', 'the question', 'the four choices', 'the correct answer (tap ○)'])
+  })
+
+  it('is empty when the question is ready', () => {
+    expect(stillNeeded(goodDraft())).toEqual([])
+  })
+
+  it('names the choices that are left, ignoring spaces', () => {
+    expect(stillNeeded({ ...goodDraft(), choices: ['a', 'b', 'c', '  '] })).toEqual(['choice D'])
+    expect(stillNeeded({ ...goodDraft(), choices: ['a', '', 'c', ''] })).toEqual(['choices B, D'])
+  })
+
+  it('asks for different choices when two are the same', () => {
+    expect(stillNeeded({ ...goodDraft(), choices: ['a', 'A', 'c', 'd'] })).toEqual(['four different choices'])
+  })
+
+  it('agrees with validateDraft on when a form can be saved', () => {
+    for (const draft of [emptyDraft(), goodDraft(), { ...goodDraft(), correctIndex: null }, { ...goodDraft(), choices: ['a', 'a', 'b', 'c'] }]) {
+      expect(stillNeeded(draft).length === 0).toBe(Object.keys(validateDraft(draft)).length === 0)
+    }
+  })
+})
+
+describe('readPastedQuestion', () => {
+  it('reads one question without a number, with its answer and explanation', () => {
+    const text = 'Which factor is the stable factor?\nA. Factor V\nB. Factor VII\nC. Factor VIII\nD. Factor X\nAnswer: B\nExplanation: It lasts in storage.'
+    expect(readPastedQuestion(text)).toEqual({
+      kind: 'one',
+      stem: 'Which factor is the stable factor?',
+      choices: ['Factor V', 'Factor VII', 'Factor VIII', 'Factor X'],
+      correctIndex: 1,
+      explanation: 'It lasts in storage.',
+    })
+  })
+
+  it('reads a numbered question with its choices on one line', () => {
+    const pasted = readPastedQuestion('12. Which one? a) w b) x c) y d) z')
+    expect(pasted).toMatchObject({ kind: 'one', stem: 'Which one?', choices: ['w', 'x', 'y', 'z'] })
+  })
+
+  it('leaves the correct answer open when none was given', () => {
+    expect(readPastedQuestion('Which one?\nA. w\nB. x\nC. y\nD. z')).toMatchObject({ kind: 'one', correctIndex: null })
+  })
+
+  it('keeps a number that is part of the question', () => {
+    expect(readPastedQuestion('2.5 mg/dL means what?\nA. w\nB. x\nC. y\nD. z')).toMatchObject({ kind: 'one', stem: '2.5 mg/dL means what?' })
+  })
+
+  it('treats ordinary text as plain text', () => {
+    expect(readPastedQuestion('Which factor is the stable factor?')).toEqual({ kind: 'plain' })
+  })
+
+  it('treats a question without exactly four choices as plain text', () => {
+    expect(readPastedQuestion('Which one?\nA. w\nB. x\nC. y')).toEqual({ kind: 'plain' })
+    expect(readPastedQuestion('Which one?\nA. v\nB. w\nC. x\nD. y\nE. z')).toEqual({ kind: 'plain' })
+  })
+
+  it('counts several questions, numbered or not', () => {
+    expect(readPastedQuestion('1. One?\nA. w\nB. x\nC. y\nD. z\n2. Two?\nA. w\nB. x\nC. y\nD. z')).toEqual({ kind: 'many', count: 2 })
+    expect(readPastedQuestion('One?\nA. w\nB. x\nC. y\nD. z\nAnswer: A\nTwo?\nA. w\nB. x\nC. y\nD. z')).toEqual({ kind: 'many', count: 2 })
+  })
+})
 
 describe('validateDraft', () => {
   it('accepts a complete question', () => {

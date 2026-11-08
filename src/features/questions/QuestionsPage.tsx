@@ -1,16 +1,19 @@
-import { BadgeCheck, ChevronDown, CircleCheck, CircleX, Flag, Pencil, Plus, Search, Trash2, TriangleAlert, Upload } from 'lucide-react'
-import { useState, type ReactNode } from 'react'
+import { BadgeCheck, Check, ChevronDown, CircleCheck, Flag, Library, Pencil, Plus, Search, SlidersHorizontal, Trash2, Upload, X } from 'lucide-react'
+import { useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
-import { headerButtonClass, headerSecondaryClass, PageHeader } from '@/components/dashboard'
+import { PageHeader } from '@/components/dashboard'
 import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { NativeSelect } from '@/components/NativeSelect'
+import { heroButtonClass } from '@/components/report'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { filterQuestions, summarizeCoverage, type BankFilters, type CoverageLevel, type SubjectCoverage } from '@/lib/questions'
+import { filterQuestions, summarizeCoverage, type BankFilters } from '@/lib/questions'
 import { useSubjectOfTopic, useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { deleteQuestion, setQuestionStatus, useQuestionBank, useRefreshBank, type BankQuestion } from './api'
+import { ArchiveCabinet } from './ArchiveCabinet'
+import { DrawerBar } from './DrawerBar'
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
 // Long lists are slow on phones, so show them in batches.
@@ -18,44 +21,126 @@ const BATCH = 30
 
 const focusRing = 'outline-none focus-visible:ring-3 focus-visible:ring-ring/40'
 
+/** The small tinted buttons on the cabinet screen (same as the ones under the rack on Practice). */
+const smallButtonClass =
+  'flex h-10 items-center justify-center gap-2 rounded-lg bg-primary/[0.08] px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
+
 export default function QuestionsPage() {
   const bank = useQuestionBank()
   const subjects = useSubjects()
   const topics = useTopics()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const view = searchParams.get('view') === 'coverage' ? 'coverage' : 'list'
-  // Set by the search box in the top bar.
-  const initialSearch = searchParams.get('search') ?? ''
-  // Set by the editor after a save, so we can say it worked.
-  const saved = (useLocation().state as { saved?: 'added' | 'updated' } | null)?.saved
 
   if (bank.isPending || subjects.isPending || topics.isPending) return <FullPageMessage>Loading…</FullPageMessage>
   if (bank.isError || subjects.isError || topics.isError) {
     return <FullPageMessage>Couldn’t load the questions. Check your internet connection, then refresh.</FullPageMessage>
   }
 
+  return <QuestionBankView questions={bank.data} subjects={subjects.data} topics={topics.data} />
+}
+
+/**
+ * Two screens, one job each, so she always knows where she is:
+ * - /questions: the cabinet, to choose where to go (or search, or add).
+ * - /questions?subject=ID, ?topic=ID or ?view=all: a list, with DrawerBar stuck on top.
+ * Everything she filtered by is kept in the address, so Back and coming back from the editor just work.
+ */
+function QuestionBankView({
+  questions,
+  subjects,
+  topics,
+}: {
+  questions: BankQuestion[]
+  subjects: { id: number; code: string; name: string }[]
+  topics: { id: number; subject_id: number; name: string }[]
+}) {
+  const [searchParams, setSearchParams] = useSearchParams()
+  // Set by the editor after a save, so we can say it worked.
+  const saved = (useLocation().state as { saved?: 'added' | 'updated' } | null)?.saved
+
+  const topic = topics.find((t) => t.id === Number(searchParams.get('topic'))) ?? null
+  const subjectParam = subjects.find((s) => s.id === Number(searchParams.get('subject')))?.id ?? null
+  const subjectId = topic?.subject_id ?? subjectParam
+  const search = searchParams.get('q') ?? ''
+  const onlyNeedsLook = searchParams.get('needs') === '1'
+  const atCabinet = subjectId === null && searchParams.get('view') !== 'all'
+
+  const [source, setSource] = useState<BankFilters['source']>('all')
+  const [optionsOpen, setOptionsOpen] = useState(false)
+
+  const coverage = summarizeCoverage(questions, subjects, topics)
+  const subject = coverage.find((s) => s.subjectId === subjectId)
+
   // Questions are ready to use by default (the built-in set is fact-checked; ones she types are hers).
   // Only two kinds "need a look": uploads not checked yet, and ones she reported from a quiz.
-  const needsLook = bank.data.filter((q) => q.status === 'unverified').length
+  const needsLook = questions.filter((q) => q.status === 'unverified')
+  const subjectOfTopic = new Map(topics.map((t) => [t.id, t.subject_id]))
+  const flaggedBySubject = new Map<number, number>()
+  for (const q of needsLook) {
+    const id = subjectOfTopic.get(q.topic_id)
+    if (id !== undefined) flaggedBySubject.set(id, (flaggedBySubject.get(id) ?? 0) + 1)
+  }
+
+  const subjectTopicIds = topic ? [topic.id] : subject ? subject.topics.map((t) => t.topicId) : null
+  const filters: BankFilters = { search, subjectTopicIds, status: 'all', source }
+  const needsLookInScope = filterQuestions(questions, { ...filters, status: 'unverified' })
+  const shown = onlyNeedsLook ? needsLookInScope : filterQuestions(questions, filters)
+  // How many are in this drawer or folder before searching, for "3 of 30 questions match".
+  const scopeTotal = filterQuestions(questions, { search: '', subjectTopicIds, status: 'all', source: 'all' }).length
+
+  const scope: Record<string, string> = topic ? { topic: String(topic.id) } : subject ? { subject: String(subject.subjectId) } : { view: 'all' }
+  const addTo = topic ? `/questions/new?topic=${topic.id}` : '/questions/new'
+  const addLabel = topic ? `Add to ${topic.name}` : 'Add question'
+
+  /** The address for this list with the search and "needs a look" kept. */
+  function listParams(where: Record<string, string>, change: { search?: string; needs?: boolean } = {}) {
+    const nextSearch = change.search ?? search
+    const nextNeeds = change.needs ?? onlyNeedsLook
+    return { ...where, ...(nextSearch && { q: nextSearch }), ...(nextNeeds && { needs: '1' }) }
+  }
+
+  function updateList(change: { search?: string; needs?: boolean }) {
+    // The first letter typed at the cabinet moves to the list (a real step, so Back returns to the cabinet).
+    // After that, typing shouldn't fill up the Back button's history.
+    setSearchParams(listParams(scope, change), { replace: !atCabinet })
+  }
+
+  function selectTopic(id: number | null) {
+    setSearchParams(listParams(id === null ? { subject: String(subjectId) } : { topic: String(id) }), { replace: true })
+    window.scrollTo({ top: 0 })
+  }
+
+  const placeholder = atCabinet ? 'Search all questions' : `Search in ${topic?.name ?? subject?.code ?? 'all questions'}`
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <PageHeader
-        title="Questions"
-        subtitle={`${bank.data.length} questions${needsLook > 0 ? ` · ${needsLook} need a look` : ''}.`}
-        actions={
-          <>
-            <Link to="/questions/upload" className={headerSecondaryClass}>
+    <div className="mx-auto max-w-4xl space-y-4">
+      {atCabinet ? (
+        <>
+          <PageHeader title="Questions" subtitle={`${questions.length} questions${needsLook.length > 0 ? ` · ${needsLook.length} need a look` : ''}.`} />
+          <ArchiveCabinet coverage={coverage} flaggedBySubject={flaggedBySubject} />
+          {/* Add: the gold button, centered under the scene like Start on the other pages. */}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Link to={addTo} className={cn(heroButtonClass, 'w-auto max-w-full px-7 focus-visible:ring-ring/50')}>
+              <Plus className="size-5 shrink-0" aria-hidden />
+              {addLabel}
+            </Link>
+            <Link to="/questions/upload" className={cn(smallButtonClass, 'h-12')}>
               <Upload className="size-4" aria-hidden />
               Upload
             </Link>
-            <Link to="/questions/new" className={headerButtonClass}>
-              <Plus className="size-4" aria-hidden />
-              Add question
-            </Link>
-          </>
-        }
-      />
+          </div>
+        </>
+      ) : (
+        <DrawerBar
+          title={subject?.code ?? 'All questions'}
+          subtitle={subject?.name}
+          count={scopeTotal}
+          addTo={addTo}
+          addLabel={addLabel}
+          subject={subject}
+          topicId={topic?.id ?? null}
+          onSelectTopic={selectTopic}
+        />
+      )}
 
       {saved && (
         <p role="status" className="flex items-center gap-2 rounded-md bg-correct-soft px-3 py-2 font-semibold text-correct">
@@ -64,152 +149,142 @@ export default function QuestionsPage() {
         </p>
       )}
 
-      {/* Two views of the same bank. The view is kept in the address (?view=coverage) so Back works. */}
-      <div role="group" aria-label="View" className="grid grid-cols-2 gap-1 rounded-lg bg-secondary p-1 sm:inline-grid sm:w-80">
-        <ViewLink active={view === 'list'} onClick={() => setSearchParams({})}>
-          All questions
-        </ViewLink>
-        <ViewLink active={view === 'coverage'} onClick={() => setSearchParams({ view: 'coverage' })}>
-          Coverage
-        </ViewLink>
-      </div>
+      {/* The search box stays the same element on both screens, so typing at the cabinet keeps the keyboard open. */}
+      <section aria-label="Find questions" className={cn('space-y-3', atCabinet && 'mx-auto max-w-xl border-t border-dashed pt-4')}>
+        <div className="flex gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Label htmlFor="q-search" className="sr-only">
+              Search questions
+            </Label>
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <input
+              id="q-search"
+              type="search"
+              placeholder={placeholder}
+              value={search}
+              onChange={(e) => updateList({ search: e.target.value })}
+              className="h-11 w-full rounded-lg border border-input bg-card pr-3 pl-9 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            />
+          </div>
+          {!atCabinet && (
+            <button
+              type="button"
+              onClick={() => setOptionsOpen(true)}
+              aria-label={source !== 'all' ? 'Filter options (changed)' : 'Filter options'}
+              className={cn('relative flex size-11 shrink-0 items-center justify-center rounded-lg border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground', focusRing)}
+            >
+              <SlidersHorizontal className="size-5" aria-hidden />
+              {source !== 'all' && <span className="absolute top-2 right-2 size-2 rounded-full bg-highlight" aria-hidden />}
+            </button>
+          )}
+        </div>
 
-      {view === 'list' ? (
-        // key: a new search from the top bar starts a fresh list.
-        <QuestionList key={initialSearch} initialSearch={initialSearch} questions={bank.data} subjects={subjects.data} topics={topics.data} />
-      ) : (
-        <CoverageView coverage={summarizeCoverage(bank.data, subjects.data, topics.data)} />
-      )}
+        {atCabinet ? (
+          <div className="flex flex-wrap justify-center gap-2">
+            <Link to="/questions?view=all" className={smallButtonClass}>
+              <Library className="size-4" aria-hidden />
+              Browse all <span className="tabular-nums">{questions.length}</span>
+            </Link>
+            {needsLook.length > 0 && (
+              <Link to="/questions?view=all&needs=1" className={cn(smallButtonClass, 'bg-highlight-soft text-foreground hover:bg-highlight-soft hover:brightness-95')}>
+                <Flag className="size-3.5" aria-hidden />
+                Needs a look <span className="tabular-nums">{needsLook.length}</span>
+              </Link>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <p className="text-sm text-muted-foreground" aria-live="polite">
+                {shown.length === scopeTotal ? questionCount(shown.length) : `${shown.length} of ${questionCount(scopeTotal)} match`}
+              </p>
+              {/* Only there when there's something to look at (or to turn back off), so most days it's out of the way. */}
+              {(needsLookInScope.length > 0 || onlyNeedsLook) && (
+                <button
+                  type="button"
+                  onClick={() => updateList({ needs: !onlyNeedsLook })}
+                  aria-pressed={onlyNeedsLook}
+                  className={cn(
+                    'inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-sm font-bold transition-colors',
+                    focusRing,
+                    onlyNeedsLook ? 'bg-primary text-white' : 'bg-highlight-soft text-foreground hover:brightness-95',
+                  )}
+                >
+                  {onlyNeedsLook ? <Check className="size-4" aria-hidden /> : <Flag className="size-3.5" aria-hidden />}
+                  Needs a look · <span className="tabular-nums">{needsLookInScope.length}</span>
+                </button>
+              )}
+            </div>
+
+            {shown.length === 0 ? (
+              <p className="rounded-xl border bg-card px-4 py-8 text-center text-muted-foreground">
+                {topic && scopeTotal === 0 ? `Nothing filed under ${topic.name} yet. Add the first one.` : 'No questions match. Try a different search or filter.'}
+              </p>
+            ) : (
+              // key: a different list starts from its first batch again.
+              <QuestionList key={JSON.stringify([scope, search, onlyNeedsLook, source])} questions={shown} />
+            )}
+          </>
+        )}
+      </section>
+
+      <Dialog open={optionsOpen} onClose={() => setOptionsOpen(false)} labelledBy="q-options-heading" variant="sheet">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="q-options-heading" className="font-heading text-lg font-bold">
+              Filter options
+            </h2>
+            <button
+              type="button"
+              onClick={() => setOptionsOpen(false)}
+              aria-label="Close"
+              className={cn('flex size-9 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground', focusRing)}
+            >
+              <X className="size-5" aria-hidden />
+            </button>
+          </div>
+          <div>
+            <Label htmlFor="q-source" className="mb-1.5 block text-sm font-semibold">
+              Source
+            </Label>
+            <NativeSelect id="q-source" value={source} onChange={(e) => setSource(e.target.value as BankFilters['source'])} className="bg-card">
+              <option value="all">Any source</option>
+              <option value="builtin">Built-in</option>
+              <option value="mine">Mine</option>
+            </NativeSelect>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOptionsOpen(false)}
+            className={cn('h-11 w-full rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90', focusRing)}
+          >
+            Done
+          </button>
+        </div>
+      </Dialog>
     </div>
   )
 }
 
-function ViewLink({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={cn('h-10 rounded-md text-sm font-semibold', focusRing, active ? 'bg-card shadow-sm' : 'text-muted-foreground hover:text-foreground')}
-    >
-      {children}
-    </button>
-  )
+function questionCount(n: number) {
+  return `${n} question${n === 1 ? '' : 's'}`
 }
 
-// ---------- All questions ----------
-
-function QuestionList({
-  initialSearch,
-  questions,
-  subjects,
-  topics,
-}: {
-  initialSearch: string
-  questions: BankQuestion[]
-  subjects: { id: number; code: string }[]
-  topics: { id: number; subject_id: number }[]
-}) {
-  const [search, setSearch] = useState(initialSearch)
-  const [subjectId, setSubjectId] = useState<number | null>(null)
-  const [status, setStatus] = useState<BankFilters['status']>('all')
-  const [source, setSource] = useState<BankFilters['source']>('all')
+function QuestionList({ questions }: { questions: BankQuestion[] }) {
   const [shownCount, setShownCount] = useState(BATCH)
-
-  const subjectTopicIds = subjectId === null ? null : topics.filter((t) => t.subject_id === subjectId).map((t) => t.id)
-  const shown = filterQuestions(questions, { search, subjectTopicIds, status, source })
-
-  // Any filter change starts the list from the top again.
-  function onFilter<T>(set: (value: T) => void) {
-    return (value: T) => {
-      set(value)
-      setShownCount(BATCH)
-    }
-  }
-
   return (
-    <section aria-label="All questions" className="space-y-3">
-      <div className="space-y-2">
-        <div className="relative">
-          <Label htmlFor="q-search" className="sr-only">
-            Search questions
-          </Label>
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <input
-            id="q-search"
-            type="search"
-            placeholder="Search questions and choices"
-            value={search}
-            onChange={(e) => onFilter(setSearch)(e.target.value)}
-            className="h-11 w-full rounded-lg border border-input bg-card pr-3 pl-9 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-          />
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <FilterSelect id="q-subject" label="Subject" value={subjectId ?? ''} onChange={(v) => onFilter(setSubjectId)(v ? Number(v) : null)}>
-            <option value="">All subjects</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.code}
-              </option>
-            ))}
-          </FilterSelect>
-          <FilterSelect id="q-status" label="Status" value={status} onChange={(v) => onFilter(setStatus)(v as BankFilters['status'])}>
-            <option value="all">Any status</option>
-            <option value="unverified">Needs a look</option>
-          </FilterSelect>
-          <FilterSelect id="q-source" label="Source" value={source} onChange={(v) => onFilter(setSource)(v as BankFilters['source'])}>
-            <option value="all">Any source</option>
-            <option value="builtin">Built-in</option>
-            <option value="mine">Mine</option>
-          </FilterSelect>
-        </div>
-      </div>
-
-      <p className="text-sm text-muted-foreground" aria-live="polite">
-        {shown.length === questions.length ? `${shown.length} questions` : `${shown.length} of ${questions.length} questions match`}
-      </p>
-
-      {shown.length === 0 ? (
-        <p className="rounded-xl border bg-card px-4 py-8 text-center text-muted-foreground">No questions match. Try a different search or filter.</p>
-      ) : (
-        <ul className="divide-y overflow-hidden rounded-xl border bg-card">
-          {shown.slice(0, shownCount).map((q) => (
-            <QuestionRow key={q.id} question={q} />
-          ))}
-        </ul>
-      )}
-
-      {shown.length > shownCount && (
+    <>
+      <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+        {questions.slice(0, shownCount).map((q) => (
+          <QuestionRow key={q.id} question={q} />
+        ))}
+      </ul>
+      {questions.length > shownCount && (
         <Button variant="outline" className="h-11 w-full rounded-lg" onClick={() => setShownCount((n) => n + BATCH)}>
-          Show more ({shown.length - shownCount} left)
+          Show more ({questions.length - shownCount} left)
         </Button>
       )}
-    </section>
-  )
-}
-
-function FilterSelect({
-  id,
-  label,
-  value,
-  onChange,
-  children,
-}: {
-  id: string
-  label: string
-  value: string | number
-  onChange: (value: string) => void
-  children: ReactNode
-}) {
-  return (
-    <div>
-      <Label htmlFor={id} className="sr-only">
-        {label}
-      </Label>
-      <NativeSelect id={id} value={value} onChange={(e) => onChange(e.target.value)} className="bg-card px-2 text-sm sm:px-3">
-        {children}
-      </NativeSelect>
-    </div>
+    </>
   )
 }
 
@@ -220,8 +295,8 @@ function QuestionRow({ question: q }: { question: BankQuestion }) {
   const subject = subjectOf(q.topic_id)
   const isMine = q.owner_id !== null
   const verified = q.status === 'verified'
-  // An unchecked upload is "To check"; anything else that isn't verified was reported from a quiz.
-  const needsLookLabel = q.source === 'upload' ? 'To check' : 'Reported'
+  // An unchecked upload "needs a look"; anything else that isn't verified was reported from a quiz.
+  const needsLookLabel = q.source === 'upload' ? 'Needs a look' : 'Reported'
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -345,101 +420,6 @@ function QuestionRow({ question: q }: { question: BankQuestion }) {
           </div>
         </div>
       </Dialog>
-    </li>
-  )
-}
-
-// ---------- Coverage ----------
-
-const LEVEL_INFO: Record<CoverageLevel, { label: string; icon: typeof CircleCheck; className: string }> = {
-  none: { label: 'None', icon: CircleX, className: 'text-wrong' },
-  few: { label: 'Few', icon: TriangleAlert, className: 'text-[#9A5B00]' },
-  enough: { label: 'Enough', icon: CircleCheck, className: 'text-correct' },
-}
-
-function LevelIcon({ level }: { level: CoverageLevel }) {
-  const { icon: Icon, className, label } = LEVEL_INFO[level]
-  return <Icon className={cn('size-4 shrink-0', className)} aria-label={label} />
-}
-
-function CoverageView({ coverage }: { coverage: SubjectCoverage[] }) {
-  return (
-    <section aria-labelledby="coverage-heading" className="space-y-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id="coverage-heading" className="text-lg font-bold">
-          Questions per topic
-        </h2>
-        <p className="flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <LevelIcon level="enough" /> 10 or more
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <LevelIcon level="few" /> 1 to 9
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <LevelIcon level="none" /> none
-          </span>
-        </p>
-      </div>
-      <ul className="divide-y overflow-hidden rounded-xl border bg-card">
-        {coverage.map((s) => (
-          <CoverageRow key={s.subjectId} subject={s} />
-        ))}
-      </ul>
-      <p className="text-xs text-muted-foreground">Tap a subject to see its topics. Topics with the fewest questions are listed first.</p>
-    </section>
-  )
-}
-
-function CoverageRow({ subject }: { subject: SubjectCoverage }) {
-  const none = subject.topics.filter((t) => t.level === 'none').length
-  const few = subject.topics.filter((t) => t.level === 'few').length
-  return (
-    <li>
-      <details className="group">
-        <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 outline-none hover:bg-secondary/50 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset sm:px-5 [&::-webkit-details-marker]:hidden">
-          <span className="flex min-w-0 flex-1 items-baseline gap-2">
-            <span className="shrink-0 font-heading text-lg font-bold">{subject.code}</span>
-            <span className="truncate text-sm text-muted-foreground">{subject.name}</span>
-          </span>
-          <span className="flex shrink-0 items-center gap-3 text-sm tabular-nums">
-            {none > 0 && (
-              <span className="inline-flex items-center gap-1 font-semibold text-wrong">
-                <CircleX className="size-4" aria-hidden />
-                {none}
-                <span className="sr-only">{none === 1 ? 'topic with no questions' : 'topics with no questions'}</span>
-              </span>
-            )}
-            {few > 0 && (
-              <span className="inline-flex items-center gap-1 font-semibold text-[#9A5B00]">
-                <TriangleAlert className="size-4" aria-hidden />
-                {few}
-                <span className="sr-only">{few === 1 ? 'topic with few questions' : 'topics with few questions'}</span>
-              </span>
-            )}
-            <span className="font-heading text-lg font-bold">{subject.total}</span>
-          </span>
-          <ChevronDown className="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden />
-        </summary>
-
-        <ul className="grid gap-x-6 bg-background/60 px-4 py-2 sm:px-5 md:grid-cols-2" aria-label={`${subject.name} topics`}>
-          {subject.topics.map((t) => (
-            <li key={t.topicId} className="flex min-h-11 items-center gap-2.5 border-b border-border/60 py-1.5 text-sm last:border-0 md:[&:nth-last-child(2):nth-child(odd)]:border-0">
-              <LevelIcon level={t.level} />
-              <span className="min-w-0 flex-1 truncate">{t.name}</span>
-              <span className="font-semibold tabular-nums">{t.count}</span>
-              <Link
-                to={`/questions/new?topic=${t.topicId}`}
-                aria-label={`Add a question to ${t.name}`}
-                title="Add a question"
-                className={cn('flex size-8 items-center justify-center rounded-md text-primary hover:bg-primary/10', focusRing)}
-              >
-                <Plus className="size-4" aria-hidden />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </details>
     </li>
   )
 }

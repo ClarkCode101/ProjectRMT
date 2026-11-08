@@ -219,6 +219,14 @@
   animation: microscope-beam 300ms ease-out both;
 }
 
+/* Questions cabinet: the chosen drawer slides out. */
+@keyframes drawer-open {
+  from { transform: translateY(-10px); opacity: 0; }
+}
+.drawer-open {
+  animation: drawer-open 250ms ease-out both;
+}
+
 /* The analyzer's status light while a run starts. */
 @keyframes led-blink {
   50% { opacity: 0.25; }
