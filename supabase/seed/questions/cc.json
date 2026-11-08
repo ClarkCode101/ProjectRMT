@@ -11,6 +11,12 @@
     ],
     "correct_index": 1,
     "explanation": "The hexokinase method is the reference method because it is highly specific and less affected by interferences than glucose oxidase. Folin-Wu and o-toluidine are older, less specific methods. Reference: StatPearls, Hexokinase Method (ncbi.nlm.nih.gov/books/NBK587446).",
+    "choice_notes": [
+      "Common method, but its peroxidase (Trinder) step is affected by reducing agents like vitamin C.",
+      "Reference method: hexokinase + G6PD, measured as NADPH at 340 nm.",
+      "Old copper-reduction method; nonspecific, other reducing substances react too.",
+      "Old method using a toxic aromatic amine; no longer used."
+    ],
     "difficulty": 1
   },
   {
@@ -25,6 +31,12 @@
     ],
     "correct_index": 1,
     "explanation": "Lipase is more specific to the pancreas than amylase and stays elevated longer after an attack of acute pancreatitis. Reference: StatPearls, Biochemistry, Lipase (ncbi.nlm.nih.gov/books/NBK537346).",
+    "choice_notes": [
+      "Rises first but returns to normal in about 3–5 days; salivary glands also make it.",
+      "Comes mainly from the pancreas and stays elevated longer (about 8–14 days).",
+      "Bone and liver (cholestasis) marker, not pancreatic.",
+      "Liver/biliary marker; rises with alcohol use and cholestasis."
+    ],
     "difficulty": 1
   },
   {
@@ -39,6 +51,12 @@
     ],
     "correct_index": 2,
     "explanation": "LDL delivers cholesterol to peripheral cells (the 'bad' cholesterol). HDL does reverse cholesterol transport back to the liver. Reference: StatPearls, Biochemistry, Cholesterol (ncbi.nlm.nih.gov/books/NBK513326).",
+    "choice_notes": [
+      "Carry dietary (exogenous) triglycerides from the intestine.",
+      "Carries liver-made (endogenous) triglycerides.",
+      "Holds most plasma cholesterol and delivers it to cells through LDL receptors.",
+      "Does the reverse: brings cholesterol from tissues back to the liver."
+    ],
     "difficulty": 1
   },
   {
@@ -53,6 +71,12 @@
     ],
     "correct_index": 0,
     "explanation": "Anion gap = Na⁺ − (Cl⁻ + HCO₃⁻). When potassium is included it becomes (Na⁺ + K⁺) − (Cl⁻ + HCO₃⁻). Reference: StatPearls, Biochemistry, Anion Gap (ncbi.nlm.nih.gov/books/NBK539757).",
+    "choice_notes": [
+      "Cations minus the main measured anions; usually around 8–12 mmol/L.",
+      "Leaves out bicarbonate. The K⁺ version is (Na⁺ + K⁺) − (Cl⁻ + HCO₃⁻).",
+      "Reversed: the gap is cations minus anions, so it starts from Na⁺.",
+      "Both anions (Cl⁻ and HCO₃⁻) must be subtracted, not one added."
+    ],
     "difficulty": 2
   },
   {
@@ -67,6 +91,12 @@
     ],
     "correct_index": 1,
     "explanation": "In the Jaffe reaction, creatinine reacts with alkaline picrate to form a red-orange complex. Diacetyl monoxime is for urea, phosphotungstic acid for uric acid, and o-cresolphthalein for calcium. Reference: Peake & Whiting, Measurement of Serum Creatinine, Clin Biochem Rev 2006 (pmc.ncbi.nlm.nih.gov/articles/PMC1784008).",
+    "choice_notes": [
+      "Reagent for urea (BUN), not creatinine.",
+      "Creatinine + picrate in alkaline solution gives a red-orange complex.",
+      "Used for uric acid (reduced to tungsten blue) and to precipitate proteins.",
+      "Dye used to measure total calcium."
+    ],
     "difficulty": 2
   },
   {
@@ -81,6 +111,12 @@
     ],
     "correct_index": 1,
     "explanation": "TSH is the most sensitive indicator of thyroid dysfunction, so it is the first-line screening test; free T4 is added when TSH is abnormal. Reference: StatPearls, Physiology, Thyroid Stimulating Hormone (ncbi.nlm.nih.gov/books/NBK499850).",
+    "choice_notes": [
+      "Mainly checked for T3 toxicosis; not a first screen.",
+      "Most sensitive first test: small thyroid changes cause large TSH changes.",
+      "Changes with binding proteins (TBG), e.g., in pregnancy or on estrogen.",
+      "Tumor marker to follow thyroid cancer after treatment."
+    ],
     "difficulty": 1
   },
   {
@@ -95,6 +131,12 @@
     ],
     "correct_index": 2,
     "explanation": "Cortisol follows a 24-hour (circadian) rhythm: it peaks in the early morning after waking and is lowest around midnight, so the collection time matters. Reference: Development of 24-Hour Rhythms in Cortisol Secretion, meta-analysis (pmc.ncbi.nlm.nih.gov/articles/PMC11747683).",
+    "choice_notes": [
+      "Lowest point of the day; a high late-night cortisol suggests Cushing syndrome.",
+      "Levels fall through the day, so afternoon is lower than morning.",
+      "Diurnal rhythm: peaks around 6–8 AM, soon after waking.",
+      "Meals do not drive the main rhythm; evening levels are low."
+    ],
     "difficulty": 1
   },
   {
@@ -109,6 +151,12 @@
     ],
     "correct_index": 1,
     "explanation": "1-3s = a single control beyond ±3SD. It is a rejection rule and usually points to random error. 2-2s detects systematic error, R-4s random error within a run, and 10x a shift. Reference: Westgard QC, Westgard Rules (westgard.com/westgard-rules.html).",
+    "choice_notes": [
+      "That is the 2-2s rule (systematic error).",
+      "A single control beyond ±3SD, usually random error. Reject the run.",
+      "That is the R-4s rule (random error).",
+      "That is the 10x rule (systematic error, a shift)."
+    ],
     "difficulty": 2
   },
   {
@@ -123,6 +171,12 @@
     ],
     "correct_index": 1,
     "explanation": "A = εbc: absorbance rises linearly with concentration and path length, so a plot of absorbance against concentration is a straight line through zero (it bends at high concentrations). Reference: Chemistry LibreTexts, Beer-Lambert Law (chem.libretexts.org, Organic Chemistry Glossary).",
+    "choice_notes": [
+      "Transmittance falls as concentration rises; absorbance rises with it.",
+      "A = abc: absorptivity × path length × concentration.",
+      "Path length (b) is part of A = abc; a longer path gives more absorbance.",
+      "A = 2 − log %T; they are related on a log scale, not equal."
+    ],
     "difficulty": 1
   },
   {
@@ -137,6 +191,12 @@
     ],
     "correct_index": 1,
     "explanation": "AST rises more than ALT in alcohol-related liver disease, so an AST:ALT ratio of 2:1 or more points to it. Reference: StatPearls, Conjugated Hyperbilirubinemia (ncbi.nlm.nih.gov/books/NBK562172) and Alcohol-Associated Liver Disease (ncbi.nlm.nih.gov/books/NBK546632).",
+    "choice_notes": [
+      "ALT is usually higher than AST (ratio below 1).",
+      "Alcohol injures mitochondria and lowers ALT (B6 deficiency), so AST > ALT.",
+      "Mainly raises ALP and GGT; transaminases rise only mildly.",
+      "Shown by lipase and amylase, not the AST:ALT ratio."
+    ],
     "difficulty": 2
   },
   {
@@ -151,6 +211,12 @@
     ],
     "correct_index": 0,
     "explanation": "A marked rise in alkaline phosphatase, with normal or only mildly raised transaminases, points to biliary obstruction. Reference: StatPearls, Hyperbilirubinemia (ncbi.nlm.nih.gov/books/NBK544252).",
+    "choice_notes": [
+      "Bile duct cells make more ALP when bile flow is blocked.",
+      "Hepatocellular marker; rises most in hepatitis, not obstruction.",
+      "Pancreatic enzyme.",
+      "Muscle (skeletal and heart) and brain enzyme."
+    ],
     "difficulty": 1
   },
   {
@@ -165,6 +231,12 @@
     ],
     "correct_index": 2,
     "explanation": "Albumin makes up about half of total plasma protein (3.5–5 g/dL) and most of the plasma oncotic pressure. Reference: StatPearls, Physiology, Albumin (ncbi.nlm.nih.gov/books/NBK459198).",
+    "choice_notes": [
+      "Clotting protein; present in plasma but not serum, and far less than albumin.",
+      "Most abundant immunoglobulin, but less than albumin.",
+      "About 50–60% of total plasma protein; made by the liver.",
+      "Iron transport protein in the beta band; a small fraction."
+    ],
     "difficulty": 1
   },
   {
@@ -179,6 +251,12 @@
     ],
     "correct_index": 1,
     "explanation": "In alkaline solution, cupric ions bind the nitrogens of peptide bonds and turn violet; free amino acids do not react. It is simple but relatively insensitive. Reference: Biology LibreTexts, Fundamentals of Biochemistry, 3.3 Proteins: Analyses and Structural Predictions (bio.libretexts.org).",
+    "choice_notes": [
+      "That is UV absorption by tyrosine and tryptophan.",
+      "Cu²⁺ binds peptide bonds in alkali, giving a violet color read near 540 nm.",
+      "Ninhydrin is used for amino acids.",
+      "That describes BCG/BCP dye methods for albumin."
+    ],
     "difficulty": 1
   },
   {
@@ -193,6 +271,12 @@
     ],
     "correct_index": 1,
     "explanation": "The trough is the lowest concentration, reached just before the next dose; the peak reflects maximum absorption. Reference: Overview of Therapeutic Drug Monitoring (pmc.ncbi.nlm.nih.gov/articles/PMC2687654).",
+    "choice_notes": [
+      "That is the peak level.",
+      "The lowest level, drawn just before the next dose.",
+      "That timing is used for peak levels, not trough.",
+      "Random levels are hard to interpret; TDM needs timed samples."
+    ],
     "difficulty": 1
   },
   {
@@ -207,6 +291,12 @@
     ],
     "correct_index": 1,
     "explanation": "CO forms carboxyhemoglobin, which cannot carry oxygen. Oxidized (ferric) heme iron is methemoglobin, and acetylcholinesterase inhibition is the mechanism of organophosphates. Reference: StatPearls, Carbon Monoxide Poisoning (ncbi.nlm.nih.gov/books/NBK557888).",
+    "choice_notes": [
+      "That forms methemoglobin (e.g., nitrites), not carboxyhemoglobin.",
+      "Forms carboxyhemoglobin, blocking O₂ transport and shifting the curve left.",
+      "Organophosphate and carbamate pesticides do this.",
+      "CO does not cause hemolysis."
+    ],
     "difficulty": 1
   },
   {
@@ -221,6 +311,12 @@
     ],
     "correct_index": 2,
     "explanation": "ADA criteria: FPG 126 mg/dL or higher (7.0 mmol/L). FPG 100 to 125 mg/dL is impaired fasting glucose (prediabetes). Reference: American Diabetes Association, 2. Diagnosis and Classification of Diabetes: Standards of Care in Diabetes 2026 (diabetesjournals.org/care/article/49/Supplement_1/S27/163926).",
+    "choice_notes": [
+      "100–125 mg/dL is impaired fasting glucose (prediabetes).",
+      "The older WHO cutoff for impaired fasting glucose, not diabetes.",
+      "ADA cutoff after at least 8 hours of fasting; confirm with a repeat test.",
+      "Cutoff for the 2-hour OGTT, or a random glucose with symptoms."
+    ],
     "difficulty": 1
   },
   {
@@ -235,6 +331,12 @@
     ],
     "correct_index": 0,
     "explanation": "ADA criteria: A1C 6.5% or higher (48 mmol/mol). A1C 5.7% to 6.4% is prediabetes. Reference: American Diabetes Association, 2. Diagnosis and Classification of Diabetes: Standards of Care in Diabetes 2026 (diabetesjournals.org/care/article/49/Supplement_1/S27/163926).",
+    "choice_notes": [
+      "ADA diagnostic cutoff, using an NGSP-certified method.",
+      "5.7–6.4% is prediabetes.",
+      "Within the prediabetes range (5.7–6.4%).",
+      "Above the cutoff, but the diagnostic threshold is 6.5%."
+    ],
     "difficulty": 1
   },
   {
@@ -249,6 +351,12 @@
     ],
     "correct_index": 1,
     "explanation": "ADA criteria: 2-hour plasma glucose 200 mg/dL or higher during a 75-g OGTT. 140 to 199 mg/dL is impaired glucose tolerance. Reference: American Diabetes Association, 2. Diagnosis and Classification of Diabetes: Standards of Care in Diabetes 2026 (diabetesjournals.org/care/article/49/Supplement_1/S27/163926).",
+    "choice_notes": [
+      "140–199 mg/dL is impaired glucose tolerance (prediabetes).",
+      "ADA diagnostic cutoff for the 2-hour 75-g OGTT.",
+      "Within impaired glucose tolerance (140–199), not diabetes.",
+      "Fasting glucose cutoff, not 2-hour."
+    ],
     "difficulty": 1
   },
   {
@@ -263,6 +371,12 @@
     ],
     "correct_index": 0,
     "explanation": "Alpha cells produce glucagon, which raises blood glucose; beta cells produce insulin. Reference: OpenStax Anatomy and Physiology 2e, 17.9 The Endocrine Pancreas (openstax.org/books/anatomy-and-physiology-2e/pages/17-9-the-endocrine-pancreas).",
+    "choice_notes": [
+      "Make glucagon, which raises blood glucose.",
+      "Make insulin (and C-peptide).",
+      "Make somatostatin.",
+      "Make pancreatic polypeptide."
+    ],
     "difficulty": 1
   },
   {
@@ -277,6 +391,12 @@
     ],
     "correct_index": 1,
     "explanation": "Whipple's triad is symptoms of hypoglycemia, a low blood glucose at the time, and relief of symptoms when glucose is raised. Reference: Investigation and Causes of Spontaneous (Non-Diabetic) Hypoglycaemia in Adults: Pitfalls to Avoid (pmc.ncbi.nlm.nih.gov/articles/PMC10606153).",
+    "choice_notes": [
+      "Diagnosed by high glucose, ketones and metabolic acidosis.",
+      "Symptoms + low plasma glucose + relief when glucose is raised.",
+      "Diagnosed by OGTT during pregnancy.",
+      "Very high glucose and osmolality, with little or no ketosis."
+    ],
     "difficulty": 2
   },
   {
@@ -291,6 +411,12 @@
     ],
     "correct_index": 1,
     "explanation": "Taking too much insulin suppresses the pancreas, so C-peptide (made with the body's own insulin) is low. Insulinoma raises C-peptide. Reference: MedlinePlus Lab Tests, C-Peptide Test (medlineplus.gov/lab-tests/c-peptide-test).",
+    "choice_notes": [
+      "The tumor makes its own insulin, so insulin AND C-peptide are both high.",
+      "Drug insulin has no C-peptide and suppresses the body’s own insulin release.",
+      "Stimulates beta cells, so insulin and C-peptide both rise.",
+      "Hypoglycemia is not typical without treatment; C-peptide is usually normal or high."
+    ],
     "difficulty": 3
   },
   {
@@ -305,6 +431,12 @@
     ],
     "correct_index": 2,
     "explanation": "The Friedewald equation cannot be applied when triglyceride levels exceed 400 mg/dL; a direct LDL assay or another equation is used instead. Reference: Comparative Evaluation of 24 LDL-C Estimation Equations Against Direct Assays (pmc.ncbi.nlm.nih.gov/articles/PMC12468580).",
+    "choice_notes": [
+      "Desirable triglyceride limit, not the formula cutoff.",
+      "High triglycerides, but the formula still works here.",
+      "Above 400 mg/dL, TG/5 no longer estimates VLDL well; measure LDL directly.",
+      "Very high triglycerides (pancreatitis risk); far past the formula’s limit."
+    ],
     "difficulty": 2
   },
   {
@@ -319,6 +451,12 @@
     ],
     "correct_index": 0,
     "explanation": "Friedewald estimates VLDL cholesterol with the fixed factor TG/5 (mg/dL), so LDL = total cholesterol - HDL - TG/5. Reference: Comparative Evaluation of 24 LDL-C Estimation Equations Against Direct Assays (pmc.ncbi.nlm.nih.gov/articles/PMC12468580).",
+    "choice_notes": [
+      "TG/5 estimates VLDL-cholesterol; subtract it and HDL from total cholesterol.",
+      "HDL must be subtracted, not added.",
+      "TG/2.2 is the mmol/L version; in mg/dL use TG/5.",
+      "TG/5 is itself the VLDL estimate, and HDL is missing."
+    ],
     "difficulty": 1
   },
   {
@@ -333,6 +471,12 @@
     ],
     "correct_index": 1,
     "explanation": "HDL, through its main protein apoA-I, carries out reverse cholesterol transport: returning cholesterol from tissues to the liver. Reference: A narrative review of impacts of apolipoproteins on atherosclerotic coronary plaques (pmc.ncbi.nlm.nih.gov/articles/PMC12912438).",
+    "choice_notes": [
+      "Carries cholesterol TO tissues.",
+      "Reverse cholesterol transport: from tissues back to the liver.",
+      "Carries liver-made triglycerides out to tissues.",
+      "VLDL remnant on its way to becoming LDL."
+    ],
     "difficulty": 1
   },
   {
@@ -347,6 +491,12 @@
     ],
     "correct_index": 3,
     "explanation": "ApoB-100 is found on VLDL, IDL and LDL; its shorter form apoB-48 is found only on chylomicrons. ApoA-I is the main protein of HDL. Reference: Closing the gaps in patient management of dyslipidemia: apolipoprotein profiling (pmc.ncbi.nlm.nih.gov/articles/PMC10908091); A narrative review of impacts of apolipoproteins on atherosclerotic coronary plaques (pmc.ncbi.nlm.nih.gov/articles/PMC12912438).",
+    "choice_notes": [
+      "Main apolipoprotein of HDL; activates LCAT.",
+      "Activates lipoprotein lipase; found on chylomicrons, VLDL and HDL.",
+      "Helps the liver take up remnants (chylomicron remnants, IDL).",
+      "One per LDL particle; binds the LDL receptor."
+    ],
     "difficulty": 2
   },
   {
@@ -361,6 +511,12 @@
     ],
     "correct_index": 2,
     "explanation": "ApoC-II is the co-factor for lipoprotein lipase on triglyceride-rich lipoproteins; apoC-III inhibits it. Reference: A Pressure-dependent Model for the Regulation of Lipoprotein Lipase by Apolipoprotein C-II (pmc.ncbi.nlm.nih.gov/articles/PMC4505049).",
+    "choice_notes": [
+      "Activates LCAT, not lipoprotein lipase.",
+      "Structural apolipoprotein of chylomicrons, made in the intestine.",
+      "Cofactor that activates lipoprotein lipase to break down triglycerides.",
+      "Binds liver receptors for remnant uptake."
+    ],
     "difficulty": 2
   },
   {
@@ -375,6 +531,12 @@
     ],
     "correct_index": 1,
     "explanation": "Albumin is the largest peak and lies closest to the positive electrode, followed by alpha-1, alpha-2, beta and gamma globulins. Reference: O'Connell et al., Understanding and Interpreting Serum Protein Electrophoresis, AFP 2005 (aafp.org/pubs/afp/issues/2005/0101/p105.html).",
+    "choice_notes": [
+      "Moves the least toward the anode; closest to the cathode.",
+      "Most negatively charged at pH 8.6, so it moves farthest; also the largest peak.",
+      "Fourth band (transferrin, C3, LDL).",
+      "Third band (alpha-2 macroglobulin, haptoglobin)."
+    ],
     "difficulty": 1
   },
   {
@@ -389,6 +551,12 @@
     ],
     "correct_index": 2,
     "explanation": "A homogeneous spike-like peak in the gamma zone indicates a monoclonal gammopathy such as multiple myeloma. Reference: O'Connell et al., Understanding and Interpreting Serum Protein Electrophoresis, AFP 2005 (aafp.org/pubs/afp/issues/2005/0101/p105.html).",
+    "choice_notes": [
+      "Low albumin with a large alpha-2 peak.",
+      "Broad gamma increase with beta-gamma bridging.",
+      "One clone of plasma cells makes one immunoglobulin, giving a narrow spike.",
+      "Raises alpha-1 and alpha-2 (acute-phase proteins)."
+    ],
     "difficulty": 1
   },
   {
@@ -403,6 +571,12 @@
     ],
     "correct_index": 0,
     "explanation": "Cirrhosis is among the diseases that raise the gamma-globulin level (a polyclonal increase), while albumin tends to fall from poor synthesis. Reference: O'Connell et al., Understanding and Interpreting Serum Protein Electrophoresis, AFP 2005 (aafp.org/pubs/afp/issues/2005/0101/p105.html).",
+    "choice_notes": [
+      "Polyclonal immunoglobulin rise, often with beta-gamma bridging (IgA).",
+      "Decreased, since the damaged liver makes less.",
+      "Not the classic finding; alpha-1 rises in acute inflammation.",
+      "Made by the liver, so it falls in cirrhosis."
+    ],
     "difficulty": 2
   },
   {
@@ -417,6 +591,12 @@
     ],
     "correct_index": 1,
     "explanation": "Albumin falls from renal loss in nephrotic syndrome, which is also listed among causes of increased alpha-2 globulins. Reference: O'Connell et al., Understanding and Interpreting Serum Protein Electrophoresis, AFP 2005 (aafp.org/pubs/afp/issues/2005/0101/p105.html).",
+    "choice_notes": [
+      "Usually low or normal; immunoglobulins like IgG are lost in urine.",
+      "Alpha-2 macroglobulin is too large to pass the glomerulus, so it stays and rises.",
+      "Alpha-1 antitrypsin is smaller and is lost in urine.",
+      "Classic finding in cirrhosis."
+    ],
     "difficulty": 2
   },
   {
@@ -431,6 +611,12 @@
     ],
     "correct_index": 3,
     "explanation": "The alpha-1 fraction consists of alpha-1 antitrypsin with thyroid-binding globulin and transcortin, so alpha-1 antitrypsin deficiency gives a faint band. Reference: O'Connell et al., Understanding and Interpreting Serum Protein Electrophoresis, AFP 2005 (aafp.org/pubs/afp/issues/2005/0101/p105.html).",
+    "choice_notes": [
+      "In the alpha-2 band; low in hemolysis.",
+      "Main protein of the beta band.",
+      "In the alpha-2 band; low in Wilson disease.",
+      "Makes up most of the alpha-1 band; deficiency causes emphysema and liver disease."
+    ],
     "difficulty": 2
   },
   {
@@ -445,6 +631,12 @@
     ],
     "correct_index": 0,
     "explanation": "Low ceruloplasmin may be a sign of Wilson disease, although levels are sometimes normal in this disease. Reference: MedlinePlus Lab Tests, Ceruloplasmin Test (medlineplus.gov/lab-tests/ceruloplasmin-test).",
+    "choice_notes": [
+      "Copper builds up in the liver and brain; ceruloplasmin is low.",
+      "Iron overload: high ferritin and transferrin saturation.",
+      "Shows a monoclonal protein (M-spike), not low ceruloplasmin.",
+      "Ceruloplasmin is an acute-phase protein, so it may rise, not fall."
+    ],
     "difficulty": 2
   },
   {
@@ -459,6 +651,12 @@
     ],
     "correct_index": 2,
     "explanation": "High CK-MM suggests skeletal muscle damage, high CK-MB heart muscle damage, and high CK-BB a stroke or brain injury. Reference: MedlinePlus Lab Tests, Creatine Kinase (medlineplus.gov/lab-tests/creatine-kinase).",
+    "choice_notes": [
+      "Mostly CK-MM (CK-3).",
+      "CK-MB (CK-2) is the cardiac fraction.",
+      "CK-BB (CK-1) is the brain form; it moves fastest toward the anode.",
+      "The liver has very little CK."
+    ],
     "difficulty": 1
   },
   {
@@ -473,6 +671,12 @@
     ],
     "correct_index": 3,
     "explanation": "Troponin testing is better than CK at finding heart muscle damage from a heart attack, and it is mainly used to help diagnose heart attacks. Reference: MedlinePlus Lab Tests, Creatine Kinase (medlineplus.gov/lab-tests/creatine-kinase).",
+    "choice_notes": [
+      "Also high from skeletal muscle injury or heavy exercise.",
+      "Rises early but is not specific; skeletal muscle has it too.",
+      "Found in liver, muscle and red cells; no longer used for MI.",
+      "Cardiac-specific forms that stay elevated for about 1–2 weeks."
+    ],
     "difficulty": 1
   },
   {
@@ -487,6 +691,12 @@
     ],
     "correct_index": 1,
     "explanation": "GGT is raised in cholestatic disorders but not in bone disease, so a high ALP with high GGT points to a hepatobiliary source. Reference: Gowda et al., A review on laboratory liver function tests (pmc.ncbi.nlm.nih.gov/articles/PMC2984286); A Systematic Approach to Patients with Jaundice (pmc.ncbi.nlm.nih.gov/articles/PMC5088098).",
+    "choice_notes": [
+      "Rises in both liver (cholestasis) and bone disease.",
+      "Not found in bone, so high GGT with high ALP points to the liver.",
+      "Marker of liver cell and muscle injury.",
+      "Found in almost all tissues; nonspecific."
+    ],
     "difficulty": 2
   },
   {
@@ -501,6 +711,12 @@
     ],
     "correct_index": 0,
     "explanation": "A competitive inhibitor competes with the substrate for binding at the active site, so adding more substrate can overcome it. Reference: OpenStax Biology 2e, 6.5 Enzymes (openstax.org/books/biology-2e/pages/6-5-enzymes).",
+    "choice_notes": [
+      "Looks like the substrate, so more substrate overcomes it: Km rises, Vmax unchanged.",
+      "That is uncompetitive inhibition (Km and Vmax both fall).",
+      "That is irreversible inhibition.",
+      "Activators speed reactions; inhibitors slow them."
+    ],
     "difficulty": 2
   },
   {
@@ -515,6 +731,12 @@
     ],
     "correct_index": 2,
     "explanation": "Urea nitrogen is a waste product that forms as the body breaks down proteins; the kidneys remove it. Reference: MedlinePlus Lab Tests, BUN (Blood Urea Nitrogen) (medlineplus.gov/lab-tests/bun-blood-urea-nitrogen).",
+    "choice_notes": [
+      "Triglycerides contain no nitrogen.",
+      "Contain no nitrogen.",
+      "Amino acid nitrogen becomes ammonia, which the liver turns into urea.",
+      "Purines end as uric acid, not urea."
+    ],
     "difficulty": 1
   },
   {
@@ -529,6 +751,12 @@
     ],
     "correct_index": 1,
     "explanation": "Uric acid is a normal waste product made when the body breaks down purines. Reference: MedlinePlus Lab Tests, Uric Acid Test (medlineplus.gov/lab-tests/uric-acid-test).",
+    "choice_notes": [
+      "Protein nitrogen ends as urea.",
+      "Adenine and guanine are broken down to uric acid (via xanthine oxidase).",
+      "Broken down to water-soluble products like beta-alanine, not uric acid.",
+      "Broken down to acetyl-CoA; no nitrogen."
+    ],
     "difficulty": 1
   },
   {
@@ -543,6 +771,12 @@
     ],
     "correct_index": 0,
     "explanation": "Prerenal failure shows a bland urine sediment, urine osmolality above 500 mOsm and a BUN-to-creatinine ratio above 20:1. Reference: Agrawal & Swartz, Acute Renal Failure, AFP 2000 (aafp.org/pubs/afp/issues/2000/0401/p2077.html).",
+    "choice_notes": [
+      "Low blood flow to the kidney: more urea is reabsorbed, but creatinine is not.",
+      "BUN and creatinine rise together; the ratio stays around 10–20:1.",
+      "Less urea is made, so BUN and the ratio fall.",
+      "Less urea is made, so the ratio falls."
+    ],
     "difficulty": 2
   },
   {
@@ -557,6 +791,12 @@
     ],
     "correct_index": 1,
     "explanation": "Liver enzymes turn ammonia into urea, which the kidneys then excrete. Liver disease damages this ability. Reference: MedlinePlus Lab Tests, Ammonia Levels (medlineplus.gov/lab-tests/ammonia-levels).",
+    "choice_notes": [
+      "Excrete urea; they do not make it.",
+      "The urea cycle runs in liver cells.",
+      "No urea cycle.",
+      "No urea cycle; it filters old red cells."
+    ],
     "difficulty": 1
   },
   {
@@ -571,6 +811,12 @@
     ],
     "correct_index": 1,
     "explanation": "Almost all of the body's potassium is inside the cells. Sodium is the major extracellular cation. Reference: MedlinePlus Lab Tests, Potassium Blood Test (medlineplus.gov/lab-tests/potassium-blood-test).",
+    "choice_notes": [
+      "Main extracellular cation.",
+      "Most body K⁺ is inside cells, which is why hemolysis falsely raises it.",
+      "Mostly stored in bone; in fluids it is mainly extracellular.",
+      "Second most abundant intracellular cation."
+    ],
     "difficulty": 1
   },
   {
@@ -585,6 +831,12 @@
     ],
     "correct_index": 1,
     "explanation": "Freezing point depression is directly proportional to the molal concentration of solute particles. This is why it can be used to measure osmolality. Reference: OpenStax Chemistry 2e, 11.4 Colligative Properties (openstax.org/books/chemistry-2e/pages/11-4-colligative-properties).",
+    "choice_notes": [
+      "Color relates to absorbance, not colligative properties.",
+      "Each osmole of solute per kg water lowers the freezing point by 1.86 °C.",
+      "The container has no effect.",
+      "Electrodes are for ISE methods, not osmometry."
+    ],
     "difficulty": 2
   },
   {
@@ -599,6 +851,12 @@
     ],
     "correct_index": 1,
     "explanation": "Ionized (free) calcium is the form active in body functions; protein-bound and free calcium are normally present in about equal amounts. Reference: MedlinePlus Lab Tests, Calcium Blood Test (medlineplus.gov/lab-tests/calcium-blood-test).",
+    "choice_notes": [
+      "About 40–45%, mostly bound to albumin; inactive.",
+      "About 50%; the active form that PTH controls.",
+      "About 5–10%, bound to phosphate, citrate and bicarbonate.",
+      "Includes inactive fractions and changes with albumin."
+    ],
     "difficulty": 1
   },
   {
@@ -613,6 +871,12 @@
     ],
     "correct_index": 0,
     "explanation": "PTH stimulates osteoclasts to release calcium from bone and increases calcium reabsorption in the kidney tubules. Reference: OpenStax Anatomy and Physiology 2e, 17.5 The Parathyroid Glands (openstax.org/books/anatomy-and-physiology-2e/pages/17-5-the-parathyroid-glands).",
+    "choice_notes": [
+      "PTH also raises kidney calcium reabsorption and vitamin D activation.",
+      "Opposite: PTH lowers calcium loss in urine.",
+      "Opposite: PTH increases activation to 1,25-(OH)₂ vitamin D.",
+      "Not a PTH action."
+    ],
     "difficulty": 2
   },
   {
@@ -627,6 +891,12 @@
     ],
     "correct_index": 2,
     "explanation": "Bicarbonate and carbonic acid are present in the blood in a 20:1 ratio when blood pH is within the normal range. Reference: OpenStax Anatomy and Physiology 2e, 26.4 Acid-Base Balance (openstax.org/books/anatomy-and-physiology-2e/pages/26-4-acid-base-balance).",
+    "choice_notes": [
+      "Reversed; that would be severe acidosis.",
+      "Gives a pH of about 7.1 (acidosis).",
+      "Henderson-Hasselbalch: 6.1 + log 20 = 7.4.",
+      "Gives a pH of 6.1 (the pKa)."
+    ],
     "difficulty": 2
   },
   {
@@ -641,6 +911,12 @@
     ],
     "correct_index": 0,
     "explanation": "UDP-glucuronyltransferase converts bilirubin into conjugated mono- and diglucuronides; genetic defects of this enzyme cause Gilbert and Crigler-Najjar syndromes. Reference: Gowda et al., A review on laboratory liver function tests (pmc.ncbi.nlm.nih.gov/articles/PMC2984286).",
+    "choice_notes": [
+      "Adds glucuronic acid, making bilirubin water-soluble.",
+      "Opens heme into biliverdin.",
+      "Turns biliverdin into bilirubin.",
+      "Not part of bilirubin metabolism; a cholestasis marker."
+    ],
     "difficulty": 1
   },
   {
@@ -655,6 +931,12 @@
     ],
     "correct_index": 1,
     "explanation": "The non-iron part of heme becomes biliverdin, which is then reduced to bilirubin by biliverdin reductase. Reference: A Systematic Approach to Patients with Jaundice (pmc.ncbi.nlm.nih.gov/articles/PMC5088098); OpenStax Anatomy and Physiology 2e, 18.3 Erythrocytes (openstax.org/books/anatomy-and-physiology-2e/pages/18-3-erythrocytes).",
+    "choice_notes": [
+      "The step before: heme to biliverdin.",
+      "Works in macrophages and makes unconjugated bilirubin.",
+      "The step after: conjugation in the liver.",
+      "Removes glucuronic acid (deconjugation), e.g., in the gut."
+    ],
     "difficulty": 2
   },
   {
@@ -669,6 +951,12 @@
     ],
     "correct_index": 1,
     "explanation": "Conjugated hyperbilirubinemia without liver injury is seen in Dubin-Johnson and Rotor syndromes. Absent UDP-glucuronyltransferase (Crigler-Najjar) gives unconjugated bilirubin. Reference: A Systematic Approach to Patients with Jaundice (pmc.ncbi.nlm.nih.gov/articles/PMC5088098); Gowda et al., A review on laboratory liver function tests (pmc.ncbi.nlm.nih.gov/articles/PMC2984286).",
+    "choice_notes": [
+      "That is Crigler-Najjar type I.",
+      "Conjugated bilirubin cannot be excreted into bile; the liver looks dark.",
+      "That is prehepatic jaundice, not an inherited excretion defect.",
+      "Bilirubin is high, mostly conjugated."
+    ],
     "difficulty": 3
   },
   {
@@ -683,6 +971,12 @@
     ],
     "correct_index": 0,
     "explanation": "Bilirubin overproduction is commonly seen without any true liver injury, as in hemolysis, raising mainly unconjugated bilirubin. Reference: A Systematic Approach to Patients with Jaundice (pmc.ncbi.nlm.nih.gov/articles/PMC5088098).",
+    "choice_notes": [
+      "Too much heme breakdown overwhelms the liver, so unconjugated bilirubin rises.",
+      "That is posthepatic jaundice (conjugated).",
+      "That describes Crigler-Najjar or Gilbert syndrome.",
+      "Kidney failure does not cause hyperbilirubinemia."
+    ],
     "difficulty": 2
   },
   {
@@ -697,6 +991,12 @@
     ],
     "correct_index": 0,
     "explanation": "Bilirubin is secreted in bile and broken down in the gut; stercobilins in feces produce the typical brown color. Reference: OpenStax Anatomy and Physiology 2e, 18.3 Erythrocytes (openstax.org/books/anatomy-and-physiology-2e/pages/18-3-erythrocytes).",
+    "choice_notes": [
+      "Gut bacteria turn bilirubin into urobilinogen, which oxidizes to brown stercobilin.",
+      "Green pigment from heme breakdown.",
+      "The yellow pigment of urine.",
+      "Blood in stool makes it red or black (melena)."
+    ],
     "difficulty": 1
   },
   {
@@ -711,6 +1011,12 @@
     ],
     "correct_index": 3,
     "explanation": "In hepatic encephalopathy, toxins including ammonia build up in the brain because the liver cannot break them down. Reference: MedlinePlus Lab Tests, Ammonia Levels (medlineplus.gov/lab-tests/ammonia-levels).",
+    "choice_notes": [
+      "Liver failure lowers urea production.",
+      "Kidney function marker.",
+      "Gout and purine marker.",
+      "The failing liver cannot turn ammonia into urea, and ammonia affects the brain."
+    ],
     "difficulty": 1
   },
   {
@@ -725,6 +1031,12 @@
     ],
     "correct_index": 0,
     "explanation": "When thyroid hormone is too low, the pituitary makes more TSH, so primary (thyroid) failure gives high TSH with low T4. Reference: MedlinePlus Lab Tests, TSH (Thyroid-stimulating hormone) Test (medlineplus.gov/lab-tests/tsh-thyroid-stimulating-hormone-test); OpenStax Anatomy and Physiology 2e, 17.4 The Thyroid Gland (openstax.org/books/anatomy-and-physiology-2e/pages/17-4-the-thyroid-gland).",
+    "choice_notes": [
+      "The thyroid fails, so the pituitary pushes TSH up.",
+      "Points to secondary (pituitary) hypothyroidism.",
+      "Primary hyperthyroidism, e.g., Graves disease.",
+      "Suggests a TSH-secreting pituitary tumor or thyroid hormone resistance."
+    ],
     "difficulty": 1
   },
   {
@@ -739,6 +1051,12 @@
     ],
     "correct_index": 1,
     "explanation": "Graves disease, the most common cause of hyperthyroidism, is an autoimmune reaction in which antibodies overstimulate the thyroid follicle cells. Reference: OpenStax Anatomy and Physiology 2e, 17.4 The Thyroid Gland (openstax.org/books/anatomy-and-physiology-2e/pages/17-4-the-thyroid-gland); MedlinePlus Lab Tests, TSH (Thyroid-stimulating hormone) Test (medlineplus.gov/lab-tests/tsh-thyroid-stimulating-hormone-test).",
+    "choice_notes": [
+      "Anti-TPO antibodies are typical of Hashimoto thyroiditis.",
+      "TSH-receptor antibodies (TSI) act like TSH, causing hyperthyroidism.",
+      "Graves increases iodine uptake; it does not block it.",
+      "TBG is a carrier protein, not the target."
+    ],
     "difficulty": 2
   },
   {
@@ -753,6 +1071,12 @@
     ],
     "correct_index": 1,
     "explanation": "Cushing syndrome is caused by hypersecretion of cortisol, giving high cortisol levels. Reference: OpenStax Anatomy and Physiology 2e, 17.6 The Adrenal Glands (openstax.org/books/anatomy-and-physiology-2e/pages/17-6-the-adrenal-glands); MedlinePlus Lab Tests, Cortisol Test (medlineplus.gov/lab-tests/cortisol-test).",
+    "choice_notes": [
+      "Excess aldosterone is Conn syndrome (primary aldosteronism).",
+      "From a pituitary tumor (Cushing disease), adrenal tumor, ectopic ACTH or steroid drugs.",
+      "Excess suggests pheochromocytoma.",
+      "Excess causes hyperthyroidism."
+    ],
     "difficulty": 1
   },
   {
@@ -767,6 +1091,12 @@
     ],
     "correct_index": 1,
     "explanation": "Addison disease (chronic adrenal insufficiency) is hyposecretion of corticosteroids, with low cortisol and reduced aldosterone. Reference: OpenStax Anatomy and Physiology 2e, 17.6 The Adrenal Glands (openstax.org/books/anatomy-and-physiology-2e/pages/17-6-the-adrenal-glands); MedlinePlus Lab Tests, Cortisol Test (medlineplus.gov/lab-tests/cortisol-test); OpenStax Anatomy and Physiology 2e, 26.4 Acid-Base Balance (openstax.org/books/anatomy-and-physiology-2e/pages/26-4-acid-base-balance).",
+    "choice_notes": [
+      "That is Cushing syndrome.",
+      "Primary adrenal failure: low cortisol and aldosterone, high ACTH.",
+      "That is hyperthyroidism.",
+      "Causes hypoglycemia (e.g., insulinoma)."
+    ],
     "difficulty": 2
   },
   {
@@ -781,6 +1111,12 @@
     ],
     "correct_index": 3,
     "explanation": "Catecholamine tests are used to diagnose or rule out rare tumors such as pheochromocytoma, a tumor of the adrenal glands. Reference: MedlinePlus Lab Tests, Catecholamine Tests (medlineplus.gov/lab-tests/catecholamine-tests).",
+    "choice_notes": [
+      "Screens for carcinoid tumors (serotonin).",
+      "Used for Cushing syndrome or Addison disease.",
+      "Screens for primary aldosteronism.",
+      "Plasma free or urine fractionated metanephrines are preferred."
+    ],
     "difficulty": 2
   },
   {
@@ -795,6 +1131,12 @@
     ],
     "correct_index": 3,
     "explanation": "Diabetes insipidus is characterized by chronic underproduction of ADH, so the kidneys do not reabsorb enough water. Reference: OpenStax Anatomy and Physiology 2e, 17.3 The Pituitary Gland and Hypothalamus (openstax.org/books/anatomy-and-physiology-2e/pages/17-3-the-pituitary-gland-and-hypothalamus).",
+    "choice_notes": [
+      "Deficiency or resistance causes diabetes mellitus.",
+      "Deficiency causes salt loss and high K⁺, not diabetes insipidus.",
+      "Deficiency is adrenal insufficiency.",
+      "Kidneys cannot concentrate urine: large volumes of dilute urine."
+    ],
     "difficulty": 1
   },
   {
@@ -809,6 +1151,12 @@
     ],
     "correct_index": 1,
     "explanation": "Aldosterone is the major mineralocorticoid; the renin-angiotensin system signals the adrenal cortex to secrete it. Reference: OpenStax Anatomy and Physiology 2e, 17.6 The Adrenal Glands (openstax.org/books/anatomy-and-physiology-2e/pages/17-6-the-adrenal-glands).",
+    "choice_notes": [
+      "Main glucocorticoid (zona fasciculata).",
+      "Made in the zona glomerulosa; keeps Na⁺ and excretes K⁺.",
+      "Made by the adrenal medulla, not the cortex.",
+      "Thyroid hormone."
+    ],
     "difficulty": 1
   },
   {
@@ -823,6 +1171,12 @@
     ],
     "correct_index": 1,
     "explanation": "Too much acetaminophen can cause serious and sometimes deadly liver damage, which is why levels are checked after an overdose. Reference: MedlinePlus Lab Tests, Acetaminophen Level (medlineplus.gov/lab-tests/acetaminophen-level).",
+    "choice_notes": [
+      "Can be affected, but the main damage is to the liver.",
+      "Toxic metabolite NAPQI builds up once glutathione runs out; antidote is N-acetylcysteine.",
+      "Not the main target organ.",
+      "Not the main target organ."
+    ],
     "difficulty": 1
   },
   {
@@ -837,6 +1191,12 @@
     ],
     "correct_index": 1,
     "explanation": "Blindness is common and often permanent after methanol poisoning, despite medical care. Reference: MedlinePlus Medical Encyclopedia, Methanol poisoning (medlineplus.gov/ency/article/002680.htm).",
+    "choice_notes": [
+      "Not typical of methanol poisoning.",
+      "Its metabolite, formic acid, damages the optic nerve and retina.",
+      "Typical of thallium poisoning.",
+      "Not typical; methanol causes a high anion gap metabolic acidosis."
+    ],
     "difficulty": 1
   },
   {
@@ -851,6 +1211,12 @@
     ],
     "correct_index": 1,
     "explanation": "The 2-2s rule is responsive only to systematic error (a shift in the mean), and it is not very sensitive by itself. Reference: Westgard QC, Abuses, Misuses, and In-excuses (westgard.com/lessons/westgard-rules/westgard-rules/lesson73.html).",
+    "choice_notes": [
+      "Random error is detected by 1-3s and R-4s.",
+      "Two in a row past the same limit means a shift in accuracy.",
+      "Control rules do not catch clerical errors.",
+      "A violation means the run must be rejected."
+    ],
     "difficulty": 2
   },
   {
@@ -865,6 +1231,12 @@
     ],
     "correct_index": 3,
     "explanation": "R-4s is a rule for random error and should be used only within a run, to tell random error from between-run systematic error. Reference: Westgard QC, Abuses, Misuses, and In-excuses (westgard.com/lessons/westgard-rules/westgard-rules/lesson73.html).",
+    "choice_notes": [
+      "Systematic error is detected by 2-2s, 4-1s and 10x.",
+      "A sudden change in the mean, caught by 2-2s or 10x.",
+      "A gradual drift in one direction, caught by 4-1s or 10x.",
+      "A large spread within one run means poor precision."
+    ],
     "difficulty": 2
   }
 ]

@@ -11,6 +11,12 @@
     ],
     "correct_index": 1,
     "explanation": "Factor VII is also known as proconvertin or the stable factor. It is a vitamin K-dependent factor of the extrinsic pathway. Reference: PubMed 40727517 (Factor VII, also known as stable factor or proconvertin).",
+    "choice_notes": [
+      "Labile factor (proaccelerin); lost quickly in stored plasma.",
+      "Stable factor (proconvertin); keeps its activity in stored plasma.",
+      "Antihemophilic factor; also labile.",
+      "Stuart-Prower factor."
+    ],
     "difficulty": 2
   },
   {
@@ -25,6 +31,12 @@
     ],
     "correct_index": 1,
     "explanation": "Hemophilia A is an X-linked deficiency of Factor VIII. Hemophilia B (Christmas disease) is a Factor IX deficiency. Reference: StatPearls, Bleeding Disorders (ncbi.nlm.nih.gov/books/NBK541050) and Hemophilia B (ncbi.nlm.nih.gov/books/NBK560792).",
+    "choice_notes": [
+      "Deficiency is hemophilia B (Christmas disease).",
+      "X-linked deficiency; prolonged aPTT with a normal PT.",
+      "Deficiency is hemophilia C (Rosenthal syndrome).",
+      "Deficiency prolongs the aPTT but does not cause bleeding."
+    ],
     "difficulty": 1
   },
   {
@@ -39,6 +51,12 @@
     ],
     "correct_index": 1,
     "explanation": "MCV = (Hct ÷ RBC count in millions/µL) × 10. Hgb ÷ RBC × 10 is MCH, and Hgb ÷ Hct × 100 is MCHC. Reference: StatPearls, Mean Corpuscular Volume (ncbi.nlm.nih.gov/books/NBK545275).",
+    "choice_notes": [
+      "That is MCH, in pg.",
+      "MCV = Hct ÷ RBC × 10; normal about 80–100 fL.",
+      "That is MCHC, in g/dL.",
+      "Upside down; not a red cell index."
+    ],
     "difficulty": 1
   },
   {
@@ -53,6 +71,12 @@
     ],
     "correct_index": 1,
     "explanation": "Howell-Jolly bodies are DNA remnants, often seen after splenectomy. Denatured Hgb = Heinz bodies; RNA = basophilic stippling; iron = Pappenheimer bodies. Reference: StatPearls, Erythrocyte Inclusions (ncbi.nlm.nih.gov/books/NBK594259).",
+    "choice_notes": [
+      "Those are Heinz bodies.",
+      "DNA fragments normally removed by the spleen; seen after splenectomy.",
+      "Diffuse RNA is polychromasia; clumped RNA is basophilic stippling.",
+      "Those are Pappenheimer bodies (siderotic granules)."
+    ],
     "difficulty": 2
   },
   {
@@ -67,6 +91,12 @@
     ],
     "correct_index": 2,
     "explanation": "Auer rods are fused primary (azurophilic) granules found in myeloid blasts, so they point to AML rather than lymphoid leukemias. Reference: StatPearls, Laboratory Evaluation of Acute Leukemia (ncbi.nlm.nih.gov/books/NBK611988).",
+    "choice_notes": [
+      "Lymphoblasts lack Auer rods and are MPO negative.",
+      "Mature small lymphocytes with smudge cells; no blasts.",
+      "Fused primary (azurophilic) granules in myeloblasts; many in APL.",
+      "B cells with hairy projections; TRAP and CD103 positive."
+    ],
     "difficulty": 2
   },
   {
@@ -81,6 +111,12 @@
     ],
     "correct_index": 1,
     "explanation": "Iron deficiency gives low serum iron, high TIBC, and low ferritin, with microcytic, hypochromic cells. Anemia of chronic disease has a high ferritin, and thalassemia has normal iron studies. Ferritin is an acute-phase reactant, so inflammation can hide a low value. Reference: StatPearls, Chronic Anemia (ncbi.nlm.nih.gov/books/NBK568790) and Iron Deficiency and Microcytic Hypochromic Anemia (ncbi.nlm.nih.gov/books/NBK560876).",
+    "choice_notes": [
+      "That pattern fits anemia of chronic disease or iron overload.",
+      "Stores run out first (low ferritin), so the body makes more transferrin (high TIBC).",
+      "A normal profile rules out iron deficiency.",
+      "Typical of anemia of chronic inflammation."
+    ],
     "difficulty": 1
   },
   {
@@ -95,6 +131,12 @@
     ],
     "correct_index": 1,
     "explanation": "Anemia with macrocytosis and hypersegmented neutrophils is megaloblastic anemia, mainly caused by vitamin B12 or folate deficiency. Reference: StatPearls, Macrocytic Anemia (ncbi.nlm.nih.gov/books/NBK459295).",
+    "choice_notes": [
+      "Microcytic, not macrocytic.",
+      "Impaired DNA synthesis: oval macrocytes and neutrophils with 5 or more lobes.",
+      "Microcytic, with target cells.",
+      "Normocytic spherocytes with a high MCHC."
+    ],
     "difficulty": 1
   },
   {
@@ -109,6 +151,12 @@
     ],
     "correct_index": 1,
     "explanation": "EDTA (lavender top) prevents clotting by binding calcium and preserves cell morphology, so it is used for the CBC and smear. Reference: StatPearls, Laboratory Tube Collection (ncbi.nlm.nih.gov/books/NBK555991).",
+    "choice_notes": [
+      "Used for coagulation tests (PT, aPTT).",
+      "Keeps cell shape best by binding calcium; the CBC tube of choice.",
+      "Used for plasma chemistry; heparin distorts smear staining.",
+      "Stops glycolysis; used for glucose."
+    ],
     "difficulty": 1
   },
   {
@@ -123,6 +171,12 @@
     ],
     "correct_index": 2,
     "explanation": "Citrate binds calcium to keep the sample from clotting. The tube must be filled to at least 90% so the 9:1 blood-to-citrate ratio is kept; underfilling falsely prolongs results, especially the aPTT. Reference: StatPearls, Prothrombin Time (ncbi.nlm.nih.gov/books/NBK544269).",
+    "choice_notes": [
+      "Too much citrate for the blood; the tube would be badly underfilled.",
+      "Not the standard ratio.",
+      "Nine parts blood to one part citrate; underfilling falsely prolongs clotting times.",
+      "Reversed: one part blood to nine parts citrate."
+    ],
     "difficulty": 2
   },
   {
@@ -137,6 +191,12 @@
     ],
     "correct_index": 1,
     "explanation": "Most erythropoietin comes from peritubular interstitial fibroblasts in the kidney, released mainly in response to hypoxia. That is why chronic kidney disease causes anemia. Reference: StatPearls, Anemia (ncbi.nlm.nih.gov/books/NBK499994).",
+    "choice_notes": [
+      "Makes a small amount (about 10%), and is the main source in the fetus.",
+      "Kidney cells sense low oxygen and release erythropoietin.",
+      "Supports blood cell growth but is not the main EPO source.",
+      "Removes old red cells; does not make EPO."
+    ],
     "difficulty": 1
   },
   {
@@ -151,6 +211,12 @@
     ],
     "correct_index": 3,
     "explanation": "Hematopoiesis starts in the yolk sac, shifts to the fetal liver (and spleen), and the bone marrow takes over near the end of gestation. In adults it normally occurs only in the bone marrow. Reference: StatPearls, Embryology, Hematopoiesis (ncbi.nlm.nih.gov/books/NBK544245).",
+    "choice_notes": [
+      "Blood formation site only in the early embryo.",
+      "Main site in mid-fetal life; in adults only in disease (extramedullary).",
+      "Fetal site; in adults only in disease.",
+      "In adults: flat bones (pelvis, sternum, vertebrae) and the ends of long bones."
+    ],
     "difficulty": 1
   },
   {
@@ -165,6 +231,12 @@
     ],
     "correct_index": 1,
     "explanation": "Blood formation starts in the extraembryonic yolk sac; stem cells then seed the fetal liver (and spleen) before the bone marrow takes over. Reference: Lawrence et al., The Ontogeny of a Neutrophil: Mechanisms of Granulopoiesis and Homeostasis (pmc.ncbi.nlm.nih.gov/articles/PMC5813886).",
+    "choice_notes": [
+      "Takes over in the second trimester.",
+      "Blood islands form in the yolk sac in the first weeks.",
+      "A later fetal site, after the liver.",
+      "Main site from the late fetal period onward."
+    ],
     "difficulty": 1
   },
   {
@@ -179,6 +251,12 @@
     ],
     "correct_index": 1,
     "explanation": "Young myelocytes keep the ability to proliferate; after this stage cell division stops and the cells only mature. Reference: Lawrence et al., The Ontogeny of a Neutrophil: Mechanisms of Granulopoiesis and Homeostasis (pmc.ncbi.nlm.nih.gov/articles/PMC5813886).",
+    "choice_notes": [
+      "Can still divide, but it is not the last stage that can.",
+      "The last stage that can divide; specific granules appear here.",
+      "Nucleus is indented; can no longer divide.",
+      "Can no longer divide."
+    ],
     "difficulty": 1
   },
   {
@@ -193,6 +271,12 @@
     ],
     "correct_index": 1,
     "explanation": "Orthochromatic erythroblasts (normoblasts) expel their nuclei to become reticulocytes, which have no nucleus. Reference: Erythroid Enucleation: A gateway into a \"bloody\" world (pmc.ncbi.nlm.nih.gov/articles/PMC8147720).",
+    "choice_notes": [
+      "Still nucleated and can still divide.",
+      "The nucleus is pushed out after this stage.",
+      "Has no nucleus, only leftover RNA.",
+      "Early nucleated stage; can still divide."
+    ],
     "difficulty": 2
   },
   {
@@ -207,6 +291,12 @@
     ],
     "correct_index": 1,
     "explanation": "The proerythroblast undergoes 3 to 4 mitoses to form basophilic, polychromatic and orthochromatic erythroblasts, which gain hemoglobin as they mature. Reference: Erythroid Enucleation: A gateway into a \"bloody\" world (pmc.ncbi.nlm.nih.gov/articles/PMC8147720).",
+    "choice_notes": [
+      "Too few to make the usual output of cells.",
+      "Each proerythroblast makes about 8–16 red cells.",
+      "Too many; red cell precursors divide only a few times.",
+      "Precursors do divide before the nucleus is lost."
+    ],
     "difficulty": 2
   },
   {
@@ -221,6 +311,12 @@
     ],
     "correct_index": 0,
     "explanation": "In endomitosis the DNA is copied but the cell does not divide, giving one large polyploid nucleus. Cyclins and CDK inhibitors regulate this process. Reference: A modern overview of the process of platelet formation (thrombocytopoiesis) (pmc.ncbi.nlm.nih.gov/articles/PMC11493462).",
+    "choice_notes": [
+      "DNA copies without cell division, giving a large polyploid cell.",
+      "Happens only in germ cells (egg and sperm).",
+      "Direct splitting; not how megakaryocytes grow.",
+      "Programmed cell death, not growth."
+    ],
     "difficulty": 2
   },
   {
@@ -235,6 +331,12 @@
     ],
     "correct_index": 3,
     "explanation": "Azurophilic (primary) granules form in myeloblasts and promyelocytes; specific (secondary) granules form in myelocytes and metamyelocytes. Reference: Lawrence et al., The Ontogeny of a Neutrophil: Mechanisms of Granulopoiesis and Homeostasis (pmc.ncbi.nlm.nih.gov/articles/PMC5813886).",
+    "choice_notes": [
+      "Has no granules yet.",
+      "Makes primary (azurophilic) granules only.",
+      "Specific granules already present by this stage.",
+      "Specific (secondary) granules first appear here."
+    ],
     "difficulty": 2
   },
   {
@@ -249,6 +351,12 @@
     ],
     "correct_index": 0,
     "explanation": "In humans, red cells have a life span of about 120 days. Reference: Erythroid Enucleation: A gateway into a \"bloody\" world (pmc.ncbi.nlm.nih.gov/articles/PMC8147720).",
+    "choice_notes": [
+      "Old red cells are removed by macrophages, mainly in the spleen.",
+      "Too short for normal red cells; seen in hemolysis.",
+      "Too short for normal red cells.",
+      "Too long for normal red cells."
+    ],
     "difficulty": 1
   },
   {
@@ -263,6 +371,12 @@
     ],
     "correct_index": 3,
     "explanation": "CD34 is a widely used surface marker of human hematopoietic stem and progenitor cells. CD3 = T cells, CD19 = B cells, CD41 = megakaryocytes/platelets. Reference: Extramedullary Hematopoiesis of the Liver and Spleen (pmc.ncbi.nlm.nih.gov/articles/PMC8707658).",
+    "choice_notes": [
+      "T-cell marker.",
+      "B-cell marker.",
+      "Megakaryocyte and platelet marker (GP IIb).",
+      "Marks stem and progenitor cells; used to count stem cells for transplant."
+    ],
     "difficulty": 2
   },
   {
@@ -277,6 +391,12 @@
     ],
     "correct_index": 0,
     "explanation": "Spherocytes alone do not prove hereditary spherocytosis, because immune hemolysis such as autoimmune hemolytic anemia also produces them. The DAT helps tell the two apart. Reference: Phillips & Henderson, Hemolytic Anemia: Evaluation and Differential Diagnosis, AFP 2018 (aafp.org/pubs/afp/issues/2018/0915/p354.html).",
+    "choice_notes": [
+      "Antibody-coated red cells lose membrane in the spleen; the DAT is positive.",
+      "Shows microcytic, hypochromic cells, not spherocytes.",
+      "Shows basophilic stippling.",
+      "Shows target cells and acanthocytes."
+    ],
     "difficulty": 1
   },
   {
@@ -291,6 +411,12 @@
     ],
     "correct_index": 0,
     "explanation": "Target cells appear in hemoglobin C disease or trait, thalassemias and liver disease (cholestasis). Reference: Peripheral Blood Film: A Review, Ann Ib Postgrad Med 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC4415389).",
+    "choice_notes": [
+      "Extra membrane relative to hemoglobin gives a bullseye look.",
+      "Shows spherocytes.",
+      "Shows rouleaux.",
+      "Usually normocytic or macrocytic; no typical poikilocyte."
+    ],
     "difficulty": 1
   },
   {
@@ -305,6 +431,12 @@
     ],
     "correct_index": 1,
     "explanation": "The RDW is an index of variation in red cell size (anisocytosis). Reference: Anemia in Children, AFP 2001 (aafp.org/pubs/afp/issues/2001/1015/p1379.html).",
+    "choice_notes": [
+      "Variation in shape; RDW measures size, not shape.",
+      "RDW measures variation in red cell size.",
+      "Pale cells; seen as a low MCH or MCHC.",
+      "Bluish young red cells (reticulocytes)."
+    ],
     "difficulty": 1
   },
   {
@@ -319,6 +451,12 @@
     ],
     "correct_index": 3,
     "explanation": "Schistocytes come from red cells cut up within the vessels in microangiopathic hemolytic anemia (e.g. DIC, TTP, HUS). Reference: Phillips & Henderson, Hemolytic Anemia: Evaluation and Differential Diagnosis, AFP 2018 (aafp.org/pubs/afp/issues/2018/0915/p354.html).",
+    "choice_notes": [
+      "Shows spherocytes.",
+      "Shows target cells and microcytes.",
+      "Few cells are made; no fragments.",
+      "Red cells are cut by fibrin strands (DIC, TTP, HUS)."
+    ],
     "difficulty": 1
   },
   {
@@ -333,6 +471,12 @@
     ],
     "correct_index": 1,
     "explanation": "Heinz bodies are denatured hemoglobin, seen in oxidant injury such as G6PD deficiency. DNA = Howell-Jolly bodies; iron = Pappenheimer bodies; RNA = basophilic stippling. Reference: Peripheral Blood Film: A Review, Ann Ib Postgrad Med 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC4415389).",
+    "choice_notes": [
+      "That is Howell-Jolly bodies.",
+      "Oxidized hemoglobin clumps; need a supravital stain to see.",
+      "That is Pappenheimer bodies.",
+      "That is basophilic stippling or polychromasia."
+    ],
     "difficulty": 2
   },
   {
@@ -347,6 +491,12 @@
     ],
     "correct_index": 2,
     "explanation": "Pappenheimer bodies are siderotic (iron) granules: purple on Romanowsky stain and blue on Perls (Prussian blue) stain. Reference: Peripheral Blood Film: A Review, Ann Ib Postgrad Med 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC4415389).",
+    "choice_notes": [
+      "That is Howell-Jolly bodies.",
+      "That is basophilic stippling.",
+      "Iron granules that stain with Prussian blue.",
+      "That is Heinz bodies."
+    ],
     "difficulty": 2
   },
   {
@@ -361,6 +511,12 @@
     ],
     "correct_index": 1,
     "explanation": "Basophilic stippling represents aggregated ribosomes and is seen in lead poisoning, thalassemia and iron deficiency. Reference: Anemia in Children, AFP 2001 (aafp.org/pubs/afp/issues/2001/1015/p1379.html).",
+    "choice_notes": [
+      "Shows microcytic, hypochromic cells.",
+      "Shows sickle cells and target cells.",
+      "Shows elliptocytes.",
+      "Clumped ribosomes from lead blocking pyrimidine 5'-nucleotidase."
+    ],
     "difficulty": 2
   },
   {
@@ -375,6 +531,12 @@
     ],
     "correct_index": 3,
     "explanation": "Rouleaux (red cells stacked like coins) suggest a paraproteinemia or plasma cell dyscrasia such as multiple myeloma. Reference: Peripheral Blood Film: A Review, Ann Ib Postgrad Med 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC4415389).",
+    "choice_notes": [
+      "Microcytic, hypochromic cells; no rouleaux.",
+      "Sickle cells do not stack.",
+      "Shows elliptocytes.",
+      "High monoclonal protein makes red cells stack like coins."
+    ],
     "difficulty": 1
   },
   {
@@ -389,6 +551,12 @@
     ],
     "correct_index": 0,
     "explanation": "Hereditary spherocytosis has spherocytes, a family history and a negative DAT. Osmotic fragility (or EMA binding) testing confirms it. Reference: Phillips & Henderson, Hemolytic Anemia: Evaluation and Differential Diagnosis, AFP 2018 (aafp.org/pubs/afp/issues/2018/0915/p354.html).",
+    "choice_notes": [
+      "Membrane defect, not antibodies, so the DAT is negative.",
+      "That points to autoimmune hemolytic anemia.",
+      "Seen in microangiopathic hemolytic anemia.",
+      "Seen in sideroblastic anemia."
+    ],
     "difficulty": 1
   },
   {
@@ -403,6 +571,12 @@
     ],
     "correct_index": 0,
     "explanation": "In HbS, valine replaces glutamic acid at position 6 of beta-globin (Glu6Val). In HbC, lysine replaces glutamic acid at the same position. Reference: MedlinePlus Genetics, HBB gene (medlineplus.gov/genetics/gene/hbb).",
+    "choice_notes": [
+      "Valine replaces glutamic acid at beta-6.",
+      "That is hemoglobin C.",
+      "Reversed.",
+      "Not a hemoglobin S change."
+    ],
     "difficulty": 2
   },
   {
@@ -417,6 +591,12 @@
     ],
     "correct_index": 1,
     "explanation": "Beta-thalassemia trait causes microcytosis and mild anemia with elevated HbA2. Iron deficiency can lower HbA2 into the normal range. Reference: Muncie & Campbell, Alpha and Beta Thalassemia, AFP 2009 (aafp.org/pubs/afp/issues/2009/0815/p339.html).",
+    "choice_notes": [
+      "Iron deficiency lowers HbA2.",
+      "Less beta chain raises delta chain use, so HbA2 rises.",
+      "HbA2 is normal; DNA testing is needed.",
+      "HbA2 is normal; ferritin is normal or high."
+    ],
     "difficulty": 2
   },
   {
@@ -431,6 +611,12 @@
     ],
     "correct_index": 2,
     "explanation": "Deletion of all four alpha-globin genes produces large amounts of hemoglobin Bart's, causing nonimmune hydrops fetalis, usually fatal without treatment. Reference: Muncie & Campbell, Alpha and Beta Thalassemia, AFP 2009 (aafp.org/pubs/afp/issues/2009/0815/p339.html); Alpha- and Beta-thalassemia: Rapid Evidence Review, AFP 2022 (aafp.org/pubs/afp/issues/2022/0300/p272.html).",
+    "choice_notes": [
+      "One functional alpha gene; makes HbH (beta-4) in adults, some Bart's at birth.",
+      "A beta gene disorder; HbF is high, not Bart's.",
+      "No alpha chains at all, so gamma chains pair with each other.",
+      "One normal and one sickle beta gene; Bart's is not raised."
+    ],
     "difficulty": 3
   },
   {
@@ -445,6 +631,12 @@
     ],
     "correct_index": 3,
     "explanation": "Bite and blister cells point to oxidative hemolysis, such as glucose-6-phosphate dehydrogenase (G6PD) deficiency. Reference: Phillips & Henderson, Hemolytic Anemia: Evaluation and Differential Diagnosis, AFP 2018 (aafp.org/pubs/afp/issues/2018/0915/p354.html).",
+    "choice_notes": [
+      "Complement lyses red cells; no bite cells.",
+      "Glycolysis defect; shows echinocytes, not bite cells.",
+      "Shows spherocytes.",
+      "Oxidant drugs form Heinz bodies; the spleen bites them out."
+    ],
     "difficulty": 1
   },
   {
@@ -459,6 +651,12 @@
     ],
     "correct_index": 0,
     "explanation": "PNH cells lack GPI-anchored proteins, including the complement inhibitors CD55 and CD59, so complement lyses them. Flow cytometry is the diagnostic test. Reference: Update on the diagnosis and management of paroxysmal nocturnal hemoglobinuria (pmc.ncbi.nlm.nih.gov/articles/PMC6142517).",
+    "choice_notes": [
+      "GPI-anchored proteins that protect red cells from complement.",
+      "T-cell subset markers.",
+      "Stem cell marker.",
+      "B-cell markers."
+    ],
     "difficulty": 2
   },
   {
@@ -473,6 +671,12 @@
     ],
     "correct_index": 2,
     "explanation": "Aplastic anemia is pancytopenia with a hypocellular bone marrow that is not caused by infiltration or another disease. Reference: Approach to the diagnosis of aplastic anemia (pmc.ncbi.nlm.nih.gov/articles/PMC8270669).",
+    "choice_notes": [
+      "Microcytic, with a cellular marrow.",
+      "Spherocytes with an active marrow.",
+      "Marrow stem cells fail, so all cell lines drop.",
+      "Sickle cells with an active marrow."
+    ],
     "difficulty": 1
   },
   {
@@ -487,6 +691,12 @@
     ],
     "correct_index": 1,
     "explanation": "Anemia of chronic disease shows low serum iron with decreased TIBC, while ferritin is normal or high because it is an acute-phase reactant. Iron deficiency has low ferritin and high TIBC. Reference: Van Vranken, Evaluation of Microcytosis, AFP 2010 (aafp.org/pubs/afp/issues/2010/1101/p1117.html).",
+    "choice_notes": [
+      "That is iron deficiency.",
+      "Hepcidin traps iron in stores, so ferritin stays normal or high.",
+      "That fits iron overload.",
+      "Not a typical pattern."
+    ],
     "difficulty": 2
   },
   {
@@ -501,6 +711,12 @@
     ],
     "correct_index": 1,
     "explanation": "The Philadelphia chromosome, a reciprocal translocation of chromosomes 9 and 22 forming BCR-ABL1, is found in about 95% of patients with CML. Reference: Leukemia: What Primary Care Physicians Need to Know, AFP 2023 (aafp.org/pubs/afp/issues/2023/0400/leukemia.html); Leukemia: An Overview for Primary Care, AFP 2014 (aafp.org/pubs/afp/issues/2014/0501/p731.html).",
+    "choice_notes": [
+      "Mature B-cell leukemia with smudge cells.",
+      "BCR-ABL1 tyrosine kinase; treated with imatinib.",
+      "Has t(15;17) PML-RARA.",
+      "Has Reed-Sternberg cells."
+    ],
     "difficulty": 1
   },
   {
@@ -515,6 +731,12 @@
     ],
     "correct_index": 1,
     "explanation": "APL with t(15;17) causes a severe coagulopathy with rapid consumption of clotting factors and platelets (DIC), so bleeding risk is immediate. Reference: Pathogenesis and Treatment of Thrombohemorrhagic Diathesis in Acute Promyelocytic Leukemia (pmc.ncbi.nlm.nih.gov/articles/PMC3248345).",
+    "choice_notes": [
+      "Seen with very high WBC or high protein levels.",
+      "Granules release procoagulants, so DIC can happen early.",
+      "Seen in multiple myeloma.",
+      "Linked to parvovirus B19 or thymoma."
+    ],
     "difficulty": 2
   },
   {
@@ -529,6 +751,12 @@
     ],
     "correct_index": 0,
     "explanation": "A leukemoid reaction is a WBC count above about 50,000 from a cause outside the marrow, not a leukemia. Reference: Abramson & Melton, Leukocytosis: Basics of Clinical Assessment, AFP 2000 (aafp.org/pubs/afp/issues/2000/1101/p2053.html).",
+    "choice_notes": [
+      "Reactive cause (infection, burns); high LAP score, no BCR-ABL1.",
+      "A true leukemia; LAP score is low.",
+      "Shows lymphoblasts.",
+      "Usually pancytopenia, not a high WBC."
+    ],
     "difficulty": 2
   },
   {
@@ -543,6 +771,12 @@
     ],
     "correct_index": 2,
     "explanation": "Fragile CLL lymphocytes break when the smear is made; the degenerated nuclei are called smudge cells. Reference: Abramson & Melton, Leukocytosis: Basics of Clinical Assessment, AFP 2000 (aafp.org/pubs/afp/issues/2000/1101/p2053.html).",
+    "choice_notes": [
+      "Few circulating cells; shows hairy projections.",
+      "Reactive (atypical) lymphocytes in young people.",
+      "Fragile CLL cells break when the smear is made.",
+      "Shows a left shift with basophilia."
+    ],
     "difficulty": 1
   },
   {
@@ -557,6 +791,12 @@
     ],
     "correct_index": 3,
     "explanation": "CD103 is specific for hairy cell leukemia and its variant; CD103 with bright CD123 points to classic HCL. Reference: Characteristic CD103 and CD123 Expression Pattern Defines Hairy Cell Leukemia (pmc.ncbi.nlm.nih.gov/articles/PMC7371092).",
+    "choice_notes": [
+      "T-cell marker.",
+      "Stem and progenitor cell marker.",
+      "Megakaryocyte marker.",
+      "Hairy cell marker, along with CD11c, CD25 and TRAP."
+    ],
     "difficulty": 2
   },
   {
@@ -571,6 +811,12 @@
     ],
     "correct_index": 0,
     "explanation": "MPO or Sudan black B positivity in 3% or more of blasts has been the cytochemical criterion for AML; lymphoblasts are usually negative. Reference: Sudan Black B Positive Acute Lymphocytic Leukemia (pmc.ncbi.nlm.nih.gov/articles/PMC4923274).",
+    "choice_notes": [
+      "MPO is in myeloid granules; lymphoblasts are negative.",
+      "Both have mature MPO-positive cells; use BCR-ABL1 or LAP.",
+      "Both are mature B-cell disorders; use flow markers.",
+      "Neither is MPO positive."
+    ],
     "difficulty": 2
   },
   {
@@ -585,6 +831,12 @@
     ],
     "correct_index": 3,
     "explanation": "Hodgkin lymphoma is defined by characteristic multinucleated giant cells (Hodgkin and Reed-Sternberg cells) or their large mononuclear variants. Reference: NCI PDQ, Childhood Hodgkin Lymphoma Treatment, Health Professional Version (cancer.gov/types/lymphoma/hp/child-hodgkin-treatment-pdq).",
+    "choice_notes": [
+      "Has t(8;14) and a starry-sky pattern.",
+      "Cutaneous T-cell lymphoma with Sézary cells.",
+      "Has plasma cells and an M-spike.",
+      "Large owl-eye cells that are CD15 and CD30 positive."
+    ],
     "difficulty": 1
   },
   {
@@ -599,6 +851,12 @@
     ],
     "correct_index": 1,
     "explanation": "Pelger-Huet neutrophils have dumbbell-shaped bilobed (\"pince-nez\") nuclei with fewer segments, from LBR gene mutations; cell function is normal. Reference: Familial Pelger-Huet Anomaly (pmc.ncbi.nlm.nih.gov/articles/PMC4925487).",
+    "choice_notes": [
+      "That is Chediak-Higashi syndrome.",
+      "Inherited defect in nuclear segmentation; cells work normally.",
+      "That is May-Hegglin anomaly.",
+      "Seen in megaloblastic anemia."
+    ],
     "difficulty": 2
   },
   {
@@ -613,6 +871,12 @@
     ],
     "correct_index": 2,
     "explanation": "t(8;14)(q24;q32), present in most cases, places the MYC gene next to the immunoglobulin heavy chain enhancers, driving very fast growth. Reference: An update on Burkitt lymphoma: a review of pathogenesis and multimodality imaging (pmc.ncbi.nlm.nih.gov/articles/PMC6529494).",
+    "choice_notes": [
+      "Seen in follicular lymphoma (BCL2).",
+      "Seen in CML (BCR-ABL1).",
+      "MYC moves next to the immunoglobulin heavy chain gene.",
+      "Seen in APL (PML-RARA)."
+    ],
     "difficulty": 3
   },
   {
@@ -627,6 +891,12 @@
     ],
     "correct_index": 2,
     "explanation": "The PT depends on fibrinogen and factors II, V, VII and X. The aPTT reflects the intrinsic and common pathways, so factor VII is the one tested only by the PT. Reference: Updates on Anticoagulation and Laboratory Tools for Therapy Monitoring of Heparin, VKAs and DOACs (pmc.ncbi.nlm.nih.gov/articles/PMC7998518).",
+    "choice_notes": [
+      "Intrinsic pathway; measured by the aPTT.",
+      "Intrinsic pathway; measured by the aPTT.",
+      "Extrinsic pathway only, so the PT is prolonged alone.",
+      "Intrinsic pathway; measured by the aPTT."
+    ],
     "difficulty": 1
   },
   {
@@ -641,6 +911,12 @@
     ],
     "correct_index": 1,
     "explanation": "The aPTT reflects the intrinsic and common pathways and is prolonged by heparin. Warfarin is monitored with the PT/INR. Reference: Updates on Anticoagulation and Laboratory Tools for Therapy Monitoring of Heparin, VKAs and DOACs (pmc.ncbi.nlm.nih.gov/articles/PMC7998518).",
+    "choice_notes": [
+      "Used for warfarin.",
+      "Heparin boosts antithrombin, which prolongs the aPTT.",
+      "Tests platelet function, not heparin.",
+      "Checked to watch for HIT, not to dose heparin."
+    ],
     "difficulty": 1
   },
   {
@@ -655,6 +931,12 @@
     ],
     "correct_index": 0,
     "explanation": "Warfarin antagonizes vitamin K, which is needed to make factors II, VII, IX and X (and proteins C and S). Reference: Horton & Bushwick, Warfarin Therapy: Evolving Strategies in Anticoagulation, AFP 1999 (aafp.org/pubs/afp/issues/1999/0201/p635.html).",
+    "choice_notes": [
+      "Need vitamin K to be carboxylated so they can bind calcium; warfarin blocks this.",
+      "Not vitamin K-dependent.",
+      "Factors III and IV are tissue factor and calcium.",
+      "Not vitamin K-dependent."
+    ],
     "difficulty": 1
   },
   {
@@ -669,6 +951,12 @@
     ],
     "correct_index": 2,
     "explanation": "Ristocetin-induced aggregation depends on vWF and GP Ib, so it detects both von Willebrand disease and Bernard-Soulier syndrome. Reference: Platelet function tests: a comparative review (pmc.ncbi.nlm.nih.gov/articles/PMC4340464).",
+    "choice_notes": [
+      "Abnormal with all agonists except ristocetin.",
+      "Blocks thromboxane, so arachidonic acid response is weak.",
+      "Ristocetin needs vWF binding to GP Ib; either can be missing.",
+      "Weak secondary wave with ADP and epinephrine."
+    ],
     "difficulty": 3
   },
   {
@@ -683,6 +971,12 @@
     ],
     "correct_index": 1,
     "explanation": "Glanzmann thrombasthenia is a defect of GP IIb/IIIa (alphaIIb-beta3). Aggregation fails with all agonists, while ristocetin agglutination is usually preserved. Reference: Nurden, Glanzmann thrombasthenia, Orphanet J Rare Dis 2006 (pmc.ncbi.nlm.nih.gov/articles/PMC1475837).",
+    "choice_notes": [
+      "That is Bernard-Soulier syndrome.",
+      "Platelets cannot bind fibrinogen, so they do not aggregate.",
+      "That is von Willebrand disease.",
+      "That is hemophilia A."
+    ],
     "difficulty": 2
   },
   {
@@ -697,6 +991,12 @@
     ],
     "correct_index": 1,
     "explanation": "Activated factor XIII is a transglutaminase that cross-links fibrin chains, making the clot stable. Thrombin converts fibrinogen to fibrin. Reference: Factor XIII Deficiency: A Review of Biology, Testing, and Treatment (pmc.ncbi.nlm.nih.gov/articles/PMC12825037).",
+    "choice_notes": [
+      "That is thrombin.",
+      "Factor XIIIa cross-links fibrin, making the clot strong.",
+      "That is tissue plasminogen activator.",
+      "That is von Willebrand factor."
+    ],
     "difficulty": 2
   },
   {
@@ -711,6 +1011,12 @@
     ],
     "correct_index": 1,
     "explanation": "D-dimer is produced when plasmin digests fibrin that was cross-linked by factor XIIIa. Reference: D-dimer Testing in Pulmonary Embolism with a Focus on Potential Pitfalls (pmc.ncbi.nlm.nih.gov/articles/PMC9689068).",
+    "choice_notes": [
+      "Fibrinogen breakdown gives FDPs, not D-dimer.",
+      "Made only when plasmin breaks down cross-linked fibrin.",
+      "Not a source of D-dimer.",
+      "Plasminogen is the enzyme precursor, not the target."
+    ],
     "difficulty": 2
   },
   {
@@ -725,6 +1031,12 @@
     ],
     "correct_index": 3,
     "explanation": "FXIII deficiency gives a normal PT and aPTT. The 5 M urea clot solubility test is a classic screen, but it only detects severe deficiency, so quantitative FXIII activity is now the recommended first test. Reference: Factor XIII Deficiency: A Review of Biology, Testing, and Treatment (pmc.ncbi.nlm.nih.gov/articles/PMC12825037).",
+    "choice_notes": [
+      "Tests fibrinogen to fibrin conversion.",
+      "Like thrombin time, but not affected by heparin.",
+      "Tests platelet function.",
+      "Clots without cross-linking dissolve in 5 M urea."
+    ],
     "difficulty": 3
   },
   {
@@ -739,6 +1051,12 @@
     ],
     "correct_index": 0,
     "explanation": "Following the order of draw reduces carryover of additives from one tube to the next, which can cause wrong results. Reference: Standards and Practice Guidelines for Venous Blood Collection, Korean Society for Laboratory Medicine (pmc.ncbi.nlm.nih.gov/articles/PMC12187494).",
+    "choice_notes": [
+      "Carryover can change results, e.g., EDTA lowering calcium or raising potassium.",
+      "Speed is not the reason.",
+      "Does not affect pain.",
+      "Unrelated to temperature."
+    ],
     "difficulty": 1
   },
   {
@@ -753,6 +1071,12 @@
     ],
     "correct_index": 3,
     "explanation": "Supravital dyes such as new methylene blue or brilliant cresyl blue make the leftover RNA in reticulocytes visible. Reference: Reticulocyte count: a simple test but tricky interpretation! (pmc.ncbi.nlm.nih.gov/articles/PMC8490160).",
+    "choice_notes": [
+      "Romanowsky stain for routine smears.",
+      "Iron stain for siderocytes.",
+      "Romanowsky stain for smears and parasites.",
+      "Supravital stain that clumps leftover RNA into a network."
+    ],
     "difficulty": 1
   },
   {
@@ -767,6 +1091,12 @@
     ],
     "correct_index": 0,
     "explanation": "The test needs enough HbS; it can be falsely negative in infants with high HbF or when HbS is below about 10%. Reference: Sickle cell trait diagnosis: clinical and social implications (pmc.ncbi.nlm.nih.gov/articles/PMC4697437).",
+    "choice_notes": [
+      "HbF does not sickle, so a baby's low HbS can give a negative result.",
+      "Usually positive.",
+      "Positive.",
+      "A high hematocrit can give a false positive."
+    ],
     "difficulty": 3
   },
   {
@@ -781,6 +1111,12 @@
     ],
     "correct_index": 2,
     "explanation": "The ICSH recommends the Drabkin method, which converts hemoglobin into cyanmethemoglobin and reads it photometrically. Reference: Breaking Free From MCHC Interferences? GFHC review (pmc.ncbi.nlm.nih.gov/articles/PMC12426809).",
+    "choice_notes": [
+      "Old visual method; inaccurate.",
+      "Screens donor hemoglobin by drop specific gravity.",
+      "Converts all hemoglobins except sulfhemoglobin; read at 540 nm.",
+      "Old blotting paper method; inaccurate."
+    ],
     "difficulty": 2
   },
   {
@@ -795,6 +1131,12 @@
     ],
     "correct_index": 3,
     "explanation": "Order: blood culture, light blue (citrate), red/gold (serum), green (heparin), lavender (EDTA), then gray (fluoride/oxalate). Reference: Standards and Practice Guidelines for Venous Blood Collection, Korean Society for Laboratory Medicine (pmc.ncbi.nlm.nih.gov/articles/PMC12187494).",
+    "choice_notes": [
+      "Drawn after blood cultures.",
+      "Drawn after citrate.",
+      "Drawn after serum tubes.",
+      "The last of these: after heparin and EDTA."
+    ],
     "difficulty": 1
   },
   {
@@ -809,6 +1151,12 @@
     ],
     "correct_index": 0,
     "explanation": "FLAER is a fluorescently labeled inactive proaerolysin that binds GPI anchors. PNH cells lack GPI anchors, so they do not bind it. Reference: Update on the diagnosis and management of paroxysmal nocturnal hemoglobinuria (pmc.ncbi.nlm.nih.gov/articles/PMC6142517).",
+    "choice_notes": [
+      "Fluorescent aerolysin binds GPI anchors; PNH cells lack them.",
+      "Used in platelet aggregation tests.",
+      "Reticulocyte stain.",
+      "Reagent in the sickle solubility test."
+    ],
     "difficulty": 3
   },
   {
@@ -823,6 +1171,12 @@
     ],
     "correct_index": 0,
     "explanation": "With a reducing agent such as sodium dithionite, HbS becomes insoluble and the solution turns turbid. The test cannot tell sickle cell trait from disease. Reference: Sickle cell trait diagnosis: clinical and social implications (pmc.ncbi.nlm.nih.gov/articles/PMC4697437).",
+    "choice_notes": [
+      "Reduced HbS is insoluble, so the solution turns cloudy.",
+      "That is a negative result.",
+      "Not how the test is read.",
+      "Not how the test is read."
+    ],
     "difficulty": 2
   },
   {
@@ -837,6 +1191,12 @@
     ],
     "correct_index": 2,
     "explanation": "Excess EDTA shrinks red cells, which results in an increased MCHC. Reference: Breaking Free From MCHC Interferences? GFHC review (pmc.ncbi.nlm.nih.gov/articles/PMC12426809).",
+    "choice_notes": [
+      "Not affected by EDTA amount.",
+      "Not usually affected.",
+      "Cells shrink, so Hct falls and MCHC is falsely high.",
+      "Not the usual effect."
+    ],
     "difficulty": 2
   }
 ]

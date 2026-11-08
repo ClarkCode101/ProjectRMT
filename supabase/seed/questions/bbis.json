@@ -11,6 +11,12 @@
     ],
     "correct_index": 2,
     "explanation": "Bombay individuals (hh) cannot make H antigen, the precursor of A and B, so they have no A, B, or H antigens and produce anti-A, anti-B, and anti-H. Reference: Dean, Blood Groups and Red Cell Antigens, The Hh blood group (ncbi.nlm.nih.gov/books/NBK2268).",
+    "choice_notes": [
+      "A and B are also missing, but the defining loss is H.",
+      "A and B are also missing, but the defining loss is H.",
+      "No H (FUT1 defect), so A and B cannot be made; plasma has anti-H.",
+      "Rh antigen; unrelated to the Bombay phenotype."
+    ],
     "difficulty": 2
   },
   {
@@ -25,6 +31,12 @@
     ],
     "correct_index": 1,
     "explanation": "Immune anti-D is mainly IgG. That is why it can cross the placenta and cause hemolytic disease of the fetus and newborn (HDFN). Reference: Dean, Blood Groups and Red Cell Antigens, Hemolytic disease of the newborn (ncbi.nlm.nih.gov/books/NBK2266).",
+    "choice_notes": [
+      "Seen first in a primary response, but immune anti-D is mostly IgG.",
+      "Warm IgG that crosses the placenta, so it causes HDFN.",
+      "Not the class of red cell alloantibodies.",
+      "Involved in allergy, not red cell antibodies."
+    ],
     "difficulty": 1
   },
   {
@@ -39,6 +51,12 @@
     ],
     "correct_index": 1,
     "explanation": "The DAT tests the patient's red cells directly for bound IgG or complement (in vivo sensitization). The IAT detects in vitro sensitization. Reference: StatPearls, Rh Blood Group System (ncbi.nlm.nih.gov/books/NBK594252).",
+    "choice_notes": [
+      "Detects antibody in the serum, sensitized in vitro.",
+      "AHG added to washed patient cells shows in-vivo coating (HDFN, AIHA, reactions).",
+      "Uses the IAT to find antibodies in serum.",
+      "Checks ABO compatibility only; no AHG phase."
+    ],
     "difficulty": 1
   },
   {
@@ -53,6 +71,12 @@
     ],
     "correct_index": 0,
     "explanation": "IgM appears first in a primary response. IgG dominates the secondary (anamnestic) response. Reference: OpenStax Microbiology, 18.4 B Lymphocytes and Humoral Immunity (openstax.org/books/microbiology/pages/18-4-b-lymphocytes-and-humoral-immunity).",
+    "choice_notes": [
+      "First made in a primary response; a pentamer.",
+      "Rises later and dominates the secondary response.",
+      "Mainly in secretions.",
+      "Mostly on naive B cells as a receptor."
+    ],
     "difficulty": 1
   },
   {
@@ -67,6 +91,12 @@
     ],
     "correct_index": 1,
     "explanation": "Platelets are kept at room temperature (20–24 °C) with continuous gentle agitation to keep them viable. Cold storage causes them to lose function. Reference: Platelet Storage: Problems, Improvements, and New Perspectives, section 3.1 (pmc.ncbi.nlm.nih.gov/articles/PMC11277025).",
+    "choice_notes": [
+      "Red cell storage temperature; cold makes platelets clump and lose function.",
+      "Room temperature with agitation keeps platelets working; shelf life about 5 days.",
+      "Plasma storage temperature.",
+      "Too warm; bacteria would grow."
+    ],
     "difficulty": 1
   },
   {
@@ -81,6 +111,12 @@
     ],
     "correct_index": 2,
     "explanation": "RPR and VDRL are nontreponemal tests. TP-PA, FTA-ABS, and EIAs/CIAs detect antibodies to Treponema pallidum itself. A presumptive diagnosis needs one test of each kind. Reference: CDC STI Treatment Guidelines, Syphilis (cdc.gov/std/treatment-guidelines/syphilis.htm).",
+    "choice_notes": [
+      "Treponemal test (detects antibody to T. pallidum).",
+      "Treponemal test; stays positive for life.",
+      "Detects antibody to cardiolipin (reagin), not to the treponeme itself.",
+      "Treponemal test."
+    ],
     "difficulty": 1
   },
   {
@@ -95,6 +131,12 @@
     ],
     "correct_index": 0,
     "explanation": "Nontreponemal titers usually fall and often become nonreactive after successful treatment, so they are followed over time; treponemal tests usually stay reactive. Titers from RPR and VDRL can't be compared directly. Reference: CDC STI Treatment Guidelines, Syphilis (cdc.gov/std/treatment-guidelines/syphilis.htm).",
+    "choice_notes": [
+      "Titers fall with successful treatment; a fourfold drop is significant.",
+      "Treponemal; usually stays positive after treatment.",
+      "Treponemal; usually stays positive after treatment.",
+      "Treponemal; usually stays positive after treatment."
+    ],
     "difficulty": 2
   },
   {
@@ -109,6 +151,12 @@
     ],
     "correct_index": 1,
     "explanation": "Most acute hemolytic reactions come from ABO-incompatible blood given because of a clerical error or wrong patient identification. Anti-IgA causes anaphylaxis, and overload is TACO. Reference: What every physician should know about transfusion reactions (pmc.ncbi.nlm.nih.gov/articles/PMC1913131); StatPearls, ABO Blood Group System (ncbi.nlm.nih.gov/books/NBK580518).",
+    "choice_notes": [
+      "Causes fever and shock (septic reaction), less common.",
+      "Wrong patient or wrong unit is the main cause; IgM anti-A/B lyses cells.",
+      "Causes anaphylaxis, not hemolysis.",
+      "TACO; not hemolytic."
+    ],
     "difficulty": 1
   },
   {
@@ -123,6 +171,12 @@
     ],
     "correct_index": 1,
     "explanation": "RhIG is given within 72 hours of delivery (with a routine dose at 26–28 weeks) to prevent anti-D. A standard 300 µg dose covers about 15 mL of fetal red cells; a Kleihauer-Betke test guides extra doses for larger bleeds. Reference: StatPearls, Rho(D) Immune Globulin (ncbi.nlm.nih.gov/books/NBK557884) and Kleihauer-Betke Test (ncbi.nlm.nih.gov/books/NBK430876).",
+    "choice_notes": [
+      "Within the window, but not the outer limit.",
+      "Give as soon as possible, within 72 hours of delivery.",
+      "Too late for the standard dose window.",
+      "Antenatal dose is given at about 28 weeks, a different timing."
+    ],
     "difficulty": 1
   },
   {
@@ -137,6 +191,12 @@
     ],
     "correct_index": 2,
     "explanation": "Ulex europaeus is the anti-H lectin. Dolichos biflorus is the anti-A1 lectin. Reference: A Study of A1 and A2 Subtypes Among Whole-Blood Donors With Blood Groups A and AB (pmc.ncbi.nlm.nih.gov/articles/PMC11046175).",
+    "choice_notes": [
+      "Dolichos biflorus is anti-A1.",
+      "Bandeiraea simplicifolia is anti-B.",
+      "Detects H; reacts most with group O cells.",
+      "Vicia graminea is anti-N; not an M lectin."
+    ],
     "difficulty": 1
   },
   {
@@ -151,6 +211,12 @@
     ],
     "correct_index": 1,
     "explanation": "The cells carry B antigen (react with anti-B only), and the serum has the expected naturally occurring anti-A (agglutinates A1 cells). This is group B. Reference: ABO blood groups and galectins: Implications in transfusion medicine and innate immunity (pmc.ncbi.nlm.nih.gov/articles/PMC11808837).",
+    "choice_notes": [
+      "Would react with anti-A and have anti-B.",
+      "B antigen on cells, anti-A in plasma.",
+      "Would react with both antisera and neither reverse cell.",
+      "Would react with neither antiserum and both reverse cells."
+    ],
     "difficulty": 1
   },
   {
@@ -165,6 +231,12 @@
     ],
     "correct_index": 0,
     "explanation": "A2 cells convert H to A inefficiently, so more H remains and they react more strongly with anti-H. Dolichos biflorus agglutinates A1 but not A2 cells. Reference: A Study of A1 and A2 Subtypes Among Whole-Blood Donors With Blood Groups A and AB (pmc.ncbi.nlm.nih.gov/articles/PMC11046175).",
+    "choice_notes": [
+      "A2 converts less H to A, so more H remains.",
+      "A2 cells do NOT react with anti-A1.",
+      "Not related to A subgroups.",
+      "Rh antigen; unrelated."
+    ],
     "difficulty": 2
   },
   {
@@ -179,6 +251,12 @@
     ],
     "correct_index": 0,
     "explanation": "The anti-A1 lectin of Dolichos biflorus agglutinates A1 red cells but not A2 red cells. Reference: A Study of A1 and A2 Subtypes Among Whole-Blood Donors With Blood Groups A and AB (pmc.ncbi.nlm.nih.gov/articles/PMC11046175).",
+    "choice_notes": [
+      "Agglutinates A1 cells but not A2.",
+      "Use Ulex europaeus.",
+      "Not a B lectin.",
+      "Not an M lectin."
+    ],
     "difficulty": 2
   },
   {
@@ -193,6 +271,12 @@
     ],
     "correct_index": 2,
     "explanation": "The A transferase adds N-acetyl-D-galactosamine and the B transferase adds D-galactose to H substance. H itself is formed by adding fucose. Reference: A Study of A1 and A2 Subtypes Among Whole-Blood Donors With Blood Groups A and AB (pmc.ncbi.nlm.nih.gov/articles/PMC11046175); ABO blood groups and galectins: Implications in transfusion medicine and innate immunity (pmc.ncbi.nlm.nih.gov/articles/PMC11808837).",
+    "choice_notes": [
+      "The immunodominant sugar of H.",
+      "The immunodominant sugar of B.",
+      "A transferase adds it to H.",
+      "Part of the precursor chain, not the A sugar."
+    ],
     "difficulty": 2
   },
   {
@@ -207,6 +291,12 @@
     ],
     "correct_index": 1,
     "explanation": "In group A secretors, A and H antigens are found in saliva. The FUT2 (Se) gene encodes the fucosyltransferase used in secretions. Reference: Use of a recombinant deacetylase to convert A1 red blood cells to the acquired B phenotype (pmc.ncbi.nlm.nih.gov/articles/PMC10920065); ABO blood groups and galectins: Implications in transfusion medicine and innate immunity (pmc.ncbi.nlm.nih.gov/articles/PMC11808837).",
+    "choice_notes": [
+      "A secretor also secretes H, the precursor.",
+      "Se gene lets H and A appear in secretions.",
+      "Group O secretors have only H.",
+      "That is a nonsecretor."
+    ],
     "difficulty": 2
   },
   {
@@ -221,6 +311,12 @@
     ],
     "correct_index": 2,
     "explanation": "Bacterial enzymes can change the A sugar into a B-like structure, so group A1 cells react weakly with anti-B. The change stops once the infection clears. Reference: Use of a recombinant deacetylase to convert A1 red blood cells to the acquired B phenotype (pmc.ncbi.nlm.nih.gov/articles/PMC10920065).",
+    "choice_notes": [
+      "Not the usual setting.",
+      "Not the usual setting.",
+      "Bacterial deacetylase turns A sugar into one like B (e.g., colon cancer, gut infection).",
+      "Not the usual setting."
+    ],
     "difficulty": 3
   },
   {
@@ -235,6 +331,12 @@
     ],
     "correct_index": 3,
     "explanation": "Group AB serum contains neither anti-A nor anti-B, so AB plasma can be given to any ABO group. For red cells, group O is the universal donor. Reference: ABO blood groups and galectins: Implications in transfusion medicine and innate immunity (pmc.ncbi.nlm.nih.gov/articles/PMC11808837).",
+    "choice_notes": [
+      "Group O plasma has anti-A and anti-B; O is the red cell universal donor.",
+      "Has anti-B.",
+      "Has anti-A.",
+      "AB plasma has no anti-A or anti-B."
+    ],
     "difficulty": 1
   },
   {
@@ -249,6 +351,12 @@
     ],
     "correct_index": 1,
     "explanation": "ABO antibodies develop naturally during the first few months of life, which is why reverse typing is not reliable in newborns. Reference: ABO blood groups and galectins: Implications in transfusion medicine and innate immunity (pmc.ncbi.nlm.nih.gov/articles/PMC11808837).",
+    "choice_notes": [
+      "Newborns have little or no ABO antibody of their own.",
+      "Start at about 3–6 months from exposure to similar antigens in gut bacteria.",
+      "They are present without any transfusion.",
+      "They are present without pregnancy."
+    ],
     "difficulty": 2
   },
   {
@@ -263,6 +371,12 @@
     ],
     "correct_index": 0,
     "explanation": "Weak D is a quantitative weakening of the D antigen. In partial D, single epitopes of D are lost, so these persons can form anti-D. Reference: Flegel, The genetics of the Rhesus blood group system, Blood Transfus 2007 (pmc.ncbi.nlm.nih.gov/articles/PMC2535884).",
+    "choice_notes": [
+      "Normal D epitopes but fewer of them; usually does not make anti-D.",
+      "That describes partial D.",
+      "That describes D-negative.",
+      "Not the definition."
+    ],
     "difficulty": 2
   },
   {
@@ -277,6 +391,12 @@
     ],
     "correct_index": 1,
     "explanation": "Of the Rh antigens, D is the most immunogenic, which is why D-negative persons get D-negative blood and RhIG in pregnancy. Reference: OpenStax Microbiology, 19.1 Hypersensitivities (openstax.org/books/microbiology/pages/19-1-hypersensitivities).",
+    "choice_notes": [
+      "Less immunogenic than D.",
+      "Very immunogenic; most D-negative people exposed make anti-D.",
+      "Less immunogenic than D.",
+      "Less immunogenic than D."
+    ],
     "difficulty": 1
   },
   {
@@ -291,6 +411,12 @@
     ],
     "correct_index": 0,
     "explanation": "Rh-null red cells lack Rh antigens; one cause is a defect in the RHAG gene, whose protein is needed for Rh proteins to reach the membrane. Reference: Flegel, The genetics of the Rhesus blood group system, Blood Transfus 2007 (pmc.ncbi.nlm.nih.gov/articles/PMC2535884).",
+    "choice_notes": [
+      "RHAG is needed to carry Rh proteins to the membrane.",
+      "Controls A and B transferases.",
+      "Controls H antigen (Bombay when absent).",
+      "Kell blood group gene."
+    ],
     "difficulty": 3
   },
   {
@@ -305,6 +431,12 @@
     ],
     "correct_index": 0,
     "explanation": "The Kleihauer-Betke test estimates how much fetal blood entered the mother, which guides the RhIG dose. Reference: FIGO/ICM guidelines for preventing Rhesus disease: A call to action (pmc.ncbi.nlm.nih.gov/articles/PMC7898700).",
+    "choice_notes": [
+      "Acid elution removes adult Hb; fetal cells with HbF stay pink.",
+      "Not its purpose.",
+      "Weak D is tested with IAT.",
+      "That is antibody identification."
+    ],
     "difficulty": 2
   },
   {
@@ -319,6 +451,12 @@
     ],
     "correct_index": 3,
     "explanation": "The Rh antigens are on two membrane proteins, RhD and RhCE, each crossing the membrane 12 times, encoded by RHD and RHCE on chromosome 1. Reference: Flegel, The genetics of the Rhesus blood group system, Blood Transfus 2007 (pmc.ncbi.nlm.nih.gov/articles/PMC2535884).",
+    "choice_notes": [
+      "Those carry ABO, Lewis and P antigens.",
+      "Lewis antigens are adsorbed from plasma.",
+      "Carry MN antigens.",
+      "Nonglycosylated proteins that cross the membrane many times."
+    ],
     "difficulty": 2
   },
   {
@@ -333,6 +471,12 @@
     ],
     "correct_index": 2,
     "explanation": "One 1500 IU (300 microgram) dose of anti-D is enough to neutralize 30 mL of fetal whole blood. Reference: FIGO/ICM guidelines for preventing Rhesus disease: A call to action (pmc.ncbi.nlm.nih.gov/articles/PMC7898700).",
+    "choice_notes": [
+      "Too small.",
+      "That is the volume of packed red cells covered (15 mL).",
+      "Covers about 30 mL of fetal whole blood (15 mL red cells).",
+      "Too large; more vials would be needed."
+    ],
     "difficulty": 2
   },
   {
@@ -347,6 +491,12 @@
     ],
     "correct_index": 0,
     "explanation": "In partial D, single epitopes of the D antigen are lost, so these persons can form anti-D after exposure to normal D. Reference: Flegel, The genetics of the Rhesus blood group system, Blood Transfus 2007 (pmc.ncbi.nlm.nih.gov/articles/PMC2535884).",
+    "choice_notes": [
+      "Missing parts of D, so exposure to normal D can trigger anti-D.",
+      "They can make anti-D.",
+      "They usually type D-positive.",
+      "That is Rh-null."
+    ],
     "difficulty": 3
   },
   {
@@ -361,6 +511,12 @@
     ],
     "correct_index": 0,
     "explanation": "Partial D patients are treated as D-negative for transfusion to avoid anti-D, but as D-positive when they donate. Reference: Integrating RHD Genotyping for More Accurate Rh(D) Antigen Phenotyping (pmc.ncbi.nlm.nih.gov/articles/PMC12028936).",
+    "choice_notes": [
+      "Treated as D-negative to avoid anti-D formation.",
+      "Risk of making anti-D if given D-positive blood.",
+      "Rh-null lacks all Rh antigens.",
+      "Partial D is not weak D, and it can still make anti-D."
+    ],
     "difficulty": 3
   },
   {
@@ -375,6 +531,12 @@
     ],
     "correct_index": 0,
     "explanation": "Deletion of the RHD gene is the leading cause of the D-negative phenotype; a person homozygous for the deletion is D-negative. Reference: Flegel, The genetics of the Rhesus blood group system, Blood Transfus 2007 (pmc.ncbi.nlm.nih.gov/articles/PMC2535884).",
+    "choice_notes": [
+      "Most D-negative Europeans have no RHD gene.",
+      "Causes Rh-null, which is rare.",
+      "Weak D types as D-positive with enough reagents.",
+      "RHCE codes C, c, E and e, not D."
+    ],
     "difficulty": 1
   },
   {
@@ -389,6 +551,12 @@
     ],
     "correct_index": 0,
     "explanation": "The DAT is usually positive, except rarely when all incompatible red cells have already been destroyed. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Donor cells coated with antibody give a positive DAT, unless they are already lysed.",
+      "Usually positive, though it can be negative if all coated cells are destroyed.",
+      "It is a key test in the reaction workup.",
+      "No anti-IgE AHG test exists for this."
+    ],
     "difficulty": 1
   },
   {
@@ -403,6 +571,12 @@
     ],
     "correct_index": 0,
     "explanation": "The DAT is typically strongly positive for C3d; weak IgG positivity is seen in up to 20% of cases. Reference: Berentsen, Cold agglutinin disease, Hematology Am Soc Hematol Educ Program 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC6142439).",
+    "choice_notes": [
+      "Up to about 20% may also show weak IgG.",
+      "Too high; most cases show C3d only.",
+      "Some cases do show weak IgG.",
+      "Too high."
+    ],
     "difficulty": 3
   },
   {
@@ -417,6 +591,12 @@
     ],
     "correct_index": 2,
     "explanation": "The polyspecific antiglobulin reagent contains both anti-IgG and anti-complement (C3), so it detects either on red cells. Reference: Berentsen, Cold agglutinin disease, Hematology Am Soc Hematol Educ Program 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC6142439).",
+    "choice_notes": [
+      "Not in polyspecific AHG.",
+      "That is monospecific anti-IgG.",
+      "Detects both antibody and complement on cells.",
+      "Not in AHG reagent."
+    ],
     "difficulty": 1
   },
   {
@@ -431,6 +611,12 @@
     ],
     "correct_index": 1,
     "explanation": "In cold agglutinin disease the DAT is positive for C3d, with IgG negative or only weakly positive. Reference: The role of serological and molecular testing in the diagnostics and transfusion treatment of AIHA (pmc.ncbi.nlm.nih.gov/articles/PMC9256513); Berentsen, Cold agglutinin disease, Hematology Am Soc Hematol Educ Program 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC6142439).",
+    "choice_notes": [
+      "Seen in warm AIHA.",
+      "IgM cold antibody fixes complement, then falls off, leaving C3d.",
+      "The DAT is positive.",
+      "Not typical."
+    ],
     "difficulty": 2
   },
   {
@@ -445,6 +631,12 @@
     ],
     "correct_index": 2,
     "explanation": "In elution, antibodies are separated from the red cells so they can be shown and identified in the eluate. Reference: Flegel, The genetics of the Rhesus blood group system, Blood Transfus 2007 (pmc.ncbi.nlm.nih.gov/articles/PMC2535884).",
+    "choice_notes": [
+      "Not the purpose.",
+      "That is sensitization.",
+      "Freed antibody (eluate) is then identified with panel cells.",
+      "Not the purpose."
+    ],
     "difficulty": 2
   },
   {
@@ -459,6 +651,12 @@
     ],
     "correct_index": 1,
     "explanation": "Red-cell-containing components are stored at 1 to 6 C. Conventional platelets are kept at 20 to 24 C. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Platelet storage temperature.",
+      "Keeps red cells for up to 35–42 days, depending on the solution.",
+      "Plasma storage temperature.",
+      "Too warm."
+    ],
     "difficulty": 1
   },
   {
@@ -473,6 +671,12 @@
     ],
     "correct_index": 2,
     "explanation": "FFP is frozen at -18 C or colder. After thawing it is kept at 1 to 6 C and used within 24 hours. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Red cell storage temperature.",
+      "Platelet storage temperature.",
+      "Frozen within 8 hours of collection; keeps up to 1 year.",
+      "Too warm."
+    ],
     "difficulty": 1
   },
   {
@@ -487,6 +691,12 @@
     ],
     "correct_index": 3,
     "explanation": "CPDA-1 gives red cells a shelf life of 35 days (adenine supports ATP). Red cells in additive solutions last 42 days. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Red cells in additive solutions (e.g., AS-1) last 42 days.",
+      "CPD or ACD red cells last 21 days.",
+      "Platelet shelf life.",
+      "Adenine helps red cells make ATP, extending storage."
+    ],
     "difficulty": 1
   },
   {
@@ -501,6 +711,12 @@
     ],
     "correct_index": 0,
     "explanation": "Cryoprecipitated AHF contains fibrinogen, factor VIII, factor XIII and vWF. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Made by thawing FFP at 1–6 °C; used for low fibrinogen.",
+      "Albumin and IVIG come from fractionation.",
+      "Factor IX and VII are in plasma, not cryo.",
+      "Platelets are a separate component."
+    ],
     "difficulty": 2
   },
   {
@@ -515,6 +731,12 @@
     ],
     "correct_index": 1,
     "explanation": "Irradiation makes donor T lymphocytes unable to proliferate, preventing transfusion-associated graft-vs-host disease. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Leukocyte reduction helps prevent these.",
+      "Kills donor T cells so they cannot attack the recipient.",
+      "Leukocyte reduction or CMV-negative units lower this risk.",
+      "Washing or antihistamines help with these."
+    ],
     "difficulty": 2
   },
   {
@@ -529,6 +751,12 @@
     ],
     "correct_index": 3,
     "explanation": "Leukocyte-reduced components lower febrile reactions, CMV transmission and HLA alloimmunization, but they do not prevent TA-GVHD; irradiation does. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Reduced, since white cell cytokines cause fever.",
+      "Reduced, since fewer HLA-bearing white cells are given.",
+      "Reduced, since CMV lives in white cells.",
+      "Only irradiation prevents TA-GVHD; a few T cells can still remain."
+    ],
     "difficulty": 3
   },
   {
@@ -543,6 +771,12 @@
     ],
     "correct_index": 2,
     "explanation": "Washing removes plasma proteins, so it can be used for IgA-deficient recipients or patients with repeated anaphylactic reactions to plasma. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Treated with iron, not washed cells.",
+      "Treated with factor VIII.",
+      "Washing removes plasma proteins such as IgA.",
+      "Needs platelets."
+    ],
     "difficulty": 2
   },
   {
@@ -557,6 +791,12 @@
     ],
     "correct_index": 0,
     "explanation": "Irradiated red cells have higher supernatant potassium, so their expiration date is shortened. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Radiation damages red cell membranes, so potassium leaks out.",
+      "Red cell units contain almost no platelets.",
+      "Not in red cell units in any useful amount.",
+      "Not in red cell units in any useful amount."
+    ],
     "difficulty": 2
   },
   {
@@ -571,6 +811,12 @@
     ],
     "correct_index": 1,
     "explanation": "One whole-blood-derived platelet unit raises a 70-kg adult's count by 5,000 to 10,000/uL; an apheresis unit by about 30,000 to 60,000/uL. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Too small.",
+      "An apheresis unit raises it by about 30,000–60,000/µL.",
+      "Closer to an apheresis unit's increase.",
+      "Too large."
+    ],
     "difficulty": 2
   },
   {
@@ -585,6 +831,12 @@
     ],
     "correct_index": 1,
     "explanation": "A febrile nonhemolytic reaction is a temperature rise of 1 C or more (or chills) during or within 4 hours of transfusion with no other cause. Hemovigilance defines fever as 38 C or higher. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf); CDC NHSN Biovigilance Component, Hemovigilance Module Protocol (cdc.gov/nhsn/pdfs/biovigilance/bv-hv-protocol-current.pdf).",
+    "choice_notes": [
+      "Hemolysis would show a positive DAT, hemoglobinuria and so on.",
+      "White cell cytokines cause fever; leukoreduction prevents it.",
+      "Shows acute lung injury within 6 hours.",
+      "Shows hypotension and breathing problems, no fever."
+    ],
     "difficulty": 1
   },
   {
@@ -599,6 +851,12 @@
     ],
     "correct_index": 0,
     "explanation": "Anaphylactic reactions have been reported in IgA-deficient patients with anti-IgA, although most anaphylactic reactions have no identifiable cause. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "IgA-deficient patients can make anti-IgA; give IgA-deficient or washed products.",
+      "Causes TRALI.",
+      "Causes delayed hemolytic reactions.",
+      "Causes fever and shock."
+    ],
     "difficulty": 2
   },
   {
@@ -613,6 +871,12 @@
     ],
     "correct_index": 1,
     "explanation": "TRALI is hypoxemia with noncardiogenic pulmonary edema within 6 hours of transfusion, most often from donor white-cell antibodies. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "That causes anaphylaxis.",
+      "Antibodies in donor plasma activate the recipient's neutrophils in the lung.",
+      "That is TACO.",
+      "That is a septic reaction."
+    ],
     "difficulty": 2
   },
   {
@@ -627,6 +891,12 @@
     ],
     "correct_index": 3,
     "explanation": "TACO is cardiogenic pulmonary edema from transfusing too much volume or too fast. Patients with heart or kidney disease and the elderly are at risk. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Fever with no volume overload.",
+      "Hives and itching.",
+      "Lung injury without fluid overload; antibody-mediated.",
+      "Too much volume too fast; often high blood pressure; responds to diuretics."
+    ],
     "difficulty": 2
   },
   {
@@ -641,6 +911,12 @@
     ],
     "correct_index": 1,
     "explanation": "In previously alloimmunized patients, an anamnestic antibody response destroys the transfused cells, usually 2 to 14 days after transfusion. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "That is an acute reaction.",
+      "Anamnestic response from an earlier exposure (often Kidd antibodies).",
+      "Too late.",
+      "That is an acute reaction."
+    ],
     "difficulty": 2
   },
   {
@@ -655,6 +931,12 @@
     ],
     "correct_index": 2,
     "explanation": "If a hemolytic reaction is suspected, the transfusion must be stopped and the transfusion service notified immediately. Reference: AABB et al., Circular of Information for the Use of Human Blood and Blood Components, June 2024 (weareblood.org/wp-content/uploads/2024/10/Circular-of-Information-for-the-Use-of-Human-Blood-and-Blood-Components-June-2024.pdf).",
+    "choice_notes": [
+      "Workup comes after stopping.",
+      "Never continue a suspected reaction.",
+      "Stopping limits exposure; saline keeps IV access for treatment.",
+      "Not the first step."
+    ],
     "difficulty": 1
   },
   {
@@ -669,6 +951,12 @@
     ],
     "correct_index": 3,
     "explanation": "ABO HDFN is caused by maternal IgG anti-A and/or anti-B, and occurs in group A or B infants of group O mothers. Reference: Recommendations for the prevention and treatment of haemolytic disease of the foetus and newborn, Blood Transfus 2015 (pmc.ncbi.nlm.nih.gov/articles/PMC4317097).",
+    "choice_notes": [
+      "Less likely; anti-B is mostly IgM.",
+      "Less likely; anti-A is mostly IgM.",
+      "Has no anti-A or anti-B.",
+      "Group O people have IgG anti-A,B that crosses the placenta."
+    ],
     "difficulty": 2
   },
   {
@@ -683,6 +971,12 @@
     ],
     "correct_index": 0,
     "explanation": "Kernicterus is permanent brain damage from very high unconjugated bilirubin. Phototherapy and exchange transfusion lower the risk. Reference: The Spectrum of Hemolytic Disease of the Newborn: Evaluating the Etiology of Unconjugated Hyperbilirubinemia (pmc.ncbi.nlm.nih.gov/articles/PMC8418802).",
+    "choice_notes": [
+      "Unconjugated bilirubin is fat-soluble and crosses the blood-brain barrier.",
+      "Water-soluble; does not enter the brain.",
+      "Not the cause.",
+      "Not the cause."
+    ],
     "difficulty": 2
   },
   {
@@ -697,6 +991,12 @@
     ],
     "correct_index": 2,
     "explanation": "IgG is the only antibody class that can cross the placenta, which is why it protects the newborn and can cause HDFN. Reference: OpenStax Microbiology, 18.1 Overview of Specific Adaptive Immunity (openstax.org/books/microbiology/pages/18-1-overview-of-specific-adaptive-immunity).",
+    "choice_notes": [
+      "Does not cross the placenta.",
+      "Too large to cross the placenta.",
+      "Crosses the placenta through FcRn receptors.",
+      "Does not cross the placenta."
+    ],
     "difficulty": 1
   },
   {
@@ -711,6 +1011,12 @@
     ],
     "correct_index": 1,
     "explanation": "Secreted IgM is a pentamer with 10 binding sites, which makes it the most efficient antibody for agglutination. Reference: OpenStax Microbiology, 18.1 Overview of Specific Adaptive Immunity (openstax.org/books/microbiology/pages/18-1-overview-of-specific-adaptive-immunity).",
+    "choice_notes": [
+      "A monomer; works best at 37 °C with AHG.",
+      "Ten binding sites make it the best at agglutination and complement fixation.",
+      "Usually a dimer in secretions.",
+      "A monomer."
+    ],
     "difficulty": 1
   },
   {
@@ -725,6 +1031,12 @@
     ],
     "correct_index": 0,
     "explanation": "Secretory IgA is the most abundant antibody class in mucus secretions and is also found in breast milk, tears and saliva. Reference: OpenStax Microbiology, 18.1 Overview of Specific Adaptive Immunity (openstax.org/books/microbiology/pages/18-1-overview-of-specific-adaptive-immunity).",
+    "choice_notes": [
+      "Secretory IgA is a dimer that protects mucous membranes.",
+      "Mainly a B-cell receptor.",
+      "Allergy antibody.",
+      "Main antibody in serum, not secretions."
+    ],
     "difficulty": 1
   },
   {
@@ -739,6 +1051,12 @@
     ],
     "correct_index": 3,
     "explanation": "The Fc region of IgE binds to mast cells and basophils; allergen cross-linking triggers histamine release. Reference: OpenStax Microbiology, 18.1 Overview of Specific Adaptive Immunity (openstax.org/books/microbiology/pages/18-1-overview-of-specific-adaptive-immunity).",
+    "choice_notes": [
+      "Type II and III reactions.",
+      "Type II and III reactions.",
+      "Not involved.",
+      "Cross-linked IgE makes mast cells release histamine."
+    ],
     "difficulty": 1
   },
   {
@@ -753,6 +1071,12 @@
     ],
     "correct_index": 1,
     "explanation": "IgG or IgM bound to an antigen recruits and activates the C1 complex (through C1q), starting the classical pathway. Reference: OpenStax Microbiology, 18.1 Overview of Specific Adaptive Immunity (openstax.org/books/microbiology/pages/18-1-overview-of-specific-adaptive-immunity); Berentsen, Cold agglutinin disease, Hematology Am Soc Hematol Educ Program 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC6142439).",
+    "choice_notes": [
+      "Part of all pathways, but not the starting component.",
+      "Binds antibody Fc and starts the classical pathway.",
+      "Part of the alternative pathway.",
+      "Starts the lectin pathway."
+    ],
     "difficulty": 2
   },
   {
@@ -767,6 +1091,12 @@
     ],
     "correct_index": 0,
     "explanation": "Activation of C5 leads to formation of the membrane attack complex, which makes pores and lyses cells. Reference: Berentsen, Cold agglutinin disease, Hematology Am Soc Hematol Educ Program 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC6142439).",
+    "choice_notes": [
+      "C5b–C9 makes pores in the cell membrane.",
+      "Antigen bound to antibody.",
+      "Presents antigen; not part of complement.",
+      "Starts the classical pathway."
+    ],
     "difficulty": 2
   },
   {
@@ -781,6 +1111,12 @@
     ],
     "correct_index": 1,
     "explanation": "Helper T cells (CD4) are activated by antigen presented with MHC II; cytotoxic T cells (CD8) recognize antigen with MHC I. Reference: OpenStax Microbiology, 18.3 T Lymphocytes and Cellular Immunity (openstax.org/books/microbiology/pages/18-3-t-lymphocytes-and-cellular-immunity).",
+    "choice_notes": [
+      "Class I presents to CD8 cells.",
+      "Class II is on antigen-presenting cells (macrophages, B cells, dendritic cells).",
+      "NK cells kill cells that lack class I.",
+      "Not antigen-presenting targets."
+    ],
     "difficulty": 2
   },
   {
@@ -795,6 +1131,12 @@
     ],
     "correct_index": 3,
     "explanation": "Type IV hypersensitivity reactions are T cell-mediated, delayed reactions. Types I to III are antibody-mediated. Reference: OpenStax Microbiology, 19.1 Hypersensitivities (openstax.org/books/microbiology/pages/19-1-hypersensitivities).",
+    "choice_notes": [
+      "IgE-mediated allergy.",
+      "Antibody against cell antigens (e.g., transfusion reactions).",
+      "Immune complex disease (e.g., serum sickness).",
+      "T cells react 48–72 hours later."
+    ],
     "difficulty": 1
   },
   {
@@ -809,6 +1151,12 @@
     ],
     "correct_index": 2,
     "explanation": "A hapten is too small to trigger a response alone; it must first attach to a larger carrier molecule, usually a protein. Reference: OpenStax Microbiology, 18.1 Overview of Specific Adaptive Immunity (openstax.org/books/microbiology/pages/18-1-overview-of-specific-adaptive-immunity).",
+    "choice_notes": [
+      "Boosts the immune response but is not the antigen.",
+      "The part of an antigen an antibody binds.",
+      "Too small to trigger antibodies alone.",
+      "Stimulates many lymphocytes regardless of specificity."
+    ],
     "difficulty": 2
   },
   {
@@ -823,6 +1171,12 @@
     ],
     "correct_index": 2,
     "explanation": "Prozone happens when excess unbound antibody causes false-negative reactions. Diluting the serum can resolve it. Reference: High Titer Antibodies Demonstrating Prozone in Two Repeat Blood Donors (pmc.ncbi.nlm.nih.gov/articles/PMC10064354).",
+    "choice_notes": [
+      "Antigen excess.",
+      "Best lattice formation and strongest reaction.",
+      "Too much antibody blocks lattice formation; dilute and retest.",
+      "Coin stacking from high protein, not true agglutination."
+    ],
     "difficulty": 2
   },
   {
@@ -837,6 +1191,12 @@
     ],
     "correct_index": 0,
     "explanation": "ASO measures antibodies to streptolysin O of group A strep and shows a past or recent strep infection, which supports post-strep complications such as rheumatic fever. Reference: MedlinePlus Medical Encyclopedia, Antistreptolysin O titer (medlineplus.gov/ency/article/003522.htm).",
+    "choice_notes": [
+      "Antibody to a group A strep toxin; shows recent strep infection.",
+      "Use the Monospot test.",
+      "Use RPR, VDRL or treponemal tests.",
+      "Use HBV serology."
+    ],
     "difficulty": 1
   },
   {
@@ -851,6 +1211,12 @@
     ],
     "correct_index": 2,
     "explanation": "Mono tests (heterophile antibody tests) are used for infectious mononucleosis, most often caused by Epstein-Barr virus. Reference: MedlinePlus Lab Tests, Mononucleosis (Mono) Tests (medlineplus.gov/lab-tests/mononucleosis-mono-tests).",
+    "choice_notes": [
+      "CMV gives a heterophile-negative mononucleosis.",
+      "Use the rheumatoid factor test.",
+      "Heterophile antibodies agglutinate sheep or horse red cells.",
+      "Use syphilis tests."
+    ],
     "difficulty": 1
   },
   {
@@ -865,6 +1231,12 @@
     ],
     "correct_index": 1,
     "explanation": "IgM anti-HBc positivity indicates recent hepatitis B infection (less than 6 months) and acute infection. Reference: CDC, Interpretation of Hepatitis B Serologic Test Results (cdc.gov/hepatitis-b/media/serologicchartv8.pdf).",
+    "choice_notes": [
+      "Shows immunity.",
+      "IgM to the core antigen marks an infection within about 6 months.",
+      "Not a usual marker of recent infection.",
+      "IgM anti-HBc is the marker."
+    ],
     "difficulty": 3
   },
   {
@@ -879,6 +1251,12 @@
     ],
     "correct_index": 3,
     "explanation": "HBsAg negative, anti-HBc negative and anti-HBs positive means immune due to hepatitis B vaccination. Anti-HBc appears only after natural infection. Reference: CDC, Interpretation of Hepatitis B Serologic Test Results (cdc.gov/hepatitis-b/media/serologicchartv8.pdf).",
+    "choice_notes": [
+      "Means current infection.",
+      "Means past or current infection.",
+      "Means active viral replication.",
+      "The vaccine has only HBsAg, so only anti-HBs forms."
+    ],
     "difficulty": 2
   },
   {
@@ -893,6 +1271,12 @@
     ],
     "correct_index": 0,
     "explanation": "The liver makes CRP in response to inflammation, and its level rises and falls with the amount of inflammation. Reference: MedlinePlus Lab Tests, C-Reactive Protein (CRP) Test (medlineplus.gov/lab-tests/c-reactive-protein-crp-test).",
+    "choice_notes": [
+      "Rises within hours of inflammation, infection or injury.",
+      "That is ASO.",
+      "Not part of complement, though it can activate it.",
+      "Made by the liver."
+    ],
     "difficulty": 1
   },
   {
@@ -907,6 +1291,12 @@
     ],
     "correct_index": 1,
     "explanation": "CDC recommends starting with an HIV-1/2 antigen/antibody combination immunoassay; reactive results go to an antibody differentiation assay. Western blot is no longer used. Reference: CDC & APHL, Laboratory Testing for the Diagnosis of HIV Infection: Updated Recommendations, 2014 (stacks.cdc.gov/view/cdc/23447).",
+    "choice_notes": [
+      "No longer used in the CDC algorithm.",
+      "4th-generation test detects p24 antigen and antibodies, so it finds infection earlier.",
+      "Shows immune status, not infection.",
+      "Not used for routine diagnosis."
+    ],
     "difficulty": 2
   },
   {
@@ -921,6 +1311,12 @@
     ],
     "correct_index": 2,
     "explanation": "Rheumatoid factor is made by the immune system and attacks the body's own immunoglobulin G (IgG). Reference: MedlinePlus Lab Tests, Rheumatoid Factor (RF) Test (medlineplus.gov/lab-tests/rheumatoid-factor-rf-test).",
+    "choice_notes": [
+      "That is antinuclear antibody (ANA).",
+      "That is antiphospholipid antibody.",
+      "Usually IgM against the Fc part of IgG.",
+      "That is ASO."
+    ],
     "difficulty": 2
   }
 ]
