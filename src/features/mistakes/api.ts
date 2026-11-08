@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { latestMistakes, parseChoices } from '@/lib/quiz'
+import { latestMistakes, parseChoiceNotes, parseChoices } from '@/lib/quiz'
 import type { QuestionSource } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 
@@ -13,6 +13,8 @@ export type Mistake = {
   correctIndex: number
   selectedIndex: number | null
   explanation: string | null
+  /** one note per choice, or null (migration 0008) */
+  choiceNotes: string[] | null
   answeredAt: string | null
 }
 
@@ -35,7 +37,7 @@ export function useMistakes() {
       const { data: questions, error: qError } = await supabase
         .from('questions')
         // Everything a quiz needs, so "Review again" can start without loading the questions a second time.
-        .select('id, topic_id, source, stem, choices, correct_index, explanation')
+        .select('id, topic_id, source, stem, choices, correct_index, explanation, choice_notes')
         .in(
           'id',
           wrong.map((a) => a.question_id),
@@ -46,16 +48,18 @@ export function useMistakes() {
       return wrong.flatMap((a) => {
         const q = byId.get(a.question_id)
         if (!q) return [] // question was deleted
+        const choices = parseChoices(q.choices)
         return [
           {
             questionId: q.id,
             topicId: q.topic_id,
             source: q.source,
             stem: q.stem,
-            choices: parseChoices(q.choices),
+            choices,
             correctIndex: q.correct_index,
             selectedIndex: a.selected_index,
             explanation: q.explanation,
+            choiceNotes: parseChoiceNotes(q.choice_notes, choices.length),
             answeredAt: a.created_at,
           },
         ]

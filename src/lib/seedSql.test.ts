@@ -54,6 +54,29 @@ describe('questionsToSql', () => {
 
   it('writes null when there is no explanation and defaults difficulty to 2', () => {
     const sql = questionsToSql([{ ...valid, explanation: undefined, difficulty: undefined }])
-    expect(sql).toContain(", 1, null, 2, 'verified'")
+    expect(sql).toContain(", 1, null, null, 2, 'verified'")
+  })
+
+  it('writes no notes update for a question without choice notes', () => {
+    const sql = questionsToSql([valid])
+    expect(sql).not.toContain('update questions')
+  })
+
+  it('inserts choice notes and fills them into existing built-ins that have none and the same choices', () => {
+    const sql = questionsToSql([{ ...valid, choice_notes: ['Labile', "It's stable", 'Antihemophilic', 'Stuart-Prower'] }])
+    const notes = `'["Labile","It''s stable","Antihemophilic","Stuart-Prower"]'::jsonb`
+    expect(sql).toContain(`'Factor VII.', ${notes}, 2, 'verified'`)
+    expect(sql).toContain(`update questions set choice_notes = ${notes}`)
+    expect(sql).toContain(`choice_notes is null and choices = '["V","VII","VIII","X"]'::jsonb`)
+  })
+})
+
+describe('validateSeedQuestion choice_notes', () => {
+  it('accepts 4 notes, empty ones included', () => {
+    expect(validateSeedQuestion({ ...valid, choice_notes: ['a', '', 'c', 'd'] })).toEqual([])
+  })
+  it('rejects the wrong number of notes or non-text notes', () => {
+    expect(validateSeedQuestion({ ...valid, choice_notes: ['a', 'b'] })).toEqual(['choice_notes must be 4 strings, one per choice'])
+    expect(validateSeedQuestion({ ...valid, choice_notes: ['a', 'b', 'c', 4] })).toHaveLength(1)
   })
 })

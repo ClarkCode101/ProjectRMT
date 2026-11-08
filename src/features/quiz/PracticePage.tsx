@@ -107,7 +107,7 @@ export default function PracticePage() {
 
   // Her mistakes already come with everything a quiz needs (see mistakes/api.ts), so they're used as they are.
   const mistakeQuestions: QuizQuestion[] = (mistakes.data ?? [])
-    .map((m) => ({ id: m.questionId, topic_id: m.topicId, source: m.source, stem: m.stem, choices: m.choices, correct_index: m.correctIndex, explanation: m.explanation }))
+    .map((m) => ({ id: m.questionId, topic_id: m.topicId, source: m.source, stem: m.stem, choices: m.choices, correct_index: m.correctIndex, explanation: m.explanation, choice_notes: m.choiceNotes }))
     .filter((q) => q.choices.length >= 2) // same rule as fetchQuestions: skip broken rows
   const mistakeIds = mistakeQuestions.map((q) => q.id)
 

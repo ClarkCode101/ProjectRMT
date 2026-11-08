@@ -1,6 +1,6 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { Json, QuestionSource, SessionMode } from '@/lib/database.types'
-import { parseChoices } from '@/lib/quiz'
+import { parseChoiceNotes, parseChoices } from '@/lib/quiz'
 import type { HistoryAttempt } from '@/lib/selection'
 import { supabase } from '@/lib/supabase'
 
@@ -39,14 +39,17 @@ export type QuizQuestion = {
   choices: string[]
   correct_index: number
   explanation: string | null
+  /** One short note per choice (same order as `choices`), or null when the question has none. */
+  choice_notes: string[] | null
 }
 
-const QUESTION_COLUMNS = 'id, topic_id, source, stem, choices, correct_index, explanation'
+const QUESTION_COLUMNS = 'id, topic_id, source, stem, choices, correct_index, explanation, choice_notes'
 
-type QuestionRow = Omit<QuizQuestion, 'choices'> & { choices: Json }
+type QuestionRow = Omit<QuizQuestion, 'choices' | 'choice_notes'> & { choices: Json; choice_notes: Json | null }
 
 function toQuizQuestion(row: QuestionRow): QuizQuestion {
-  return { ...row, choices: parseChoices(row.choices) }
+  const choices = parseChoices(row.choices)
+  return { ...row, choices, choice_notes: parseChoiceNotes(row.choice_notes, choices.length) }
 }
 
 // Supabase returns at most 1000 rows per request, so bigger lists are loaded in pages.

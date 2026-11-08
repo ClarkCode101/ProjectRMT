@@ -48,6 +48,8 @@ export type Database = {
           choices: Json
           correct_index: number
           explanation: string | null
+          /** one note per choice, same order as choices; null = no notes (migration 0008) */
+          choice_notes: Json | null
           image_path: string | null
           difficulty: number | null
           status: VerifyStatus

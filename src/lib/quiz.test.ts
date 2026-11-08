@@ -4,6 +4,7 @@ import {
   formatPercent,
   latestMistakes,
   overallStats,
+  parseChoiceNotes,
   parseChoices,
   shuffle,
   shuffledChoiceOrder,
@@ -48,6 +49,24 @@ describe('parseChoices', () => {
     expect(parseChoices({ a: 1 })).toEqual([])
     expect(parseChoices(['A', 2])).toEqual([])
     expect(parseChoices(null)).toEqual([])
+  })
+})
+
+describe('parseChoiceNotes', () => {
+  it('returns one trimmed note per choice', () => {
+    expect(parseChoiceNotes([' a ', 'b', '', 'd'], 4)).toEqual(['a', 'b', '', 'd'])
+  })
+  it('returns null when the question has no notes', () => {
+    expect(parseChoiceNotes(null, 4)).toBeNull()
+    expect(parseChoiceNotes(undefined, 4)).toBeNull()
+  })
+  it('returns null when the notes do not match the choices', () => {
+    expect(parseChoiceNotes(['a', 'b', 'c'], 4)).toBeNull() // wrong length
+    expect(parseChoiceNotes(['a', 2, 'c', 'd'], 4)).toBeNull() // not all text
+    expect(parseChoiceNotes({ a: 'x' }, 4)).toBeNull()
+  })
+  it('returns null when every note is empty', () => {
+    expect(parseChoiceNotes(['', ' ', '', ''], 4)).toBeNull()
   })
 })
 

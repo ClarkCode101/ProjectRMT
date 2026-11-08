@@ -34,6 +34,18 @@ export function parseChoices(value: Json): string[] {
   return []
 }
 
+/**
+ * The `choice_notes` column (migration 0008): one note per choice, same order as the choices.
+ * Returns null when there are no usable notes, so the answer screen shows no notes at all
+ * (wrong type, wrong length, or every note empty).
+ */
+export function parseChoiceNotes(value: Json | null | undefined, choiceCount: number): string[] | null {
+  if (!Array.isArray(value) || value.length !== choiceCount) return null
+  if (!value.every((n) => typeof n === 'string')) return null
+  const notes = (value as string[]).map((n) => n.trim())
+  return notes.some((n) => n !== '') ? notes : null
+}
+
 export type AttemptLike = {
   question_id: string
   is_correct: boolean

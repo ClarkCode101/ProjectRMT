@@ -15,6 +15,8 @@ export type SeedQuestion = {
   choices: string[]
   correct_index: number
   explanation?: string
+  /** one short note per choice, same order as choices (migration 0008); '' = no note for that choice */
+  choice_notes?: string[]
   difficulty?: number
 }
 
@@ -43,6 +45,14 @@ export function validateSeedQuestion(value: unknown): string[] {
     errors.push('explanation must be text')
   }
   if (
+    q.choice_notes !== undefined &&
+    (!Array.isArray(q.choice_notes) ||
+      q.choice_notes.length !== 4 ||
+      !q.choice_notes.every((n) => typeof n === 'string'))
+  ) {
+    errors.push('choice_notes must be 4 strings, one per choice')
+  }
+  if (
     q.difficulty !== undefined &&
     (!Number.isInteger(q.difficulty) || (q.difficulty as number) < 1 || (q.difficulty as number) > 3)
   ) {
@@ -64,6 +74,9 @@ const NORMALIZED_STEM_SQL = (stemLiteral: string) =>
  * Builds SQL that inserts each question as built-in + verified (the built-in set is fact-checked, with a reference in each explanation).
  * Missing topics are created. Questions whose stem already exists as built-in
  * are skipped, so running the file twice does not create duplicates.
+ * Choice notes are also filled into built-in questions that are already in the database, but only
+ * when they have no notes yet and their choices are still the same (so a choice she edited never
+ * gets a note written for the old wording).
  */
 export function questionsToSql(questions: SeedQuestion[]): string {
   const lines: string[] = [
@@ -86,15 +99,25 @@ export function questionsToSql(questions: SeedQuestion[]): string {
 
   for (const q of questions) {
     const stem = sqlString(q.stem)
+    const choices = `${sqlString(JSON.stringify(q.choices))}::jsonb`
+    const notes = q.choice_notes ? `${sqlString(JSON.stringify(q.choice_notes))}::jsonb` : 'null'
     lines.push(
       [
-        'insert into questions (owner_id, topic_id, source, stem, choices, correct_index, explanation, difficulty, status)',
-        `select null, t.id, 'builtin', ${stem}, ${sqlString(JSON.stringify(q.choices))}::jsonb, ${q.correct_index}, ${q.explanation ? sqlString(q.explanation) : 'null'}, ${q.difficulty ?? 2}, 'verified'`,
+        'insert into questions (owner_id, topic_id, source, stem, choices, correct_index, explanation, choice_notes, difficulty, status)',
+        `select null, t.id, 'builtin', ${stem}, ${choices}, ${q.correct_index}, ${q.explanation ? sqlString(q.explanation) : 'null'}, ${notes}, ${q.difficulty ?? 2}, 'verified'`,
         'from topics t join subjects s on s.id = t.subject_id',
         `where s.code = ${sqlString(q.subject)} and t.name = ${sqlString(q.topic)}`,
         `  and not exists (select 1 from questions x where x.owner_id is null and x.stem_hash = ${NORMALIZED_STEM_SQL(stem)});`,
       ].join('\n'),
     )
+    if (q.choice_notes) {
+      lines.push(
+        [
+          `update questions set choice_notes = ${notes}`,
+          `where owner_id is null and choice_notes is null and choices = ${choices} and stem_hash = ${NORMALIZED_STEM_SQL(stem)};`,
+        ].join('\n'),
+      )
+    }
   }
 
   lines.push('', 'commit;', '')
