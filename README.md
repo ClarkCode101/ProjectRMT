@@ -15,7 +15,7 @@ and seed questions.
 | `npm run build` | Type-check and build to `dist/` |
 | `npm test` | Run unit tests (Vitest) |
 | `npm run lint` | Lint (oxlint) |
-| `npm run seed:sql` | Rebuild `supabase/seed/02_questions.sql` from `supabase/seed/questions/*.json` |
+| `npm run seed:sql` | Rebuild `supabase/seed/02_questions_<subject>.sql` (one per file in `supabase/seed/questions/`) |
 
 ## First-time Supabase setup
 
@@ -23,7 +23,7 @@ and seed questions.
 2. **SQL Editor** → paste and run these files, in order:
    1. `supabase/migrations/0001_init.sql` (tables, RLS, view)
    2. `supabase/seed/01_subjects_topics.sql` (subjects + topics)
-   3. `supabase/seed/02_questions.sql` (built-in questions, all `unverified`)
+   3. Every `supabase/seed/02_questions_*.sql` file (built-in questions, one file per subject, any order)
    4. `supabase/migrations/0002_edit_builtin_questions.sql` (lets her verify and fix built-in questions)
    5. `supabase/migrations/0003_upload_file_optional.sql` (uploads are read in the browser; files are not stored)
 3. **Authentication → Sign In / Providers**: keep Email enabled and turn **off**
@@ -44,8 +44,9 @@ After the project exists, you can replace the hand-written types with generated 
 ## Adding built-in questions
 
 1. Add or edit JSON files in `supabase/seed/questions/` (format in PROJECT_PLAN.md §4).
-2. `npm run seed:sql` checks every question and rewrites `02_questions.sql`.
-3. Run `02_questions.sql` in the SQL Editor. Questions that already exist are skipped.
+2. `npm run seed:sql` checks every question and rewrites the `02_questions_<subject>.sql` files.
+3. Run only the subject files you changed in the SQL Editor (e.g. `02_questions_cc.sql`).
+   Questions that already exist are skipped, so running a file again is safe.
 
 ## Deploy (Cloudflare Pages, free)
 

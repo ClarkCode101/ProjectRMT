@@ -3,7 +3,12 @@
     "subject": "HTMLE",
     "topic": "Fixation",
     "stem": "The most commonly used fixative for routine histopathology is:",
-    "choices": ["Bouin's solution", "10% neutral buffered formalin", "Zenker's fluid", "Carnoy's fluid"],
+    "choices": [
+      "Bouin's solution",
+      "10% neutral buffered formalin",
+      "Zenker's fluid",
+      "Carnoy's fluid"
+    ],
     "correct_index": 1,
     "explanation": "10% neutral buffered formalin is the standard routine fixative: it penetrates well, is cheap, and works with most stains. Reference: A Buffered Alcohol-Based Fixative for Histomorphologic and Molecular Applications (pmc.ncbi.nlm.nih.gov/articles/PMC4931761), which calls NBF the long-standing gold standard.",
     "difficulty": 1
@@ -12,7 +17,12 @@
     "subject": "HTMLE",
     "topic": "Staining",
     "stem": "In routine H&E staining, hematoxylin stains which structures?",
-    "choices": ["Cytoplasm pink", "Nuclei blue to purple", "Collagen green", "Fat red-orange"],
+    "choices": [
+      "Cytoplasm pink",
+      "Nuclei blue to purple",
+      "Collagen green",
+      "Fat red-orange"
+    ],
     "correct_index": 1,
     "explanation": "Hematoxylin is a basic (nuclear) dye that stains nuclei blue-purple. Eosin is the acidic counterstain that colors cytoplasm pink. Reference: StatPearls, Histology, Staining (ncbi.nlm.nih.gov/books/NBK557663).",
     "difficulty": 1
@@ -21,7 +31,12 @@
     "subject": "HTMLE",
     "topic": "MT Laws",
     "stem": "The Philippine Medical Technology Act is:",
-    "choices": ["Republic Act 5527", "Republic Act 4688", "Republic Act 9288", "Republic Act 7719"],
+    "choices": [
+      "Republic Act 5527",
+      "Republic Act 4688",
+      "Republic Act 9288",
+      "Republic Act 7719"
+    ],
     "correct_index": 0,
     "explanation": "RA 5527 is the Philippine Medical Technology Act of 1969. RA 4688 is the Clinical Laboratory Law, RA 9288 the Newborn Screening Act, and RA 7719 the National Blood Services Act. Reference: Senate Legislative Digest, RA 5527 (ldr.senate.gov.ph/legislative-issuance/republic-act-no-5527); texts of RA 4688, 9288 and 7719 on ChanRobles (chanrobles.com).",
     "difficulty": 1
@@ -30,7 +45,12 @@
     "subject": "HTMLE",
     "topic": "Cytology",
     "stem": "Which stain is primarily used for routine cervical cytology screening?",
-    "choices": ["Wright stain", "Papanicolaou stain", "Gram stain", "Periodic acid–Schiff"],
+    "choices": [
+      "Wright stain",
+      "Papanicolaou stain",
+      "Gram stain",
+      "Periodic acid–Schiff"
+    ],
     "correct_index": 1,
     "explanation": "The Papanicolaou (Pap) stain shows nuclear detail and cytoplasmic maturation, which is what cervical screening needs. Reference: StatPearls, Histology, Staining (ncbi.nlm.nih.gov/books/NBK557663).",
     "difficulty": 1
@@ -39,7 +59,12 @@
     "subject": "HTMLE",
     "topic": "Ethics",
     "stem": "The ethical principle summed up as \"first, do no harm\" is:",
-    "choices": ["Beneficence", "Nonmaleficence", "Justice", "Autonomy"],
+    "choices": [
+      "Beneficence",
+      "Nonmaleficence",
+      "Justice",
+      "Autonomy"
+    ],
     "correct_index": 1,
     "explanation": "Nonmaleficence is the duty not to inflict harm. Beneficence is acting for the patient's benefit, justice is fair distribution of benefits and resources, and autonomy is the patient's right to decide. Reference: The 4 basic ethical principles (pmc.ncbi.nlm.nih.gov/articles/PMC4863255).",
     "difficulty": 1
@@ -48,7 +73,12 @@
     "subject": "HTMLE",
     "topic": "Ethics",
     "stem": "Giving a patient complete information so they can decide about their own care without pressure reflects the principle of:",
-    "choices": ["Autonomy", "Justice", "Beneficence", "Nonmaleficence"],
+    "choices": [
+      "Autonomy",
+      "Justice",
+      "Beneficence",
+      "Nonmaleficence"
+    ],
     "correct_index": 0,
     "explanation": "Respect for autonomy means patients receive full information, including risks, and make their own decisions freely; it is the basis of informed consent. Reference: The 4 basic ethical principles (pmc.ncbi.nlm.nih.gov/articles/PMC4863255).",
     "difficulty": 1
@@ -57,7 +87,12 @@
     "subject": "HTMLE",
     "topic": "Tissue Processing",
     "stem": "The correct order of routine tissue processing is:",
-    "choices": ["Clearing → fixation → dehydration → infiltration", "Fixation → dehydration → clearing → paraffin infiltration", "Dehydration → fixation → infiltration → clearing", "Fixation → clearing → dehydration → infiltration"],
+    "choices": [
+      "Clearing → fixation → dehydration → infiltration",
+      "Fixation → dehydration → clearing → paraffin infiltration",
+      "Dehydration → fixation → infiltration → clearing",
+      "Fixation → clearing → dehydration → infiltration"
+    ],
     "correct_index": 1,
     "explanation": "Tissue is fixed (e.g., 10% NBF), dehydrated in graded alcohols, cleared with xylene, then infiltrated with warm paraffin wax. Reference: StatPearls, Histology, Skin (ncbi.nlm.nih.gov/books/NBK537325).",
     "difficulty": 1
@@ -66,7 +101,12 @@
     "subject": "HTMLE",
     "topic": "Tissue Processing",
     "stem": "In tissue processing, xylene is used as a:",
-    "choices": ["Fixative", "Dehydrating agent", "Clearing agent that replaces alcohol so paraffin can enter", "Decalcifying agent"],
+    "choices": [
+      "Fixative",
+      "Dehydrating agent",
+      "Clearing agent that replaces alcohol so paraffin can enter",
+      "Decalcifying agent"
+    ],
     "correct_index": 2,
     "explanation": "Paraffin does not mix with water or alcohol, so after dehydration the alcohol is cleared with xylene, which mixes with both alcohol and paraffin. Reference: StatPearls, Dermatopathology Histology Artifacts (ncbi.nlm.nih.gov/books/NBK599504).",
     "difficulty": 1
@@ -75,7 +115,12 @@
     "subject": "HTMLE",
     "topic": "Fixation",
     "stem": "About how much formaldehyde does 10% neutral buffered formalin contain?",
-    "choices": ["10%", "37–40%", "About 3.7–4%", "0.5%"],
+    "choices": [
+      "10%",
+      "37–40%",
+      "About 3.7–4%",
+      "0.5%"
+    ],
     "correct_index": 2,
     "explanation": "10% neutral buffered formalin is a 3.7–4.0% formaldehyde solution in phosphate buffer, because \"formalin\" is the stock formaldehyde solution, not pure formaldehyde. Reference: Perry et al., A Buffered Alcohol-Based Fixative for Histomorphologic and Molecular Applications, J Histochem Cytochem 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC4931761).",
     "difficulty": 2
@@ -84,7 +129,12 @@
     "subject": "HTMLE",
     "topic": "Fixation",
     "stem": "Formaldehyde fixes tissue mainly by:",
-    "choices": ["Cross-linking proteins", "Precipitating proteins out of solution", "Dissolving lipids from membranes", "Removing calcium salts"],
+    "choices": [
+      "Cross-linking proteins",
+      "Precipitating proteins out of solution",
+      "Dissolving lipids from membranes",
+      "Removing calcium salts"
+    ],
     "correct_index": 0,
     "explanation": "Formaldehyde (as in NBF) fixes tissue by cross-linking proteins. Alcohol-based fixatives work differently and do not cross-link proteins. Reference: Perry et al., A Buffered Alcohol-Based Fixative for Histomorphologic and Molecular Applications, J Histochem Cytochem 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC4931761).",
     "difficulty": 1
@@ -93,16 +143,26 @@
     "subject": "HTMLE",
     "topic": "Fixation",
     "stem": "Ethanol and methanol belong to which group of fixatives?",
-    "choices": ["Cross-linking (aldehyde) fixatives", "Oxidizing fixatives", "Chelating fixatives", "Precipitating (denaturing) fixatives"],
+    "choices": [
+      "Cross-linking (aldehyde) fixatives",
+      "Oxidizing fixatives",
+      "Chelating fixatives",
+      "Precipitating (denaturing) fixatives"
+    ],
     "correct_index": 3,
-    "explanation": "Alcohol-based fixatives do not cross-link proteins. They are precipitating (denaturing) fixatives that lower protein solubility so the proteins come out of solution. References: Perry et al., J Histochem Cytochem 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC4931761); Wikipedia, Fixation (histology) (en.wikipedia.org/wiki/Fixation_(histology)).",
+    "explanation": "Alcohol-based fixatives do not cross-link proteins. They are precipitating (denaturing) fixatives that make proteins come out of solution. Reference: Perry et al., J Histochem Cytochem 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC4931761).",
     "difficulty": 1
   },
   {
     "subject": "HTMLE",
     "topic": "Fixation",
     "stem": "The most commonly used fixative for electron microscopy is:",
-    "choices": ["10% neutral buffered formalin", "Glutaraldehyde", "Carnoy's solution", "95% ethanol"],
+    "choices": [
+      "10% neutral buffered formalin",
+      "Glutaraldehyde",
+      "Carnoy's solution",
+      "95% ethanol"
+    ],
     "correct_index": 1,
     "explanation": "For transmission electron microscopy, cells are traditionally fixed first with glutaraldehyde, followed by osmium tetroxide. Reference: Winey et al., Conventional transmission electron microscopy, Mol Biol Cell 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC3907272).",
     "difficulty": 1
@@ -111,7 +171,12 @@
     "subject": "HTMLE",
     "topic": "Fixation",
     "stem": "Osmium tetroxide is most often used in tissue preparation as:",
-    "choices": ["The routine fixative for paraffin sections", "A decalcifying agent", "A secondary fixative for electron microscopy", "A clearing agent"],
+    "choices": [
+      "The routine fixative for paraffin sections",
+      "A decalcifying agent",
+      "A secondary fixative for electron microscopy",
+      "A clearing agent"
+    ],
     "correct_index": 2,
     "explanation": "In conventional electron microscopy, samples are fixed with glutaraldehyde followed by osmium tetroxide, which reacts strongly with membrane lipids. Reference: Winey et al., Conventional transmission electron microscopy, Mol Biol Cell 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC3907272).",
     "difficulty": 2
@@ -120,7 +185,12 @@
     "subject": "HTMLE",
     "topic": "Fixation",
     "stem": "Bouin's solution is made of:",
-    "choices": ["Picric acid, formaldehyde, and acetic acid", "Ethanol, chloroform, and acetic acid", "Glutaraldehyde and phosphate buffer", "Osmium tetroxide and ethanol"],
+    "choices": [
+      "Picric acid, formaldehyde, and acetic acid",
+      "Ethanol, chloroform, and acetic acid",
+      "Glutaraldehyde and phosphate buffer",
+      "Osmium tetroxide and ethanol"
+    ],
     "correct_index": 0,
     "explanation": "The main components of Bouin's fluid are picric acid, formaldehyde (formalin), and glacial acetic acid. References: Singhal et al., Histomorphometric Changes in Relation to Fixation Protocol, J Clin Diagn Res 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC5028485); Rowley et al., Tissue-specific Fixation Methods, J Histochem Cytochem 2020, Table 1 (pmc.ncbi.nlm.nih.gov/articles/PMC6931168).",
     "difficulty": 1
@@ -129,7 +199,12 @@
     "subject": "HTMLE",
     "topic": "Fixation",
     "stem": "Carnoy's solution contains:",
-    "choices": ["Picric acid, formalin, and acetic acid", "Ethanol, chloroform, and glacial acetic acid", "Glutaraldehyde and osmium tetroxide", "Formalin and phosphate buffer"],
+    "choices": [
+      "Picric acid, formalin, and acetic acid",
+      "Ethanol, chloroform, and glacial acetic acid",
+      "Glutaraldehyde and osmium tetroxide",
+      "Formalin and phosphate buffer"
+    ],
     "correct_index": 1,
     "explanation": "Carnoy's solution is made of ethanol, chloroform, and acetic acid; the exact proportions differ between recipes. References: Singhal et al., J Clin Diagn Res 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC5028485); Rowley et al., J Histochem Cytochem 2020, Table 1 (pmc.ncbi.nlm.nih.gov/articles/PMC6931168).",
     "difficulty": 2
@@ -138,16 +213,26 @@
     "subject": "HTMLE",
     "topic": "Fixation",
     "stem": "How much fixative should be used for a tissue specimen?",
-    "choices": ["Just enough to wet the surface", "A volume equal to the tissue", "Half the volume of the tissue", "At least 10 times the volume of the tissue"],
+    "choices": [
+      "Just enough to wet the surface",
+      "A volume equal to the tissue",
+      "Half the volume of the tissue",
+      "At least 10 times the volume of the tissue"
+    ],
     "correct_index": 3,
-    "explanation": "The fixative should be at least 10 times the volume of the tissue so it is not used up before fixation is complete; research protocols likewise fix tissue at more than a 1:10 tissue-to-fixative ratio. References: Wikipedia, Fixation (histology) (en.wikipedia.org/wiki/Fixation_(histology)); Perry et al., J Histochem Cytochem 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC4931761).",
+    "explanation": "Use a fixative volume at least 10 times the tissue volume so the fixative is not used up; fixation protocols use more than a 1:10 tissue-to-fixative ratio. Reference: Perry et al., J Histochem Cytochem 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC4931761).",
     "difficulty": 1
   },
   {
     "subject": "HTMLE",
     "topic": "Fixation",
     "stem": "In 10% neutral buffered formalin, the solution is kept near neutral by:",
-    "choices": ["Acetic acid", "Picric acid", "A phosphate buffer", "Sodium chloride"],
+    "choices": [
+      "Acetic acid",
+      "Picric acid",
+      "A phosphate buffer",
+      "Sodium chloride"
+    ],
     "correct_index": 2,
     "explanation": "10% NBF is a 3.7–4.0% formaldehyde solution in phosphate buffer, which keeps it near neutral pH. Reference: Perry et al., A Buffered Alcohol-Based Fixative for Histomorphologic and Molecular Applications, J Histochem Cytochem 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC4931761).",
     "difficulty": 1
@@ -156,7 +241,12 @@
     "subject": "HTMLE",
     "topic": "Tissue Processing",
     "stem": "During dehydration, tissue is passed through:",
-    "choices": ["Progressively more concentrated ethanol, up to 100%", "Decreasing concentrations of ethanol, ending in water", "Xylene first, then ethanol", "Melted paraffin, then ethanol"],
+    "choices": [
+      "Progressively more concentrated ethanol, up to 100%",
+      "Decreasing concentrations of ethanol, ending in water",
+      "Xylene first, then ethanol",
+      "Melted paraffin, then ethanol"
+    ],
     "correct_index": 0,
     "explanation": "After fixation, tissue is dehydrated through a graded (increasing) ethanol series, cleared with xylene, and then infiltrated with molten paraffin. Reference: Perry et al., A Buffered Alcohol-Based Fixative for Histomorphologic and Molecular Applications, J Histochem Cytochem 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC4931761).",
     "difficulty": 1
@@ -165,7 +255,12 @@
     "subject": "HTMLE",
     "topic": "Tissue Processing",
     "stem": "After clearing in xylene, the tissue is infiltrated with:",
-    "choices": ["Formalin", "Graded alcohol", "Distilled water", "Melted paraffin wax, which replaces the xylene"],
+    "choices": [
+      "Formalin",
+      "Graded alcohol",
+      "Distilled water",
+      "Melted paraffin wax, which replaces the xylene"
+    ],
     "correct_index": 3,
     "explanation": "Tissue is dehydrated through an ethanol series, cleared with xylene, and infiltrated with molten paraffin, which takes the place of the xylene. Reference: Perry et al., A Buffered Alcohol-Based Fixative for Histomorphologic and Molecular Applications, J Histochem Cytochem 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC4931761).",
     "difficulty": 1
@@ -174,7 +269,12 @@
     "subject": "HTMLE",
     "topic": "Tissue Processing",
     "stem": "A cryostat is best described as:",
-    "choices": ["A machine that dehydrates tissue automatically", "A microtome inside a freezer, used for frozen sections", "An oven for melting paraffin", "An automatic slide stainer"],
+    "choices": [
+      "A machine that dehydrates tissue automatically",
+      "A microtome inside a freezer, used for frozen sections",
+      "An oven for melting paraffin",
+      "An automatic slide stainer"
+    ],
     "correct_index": 1,
     "explanation": "The cryostat is a refrigerated box containing a rotary microtome, used to cut frozen sections. Reference: Jaafar, Intra-Operative Frozen Section Consultation: Concepts, Applications and Limitations, Malays J Med Sci 2006 (pmc.ncbi.nlm.nih.gov/articles/PMC3347896).",
     "difficulty": 1
@@ -183,7 +283,12 @@
     "subject": "HTMLE",
     "topic": "Tissue Processing",
     "stem": "The main use of the frozen section procedure is:",
-    "choices": ["Long-term storage of tissue", "Preparing sections for electron microscopy", "Rapid examination of tissue while surgery is taking place", "Decalcifying bone"],
+    "choices": [
+      "Long-term storage of tissue",
+      "Preparing sections for electron microscopy",
+      "Rapid examination of tissue while surgery is taking place",
+      "Decalcifying bone"
+    ],
     "correct_index": 2,
     "explanation": "Frozen section gives a rapid diagnosis that can guide the surgeon's decisions while the operation is still going on. Reference: Jaafar, Intra-Operative Frozen Section Consultation: Concepts, Applications and Limitations, Malays J Med Sci 2006 (pmc.ncbi.nlm.nih.gov/articles/PMC3347896).",
     "difficulty": 1
@@ -192,7 +297,12 @@
     "subject": "HTMLE",
     "topic": "Tissue Processing",
     "stem": "Sections for transmission electron microscopy are cut with an ultramicrotome at about:",
-    "choices": ["About 60–80 nm", "5–15 µm", "50–100 µm", "1 mm"],
+    "choices": [
+      "About 60–80 nm",
+      "5–15 µm",
+      "50–100 µm",
+      "1 mm"
+    ],
     "correct_index": 0,
     "explanation": "Transmission electron microscopy uses thin sections of about 60–80 nm, cut from resin blocks with an ultramicrotome. Reference: Winey et al., Conventional transmission electron microscopy, Mol Biol Cell 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC3907272).",
     "difficulty": 2
@@ -201,43 +311,54 @@
     "subject": "HTMLE",
     "topic": "Tissue Processing",
     "stem": "Paraffin sections for routine light microscopy are typically cut in which range?",
-    "choices": ["60–80 nm", "About 5–15 µm", "0.5–1 mm", "100–200 µm"],
+    "choices": [
+      "60–80 nm",
+      "About 5–15 µm",
+      "0.5–1 mm",
+      "100–200 µm"
+    ],
     "correct_index": 1,
-    "explanation": "Sections for light microscopy are a few micrometers thick (about 5–15 µm), while transmission electron microscopy needs sections of about 60–80 nm. References: Wikipedia, Histology (en.wikipedia.org/wiki/Histology); Winey et al., Mol Biol Cell 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC3907272).",
+    "explanation": "Sections for light microscopy are a few micrometers thick (for example 5 to 10 um), while transmission electron microscopy needs thin sections of about 60 to 80 nm. Reference: Perry et al., J Histochem Cytochem 2016 (pmc.ncbi.nlm.nih.gov/articles/PMC4931761); Winey et al., Mol Biol Cell 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC3907272).",
     "difficulty": 1
   },
   {
     "subject": "HTMLE",
     "topic": "Tissue Processing",
     "stem": "EDTA removes calcium from bone specimens by:",
-    "choices": ["Oxidizing the calcium", "Dissolving the proteins", "Cross-linking collagen", "Chelating (binding) the calcium"],
+    "choices": [
+      "Oxidizing the calcium",
+      "Dissolving the proteins",
+      "Cross-linking collagen",
+      "Chelating (binding) the calcium"
+    ],
     "correct_index": 3,
-    "explanation": "Decalcifying agents fall into two groups, chelating agents and acids. EDTA is the most frequently used chelating agent. Reference: Wikipedia, Bone decalcification (en.wikipedia.org/wiki/Bone_decalcification).",
+    "explanation": "Decalcifiers are either acids, which form soluble calcium salts, or chelating agents such as EDTA, which bind calcium in a complex. Reference: Qualitative Histological Evaluation of Hard and Soft Tissue Components of Human Permanent Teeth Using Various Decalcifying Agents (pmc.ncbi.nlm.nih.gov/articles/PMC4225979).",
     "difficulty": 1
-  },
-  {
-    "subject": "HTMLE",
-    "topic": "Tissue Processing",
-    "stem": "Which of these is a strong acid used for decalcification?",
-    "choices": ["Formic acid", "EDTA", "Nitric acid", "Glutaraldehyde"],
-    "correct_index": 2,
-    "explanation": "Nitric and hydrochloric acid are the strong acid decalcifiers. Formic acid is a weak acid decalcifier, EDTA is a chelating agent, and glutaraldehyde is a fixative. Reference: Wikipedia, Bone decalcification (en.wikipedia.org/wiki/Bone_decalcification).",
-    "difficulty": 2
   },
   {
     "subject": "HTMLE",
     "topic": "Staining",
     "stem": "In the PAS stain, carbohydrate-rich structures such as glycogen, mucus, and basement membranes appear:",
-    "choices": ["Blue-black", "Purple-magenta", "Apple-green", "Orange"],
+    "choices": [
+      "Blue-black",
+      "Purple-magenta",
+      "Apple-green",
+      "Orange"
+    ],
     "correct_index": 1,
-    "explanation": "PAS is used to identify glycogen and other carbohydrate-rich material; the Schiff reaction gives a purple-magenta color. References: Krishna, Role of special stains in diagnostic liver pathology, Clin Liver Dis 2013 (pmc.ncbi.nlm.nih.gov/articles/PMC6448668); Wikipedia, Periodic acid–Schiff stain (en.wikipedia.org/wiki/Periodic_acid%E2%80%93Schiff_stain).",
+    "explanation": "PAS is used to identify glycogen and other carbohydrate-rich material; the Schiff reaction gives a purple-magenta color. Reference: Krishna, Role of special stains in diagnostic liver pathology, Clin Liver Dis 2013 (pmc.ncbi.nlm.nih.gov/articles/PMC6448668).",
     "difficulty": 1
   },
   {
     "subject": "HTMLE",
     "topic": "Staining",
     "stem": "Why is a PAS stain repeated after diastase digestion (PAS-D)?",
-    "choices": ["To make nuclei stain darker", "To remove lipids first", "To detect iron", "Diastase breaks down glycogen, so material that loses its color was glycogen"],
+    "choices": [
+      "To make nuclei stain darker",
+      "To remove lipids first",
+      "To detect iron",
+      "Diastase breaks down glycogen, so material that loses its color was glycogen"
+    ],
     "correct_index": 3,
     "explanation": "Removing glycogen with diastase digestion leaves the other PAS-positive material behind, so staining that disappears after diastase was glycogen. Reference: Krishna, Role of special stains in diagnostic liver pathology, Clin Liver Dis 2013 (pmc.ncbi.nlm.nih.gov/articles/PMC6448668).",
     "difficulty": 2
@@ -246,7 +367,12 @@
     "subject": "HTMLE",
     "topic": "Staining",
     "stem": "Perls Prussian blue stain is used to show:",
-    "choices": ["Ferric iron such as hemosiderin, as blue deposits", "Amyloid, as apple-green", "Glycogen, as magenta", "Collagen, as green"],
+    "choices": [
+      "Ferric iron such as hemosiderin, as blue deposits",
+      "Amyloid, as apple-green",
+      "Glycogen, as magenta",
+      "Collagen, as green"
+    ],
     "correct_index": 0,
     "explanation": "Perls stain highlights hemosiderin (ferric iron) as coarse blue granules. Reference: Krishna, Role of special stains in diagnostic liver pathology, Clin Liver Dis 2013 (pmc.ncbi.nlm.nih.gov/articles/PMC6448668).",
     "difficulty": 1
@@ -255,7 +381,12 @@
     "subject": "HTMLE",
     "topic": "Staining",
     "stem": "Amyloid stained with Congo red and viewed under polarized light shows:",
-    "choices": ["Red-orange fluorescence", "Blue-black granules", "Apple-green birefringence", "Magenta staining"],
+    "choices": [
+      "Red-orange fluorescence",
+      "Blue-black granules",
+      "Apple-green birefringence",
+      "Magenta staining"
+    ],
     "correct_index": 2,
     "explanation": "Apple-green birefringence of Congo red–stained amyloid under a polarizing microscope remains the gold standard; it shows properly only when the two filters are accurately crossed. Reference: Song et al., Congo red staining with fluorescence microscopy in primary cutaneous amyloidosis, J Dermatol 2025 (pmc.ncbi.nlm.nih.gov/articles/PMC11807360).",
     "difficulty": 1
@@ -264,7 +395,12 @@
     "subject": "HTMLE",
     "topic": "Staining",
     "stem": "In Masson's trichrome stain, collagen stains:",
-    "choices": ["Red", "Blue", "Black", "Yellow"],
+    "choices": [
+      "Red",
+      "Blue",
+      "Black",
+      "Yellow"
+    ],
     "correct_index": 1,
     "explanation": "The trichrome stain colors collagen blue against a red background of cells. Reference: Krishna, Role of special stains in diagnostic liver pathology, Clin Liver Dis 2013 (pmc.ncbi.nlm.nih.gov/articles/PMC6448668).",
     "difficulty": 1
@@ -273,16 +409,26 @@
     "subject": "HTMLE",
     "topic": "Staining",
     "stem": "Oil Red O staining for fat is done on fresh (frozen) tissue because:",
-    "choices": ["The dye only works below 0 °C", "Paraffin destroys the dye", "Frozen tissue absorbs more dye", "Alcohol used in fixation and processing removes most lipids"],
+    "choices": [
+      "The dye only works below 0 °C",
+      "Paraffin destroys the dye",
+      "Frozen tissue absorbs more dye",
+      "Alcohol used in fixation and processing removes most lipids"
+    ],
     "correct_index": 3,
-    "explanation": "Oil Red O for fat is performed on frozen sections, because the alcohol used in fixation and paraffin processing removes most lipids. References: Krishna, Clin Liver Dis 2013 (pmc.ncbi.nlm.nih.gov/articles/PMC6448668); Wikipedia, Oil Red O (en.wikipedia.org/wiki/Oil_Red_O).",
+    "explanation": "Oil Red O for fat is performed on frozen sections, because the alcohol used in fixation and paraffin processing removes most lipids. Reference: Krishna, Role of special stains in diagnostic liver pathology, Clin Liver Dis 2013 (pmc.ncbi.nlm.nih.gov/articles/PMC6448668).",
     "difficulty": 2
   },
   {
     "subject": "HTMLE",
     "topic": "Staining",
     "stem": "Reticular fibers (type III collagen) are best shown with:",
-    "choices": ["Silver stains, which show the fibers as black", "Routine hematoxylin", "Congo red", "Oil Red O"],
+    "choices": [
+      "Silver stains, which show the fibers as black",
+      "Routine hematoxylin",
+      "Congo red",
+      "Oil Red O"
+    ],
     "correct_index": 0,
     "explanation": "The reticulin stain uses silver impregnation to show reticulin fibers, which are made of type III collagen; the fibers appear black. Reference: Krishna, Role of special stains in diagnostic liver pathology, Clin Liver Dis 2013 (pmc.ncbi.nlm.nih.gov/articles/PMC6448668).",
     "difficulty": 1
@@ -291,7 +437,12 @@
     "subject": "HTMLE",
     "topic": "Staining",
     "stem": "In H&E staining, \"bluing\" is done by:",
-    "choices": ["Dipping the slide in eosin", "Heating the slide", "Rinsing in mildly alkaline water after hematoxylin", "Rinsing in xylene"],
+    "choices": [
+      "Dipping the slide in eosin",
+      "Heating the slide",
+      "Rinsing in mildly alkaline water after hematoxylin",
+      "Rinsing in xylene"
+    ],
     "correct_index": 2,
     "explanation": "Routine H&E runs hematoxylin, water wash, differentiation (removes excess hematoxylin), bluing, then eosin. The bluing reagent is a weakly alkaline solution that turns the nuclei blue. References: Ma et al., Rapid vs routine H&E staining of frozen breast sections, J Int Med Res 2024 (pmc.ncbi.nlm.nih.gov/articles/PMC11184997); Rowley et al., J Histochem Cytochem 2020 (pmc.ncbi.nlm.nih.gov/articles/PMC6931168).",
     "difficulty": 2
@@ -300,7 +451,12 @@
     "subject": "HTMLE",
     "topic": "Staining",
     "stem": "Alcian blue staining at pH 1.0 is mainly used to detect:",
-    "choices": ["Glycogen", "Sulfated mucins (sulfomucins)", "Cell nuclei", "Neutral lipids"],
+    "choices": [
+      "Glycogen",
+      "Sulfated mucins (sulfomucins)",
+      "Cell nuclei",
+      "Neutral lipids"
+    ],
     "correct_index": 1,
     "explanation": "Alcian blue at pH 1.0 is the usual stain for sulfomucins; at pH 2.5 it also stains sialylated (carboxylated) mucins. Some pH 1.0 protocols can give false positives from sialomucins. Reference: Padra & Lindén, Optimization of Alcian blue pH 1.0 histo-staining protocols, Glycobiology 2021 (pmc.ncbi.nlm.nih.gov/articles/PMC8881734).",
     "difficulty": 3
@@ -308,17 +464,27 @@
   {
     "subject": "HTMLE",
     "topic": "Cytology",
-    "stem": "The classic Papanicolaou stain uses:",
-    "choices": ["Five stains in three solutions", "Two stains in one solution", "One silver stain", "Three stains in five solutions"],
+    "stem": "The classic Papanicolaou stain is a:",
+    "choices": [
+      "5-dye method",
+      "2-dye method",
+      "Single silver stain",
+      "3-dye method"
+    ],
     "correct_index": 0,
-    "explanation": "The classic Pap stain is a five-dye method: hematoxylin for nuclei, then Orange G and EA as cytoplasmic counterstains, given in three solutions. References: Chantziantoniou et al., Inception and Development of the Papanicolaou Stain Method, Acta Cytol 2017 (doi.org/10.1159/000457827); Wikipedia, Papanicolaou stain (en.wikipedia.org/wiki/Papanicolaou_stain).",
+    "explanation": "The Pap stain is a 5-dye method: hematoxylin for nuclei plus Orange G and EA (light green, Bismarck brown and eosin) for cytoplasm. Reference: Chantziantoniou et al., Inception and Development of the Papanicolaou Stain Method, Acta Cytol 2017 (doi.org/10.1159/000457827).",
     "difficulty": 2
   },
   {
     "subject": "HTMLE",
     "topic": "Cytology",
     "stem": "The EA solution of the Pap stain contains:",
-    "choices": ["Hematoxylin and alum", "Orange G only", "Crystal violet and safranin", "Eosin Y, light green SF yellowish, and Bismarck brown Y"],
+    "choices": [
+      "Hematoxylin and alum",
+      "Orange G only",
+      "Crystal violet and safranin",
+      "Eosin Y, light green SF yellowish, and Bismarck brown Y"
+    ],
     "correct_index": 3,
     "explanation": "The EA counterstain contains light green, Bismarck brown, and eosin. Orange G is a separate solution. Reference: Chantziantoniou et al., Inception and Development of the Papanicolaou Stain Method, Acta Cytol 2017 (doi.org/10.1159/000457827).",
     "difficulty": 3
@@ -327,7 +493,12 @@
     "subject": "HTMLE",
     "topic": "Cytology",
     "stem": "In a Pap-stained cervical smear, intermediate and parabasal cells usually appear:",
-    "choices": ["Orange to pink", "Black", "Green", "Bright red"],
+    "choices": [
+      "Orange to pink",
+      "Black",
+      "Green",
+      "Bright red"
+    ],
     "correct_index": 2,
     "explanation": "With the Pap stain, nuclei are blue (hematoxylin). Most superficial cells have delicate pink cytoplasm, while intermediate cells have pale green and parabasal cells dense green cytoplasm. Reference: Kamal, Nonneoplastic Cervical Cytology, CytoJournal 2022 (pmc.ncbi.nlm.nih.gov/articles/PMC9063585).",
     "difficulty": 2
@@ -336,16 +507,26 @@
     "subject": "HTMLE",
     "topic": "Cytology",
     "stem": "For a Pap test, cells are collected from:",
-    "choices": ["The posterior vaginal wall only", "The transformation zone, where squamous cells meet glandular endocervical cells", "The endometrial cavity", "The surface of the ovary"],
+    "choices": [
+      "The posterior vaginal wall only",
+      "The transformation zone, where squamous cells meet glandular endocervical cells",
+      "The endometrial cavity",
+      "The surface of the ovary"
+    ],
     "correct_index": 1,
-    "explanation": "The Pap test collects cells at the outer opening of the cervix at the transformation zone, where the outer squamous cells meet the inner glandular endocervical cells. Reference: Wikipedia, Pap test (en.wikipedia.org/wiki/Pap_test).",
+    "explanation": "The adequacy of a Pap smear depends on sampling the transformation zone, where the squamous and glandular (columnar) cells meet at the squamocolumnar junction. Reference: Cervical Cancer Prevention - Cervical Screening: Science in Evolution (pmc.ncbi.nlm.nih.gov/articles/PMC2762353).",
     "difficulty": 1
   },
   {
     "subject": "HTMLE",
     "topic": "Cytology",
     "stem": "In the Bethesda system, ASC-US stands for:",
-    "choices": ["Atypical squamous cells, suspicious for cancer", "Abnormal squamous carcinoma, unspecified site", "Atypical squamous cells, cannot exclude HSIL", "Atypical squamous cells of undetermined significance"],
+    "choices": [
+      "Atypical squamous cells, suspicious for cancer",
+      "Abnormal squamous carcinoma, unspecified site",
+      "Atypical squamous cells, cannot exclude HSIL",
+      "Atypical squamous cells of undetermined significance"
+    ],
     "correct_index": 3,
     "explanation": "ASC-US means atypical squamous cells of undetermined significance. ASC-H is a separate category: atypical squamous cells where HSIL cannot be excluded. References: Alrajjal et al., Squamous intraepithelial lesions of the uterine cervix and the Bethesda System, CytoJournal 2021 (pmc.ncbi.nlm.nih.gov/articles/PMC8326095); National Cancer Institute, HPV and Pap Test Results (cancer.gov/types/cervical/understanding-abnormal-hpv-and-pap-test-results).",
     "difficulty": 1
@@ -354,7 +535,12 @@
     "subject": "HTMLE",
     "topic": "Cytology",
     "stem": "LSIL on a Pap smear usually indicates:",
-    "choices": ["Invasive carcinoma", "Normal cells", "Mild dysplasia (CIN 1), usually from HPV infection", "Carcinoma in situ"],
+    "choices": [
+      "Invasive carcinoma",
+      "Normal cells",
+      "Mild dysplasia (CIN 1), usually from HPV infection",
+      "Carcinoma in situ"
+    ],
     "correct_index": 2,
     "explanation": "LSIL changes on a Pap test are generally CIN 1 and are usually caused by HPV infection. HSIL can be CIN 2 or CIN 3. Reference: National Cancer Institute, HPV and Pap Test Results: Next Steps (cancer.gov/types/cervical/understanding-abnormal-hpv-and-pap-test-results).",
     "difficulty": 2
@@ -363,7 +549,12 @@
     "subject": "HTMLE",
     "topic": "Cytology",
     "stem": "A squamous cell with a clear perinuclear halo and an enlarged, dark nucleus (a koilocyte) is caused by:",
-    "choices": ["Candida albicans", "Human papillomavirus (HPV)", "Trichomonas vaginalis", "Gardnerella vaginalis"],
+    "choices": [
+      "Candida albicans",
+      "Human papillomavirus (HPV)",
+      "Trichomonas vaginalis",
+      "Gardnerella vaginalis"
+    ],
     "correct_index": 1,
     "explanation": "Sharply outlined perinuclear clearing (koilocytosis) is the characteristic cytopathic effect of HPV. Halo-like clearing caused by Candida or Trichomonas should not be mistaken for it. References: Alrajjal et al., CytoJournal 2021 (pmc.ncbi.nlm.nih.gov/articles/PMC8326095); Misawa et al., Koilocytosis in LSIL Cytology, Pathogens 2026 (pmc.ncbi.nlm.nih.gov/articles/PMC13209615).",
     "difficulty": 1
@@ -372,25 +563,26 @@
     "subject": "HTMLE",
     "topic": "Cytology",
     "stem": "How many Barr bodies are expected in a cell from a person with a 47,XXY karyotype?",
-    "choices": ["1", "0", "2", "3"],
+    "choices": [
+      "1",
+      "0",
+      "2",
+      "3"
+    ],
     "correct_index": 0,
-    "explanation": "A Barr body is an inactive X chromosome, and the number of Barr bodies is always one fewer than the number of X chromosomes. Two X chromosomes give one Barr body. The buccal smear test was developed to look for them. Reference: Wikipedia, Barr body (en.wikipedia.org/wiki/Barr_body).",
+    "explanation": "The number of Barr bodies is always one less than the number of X chromosomes per cell. Two X chromosomes give one Barr body. Reference: Reactivation of inactive X chromosome in buccal smear of carcinoma of breast (pmc.ncbi.nlm.nih.gov/articles/PMC2840782).",
     "difficulty": 2
-  },
-  {
-    "subject": "HTMLE",
-    "topic": "Cytology",
-    "stem": "Cells collected by fine-needle aspiration belong to which type of cytology?",
-    "choices": ["Exfoliative cytology", "Imprint cytology", "Frozen section", "Intervention cytology"],
-    "correct_index": 3,
-    "explanation": "There are two ways to collect cells for cytopathology: exfoliative cytology (cells shed or scraped off, as in a Pap smear) and intervention cytology, where cells are taken by entering the tissue, as in fine-needle aspiration. Reference: Wikipedia, Cytopathology (en.wikipedia.org/wiki/Cytopathology).",
-    "difficulty": 1
   },
   {
     "subject": "HTMLE",
     "topic": "Ethics",
     "stem": "The principle of beneficence is the obligation to:",
-    "choices": ["Respect the patient's own decisions", "Share resources fairly", "Act for the benefit of others", "Avoid every possible risk"],
+    "choices": [
+      "Respect the patient's own decisions",
+      "Share resources fairly",
+      "Act for the benefit of others",
+      "Avoid every possible risk"
+    ],
     "correct_index": 2,
     "explanation": "Beneficence is a moral obligation to act for the benefit of others. Autonomy is respecting decisions, and justice is fair sharing of resources. Reference: The 4 basic ethical principles (pmc.ncbi.nlm.nih.gov/articles/PMC4863255).",
     "difficulty": 1
@@ -399,7 +591,12 @@
     "subject": "HTMLE",
     "topic": "Ethics",
     "stem": "During a shortage, a blood bank releases units according to medical need, not ability to pay. This reflects:",
-    "choices": ["Justice", "Autonomy", "Nonmaleficence", "Beneficence"],
+    "choices": [
+      "Justice",
+      "Autonomy",
+      "Nonmaleficence",
+      "Beneficence"
+    ],
     "correct_index": 0,
     "explanation": "Justice obliges us to distribute benefits, risks, costs, and resources fairly, including scarce health resources. Reference: The 4 basic ethical principles (pmc.ncbi.nlm.nih.gov/articles/PMC4863255).",
     "difficulty": 1
@@ -408,34 +605,54 @@
     "subject": "HTMLE",
     "topic": "Ethics",
     "stem": "Valid informed consent requires which three components?",
-    "choices": ["Payment, signature, and a witness", "Diagnosis, prognosis, and treatment", "Physician, patient, and family", "Disclosure, capacity, and voluntariness"],
+    "choices": [
+      "Payment, signature, and a witness",
+      "Diagnosis, prognosis, and treatment",
+      "Physician, patient, and family",
+      "Disclosure, capacity, and voluntariness"
+    ],
     "correct_index": 3,
-    "explanation": "For valid informed consent, three components must be present: disclosure of information, the capacity to decide, and voluntariness. Reference: Wikipedia, Informed consent (en.wikipedia.org/wiki/Informed_consent).",
+    "explanation": "The three main elements of consent are capacity, disclosure and voluntariness. Reference: Core concepts of consent in medical practice (pmc.ncbi.nlm.nih.gov/articles/PMC10335635).",
     "difficulty": 1
   },
   {
     "subject": "HTMLE",
     "topic": "Ethics",
     "stem": "A patient agrees to a test only because the staff pressured them. Which part of informed consent is missing?",
-    "choices": ["Disclosure", "Voluntariness", "Capacity", "Documentation"],
+    "choices": [
+      "Disclosure",
+      "Voluntariness",
+      "Capacity",
+      "Documentation"
+    ],
     "correct_index": 1,
-    "explanation": "Consent must be given freely. Pressure removes voluntariness, one of the three required components along with disclosure and capacity. Reference: Wikipedia, Informed consent (en.wikipedia.org/wiki/Informed_consent).",
+    "explanation": "Consent must be voluntary; coercion and manipulation are unethical and illegal ways of obtaining consent. Capacity and disclosure are the other two elements. Reference: Core concepts of consent in medical practice (pmc.ncbi.nlm.nih.gov/articles/PMC10335635).",
     "difficulty": 1
   },
   {
     "subject": "HTMLE",
     "topic": "Ethics",
     "stem": "For a young child, consent for a procedure is usually given by:",
-    "choices": ["The child alone", "The medical technologist", "The parents or legal guardian", "Any adult who is present"],
+    "choices": [
+      "The child alone",
+      "The medical technologist",
+      "The parents or legal guardian",
+      "Any adult who is present"
+    ],
     "correct_index": 2,
-    "explanation": "When a person cannot give informed consent, another person is generally authorized to consent for them, for example the parents or legal guardians of a child. Reference: Wikipedia, Informed consent (en.wikipedia.org/wiki/Informed_consent).",
+    "explanation": "Children need someone to represent their interests, and parents are regarded as the appropriate decision-makers for their children. Reference: Children and bioethics: clarifying consent and assent in medical and research settings (pmc.ncbi.nlm.nih.gov/articles/PMC10075240).",
     "difficulty": 1
   },
   {
     "subject": "HTMLE",
     "topic": "Ethics",
     "stem": "Rules such as \"tell the truth\" and \"protect confidential information\" come from the principle of:",
-    "choices": ["Respect for autonomy", "Justice", "Beneficence", "Nonmaleficence"],
+    "choices": [
+      "Respect for autonomy",
+      "Justice",
+      "Beneficence",
+      "Nonmaleficence"
+    ],
     "correct_index": 0,
     "explanation": "Respect for autonomy supports rules such as telling the truth, respecting privacy, protecting confidential information, and getting consent. Reference: The 4 basic ethical principles (pmc.ncbi.nlm.nih.gov/articles/PMC4863255).",
     "difficulty": 2
@@ -444,7 +661,12 @@
     "subject": "HTMLE",
     "topic": "Ethics",
     "stem": "A caller says they are the patient's officemate and asks for the patient's HIV test result. The medical technologist should:",
-    "choices": ["Give it, since the caller knows the patient", "Give it only if the result is negative", "Give it to the caller's supervisor instead", "Decline, because results are confidential and need the patient's consent"],
+    "choices": [
+      "Give it, since the caller knows the patient",
+      "Give it only if the result is negative",
+      "Give it to the caller's supervisor instead",
+      "Decline, because results are confidential and need the patient's consent"
+    ],
     "correct_index": 3,
     "explanation": "Protecting confidential information is part of respecting the patient's autonomy. Under the Data Privacy Act, health information is sensitive personal information, which generally needs the patient's consent before it is shared. References: The 4 basic ethical principles (pmc.ncbi.nlm.nih.gov/articles/PMC4863255); RA 10173, Sections 3 and 13 (lawphil.net/statutes/repacts/ra2012/ra_10173_2012.html).",
     "difficulty": 1
@@ -453,7 +675,12 @@
     "subject": "HTMLE",
     "topic": "Ethics",
     "stem": "The Philippine Data Privacy Act of 2012, which created the National Privacy Commission, is:",
-    "choices": ["RA 9165", "RA 10173", "RA 7719", "RA 9288"],
+    "choices": [
+      "RA 9165",
+      "RA 10173",
+      "RA 7719",
+      "RA 9288"
+    ],
     "correct_index": 1,
     "explanation": "Section 7 of RA 10173, the Data Privacy Act of 2012, creates the National Privacy Commission. RA 9165 is the Dangerous Drugs Act, RA 7719 the National Blood Services Act, and RA 9288 the Newborn Screening Act. Reference: RA 10173 full text (lawphil.net/statutes/repacts/ra2012/ra_10173_2012.html).",
     "difficulty": 1
@@ -462,7 +689,12 @@
     "subject": "HTMLE",
     "topic": "MT Laws",
     "stem": "RA 5527, the Philippine Medical Technology Act, was approved on:",
-    "choices": ["June 18, 1966", "June 21, 1969", "May 5, 1994", "April 7, 2004"],
+    "choices": [
+      "June 18, 1966",
+      "June 21, 1969",
+      "May 5, 1994",
+      "April 7, 2004"
+    ],
     "correct_index": 1,
     "explanation": "RA 5527 was approved on June 21, 1969. June 18, 1966 is RA 4688 (clinical laboratories), May 5, 1994 is RA 7719 (blood services), and April 7, 2004 is RA 9288 (newborn screening). Reference: RA 5527 full text (lawphil.net/statutes/repacts/ra1969/ra_5527_1969.html).",
     "difficulty": 1
@@ -471,7 +703,12 @@
     "subject": "HTMLE",
     "topic": "MT Laws",
     "stem": "RA 5527 defines medical technology as:",
-    "choices": ["A branch of nursing that collects specimens", "An independent branch of medicine that treats disease", "A division of pharmacy", "An auxiliary branch of laboratory medicine that aids the physician in the diagnosis, study, and treatment of disease"],
+    "choices": [
+      "A branch of nursing that collects specimens",
+      "An independent branch of medicine that treats disease",
+      "A division of pharmacy",
+      "An auxiliary branch of laboratory medicine that aids the physician in the diagnosis, study, and treatment of disease"
+    ],
     "correct_index": 3,
     "explanation": "Section 2(a): medical technology is an auxiliary branch of laboratory medicine that uses chemical, microscopic, bacteriologic, and other laboratory procedures to aid the physician in the diagnosis, study, and treatment of disease. Reference: RA 5527 full text (lawphil.net/statutes/repacts/ra1969/ra_5527_1969.html).",
     "difficulty": 1
@@ -480,7 +717,12 @@
     "subject": "HTMLE",
     "topic": "MT Laws",
     "stem": "Under RA 5527, the chairman of the Board of Medical Technology is:",
-    "choices": ["A pathologist", "A registered medical technologist", "The Secretary of Health", "A dean of a medical technology school"],
+    "choices": [
+      "A pathologist",
+      "A registered medical technologist",
+      "The Secretary of Health",
+      "A dean of a medical technology school"
+    ],
     "correct_index": 0,
     "explanation": "Section 7: the Board has a chairman who is a pathologist (from a list by the Philippine Society of Pathologists) and two registered medical technologists (from a list by PAMET), all appointed by the President for three-year terms. Reference: RA 5527 full text (lawphil.net/statutes/repacts/ra1969/ra_5527_1969.html).",
     "difficulty": 1
@@ -489,7 +731,12 @@
     "subject": "HTMLE",
     "topic": "MT Laws",
     "stem": "A member of the Board of Medical Technology must have practiced laboratory medicine or medical technology for at least:",
-    "choices": ["3 years", "5 years", "10 years", "15 years"],
+    "choices": [
+      "3 years",
+      "5 years",
+      "10 years",
+      "15 years"
+    ],
     "correct_index": 2,
     "explanation": "Section 8: a board member must be a Filipino citizen of good moral character, have practiced for at least ten years before appointment, and not be a faculty member of a medical technology school. Reference: RA 5527 full text (lawphil.net/statutes/repacts/ra1969/ra_5527_1969.html).",
     "difficulty": 2
@@ -498,7 +745,12 @@
     "subject": "HTMLE",
     "topic": "MT Laws",
     "stem": "To pass the medical technology board exam under RA 5527, a candidate needs:",
-    "choices": ["A general average of 70%, with no rating below 40%", "A general average of at least 75%, with no rating below 50% in any major subject", "A general average of 75%, with no rating below 60%", "At least 80% in every subject"],
+    "choices": [
+      "A general average of 70%, with no rating below 40%",
+      "A general average of at least 75%, with no rating below 50% in any major subject",
+      "A general average of 75%, with no rating below 60%",
+      "At least 80% in every subject"
+    ],
     "correct_index": 1,
     "explanation": "Section 19: a candidate must get a general average of at least 75% in the written test, with no rating below 50% in any of the major subjects. Reference: RA 5527 full text (lawphil.net/statutes/repacts/ra1969/ra_5527_1969.html).",
     "difficulty": 1
@@ -507,7 +759,12 @@
     "subject": "HTMLE",
     "topic": "MT Laws",
     "stem": "Under RA 5527, a certificate of registration is not issued to a successful examinee who is younger than:",
-    "choices": ["18 years", "19 years", "20 years", "21 years"],
+    "choices": [
+      "18 years",
+      "19 years",
+      "20 years",
+      "21 years"
+    ],
     "correct_index": 3,
     "explanation": "Section 21: no certificate of registration is issued to a successful applicant who has not reached 21 years of age. Reference: RA 5527 full text (lawphil.net/statutes/repacts/ra1969/ra_5527_1969.html).",
     "difficulty": 1
@@ -516,7 +773,12 @@
     "subject": "HTMLE",
     "topic": "MT Laws",
     "stem": "The penalty in Section 29 of RA 5527 for violating the Act is:",
-    "choices": ["A fine of ₱2,000–₱5,000, or 6 months to 2 years in prison, or both", "A fine of ₱500–₱1,000 only", "6 to 12 years in prison", "Closure of the hospital"],
+    "choices": [
+      "A fine of ₱2,000–₱5,000, or 6 months to 2 years in prison, or both",
+      "A fine of ₱500–₱1,000 only",
+      "6 to 12 years in prison",
+      "Closure of the hospital"
+    ],
     "correct_index": 0,
     "explanation": "Section 29: a fine of not less than ₱2,000 nor more than ₱5,000, or imprisonment of six months to two years, or both, at the court's discretion. Reference: RA 5527 full text (lawphil.net/statutes/repacts/ra1969/ra_5527_1969.html).",
     "difficulty": 2
@@ -525,7 +787,12 @@
     "subject": "HTMLE",
     "topic": "MT Laws",
     "stem": "Under RA 7719, the National Blood Services Act of 1994, commercial blood banks were to be:",
-    "choices": ["Opened in every province", "Allowed to set their own prices", "Phased out within two years of the Act", "Merged with hospital pharmacies"],
+    "choices": [
+      "Opened in every province",
+      "Allowed to set their own prices",
+      "Phased out within two years of the Act",
+      "Merged with hospital pharmacies"
+    ],
     "correct_index": 2,
     "explanation": "Section 7: all commercial blood banks are phased out over two years after the Act takes effect (extendable by up to two years). The Act promotes voluntary blood donation and treats blood as a medical service, not a commodity. Reference: RA 7719 full text (lawphil.net/statutes/repacts/ra1994/ra_7719_1994.html).",
     "difficulty": 1
@@ -534,7 +801,12 @@
     "subject": "HTMLE",
     "topic": "MT Laws",
     "stem": "Under RA 9288, the Newborn Screening Act of 2004, newborn screening is done:",
-    "choices": ["Within the first 6 hours of life", "After 24 hours of life but not later than 3 days from delivery", "Only at one month of age", "Only if the baby shows symptoms"],
+    "choices": [
+      "Within the first 6 hours of life",
+      "After 24 hours of life but not later than 3 days from delivery",
+      "Only at one month of age",
+      "Only if the baby shows symptoms"
+    ],
     "correct_index": 1,
     "explanation": "Section 6: newborn screening is done after 24 hours of life but not later than three days from complete delivery; babies in intensive care must be tested by 7 days of age. Reference: RA 9288 full text (lawphil.net/statutes/repacts/ra2004/ra_9288_2004.html).",
     "difficulty": 1

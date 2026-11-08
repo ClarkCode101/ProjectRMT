@@ -3,16 +3,26 @@
     "subject": "CM",
     "topic": "Chemical Exam of Urine",
     "stem": "The reagent strip test for urine protein is based on the principle of:",
-    "choices": ["Diazo reaction", "Protein error of indicators", "Pseudoperoxidase activity", "Sodium nitroprusside reaction"],
+    "choices": [
+      "Diazo reaction",
+      "Protein error of indicators",
+      "Pseudoperoxidase activity",
+      "Sodium nitroprusside reaction"
+    ],
     "correct_index": 1,
-    "explanation": "The protein pad uses the protein error of indicators (e.g. tetrabromophenol blue). Diazo = bilirubin, pseudoperoxidase = blood, nitroprusside = ketones. Reference: Wikipedia, Urine test strip, Protein testing (en.wikipedia.org/wiki/Urine_test_strip).",
+    "explanation": "The standard protein pad uses tetrabromophenol blue dye, which changes color when protein binds (the protein error of indicators). Diazo = bilirubin, pseudoperoxidase = blood, nitroprusside = ketones. Reference: Measurement of the albumin content of urinary protein using dipsticks (pmc.ncbi.nlm.nih.gov/articles/PMC6807921).",
     "difficulty": 1
   },
   {
     "subject": "CM",
     "topic": "Urine Sediment",
     "stem": "Which urine crystal is described as having a 'coffin-lid' shape?",
-    "choices": ["Calcium oxalate", "Uric acid", "Triple phosphate", "Cystine"],
+    "choices": [
+      "Calcium oxalate",
+      "Uric acid",
+      "Triple phosphate",
+      "Cystine"
+    ],
     "correct_index": 2,
     "explanation": "Triple phosphate (ammonium magnesium phosphate) crystals look like coffin lids and are seen in alkaline urine. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AAFP 2005 (aafp.org/afp/2005/0315/p1153).",
     "difficulty": 1
@@ -35,7 +45,12 @@
     "subject": "CM",
     "topic": "Urine Sediment",
     "stem": "The presence of WBC casts in urine is most suggestive of:",
-    "choices": ["Acute glomerulonephritis", "Pyelonephritis", "Cystitis", "Nephrotic syndrome"],
+    "choices": [
+      "Acute glomerulonephritis",
+      "Pyelonephritis",
+      "Cystitis",
+      "Nephrotic syndrome"
+    ],
     "correct_index": 1,
     "explanation": "WBC casts form in the tubules, so they point to infection or inflammation within the kidney: pyelonephritis (and also interstitial nephritis). Cystitis (bladder) gives WBCs but no casts; RBC casts suggest glomerulonephritis. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AAFP 2005 (aafp.org/afp/2005/0315/p1153).",
     "difficulty": 2
@@ -44,7 +59,12 @@
     "subject": "CM",
     "topic": "Body Fluids",
     "stem": "Xanthochromia of cerebrospinal fluid refers to:",
-    "choices": ["A cloudy appearance from many white cells", "A yellowish color, mainly from bilirubin after bleeding into the CSF", "A clot that forms in the collection tube", "A greenish color from bacterial pigment"],
+    "choices": [
+      "A cloudy appearance from many white cells",
+      "A yellowish color, mainly from bilirubin after bleeding into the CSF",
+      "A clot that forms in the collection tube",
+      "A greenish color from bacterial pigment"
+    ],
     "correct_index": 1,
     "explanation": "Xanthochromia is yellow CSF from bilirubin as red cells break down; it is best seen 6–12 hours after a bleed and supports subarachnoid hemorrhage, though it is not specific for it. Reference: StatPearls, Xanthochromia (ncbi.nlm.nih.gov/books/NBK526048).",
     "difficulty": 2
@@ -53,7 +73,12 @@
     "subject": "CM",
     "topic": "Body Fluids",
     "stem": "Needle-shaped, negatively birefringent crystals in synovial fluid indicate:",
-    "choices": ["Pseudogout (calcium pyrophosphate)", "Gout (monosodium urate)", "Septic arthritis", "Cholesterol crystal effusion"],
+    "choices": [
+      "Pseudogout (calcium pyrophosphate)",
+      "Gout (monosodium urate)",
+      "Septic arthritis",
+      "Cholesterol crystal effusion"
+    ],
     "correct_index": 1,
     "explanation": "Monosodium urate crystals of gout are needle-shaped and negatively birefringent under polarized light; finding them is the gold standard for diagnosis. CPPD crystals of pseudogout are positively birefringent. Reference: StatPearls, Gout (ncbi.nlm.nih.gov/books/NBK546606) and Monoarticular Arthritis (ncbi.nlm.nih.gov/books/NBK542164).",
     "difficulty": 1
@@ -62,7 +87,12 @@
     "subject": "CM",
     "topic": "Fecalysis",
     "stem": "The guaiac fecal occult blood test detects blood through:",
-    "choices": ["Antibodies against human globin", "The pseudoperoxidase activity of heme", "Oxidation of bilirubin", "Prussian blue staining of iron"],
+    "choices": [
+      "Antibodies against human globin",
+      "The pseudoperoxidase activity of heme",
+      "Oxidation of bilirubin",
+      "Prussian blue staining of iron"
+    ],
     "correct_index": 1,
     "explanation": "Heme's pseudoperoxidase activity releases oxygen from hydrogen peroxide, which oxidizes the guaiac chromogen. The fecal immunochemical test (FIT) uses antibodies to human globin instead. Reference: StatPearls, Fecal Occult Blood Test (ncbi.nlm.nih.gov/books/NBK537138).",
     "difficulty": 1
@@ -71,7 +101,12 @@
     "subject": "CM",
     "topic": "Fecalysis",
     "stem": "Compared with guaiac testing, the fecal immunochemical test (FIT):",
-    "choices": ["Reacts with any peroxidase, including plant peroxidases", "Is specific for human globin and needs no dietary restriction", "Does not need a stool sample", "Also measures fecal fat"],
+    "choices": [
+      "Reacts with any peroxidase, including plant peroxidases",
+      "Is specific for human globin and needs no dietary restriction",
+      "Does not need a stool sample",
+      "Also measures fecal fat"
+    ],
     "correct_index": 1,
     "explanation": "FIT targets human globin with antibodies, so food peroxidases don't interfere and no diet restriction is needed; it is also more sensitive for colorectal cancer. Reference: Guaiac-based faecal occult blood tests versus faecal immunochemical tests, Cochrane review (pmc.ncbi.nlm.nih.gov/articles/PMC9169237).",
     "difficulty": 2
@@ -80,7 +115,12 @@
     "subject": "CM",
     "topic": "Physical Exam of Urine",
     "stem": "A urine specific gravity that stays fixed at about 1.010 (isosthenuria) suggests:",
-    "choices": ["Dehydration", "Loss of the kidney's concentrating ability", "Diabetes mellitus", "Normal kidney function"],
+    "choices": [
+      "Dehydration",
+      "Loss of the kidney's concentrating ability",
+      "Diabetes mellitus",
+      "Normal kidney function"
+    ],
     "correct_index": 1,
     "explanation": "In intrinsic renal insufficiency the specific gravity is fixed at 1.010, the specific gravity of the glomerular filtrate. Normal values range from 1.003 to 1.030. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AAFP 2005 (aafp.org/afp/2005/0315/p1153).",
     "difficulty": 2
@@ -89,9 +129,532 @@
     "subject": "CM",
     "topic": "Physical Exam of Urine",
     "stem": "Cloudy urine is most often caused by:",
-    "choices": ["Bilirubin", "Precipitated phosphate crystals in alkaline urine (or pyuria)", "Ketones", "Glucose"],
+    "choices": [
+      "Bilirubin",
+      "Precipitated phosphate crystals in alkaline urine (or pyuria)",
+      "Ketones",
+      "Glucose"
+    ],
     "correct_index": 1,
     "explanation": "Cloudy urine is often from phosphate crystals that precipitate in alkaline urine, but pus (pyuria) can also cause it. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AAFP 2005 (aafp.org/afp/2005/0315/p1153).",
     "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Physical Exam of Urine",
+    "stem": "The normal yellow color of urine is mainly due to:",
+    "choices": [
+      "Urobilin",
+      "Urochrome",
+      "Uroerythrin",
+      "Bilirubin"
+    ],
+    "correct_index": 1,
+    "explanation": "Urochrome, formed from the breakdown of hemoglobin, gives urine its yellow color. More concentrated urine looks darker. Reference: Hitzeman et al., Office-Based Urinalysis: A Comprehensive Review, AFP 2022 (aafp.org/pubs/afp/issues/2022/0700/office-based-urinalysis.html).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Physical Exam of Urine",
+    "stem": "Persistent foamy urine is most often associated with:",
+    "choices": [
+      "Proteinuria",
+      "Glucosuria",
+      "Nitrituria",
+      "Hematuria"
+    ],
+    "correct_index": 0,
+    "explanation": "Foamy urine is linked to dehydration or frank proteinuria (large amounts of protein in the urine). Reference: Hitzeman et al., Office-Based Urinalysis: A Comprehensive Review, AFP 2022 (aafp.org/pubs/afp/issues/2022/0700/office-based-urinalysis.html).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Physical Exam of Urine",
+    "stem": "Urine that turns dark or black when exposed to air suggests:",
+    "choices": [
+      "Phenylketonuria",
+      "Cystinuria",
+      "Alkaptonuria (homogentisic acid)",
+      "Maple syrup urine disease"
+    ],
+    "correct_index": 2,
+    "explanation": "In alkaptonuria, excess homogentisic acid is excreted in urine and turns it dark when exposed to air. The color change may not happen right after voiding. Reference: MedlinePlus Genetics, Alkaptonuria (medlineplus.gov/genetics/condition/alkaptonuria).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Physical Exam of Urine",
+    "stem": "A fruity or sweet urine odor suggests:",
+    "choices": [
+      "Urinary tract infection",
+      "Diabetic ketoacidosis",
+      "Phenylketonuria",
+      "Asparagus intake"
+    ],
+    "correct_index": 1,
+    "explanation": "Ketones give urine a fruity or sweet odor, so this can point to diabetic ketoacidosis. Reference: Hitzeman et al., Office-Based Urinalysis: A Comprehensive Review, AFP 2022 (aafp.org/pubs/afp/issues/2022/0700/office-based-urinalysis.html).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Physical Exam of Urine",
+    "stem": "A urine with a mousy odor is associated with:",
+    "choices": [
+      "Phenylketonuria",
+      "Isovaleric acidemia",
+      "Cystinuria",
+      "Maple syrup urine disease"
+    ],
+    "correct_index": 0,
+    "explanation": "In untreated PKU, phenylalanine builds up and the breath, skin, ear wax and urine can have a \"mousy\" or \"musty\" odor. Reference: MedlinePlus Medical Encyclopedia, Phenylketonuria (medlineplus.gov/ency/article/001166.htm).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Physical Exam of Urine",
+    "stem": "Orange urine in a patient taking a urinary tract analgesic is most likely caused by:",
+    "choices": [
+      "Methylene blue",
+      "Phenazopyridine (Pyridium)",
+      "Metronidazole",
+      "Amitriptyline"
+    ],
+    "correct_index": 1,
+    "explanation": "Phenazopyridine (Pyridium) is a listed cause of orange urine, along with bile pigments and phenothiazines. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AFP 2005 (aafp.org/pubs/afp/issues/2005/0315/p1153.html).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Physical Exam of Urine",
+    "stem": "Normal urine specific gravity ranges from about:",
+    "choices": [
+      "1.000 to 1.002",
+      "1.003 to 1.030",
+      "1.035 to 1.050",
+      "Always exactly 1.010"
+    ],
+    "correct_index": 1,
+    "explanation": "Normal urine specific gravity ranges from 1.003 to 1.030. A value fixed at about 1.010 (isosthenuria) suggests the kidney cannot concentrate or dilute urine. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AFP 2005 (aafp.org/pubs/afp/issues/2005/0315/p1153.html).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Chemical Exam of Urine",
+    "stem": "The reagent strip glucose test is based on:",
+    "choices": [
+      "Copper reduction",
+      "Glucose oxidase reaction",
+      "Protein error of indicators",
+      "Diazo reaction"
+    ],
+    "correct_index": 1,
+    "explanation": "The strip glucose pad uses glucose oxidase, and no urine components are known to cause false-positive glucose oxidase reactions. Copper reduction is the Clinitest principle; diazo is for bilirubin. Reference: Delanghe & Speeckaert, Preanalytical requirements of urinalysis, Biochem Med 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC3936984).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Chemical Exam of Urine",
+    "stem": "An infant has a positive Clinitest (reducing substances) but a negative reagent strip glucose. This suggests:",
+    "choices": [
+      "Diabetes mellitus",
+      "Renal glycosuria",
+      "Galactosemia",
+      "Phenylketonuria"
+    ],
+    "correct_index": 2,
+    "explanation": "Clinitest reacts with reducing sugars such as galactose, while the glucose oxidase strip reacts only with glucose. A positive Clinitest in this setting suggests galactosemia. Reference: A case of galactosemia misdiagnosed as cow's milk intolerance (pmc.ncbi.nlm.nih.gov/articles/PMC3462687); Delanghe & Speeckaert, Preanalytical requirements of urinalysis, Biochem Med 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC3936984).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Chemical Exam of Urine",
+    "stem": "The sodium nitroprusside ketone pad does NOT detect:",
+    "choices": [
+      "Acetoacetic acid",
+      "Acetone",
+      "Beta-hydroxybutyric acid",
+      "It detects all three"
+    ],
+    "correct_index": 2,
+    "explanation": "Strip ketone tests use sodium nitroprusside, and beta-hydroxybutyrate is not detected, so ketosis can be underestimated. Reference: Delanghe & Speeckaert, Preanalytical requirements of urinalysis, Biochem Med 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC3936984); Simerville et al., Urinalysis: A Comprehensive Review, AFP 2005 (aafp.org/pubs/afp/issues/2005/0315/p1153.html).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Chemical Exam of Urine",
+    "stem": "A positive urine nitrite test means bacteria in the urine can:",
+    "choices": [
+      "Reduce nitrate to nitrite",
+      "Oxidize nitrite to nitrate",
+      "Produce leukocyte esterase",
+      "Hydrolyze urea"
+    ],
+    "correct_index": 0,
+    "explanation": "Nitrite is not normally in urine; it appears when bacteria reduce urinary nitrate to nitrite. A short bladder incubation time can give false-negative results. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AFP 2005 (aafp.org/pubs/afp/issues/2005/0315/p1153.html); Delanghe & Speeckaert, Preanalytical requirements of urinalysis, Biochem Med 2014 (pmc.ncbi.nlm.nih.gov/articles/PMC3936984).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Chemical Exam of Urine",
+    "stem": "The leukocyte esterase pad detects an enzyme produced mainly by:",
+    "choices": [
+      "Neutrophils",
+      "Red blood cells",
+      "Bacteria",
+      "Renal tubular cells"
+    ],
+    "correct_index": 0,
+    "explanation": "Leukocyte esterase is produced by neutrophils, so a positive pad suggests pyuria from infection or inflammation. Reference: Hitzeman et al., Office-Based Urinalysis: A Comprehensive Review, AFP 2022 (aafp.org/pubs/afp/issues/2022/0700/office-based-urinalysis.html); Simerville et al., Urinalysis: A Comprehensive Review, AFP 2005 (aafp.org/pubs/afp/issues/2005/0315/p1153.html).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Chemical Exam of Urine",
+    "stem": "Which substance can give a positive reagent strip blood test even when no red cells are present?",
+    "choices": [
+      "Bilirubin",
+      "Myoglobin",
+      "Urobilinogen",
+      "Glucose"
+    ],
+    "correct_index": 1,
+    "explanation": "The blood pad detects peroxidase activity, which hemoglobin and myoglobin also have. So rhabdomyolysis (myoglobin) or hemolysis can give a positive result without RBCs. Reference: Simerville et al., Urinalysis: A Comprehensive Review, AFP 2005 (aafp.org/pubs/afp/issues/2005/0315/p1153.html).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Chemical Exam of Urine",
+    "stem": "Conjugated bilirubin found on a urine dipstick should prompt investigation for:",
+    "choices": [
+      "Urinary tract infection",
+      "Hepatobiliary disease",
+      "Diabetes mellitus",
+      "Kidney stones"
+    ],
+    "correct_index": 1,
+    "explanation": "Only conjugated bilirubin is water-soluble enough to appear in urine. Its presence on dipstick should prompt a work-up for liver or bile duct disease. Reference: Hitzeman et al., Office-Based Urinalysis: A Comprehensive Review, AFP 2022 (aafp.org/pubs/afp/issues/2022/0700/office-based-urinalysis.html).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Chemical Exam of Urine",
+    "stem": "In the Watson-Schwartz test, a red color that cannot be extracted into either chloroform or butanol indicates:",
+    "choices": [
+      "Urobilinogen",
+      "Porphobilinogen",
+      "Other Ehrlich-reactive compounds",
+      "Bilirubin"
+    ],
+    "correct_index": 1,
+    "explanation": "The porphobilinogen-Ehrlich complex is a red chromogen that is insoluble in chloroform and N-butanol, while the urobilinogen-Ehrlich complex extracts into chloroform. Reference: Many pitfalls in diagnosis of acute intermittent porphyria: a case report (pmc.ncbi.nlm.nih.gov/articles/PMC6071335).",
+    "difficulty": 3
+  },
+  {
+    "subject": "CM",
+    "topic": "Chemical Exam of Urine",
+    "stem": "High urine ascorbic acid can cause false-negative reagent strip results for:",
+    "choices": [
+      "Blood and glucose",
+      "Protein and specific gravity",
+      "pH and protein",
+      "Urobilinogen and ketones"
+    ],
+    "correct_index": 0,
+    "explanation": "Ascorbic acid is a strong reducing agent that causes false-negative results for glucose, hemoglobin (blood), nitrite and bilirubin. Reference: Ascorbic acid: A black hole of urine chemistry screening, J Clin Lab Anal 2019 (pmc.ncbi.nlm.nih.gov/articles/PMC6816895).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Urine Sediment",
+    "stem": "Hyaline casts are made mainly of:",
+    "choices": [
+      "Albumin",
+      "Uromodulin (Tamm-Horsfall protein)",
+      "Fibrin",
+      "Immunoglobulin light chains"
+    ],
+    "correct_index": 1,
+    "explanation": "Hyaline casts are a colorless fibrillary matrix of Tamm-Horsfall protein (uromodulin), the protein that forms the base of all casts. Reference: Gaggar & Raju, Diagnostic Utility of Urine Microscopy in Kidney Diseases, Indian J Nephrol 2024 (pmc.ncbi.nlm.nih.gov/articles/PMC11303840); Simerville et al., Urinalysis: A Comprehensive Review, AFP 2005 (aafp.org/pubs/afp/issues/2005/0315/p1153.html).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Urine Sediment",
+    "stem": "RBC casts in urine are most suggestive of:",
+    "choices": [
+      "Acute glomerulonephritis",
+      "Cystitis",
+      "Lower urinary tract bleeding",
+      "Acute pyelonephritis"
+    ],
+    "correct_index": 0,
+    "explanation": "RBC casts are generally associated with glomerular disease such as glomerulonephritis. Lower urinary tract bleeding gives free RBCs without casts. Reference: Gaggar & Raju, Diagnostic Utility of Urine Microscopy in Kidney Diseases, Indian J Nephrol 2024 (pmc.ncbi.nlm.nih.gov/articles/PMC11303840); Simerville et al., Urinalysis: A Comprehensive Review, AFP 2005 (aafp.org/pubs/afp/issues/2005/0315/p1153.html).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Urine Sediment",
+    "stem": "Which cast, highly refractile with cracked or notched edges, is seen in advanced renal failure?",
+    "choices": [
+      "Hyaline",
+      "Granular",
+      "Waxy",
+      "Fatty"
+    ],
+    "correct_index": 2,
+    "explanation": "Waxy casts are seen in renal failure (acute and chronic) and are linked to advanced renal disease. Reference: Gaggar & Raju, Diagnostic Utility of Urine Microscopy in Kidney Diseases, Indian J Nephrol 2024 (pmc.ncbi.nlm.nih.gov/articles/PMC11303840); Simerville et al., Urinalysis: A Comprehensive Review, AFP 2005 (aafp.org/pubs/afp/issues/2005/0315/p1153.html).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Urine Sediment",
+    "stem": "Calcium oxalate crystals in the urine of a patient with a high anion gap may suggest poisoning with:",
+    "choices": [
+      "Methanol",
+      "Ethylene glycol",
+      "Acetaminophen",
+      "Lead"
+    ],
+    "correct_index": 1,
+    "explanation": "Ethylene glycol (antifreeze) is metabolized to oxalate, which forms calcium oxalate crystals in urine. Methanol also causes a high anion gap but does not form oxalate. Reference: Gaggar & Raju, Diagnostic Utility of Urine Microscopy in Kidney Diseases, Indian J Nephrol 2024 (pmc.ncbi.nlm.nih.gov/articles/PMC11303840).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Urine Sediment",
+    "stem": "Squamous epithelial cells covered with coccobacilli (clue cells) indicate:",
+    "choices": [
+      "Trichomoniasis",
+      "Candidiasis",
+      "Bacterial vaginosis (Gardnerella vaginalis)",
+      "Gonorrhea"
+    ],
+    "correct_index": 2,
+    "explanation": "Clue cells (vaginal epithelial cells studded with adherent bacteria) are one of the Amsel criteria for bacterial vaginosis. Reference: CDC STI Treatment Guidelines, Bacterial Vaginosis (cdc.gov/std/treatment-guidelines/bv.htm).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Urine Sediment",
+    "stem": "Which crystal is found in ACIDIC urine?",
+    "choices": [
+      "Triple phosphate",
+      "Amorphous phosphates",
+      "Uric acid",
+      "Calcium carbonate"
+    ],
+    "correct_index": 2,
+    "explanation": "Uric acid crystals form in acidic urine (pH 5.8 or lower). Triple phosphate crystals form in alkaline urine (pH 7.0 or higher). Reference: Gaggar & Raju, Diagnostic Utility of Urine Microscopy in Kidney Diseases, Indian J Nephrol 2024 (pmc.ncbi.nlm.nih.gov/articles/PMC11303840).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Urine Sediment",
+    "stem": "Wright or Hansel stain has traditionally been used to detect which urinary cells?",
+    "choices": [
+      "Eosinophils",
+      "Lymphocytes",
+      "Yeast",
+      "Renal tubular cells"
+    ],
+    "correct_index": 0,
+    "explanation": "Urine eosinophils were once used to support acute interstitial nephritis, but eosinophiluria is no longer considered sensitive or specific for AIN, and the stain is no longer recommended. Reference: Gaggar & Raju, Diagnostic Utility of Urine Microscopy in Kidney Diseases, Indian J Nephrol 2024 (pmc.ncbi.nlm.nih.gov/articles/PMC11303840).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Body Fluids",
+    "stem": "A CSF-to-serum glucose ratio below about 0.4 most strongly suggests:",
+    "choices": [
+      "Viral meningitis",
+      "Bacterial meningitis",
+      "Multiple sclerosis",
+      "Normal CSF"
+    ],
+    "correct_index": 1,
+    "explanation": "The normal CSF-to-serum glucose ratio is about 0.6. Ratios below 0.4 are very indicative of a bacterial cause of low CSF glucose. Reference: CSF in acute and chronic infectious diseases (pmc.ncbi.nlm.nih.gov/articles/PMC7150022).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Body Fluids",
+    "stem": "Which CSF finding points to a traumatic tap rather than a subarachnoid hemorrhage?",
+    "choices": [
+      "Blood that decreases from tube 1 to tube 3",
+      "Xanthochromic supernatant",
+      "Erythrophages in the sediment",
+      "Hemosiderin-laden macrophages"
+    ],
+    "correct_index": 0,
+    "explanation": "In a traumatic tap the red cells fall markedly from the first to the last tube (about 60% has been proposed). Xanthochromia and erythrophagocytosis point to blood that was already there (hemorrhage). Reference: Subarachnoid haemorrhage or traumatic lumbar puncture: differentiation by CSF parameters (pmc.ncbi.nlm.nih.gov/articles/PMC10724187); CSF in acute and chronic infectious diseases (pmc.ncbi.nlm.nih.gov/articles/PMC7150022).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Body Fluids",
+    "stem": "Which CSF pattern is typical of bacterial meningitis?",
+    "choices": [
+      "Lymphocytes, normal glucose, mildly raised protein",
+      "Neutrophils, low glucose, markedly raised protein",
+      "Monocytes, normal glucose, normal protein",
+      "Lymphocytes, low glucose, normal lactate"
+    ],
+    "correct_index": 1,
+    "explanation": "Bacterial meningitis classically has a very high, mainly neutrophilic pleocytosis, low glucose and high protein. Not every patient shows the classic pattern. Reference: Mount & Boyle, Aseptic and Bacterial Meningitis, AFP 2017 (aafp.org/pubs/afp/issues/2017/0901/p314.html).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Body Fluids",
+    "stem": "Oligoclonal bands seen in CSF but NOT in the serum suggest:",
+    "choices": [
+      "Reye syndrome",
+      "Hepatic encephalopathy",
+      "Multiple sclerosis",
+      "Bacterial meningitis"
+    ],
+    "correct_index": 2,
+    "explanation": "Bands found only in CSF show IgG made inside the CNS and are the most important laboratory evidence of multiple sclerosis. They are not fully specific: infections and other CNS autoimmune diseases can also cause them. Reference: The Persisting Significance of Oligoclonal Bands in the Diagnosis of Multiple Sclerosis (pmc.ncbi.nlm.nih.gov/articles/PMC6320811).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Body Fluids",
+    "stem": "In pleural fluid, a fluid-to-serum total protein ratio greater than 0.5 indicates:",
+    "choices": [
+      "A transudate",
+      "An exudate",
+      "A chylous effusion",
+      "Normal fluid"
+    ],
+    "correct_index": 1,
+    "explanation": "By Light's criteria, a fluid is an exudate if protein ratio >0.5, LD ratio >0.6, or fluid LD is above two-thirds of the serum upper limit. Reference: Biochemical Analysis of Pleural Fluid and Ascites (pmc.ncbi.nlm.nih.gov/articles/PMC6223608).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Body Fluids",
+    "stem": "Rhomboid, weakly positively birefringent crystals in synovial fluid are:",
+    "choices": [
+      "Monosodium urate",
+      "Calcium pyrophosphate dihydrate",
+      "Cholesterol",
+      "Corticosteroid"
+    ],
+    "correct_index": 1,
+    "explanation": "CPPD crystals are rod-like or rhomboid with weak birefringence (pseudogout). Monosodium urate crystals are fine needles with strong negative birefringence (gout). Reference: Croatian national recommendations for extravascular body fluids, Part II, Biochem Med 2020 (pmc.ncbi.nlm.nih.gov/articles/PMC7394252).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Body Fluids",
+    "stem": "An amniotic fluid lecithin/sphingomyelin (L/S) ratio indicating fetal lung maturity is:",
+    "choices": [
+      "0.5",
+      "1.0",
+      "1.5",
+      "Greater than 2.0"
+    ],
+    "correct_index": 3,
+    "explanation": "An L/S ratio above 2.0 has been the accepted cutoff for fetal lung maturity in nondiabetic pregnancies. Reference: Revisiting Amniocentesis for Fetal Lung Maturity After 36 Weeks' Gestation (pmc.ncbi.nlm.nih.gov/articles/PMC2505159).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Fecalysis",
+    "stem": "Which stain is used for the qualitative fecal fat screen?",
+    "choices": [
+      "Wright stain",
+      "Gram stain",
+      "Sudan III",
+      "Methylene blue"
+    ],
+    "correct_index": 2,
+    "explanation": "Qualitative fat stains such as Sudan III are used as a screening tool for steatorrhea. Methylene blue is used for fecal leukocytes. Reference: Kasirga, The importance of stool tests in diagnosis and follow-up of gastrointestinal disorders in children, Turk Pediatri Ars 2019 (pmc.ncbi.nlm.nih.gov/articles/PMC6776453).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Fecalysis",
+    "stem": "Fecal leukocytes seen with methylene blue are typically present in diarrhea caused by:",
+    "choices": [
+      "Rotavirus",
+      "Shigella",
+      "Vibrio cholerae",
+      "Staphylococcus aureus food poisoning"
+    ],
+    "correct_index": 1,
+    "explanation": "Fecal leukocytes point to inflammatory diarrhea from invasive bacteria such as Shigella. They are not seen in viral diarrhea. Microscopy misses 30 to 40% of cases. Reference: Kasirga, The importance of stool tests in diagnosis and follow-up of gastrointestinal disorders in children, Turk Pediatri Ars 2019 (pmc.ncbi.nlm.nih.gov/articles/PMC6776453); Turgeon & Fritsche, Laboratory approaches to infectious diarrhea (pmc.ncbi.nlm.nih.gov/articles/PMC7135126).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Fecalysis",
+    "stem": "Pale, clay-colored stools suggest:",
+    "choices": [
+      "Bile duct obstruction",
+      "Upper GI bleeding",
+      "Iron therapy",
+      "High intake of green vegetables"
+    ],
+    "correct_index": 0,
+    "explanation": "Clay- or putty-colored stool is seen in biliary obstruction, because bile pigments do not reach the intestine. Reference: Kasirga, The importance of stool tests in diagnosis and follow-up of gastrointestinal disorders in children, Turk Pediatri Ars 2019 (pmc.ncbi.nlm.nih.gov/articles/PMC6776453).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Fecalysis",
+    "stem": "Black, tarry stools (melena) suggest bleeding from the:",
+    "choices": [
+      "Rectum",
+      "Lower colon",
+      "Upper gastrointestinal tract",
+      "Anal canal"
+    ],
+    "correct_index": 2,
+    "explanation": "When more than about 100 mL of blood is lost from the upper GI tract, the stool becomes black and tarry. Reference: Kasirga, The importance of stool tests in diagnosis and follow-up of gastrointestinal disorders in children, Turk Pediatri Ars 2019 (pmc.ncbi.nlm.nih.gov/articles/PMC6776453).",
+    "difficulty": 1
+  },
+  {
+    "subject": "CM",
+    "topic": "Fecalysis",
+    "stem": "Quantitative fecal fat testing uses a stool collection of:",
+    "choices": [
+      "A random sample",
+      "24 hours",
+      "72 hours",
+      "7 days"
+    ],
+    "correct_index": 2,
+    "explanation": "Stool is collected for 72 hours while the patient eats a diet with 100 g of fat daily. Reference: Kasirga, The importance of stool tests in diagnosis and follow-up of gastrointestinal disorders in children, Turk Pediatri Ars 2019 (pmc.ncbi.nlm.nih.gov/articles/PMC6776453).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Fecalysis",
+    "stem": "The Apt test on a newborn's bloody stool is used to tell:",
+    "choices": [
+      "Whether the blood is the baby's own or swallowed maternal blood",
+      "The baby's ABO group",
+      "Whether bleeding is from the upper or lower GI tract",
+      "How much blood was lost"
+    ],
+    "correct_index": 0,
+    "explanation": "The Apt test distinguishes fetal from adult hemoglobin, so it shows whether blood in a newborn's stool is the baby's own or swallowed maternal blood. Reference: Approach to the bleeding newborn (pmc.ncbi.nlm.nih.gov/articles/PMC2851303).",
+    "difficulty": 2
+  },
+  {
+    "subject": "CM",
+    "topic": "Fecalysis",
+    "stem": "A stool pH below 5.5 with a positive test for reducing substances suggests:",
+    "choices": [
+      "Carbohydrate malabsorption or intolerance",
+      "Pancreatic fat malabsorption",
+      "Upper GI bleeding",
+      "Bile duct obstruction"
+    ],
+    "correct_index": 0,
+    "explanation": "A fecal pH below 5.5 means acidic stool, and reducing substances are tested when carbohydrate malabsorption is suspected, because unabsorbed sugars are fermented into acids. Reference: Kasirga, The importance of stool tests in diagnosis and follow-up of gastrointestinal disorders in children, Turk Pediatri Ars 2019 (pmc.ncbi.nlm.nih.gov/articles/PMC6776453).",
+    "difficulty": 3
   }
 ]
