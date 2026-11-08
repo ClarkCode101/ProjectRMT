@@ -42,7 +42,7 @@ const FLASHCARD_SETTINGS_KEY = 'projectrmt:flashcards'
 
 /**
  * Deletes all of her progress: answers, quiz/mock sessions and flashcard schedule.
- * Keeps her own questions, uploads and study settings.
+ * Keeps her own questions, books, uploads and study settings.
  */
 export async function resetProgress() {
   const { data } = await supabase.auth.getSession()

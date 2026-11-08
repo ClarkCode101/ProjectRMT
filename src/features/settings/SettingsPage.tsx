@@ -166,7 +166,7 @@ function ResetProgress() {
           <p className="text-sm">
             <span className="font-semibold">Deletes:</span> quiz and mock exam history, scores, streak, flashcard schedule.
             <br />
-            <span className="font-semibold">Keeps:</span> your own questions, uploads, exam date and daily goal.
+            <span className="font-semibold">Keeps:</span> your own questions, books, uploads, exam date and daily goal.
           </p>
         </div>
       </div>
