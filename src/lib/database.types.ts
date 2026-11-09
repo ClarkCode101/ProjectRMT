@@ -58,6 +58,8 @@ export type Database = {
           /** copied from Community and not edited since: who wrote it, and from which shared book (migration 0016) */
           copied_author: string | null
           copied_from_book: string | null
+          /** her own topic for it inside its subject, e.g. "Ewan" (migration 0019); null = just its board topic */
+          subject_topic: string | null
           normalized_stem: string | null
           stem_hash: string | null
           created_at: string | null
@@ -177,6 +179,8 @@ export type Database = {
           status: VerifyStatus
           /** true = she edited this built-in question */
           edited: boolean
+          /** her own topic for it inside its subject (migration 0019) */
+          subject_topic: string | null
         }
         Relationships: []
       }
@@ -223,6 +227,24 @@ export type Database = {
       merge_books: {
         // p_skip: migration 0017, the incoming duplicates she chose to skip
         Args: { p_source: string; p_target: string; p_chapter: string; p_skip?: string[] }
+        Returns: number
+      }
+      // migration 0019: merge one of her books into a subject, and her topics inside subjects
+      merge_into_subject: {
+        Args: { p_source: string; p_subject_id: number; p_topic: string; p_skip?: string[] }
+        Returns: number
+      }
+      rename_subject_topic: {
+        Args: { p_subject_id: number; p_old: string; p_new: string }
+        Returns: number
+      }
+      split_subject_topic: {
+        Args: { p_subject_id: number; p_topic: string; p_library: number }
+        Returns: string
+      }
+      // migration 0018: rename a topic in one of her books (every question under it); returns how many
+      rename_topic: {
+        Args: { p_book_id: string; p_old: string; p_new: string }
         Returns: number
       }
       // migration 0016: a topic in one of her books becomes its own book; returns the new book's id
