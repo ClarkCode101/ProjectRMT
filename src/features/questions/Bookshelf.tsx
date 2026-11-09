@@ -607,7 +607,16 @@ export function Bookshelf({
                     : 'Drop it on another of your books to merge them'
                   : room === 0
                     ? `${name} is full. Put new books in another library.`
-                    : `${plural(room, 'free slot')} · swipe for your other libraries · hold a book to merge`}
+                    : `${plural(room, 'free slot')} · swipe for more libraries`}
+                {/* How merging works, both ways, on the SAME line: a second line would make the page scroll */}
+                {!dragging && (
+                  <>
+                    {' · hold a book to merge · '}
+                    <span aria-hidden>⋯</span>
+                    <span className="sr-only">the options button</span>
+                    {' on a topic makes it a book'}
+                  </>
+                )}
               </p>
             </div>
           </div>
