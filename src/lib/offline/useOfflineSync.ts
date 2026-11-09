@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useSyncExternalStore } from 'react'
-import { addAttemptsToBank, refreshBankIfStale } from './bank'
+import { addSyncedToBank, refreshBankIfStale } from './bank'
 import { flushOutbox, onSynced } from './outbox'
 
 /**
@@ -26,12 +26,15 @@ export function useOfflineSync(userId: string | null) {
     window.addEventListener('online', sync)
     document.addEventListener('visibilitychange', onVisible)
 
-    // Answers reached the server: add them to the saved copy, and refetch the pages that count them.
+    // Answers or card ratings reached the server: add them to the saved copy, and refetch the pages that show them.
     const stopListening = onSynced((sent) => {
-      void addAttemptsToBank(sent)
-      void queryClient.invalidateQueries({ queryKey: ['mistakes'] })
-      void queryClient.invalidateQueries({ queryKey: ['topic-performance'] })
-      void queryClient.invalidateQueries({ queryKey: ['attempt-history'] })
+      void addSyncedToBank(sent)
+      if (sent.attempts.length > 0) {
+        void queryClient.invalidateQueries({ queryKey: ['mistakes'] })
+        void queryClient.invalidateQueries({ queryKey: ['topic-performance'] })
+        void queryClient.invalidateQueries({ queryKey: ['attempt-history'] })
+      }
+      if (sent.reviews.length > 0) void queryClient.invalidateQueries({ queryKey: ['review-states'] })
     })
 
     return () => {

@@ -1,8 +1,9 @@
-import { Microscope } from 'lucide-react'
+import { CloudOff, Microscope } from 'lucide-react'
 import { ExitButton } from '@/components/ExitButton'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { QuizQuestion } from '@/features/quiz/api'
 import { cardToRow, formatInterval, GRADES, LEARN_AHEAD_MS, makeScheduler, previewIntervals, Rating, review, rowToCard, State, type Card, type Grade, type ReviewRow } from '@/lib/fsrs'
+import { useOnline } from '@/lib/offline/useOfflineSync'
 import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { saveReview } from './api'
@@ -42,7 +43,7 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
   const scheduler = useMemo(() => makeScheduler(true, maxIntervalDays), [maxIntervalDays])
   const [queue, setQueue] = useState(deck)
   const [revealed, setRevealed] = useState(false)
-  const [saveError, setSaveError] = useState(false)
+  const online = useOnline()
   // The card each question is at right now (starts from what's saved, updates as she rates).
   const [cards, setCards] = useState(() => new Map(deck.map((q) => [q.id, rowToCard(states.get(q.id), currentTime())])))
   const [stats, setStats] = useState<SessionStats>({ reviewed: 0, again: 0, newStudied: 0 })
@@ -60,7 +61,8 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
     const next = review(card, grade, now, scheduler)
     const wasNew = card.state === State.New
 
-    saveReview(cardToRow(question.id, next)).catch(() => setSaveError(true))
+    // Saved on the device right away, then sent in the background (waits there while offline).
+    saveReview(cardToRow(question.id, next))
     if (wasNew) onNewStudied()
 
     const newStats = { reviewed: stats.reviewed + 1, again: stats.again + (grade === Rating.Again ? 1 : 0), newStudied: stats.newStudied + (wasNew ? 1 : 0) }
@@ -201,9 +203,10 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
       )}
       <p className="hidden text-center text-xs text-muted-foreground md:block">Space to focus · 1–4 to rate</p>
 
-      {saveError && (
-        <p role="alert" className="text-sm text-destructive">
-          Some cards weren’t saved. Check your internet connection; you can keep going.
+      {!online && (
+        <p role="status" className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+          <CloudOff className="size-4 shrink-0" aria-hidden />
+          Offline. Your ratings are saved on this device and sync when you’re back online.
         </p>
       )}
     </div>

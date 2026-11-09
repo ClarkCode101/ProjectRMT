@@ -1,4 +1,5 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
+import { withOfflineFallback } from '@/lib/offline/bank'
 import { supabase } from '@/lib/supabase'
 
 /** Used until she sets her own target. Same default as the database. */
@@ -14,15 +15,21 @@ export type StudySettings = {
 /** Her planner settings (RLS returns only her own row; there is none until she saves). */
 export const studySettingsOptions = queryOptions({
   queryKey: ['study-settings'],
-  queryFn: async (): Promise<StudySettings> => {
-    const { data, error } = await supabase.from('study_settings').select('exam_date, daily_target').maybeSingle()
-    if (error) throw error
-    return {
-      examDate: data?.exam_date ?? null,
-      dailyTarget: data?.daily_target && data.daily_target > 0 ? data.daily_target : DEFAULT_DAILY_TARGET,
-    }
-  },
+  // No internet: the settings saved on this device the last time it was online.
+  queryFn: () =>
+    withOfflineFallback(async () => {
+      const { data, error } = await supabase.from('study_settings').select('exam_date, daily_target').maybeSingle()
+      if (error) throw error
+      return toStudySettings(data)
+    }, (bank) => toStudySettings(bank.studySettings)),
 })
+
+function toStudySettings(row: { exam_date: string | null; daily_target: number | null } | null): StudySettings {
+  return {
+    examDate: row?.exam_date ?? null,
+    dailyTarget: row?.daily_target && row.daily_target > 0 ? row.daily_target : DEFAULT_DAILY_TARGET,
+  }
+}
 
 export function useStudySettings() {
   return useQuery(studySettingsOptions)

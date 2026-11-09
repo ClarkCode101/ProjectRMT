@@ -124,7 +124,7 @@ describe('flushOutbox', () => {
     }
 
     const synced: string[] = []
-    const stop = outbox.onSynced((sent) => synced.push(...sent.map((a) => a.id)))
+    const stop = outbox.onSynced((sent) => synced.push(...sent.attempts.map((a) => a.id)))
     await outbox.flushOutbox()
     stop()
 
@@ -134,7 +134,7 @@ describe('flushOutbox', () => {
 
   it('tells listeners which answers reached the server', async () => {
     const synced: string[] = []
-    const stop = outbox.onSynced((sent) => synced.push(...sent.map((a) => a.id)))
+    const stop = outbox.onSynced((sent) => synced.push(...sent.attempts.map((a) => a.id)))
     outbox.queueAttempt(answer('a')) // online: sent right away
     await outbox.flushOutbox()
     stop()
@@ -150,5 +150,50 @@ describe('flushOutbox', () => {
 
     setOfflineUserId('user-1')
     expect(outbox.pendingAttempts()).toHaveLength(1)
+  })
+})
+
+describe('flushOutbox with flashcard ratings', () => {
+  const schedule = (questionId: string, due: string) => ({
+    question_id: questionId,
+    due,
+    stability: 1,
+    difficulty: 5,
+    elapsed_days: 0,
+    scheduled_days: 1,
+    reps: 1,
+    lapses: 0,
+    state: 1,
+    last_review: null,
+  })
+
+  it('sends ratings together, only the latest one per card', async () => {
+    queueOffline(() => {
+      outbox.queueReview(schedule('q1', 'first'))
+      outbox.queueReview(schedule('q2', 'x'))
+      outbox.queueReview(schedule('q1', 'second'))
+    })
+    expect(outbox.pendingReviews()).toHaveLength(3)
+
+    const synced: number[] = []
+    const stop = outbox.onSynced((sent) => synced.push(sent.reviews.length))
+    await outbox.flushOutbox()
+    stop()
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0].table).toBe('review_states')
+    expect((calls[0].rows as { question_id: string; due: string }[]).map((r) => `${r.question_id}:${r.due}`)).toEqual(['q2:x', 'q1:second'])
+    expect(outbox.pendingReviews()).toEqual([])
+    expect(synced).toEqual([3])
+  })
+
+  it('clearOutbox forgets everything waiting (after Reset progress)', () => {
+    queueOffline(() => {
+      outbox.queueAttempt(answer('a'))
+      outbox.queueReview(schedule('q1', 'd'))
+    })
+    outbox.clearOutbox()
+    expect(outbox.pendingAttempts()).toEqual([])
+    expect(outbox.pendingReviews()).toEqual([])
   })
 })

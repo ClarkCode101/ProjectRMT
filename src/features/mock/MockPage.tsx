@@ -5,7 +5,15 @@ import { useSearchParams } from 'react-router'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { useFocusMode } from '@/components/layoutContext'
 import { useBooks } from '@/features/questions/booksApi'
-import { fetchQuestions, finishSession, questionPoolOptions, recordAttempts, startSession, type QuizFilters, type QuizQuestion } from '@/features/quiz/api'
+import {
+  fetchQuestions,
+  queueAnswer,
+  queueSessionFinish,
+  queueSessionStart,
+  questionPoolOptions,
+  type QuizFilters,
+  type QuizQuestion,
+} from '@/features/quiz/api'
 import { buildMockExam, parseSavedMock, SAVED_MOCK_KEY, scoreMock, secondsLeft, timeLimitSec, type MockScore, type SavedMock } from '@/lib/mockExam'
 import { NOTES } from '@/data/encouragements'
 import { pickNote } from '@/lib/planner'
@@ -50,7 +58,6 @@ type Stage =
       score: MockScore
       durationSec: number
       timedOut: boolean
-      saveFailed: boolean
     }
 
 // /mock → setup (or resume) → timed exam → results + review
@@ -83,7 +90,8 @@ export default function MockPage() {
         setMessage('No questions match yet. Try another subject or source.')
         return
       }
-      const sessionId = await startSession(filters, questions.length, 'mock')
+      // Saved on the device first and sent in the background, so this works offline too.
+      const sessionId = queueSessionStart(filters, questions.length, 'mock')
       const exam: SavedMock = {
         version: 1,
         sessionId,
@@ -100,7 +108,11 @@ export default function MockPage() {
       setSaved(exam)
       setStage({ name: 'exam', exam, questions })
     } catch {
-      setMessage('Couldn’t prepare the exam. Check your internet connection and try again.')
+      setMessage(
+        navigator.onLine
+          ? 'Couldn’t prepare the exam. Check your internet connection and try again.'
+          : 'You’re offline, and no questions are saved on this device yet. Open the app once with internet to save them.',
+      )
     } finally {
       setBusy(false)
     }
@@ -129,7 +141,7 @@ export default function MockPage() {
         current: Math.min(saved.current, keep.length - 1),
       }
       const questions = keep.map((k) => k.q)
-      if (secondsLeft(exam, Date.now()) === 0) await submit(exam, questions, true)
+      if (secondsLeft(exam, Date.now()) === 0) submit(exam, questions, true)
       else setStage({ name: 'exam', exam, questions })
     } catch {
       setMessage('Couldn’t load the exam. Check your internet connection and try again.')
@@ -149,43 +161,30 @@ export default function MockPage() {
     setStage((s) => (s.name === 'exam' ? { ...s, exam } : s))
   }
 
-  /** Saves every answered item as an attempt, plus the session's score. Returns false if it couldn't save. */
-  async function saveResults(exam: SavedMock, questions: QuizQuestion[], score: MockScore, durationSec: number) {
-    try {
-      await recordAttempts(
-        exam.sessionId,
-        questions.flatMap((q, i) => {
-          const answer = exam.answers[i]
-          return answer === null ? [] : [{ questionId: q.id, selectedIndex: answer, isCorrect: answer === q.correct_index }]
-        }),
-      )
-      await finishSession(exam.sessionId, score.correct, durationSec)
-      // Progress, mistakes and "new to you" counts changed.
-      void queryClient.invalidateQueries({ queryKey: ['mistakes'] })
-      void queryClient.invalidateQueries({ queryKey: ['topic-performance'] })
-      void queryClient.invalidateQueries({ queryKey: ['attempt-history'] })
-      return true
-    } catch {
-      return false
-    }
+  /**
+   * Saves every answered item as an attempt, plus the session's score. They go into the outbox on the device
+   * and are sent in the background, so nothing is lost without internet (lib/offline/outbox.ts).
+   */
+  function saveResults(exam: SavedMock, questions: QuizQuestion[], score: MockScore, durationSec: number) {
+    questions.forEach((q, i) => {
+      const answer = exam.answers[i]
+      if (answer === null) return
+      queueAnswer({ sessionId: exam.sessionId, questionId: q.id, selectedIndex: answer, isCorrect: answer === q.correct_index, timeMs: null })
+    })
+    queueSessionFinish(exam.sessionId, score.correct, durationSec)
+    // Progress, mistakes and "new to you" counts changed.
+    void queryClient.invalidateQueries({ queryKey: ['mistakes'] })
+    void queryClient.invalidateQueries({ queryKey: ['topic-performance'] })
+    void queryClient.invalidateQueries({ queryKey: ['attempt-history'] })
   }
 
-  async function submit(exam: SavedMock, questions: QuizQuestion[], timedOut: boolean) {
+  function submit(exam: SavedMock, questions: QuizQuestion[], timedOut: boolean) {
     const score = scoreMock(questions, exam.answers)
     const durationSec = Math.min(exam.limitSec, Math.round((Date.now() - exam.startedAt) / 1000))
     clearSaved()
     setSaved(null)
-    setStage({ name: 'results', exam, questions, score, durationSec, timedOut, saveFailed: false })
-    const ok = await saveResults(exam, questions, score, durationSec)
-    if (!ok) setStage((s) => (s.name === 'results' ? { ...s, saveFailed: true } : s))
-  }
-
-  async function retrySave() {
-    if (stage.name !== 'results') return
-    setBusy(true)
-    const ok = await saveResults(stage.exam, stage.questions, stage.score, stage.durationSec)
-    setBusy(false)
-    if (ok) setStage({ ...stage, saveFailed: false })
+    setStage({ name: 'results', exam, questions, score, durationSec, timedOut })
+    saveResults(exam, questions, score, durationSec)
   }
 
   if (stage.name === 'exam') {
@@ -194,7 +193,7 @@ export default function MockPage() {
         exam={stage.exam}
         questions={stage.questions}
         onChange={onChange}
-        onSubmit={(exam, timedOut) => void submit(exam, stage.questions, timedOut)}
+        onSubmit={(exam, timedOut) => submit(exam, stage.questions, timedOut)}
         onLeave={() => setStage({ name: 'setup' })}
       />
     )
@@ -210,8 +209,6 @@ export default function MockPage() {
         score={stage.score}
         durationSec={stage.durationSec}
         timedOut={stage.timedOut}
-        onRetrySave={stage.saveFailed ? () => void retrySave() : null}
-        saving={busy}
         note={pickNote(NOTES, stage.score.passed ? 'mock_passed' : 'mock_done', stage.exam.sessionId)}
         onNewExam={() => {
           setMessage(null)

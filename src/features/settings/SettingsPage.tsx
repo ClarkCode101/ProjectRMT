@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/authContext'
 import { useInstall } from '@/lib/install'
 import { downloadBank, useBankStatus } from '@/lib/offline/bank'
-import { usePendingAnswerCount } from '@/lib/offline/outbox'
+import { clearOutbox, usePendingAnswerCount } from '@/lib/offline/outbox'
 import { useOnline } from '@/lib/offline/useOfflineSync'
 import { countdownLabel, daysUntil, isValidDate } from '@/lib/planner'
 import { firstName, saveFirstName } from '@/lib/profile'
@@ -227,7 +227,7 @@ function OfflinePractice() {
   }
 
   return (
-    <Section icon={<CloudDownload className="size-5" aria-hidden />} title="Offline practice" hint="Practice works without internet, using questions saved on this device.">
+    <Section icon={<CloudDownload className="size-5" aria-hidden />} title="Offline practice" hint="Practice, Mock exam and Flashcards work without internet, using questions saved on this device.">
       <div className="space-y-3">
         <div className="space-y-1 text-sm" aria-live="polite">
           <p>
@@ -283,6 +283,9 @@ function ResetProgress() {
     setStatus('resetting')
     try {
       await resetProgress()
+      // Answers waiting on this device would bring old progress back, and the offline copy still has it.
+      clearOutbox()
+      void downloadBank()
       // Every page's stats come from these tables, so refetch everything except her settings.
       await queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'study-settings' })
       setStatus('done')

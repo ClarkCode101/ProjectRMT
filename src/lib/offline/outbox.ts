@@ -1,6 +1,6 @@
-// The outbox: Practice answers wait here on the device until they reach Supabase.
+// The outbox: answers (Practice, Mock exam) and flashcard ratings wait here on the device until they reach Supabase.
 //
-// Every answer goes through the outbox, online or not, so there is only one way to save:
+// Everything goes through the outbox, online or not, so there is only one way to save:
 //   1. put it in the outbox (on the device, instantly)
 //   2. try to send everything in the outbox, oldest first
 //   3. whatever was sent leaves the outbox; the rest waits for the next try (back online, app opened again)
@@ -10,6 +10,7 @@
 
 import { useSyncExternalStore } from 'react'
 import type { Json, SessionMode } from '@/lib/database.types'
+import type { ReviewRow } from '@/lib/fsrs'
 import { supabase } from '@/lib/supabase'
 import { getOfflineUserId, isOnline } from './storage'
 
@@ -28,7 +29,8 @@ export type OutboxAttempt = {
   /** index in the ORIGINAL choices order */
   selected_index: number
   is_correct: boolean
-  time_ms: number
+  /** null for the mock exam (it doesn't time each item) */
+  time_ms: number | null
   /** when she answered (not when it was sent), so her streak and history count the right day */
   created_at: string
 }
@@ -37,18 +39,39 @@ export type OutboxItem =
   | { kind: 'session'; row: OutboxSession }
   | { kind: 'attempt'; row: OutboxAttempt }
   | { kind: 'finish'; sessionId: string; score: number; durationSec: number; finishedAt: string }
+  /** a flashcard's new schedule after she rated it */
+  | { kind: 'review'; row: ReviewRow }
+
+/** What reached the server in one send round. */
+export type Synced = { attempts: OutboxAttempt[]; reviews: ReviewRow[] }
+
+const KINDS = ['session', 'attempt', 'finish', 'review']
 
 // ---------- Pure helpers (tested in outbox.test.ts) ----------
 
 /**
- * What to send next: answers in a row go together in one request; anything else goes alone.
- * Order matters: a session must be saved before its answers (they point to it).
+ * What to send next: answers in a row go together in one request, and so do flashcard ratings in a row;
+ * a session start or finish goes alone. Order matters: a session must be saved before its answers (they point to it).
  */
 export function takeBatch(items: readonly OutboxItem[]): OutboxItem[] {
   if (items.length === 0) return []
-  if (items[0].kind !== 'attempt') return [items[0]]
-  const end = items.findIndex((item) => item.kind !== 'attempt')
+  const kind = items[0].kind
+  if (kind !== 'attempt' && kind !== 'review') return [items[0]]
+  const end = items.findIndex((item) => item.kind !== kind)
   return items.slice(0, end === -1 ? items.length : end)
+}
+
+/**
+ * A card rated twice in one batch: only its latest schedule is sent.
+ * (The database refuses one request that changes the same row twice.)
+ */
+export function latestPerCard(rows: readonly ReviewRow[]): ReviewRow[] {
+  const latest = new Map<string, ReviewRow>()
+  for (const row of rows) {
+    latest.delete(row.question_id) // so the card moves to where its latest rating was
+    latest.set(row.question_id, row)
+  }
+  return [...latest.values()]
 }
 
 /**
@@ -68,7 +91,7 @@ export function parseOutbox(raw: string | null): OutboxItem[] {
     if (!Array.isArray(data)) return []
     return data.filter(
       (item): item is OutboxItem =>
-        typeof item === 'object' && item !== null && ['session', 'attempt', 'finish'].includes((item as { kind?: unknown }).kind as string),
+        typeof item === 'object' && item !== null && KINDS.includes((item as { kind?: unknown }).kind as string),
     )
   } catch {
     return []
@@ -100,14 +123,14 @@ function write(userId: string, items: OutboxItem[]) {
 // ---------- Listeners (for the "waiting to sync" count, and refreshing pages after a sync) ----------
 
 const listeners = new Set<() => void>()
-const syncedListeners = new Set<(sent: OutboxAttempt[]) => void>()
+const syncedListeners = new Set<(sent: Synced) => void>()
 
 function notify() {
   listeners.forEach((listener) => listener())
 }
 
-/** Runs `listener` with the answers that just reached the server. Returns a function that stops listening. */
-export function onSynced(listener: (sent: OutboxAttempt[]) => void) {
+/** Runs `listener` with what just reached the server. Returns a function that stops listening. */
+export function onSynced(listener: (sent: Synced) => void) {
   syncedListeners.add(listener)
   return () => {
     syncedListeners.delete(listener)
@@ -135,11 +158,29 @@ export function queueFinish(sessionId: string, score: number, durationSec: numbe
   add({ kind: 'finish', sessionId, score, durationSec, finishedAt: new Date().toISOString() })
 }
 
+export function queueReview(row: ReviewRow) {
+  add({ kind: 'review', row })
+}
+
+function pendingItems(): OutboxItem[] {
+  const userId = getOfflineUserId()
+  return userId ? read(userId) : []
+}
+
 /** Answers still on the device only (for offline history and mistakes). */
 export function pendingAttempts(): OutboxAttempt[] {
+  return pendingItems().flatMap((item) => (item.kind === 'attempt' ? [item.row] : []))
+}
+
+/** Flashcard ratings still on the device only (for offline due dates). */
+export function pendingReviews(): ReviewRow[] {
+  return pendingItems().flatMap((item) => (item.kind === 'review' ? [item.row] : []))
+}
+
+/** Forget everything waiting (after Reset progress, so old answers don't come back). */
+export function clearOutbox() {
   const userId = getOfflineUserId()
-  if (!userId) return []
-  return read(userId).flatMap((item) => (item.kind === 'attempt' ? [item.row] : []))
+  if (userId) write(userId, [])
 }
 
 // ---------- Sending ----------
@@ -154,6 +195,10 @@ async function send(batch: OutboxItem[]): Promise<'sent' | 'retry' | 'drop'> {
     } else if (first.kind === 'attempt') {
       const rows = batch.flatMap((item) => (item.kind === 'attempt' ? [item.row] : []))
       result = await supabase.from('attempts').upsert(rows, { onConflict: 'id', ignoreDuplicates: true })
+    } else if (first.kind === 'review') {
+      // One row per card (user_id is filled in by the database): sending it again just saves the same schedule.
+      const rows = latestPerCard(batch.flatMap((item) => (item.kind === 'review' ? [item.row] : [])))
+      result = await supabase.from('review_states').upsert(rows, { onConflict: 'user_id,question_id' })
     } else {
       result = await supabase
         .from('quiz_sessions')
@@ -190,7 +235,7 @@ export function flushOutbox(): Promise<void> {
 async function runFlush() {
   const userId = getOfflineUserId()
   if (!userId || !isOnline()) return
-  const sentAttempts: OutboxAttempt[] = []
+  const sent: Synced = { attempts: [], reviews: [] }
   // After a refused group of answers: send one at a time, so one bad answer doesn't take the good ones down with it.
   let oneByOne = false
   for (;;) {
@@ -203,11 +248,16 @@ async function runFlush() {
       oneByOne = true
       continue
     }
-    if (outcome === 'sent') sentAttempts.push(...batch.flatMap((item) => (item.kind === 'attempt' ? [item.row] : [])))
+    if (outcome === 'sent') {
+      for (const item of batch) {
+        if (item.kind === 'attempt') sent.attempts.push(item.row)
+        if (item.kind === 'review') sent.reviews.push(item.row)
+      }
+    }
     // New items are only ever added at the end, so the batch is still the first part of the list.
     write(userId, read(userId).slice(batch.length))
   }
-  if (sentAttempts.length > 0) syncedListeners.forEach((listener) => listener(sentAttempts))
+  if (sent.attempts.length > 0 || sent.reviews.length > 0) syncedListeners.forEach((listener) => listener(sent))
 }
 
 // ---------- For screens ----------
@@ -219,7 +269,7 @@ function subscribe(listener: () => void) {
   }
 }
 
-/** How many answers are still waiting to reach the server, kept up to date. */
+/** How many answers and flashcard ratings are still waiting to reach the server, kept up to date. */
 export function usePendingAnswerCount(): number {
-  return useSyncExternalStore(subscribe, () => pendingAttempts().length, () => 0)
+  return useSyncExternalStore(subscribe, () => pendingAttempts().length + pendingReviews().length, () => 0)
 }

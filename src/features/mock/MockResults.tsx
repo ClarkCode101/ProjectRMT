@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronRight, Flag, House, Minus, RotateCcw, X } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, CloudOff, Flag, House, Minus, RotateCcw, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { AnswerReview } from '@/components/AnswerReview'
@@ -7,6 +7,7 @@ import { VerseCard } from '@/components/VerseCard'
 import { HeroPanel, heroButtonClass, LowFlag, RangeBar } from '@/components/report'
 import type { QuizQuestion } from '@/features/quiz/api'
 import { formatClock, type MockScore } from '@/lib/mockExam'
+import { useOnline } from '@/lib/offline/useOfflineSync'
 import { formatPercent, PASSING_RATE } from '@/lib/quiz'
 import { useSubjectOfTopic, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
@@ -21,9 +22,6 @@ type Props = {
   score: MockScore
   durationSec: number
   timedOut: boolean
-  /** null = saved fine; otherwise a retry button is shown */
-  onRetrySave: (() => void) | null
-  saving: boolean
   onNewExam: () => void
   /** a personal note from src/data/encouragements.ts, if there is one */
   note: string | null
@@ -135,7 +133,9 @@ function ResultTable({ title, children }: { title: string; children: ReactNode }
 /** "Focus on" lists at most this many topics below 60% (the rest are under "See all topics"). */
 const FOCUS_TOPICS_SHOWN = 3
 
-export function MockResults({ label, questions, answers, flags, score, durationSec, timedOut, onRetrySave, saving, onNewExam, note }: Props) {
+export function MockResults({ label, questions, answers, flags, score, durationSec, timedOut, onNewExam, note }: Props) {
+  // Answers are saved on the device first (the outbox) and sent when there's internet.
+  const online = useOnline()
   const topics = useTopics()
   const subjectOf = useSubjectOfTopic()
   const topicName = new Map((topics.data ?? []).map((t) => [t.id, t.name]))
@@ -303,18 +303,11 @@ export function MockResults({ label, questions, answers, flags, score, durationS
       {note && <NoteCard message={note} />}
       <VerseCard />
 
-      {onRetrySave && (
-        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-wrong/40 bg-wrong-soft px-4 py-3 text-sm">
-          <p>Your answers weren’t saved to your progress yet. Check your internet connection.</p>
-          <button
-            type="button"
-            onClick={onRetrySave}
-            disabled={saving}
-            className="rounded-lg bg-wrong px-3 py-1.5 font-semibold text-white outline-none focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-60"
-          >
-            {saving ? 'Saving…' : 'Try again'}
-          </button>
-        </div>
+      {!online && (
+        <p role="status" className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <CloudOff className="size-4 shrink-0" aria-hidden />
+          Offline. Your answers are saved on this device and count toward your progress once you’re back online.
+        </p>
       )}
 
       {/* ---------- Review every item: only after she asks for it (the button on the printout) ---------- */}

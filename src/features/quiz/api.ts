@@ -220,34 +220,24 @@ function sessionFilters(filters: QuizFilters) {
   }
 }
 
-/** Creates a quiz_sessions row and returns its id. Needs internet (Mock exam). */
-export async function startSession(filters: QuizFilters, totalItems: number, mode: SessionMode = 'practice'): Promise<string> {
-  const { data, error } = await supabase
-    .from('quiz_sessions')
-    .insert({ mode, total_items: totalItems, filters: sessionFilters(filters) })
-    .select('id')
-    .single()
-  if (error) throw error
-  return data.id
-}
+// ---------- Practice and Mock exam: saved through the outbox, so they work offline (lib/offline/outbox.ts) ----------
 
-// ---------- Practice: saved through the outbox, so it works offline (lib/offline/outbox.ts) ----------
-
-/** Starts a Practice session on the device and returns its id right away (no waiting for the server). */
-export function queuePracticeSession(filters: QuizFilters, totalItems: number): string {
+/** Starts a session on the device and returns its id right away (no waiting for the server). */
+export function queueSessionStart(filters: QuizFilters, totalItems: number, mode: SessionMode = 'practice'): string {
   const id = crypto.randomUUID()
-  queueSession({ id, mode: 'practice', total_items: totalItems, filters: sessionFilters(filters), started_at: new Date().toISOString() })
+  queueSession({ id, mode, total_items: totalItems, filters: sessionFilters(filters), started_at: new Date().toISOString() })
   return id
 }
 
-/** Saves one Practice answer. */
-export function queuePracticeAnswer(answer: {
+/** Saves one answer. */
+export function queueAnswer(answer: {
   sessionId: string
   questionId: string
   /** index in the ORIGINAL choices order, not the shuffled display order */
   selectedIndex: number
   isCorrect: boolean
-  timeMs: number
+  /** how long she took, or null when not timed per item (Mock exam) */
+  timeMs: number | null
 }) {
   queueAttempt({
     id: crypto.randomUUID(),
@@ -260,27 +250,8 @@ export function queuePracticeAnswer(answer: {
   })
 }
 
-/** Saves the score of a Practice session. */
-export function queuePracticeFinish(sessionId: string, score: number, durationSec: number) {
+/** Saves the score of a session. */
+export function queueSessionFinish(sessionId: string, score: number, durationSec: number) {
   queueFinish(sessionId, score, durationSec)
 }
 
-/** Saves many answers at once (the mock exam saves them all when she submits). */
-export async function recordAttempts(
-  sessionId: string,
-  attempts: { questionId: string; selectedIndex: number; isCorrect: boolean }[],
-) {
-  if (attempts.length === 0) return
-  const { error } = await supabase.from('attempts').insert(
-    attempts.map((a) => ({ session_id: sessionId, question_id: a.questionId, selected_index: a.selectedIndex, is_correct: a.isCorrect })),
-  )
-  if (error) throw error
-}
-
-export async function finishSession(sessionId: string, score: number, durationSec: number) {
-  const { error } = await supabase
-    .from('quiz_sessions')
-    .update({ score, duration_sec: durationSec, finished_at: new Date().toISOString() })
-    .eq('id', sessionId)
-  if (error) throw error
-}

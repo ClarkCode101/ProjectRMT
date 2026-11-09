@@ -1,16 +1,17 @@
-// The question bank saved on the device, so Practice works without internet.
+// The question bank saved on the device, so Practice, Mock exam and Flashcards work without internet.
 //
-// While online, a copy of what Practice needs is downloaded and kept in IndexedDB:
-// subjects, topics, every question she can see, her past answers, and her scores per topic.
+// While online, a copy of what they need is downloaded and kept in IndexedDB: subjects, topics,
+// every question she can see, her past answers, her scores per topic, her flashcard schedule and exam date.
 // When Supabase can't be reached, the app reads this copy instead (see withOfflineFallback).
 // The copy is refreshed when it's older than BANK_MAX_AGE_MS (or after she edits questions).
 
 import { useSyncExternalStore } from 'react'
 import type { QuizFilters, QuizQuestion } from '@/features/quiz/api'
 import type { VerifyStatus } from '@/lib/database.types'
+import type { ReviewRow } from '@/lib/fsrs'
 import { parseChoiceNotes, parseChoices, type SubjectInfo, type TopicInfo, type TopicPerformanceRow } from '@/lib/quiz'
 import { supabase } from '@/lib/supabase'
-import { pendingAttempts, type OutboxAttempt } from './outbox'
+import { pendingAttempts, pendingReviews, type Synced } from './outbox'
 import { getOfflineUserId, idbGet, idbSet, isOnline } from './storage'
 
 /** A question plus the extra details the source filters need (Built-in, Mine, one upload, verified only). */
@@ -24,8 +25,12 @@ export type BankQuestion = QuizQuestion & {
 /** One past answer: enough for smart selection, Review again, and the streak. */
 export type BankAttempt = { question_id: string; is_correct: boolean; selected_index: number | null; created_at: string | null }
 
+/** Her planner row (exam date, daily goal); null until she saves one. */
+export type BankStudySettings = { exam_date: string | null; daily_target: number | null } | null
+
 export type OfflineBank = {
-  version: 1
+  /** 2: added the flashcard schedule and study settings (older copies are downloaded again) */
+  version: 2
   /** whose copy this is: another account on the same device never sees it */
   userId: string
   /** when it was downloaded (ms) */
@@ -35,6 +40,8 @@ export type OfflineBank = {
   questions: BankQuestion[]
   attempts: BankAttempt[]
   topicPerformance: TopicPerformanceRow[]
+  reviewStates: ReviewRow[]
+  studySettings: BankStudySettings
 }
 
 /** Download a fresh copy when the saved one is older than this. */
@@ -75,8 +82,15 @@ export function filterBankQuestions(questions: readonly BankQuestion[], filters:
 }
 
 /** An outbox answer in the saved copy's shape. */
-export function toBankAttempt(row: OutboxAttempt): BankAttempt {
+export function toBankAttempt(row: Synced['attempts'][number]): BankAttempt {
   return { question_id: row.question_id, is_correct: row.is_correct, selected_index: row.selected_index, created_at: row.created_at }
+}
+
+/** Flashcard schedules with newer ones on top: one row per card, the latest wins. */
+export function mergeReviewStates(saved: readonly ReviewRow[], newer: readonly ReviewRow[]): ReviewRow[] {
+  const byCard = new Map(saved.map((row) => [row.question_id, row]))
+  for (const row of newer) byCard.set(row.question_id, row)
+  return [...byCard.values()]
 }
 
 // ---------- The saved copy ----------
@@ -94,7 +108,7 @@ export async function getBank(): Promise<OfflineBank | null> {
   if (!userId) return null
   if (memory?.userId === userId) return memory
   const saved = await idbGet<OfflineBank>(BANK_KEY)
-  if (saved?.version !== 1 || saved.userId !== userId) return null
+  if (saved?.version !== 2 || saved.userId !== userId) return null
   memory = saved
   notify()
   return saved
@@ -103,6 +117,11 @@ export async function getBank(): Promise<OfflineBank | null> {
 /** Her past answers: the saved ones plus the ones still waiting in the outbox. */
 export function allAttempts(bank: OfflineBank): BankAttempt[] {
   return [...bank.attempts, ...pendingAttempts().map(toBankAttempt)]
+}
+
+/** Her flashcard schedule: the saved one, with ratings still waiting in the outbox on top. */
+export function allReviewStates(bank: OfflineBank): ReviewRow[] {
+  return mergeReviewStates(bank.reviewStates, pendingReviews())
 }
 
 /**
@@ -139,7 +158,7 @@ async function runDownload(): Promise<boolean> {
   const userId = getOfflineUserId()
   if (!userId || !isOnline()) return false
   try {
-    const [subjects, topics, questionRows, attempts, performance] = await Promise.all([
+    const [subjects, topics, questionRows, attempts, performance, reviewStates, settings] = await Promise.all([
       fetchAllPages((from, to) => supabase.from('subjects').select('id, code, name, sort_order').order('sort_order').range(from, to)),
       fetchAllPages((from, to) => supabase.from('topics').select('id, subject_id, name').order('name').range(from, to)),
       fetchAllPages((from, to) =>
@@ -151,7 +170,16 @@ async function runDownload(): Promise<boolean> {
       ),
       fetchAllPages((from, to) => supabase.from('attempts').select('question_id, is_correct, selected_index, created_at').order('id').range(from, to)),
       fetchAllPages((from, to) => supabase.from('topic_performance').select('subject_id, topic_id, attempts, accuracy').range(from, to)),
+      fetchAllPages((from, to) =>
+        supabase
+          .from('review_states')
+          .select('question_id, due, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, state, last_review')
+          .order('question_id')
+          .range(from, to),
+      ),
+      supabase.from('study_settings').select('exam_date, daily_target').maybeSingle(),
     ])
+    if (settings.error) throw settings.error
 
     const questions: BankQuestion[] = questionRows.flatMap((row) => {
       const choices = parseChoices(row.choices)
@@ -163,7 +191,7 @@ async function runDownload(): Promise<boolean> {
     if (getOfflineUserId() !== userId) return false
 
     memory = {
-      version: 1,
+      version: 2,
       userId,
       savedAt: Date.now(),
       subjects,
@@ -172,6 +200,8 @@ async function runDownload(): Promise<boolean> {
       attempts,
       // Postgres numbers can arrive as strings; make sure they are numbers (same as dashboard/api.ts).
       topicPerformance: performance.map((r) => ({ ...r, attempts: Number(r.attempts), accuracy: Number(r.accuracy) })),
+      reviewStates,
+      studySettings: settings.data,
     }
     await idbSet(BANK_KEY, memory)
     return true
@@ -209,11 +239,15 @@ export function markBankStale() {
   changedSinceSave = true
 }
 
-/** Answers that just reached the server: add them to the saved copy, so offline history stays complete. */
-export async function addAttemptsToBank(rows: OutboxAttempt[]) {
+/** What just reached the server: add it to the saved copy, so offline history and due dates stay complete. */
+export async function addSyncedToBank(sent: Synced) {
   const bank = await getBank()
-  if (!bank || rows.length === 0) return
-  memory = { ...bank, attempts: [...bank.attempts, ...rows.map(toBankAttempt)] }
+  if (!bank) return
+  memory = {
+    ...bank,
+    attempts: [...bank.attempts, ...sent.attempts.map(toBankAttempt)],
+    reviewStates: mergeReviewStates(bank.reviewStates, sent.reviews),
+  }
   await idbSet(BANK_KEY, memory)
 }
 

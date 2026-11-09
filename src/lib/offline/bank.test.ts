@@ -97,3 +97,29 @@ describe('toBankAttempt', () => {
     ).toEqual({ question_id: 'q1', is_correct: false, selected_index: 2, created_at: '2026-11-09T10:00:00.000Z' })
   })
 })
+
+const { mergeReviewStates } = await import('./bank')
+
+describe('mergeReviewStates', () => {
+  const row = (questionId: string, due: string) => ({
+    question_id: questionId,
+    due,
+    stability: null,
+    difficulty: null,
+    elapsed_days: null,
+    scheduled_days: null,
+    reps: null,
+    lapses: null,
+    state: null,
+    last_review: null,
+  })
+
+  it('puts newer ratings on top, one row per card', () => {
+    const merged = mergeReviewStates([row('q1', 'old'), row('q2', 'kept')], [row('q1', 'new'), row('q3', 'added')])
+    expect(merged.map((r) => `${r.question_id}:${r.due}`).sort()).toEqual(['q1:new', 'q2:kept', 'q3:added'])
+  })
+
+  it('leaves the saved schedule alone when nothing is waiting', () => {
+    expect(mergeReviewStates([row('q1', 'a')], [])).toEqual([row('q1', 'a')])
+  })
+})

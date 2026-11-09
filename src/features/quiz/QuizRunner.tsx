@@ -9,7 +9,7 @@ import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { setQuestionStatus, useRefreshBank } from '@/features/questions/api'
 import { useOnline } from '@/lib/offline/useOfflineSync'
-import { queuePracticeAnswer, type QuizQuestion } from './api'
+import { queueAnswer, type QuizQuestion } from './api'
 
 export type AnswerResult = { question: QuizQuestion; selectedIndex: number; isCorrect: boolean }
 
@@ -89,7 +89,7 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
     setAnswers((prev) => [...prev, result])
 
     // Saved on the device right away, then sent in the background (waits there while offline).
-    queuePracticeAnswer({
+    queueAnswer({
       sessionId,
       questionId: question.id,
       selectedIndex: originalIndex,

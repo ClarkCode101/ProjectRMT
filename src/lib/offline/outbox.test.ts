@@ -80,3 +80,23 @@ describe('parseOutbox', () => {
     expect(parseOutbox(JSON.stringify([attempt('a'), { kind: 'mystery' }, 42, null]))).toEqual([attempt('a')])
   })
 })
+
+const { latestPerCard } = await import('./outbox')
+
+const rating = (questionId: string, due: string): OutboxItem => ({
+  kind: 'review',
+  row: { question_id: questionId, due, stability: 1, difficulty: 5, elapsed_days: 0, scheduled_days: 1, reps: 1, lapses: 0, state: 1, last_review: null },
+})
+
+describe('takeBatch with flashcard ratings', () => {
+  it('groups ratings in a row, apart from answers', () => {
+    expect(takeBatch([rating('q1', 'd1'), rating('q2', 'd2'), attempt('a')])).toEqual([rating('q1', 'd1'), rating('q2', 'd2')])
+  })
+})
+
+describe('latestPerCard', () => {
+  it('keeps only the latest schedule of a card rated twice', () => {
+    const rows = [rating('q1', 'first'), rating('q2', 'x'), rating('q1', 'second')].map((item) => (item.kind === 'review' ? item.row : null)!)
+    expect(latestPerCard(rows).map((r) => `${r.question_id}:${r.due}`)).toEqual(['q2:x', 'q1:second'])
+  })
+})

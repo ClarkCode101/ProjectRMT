@@ -14,8 +14,8 @@ import { buildHistory, pickQuestions } from '@/lib/selection'
 import {
   attemptHistoryOptions,
   fetchQuestions,
-  queuePracticeFinish,
-  queuePracticeSession,
+  queueSessionFinish,
+  queueSessionStart,
   questionPoolOptions,
   type QuizFilters,
   type QuizQuestion,
@@ -97,7 +97,7 @@ export default function PracticePage() {
         return
       }
       // Saved on the device first and sent in the background, so this works offline too.
-      const sessionId = queuePracticeSession(filters, picked.length)
+      const sessionId = queueSessionStart(filters, picked.length)
       setStage({ name: 'quiz', sessionId, questions: picked, startedAt: Date.now() })
     } catch {
       setMessage(
@@ -154,7 +154,7 @@ export default function PracticePage() {
     if (stage.name !== 'quiz') return
     const score = answers.filter((a) => a.isCorrect).length
     setStage({ name: 'results', answers })
-    queuePracticeFinish(stage.sessionId, score, Math.round((Date.now() - stage.startedAt) / 1000))
+    queueSessionFinish(stage.sessionId, score, Math.round((Date.now() - stage.startedAt) / 1000))
     refreshAfterAnswers()
   }
 
@@ -170,7 +170,7 @@ export default function PracticePage() {
     if (stage.name !== 'quiz') return
     if (answers.length > 0) {
       const score = answers.filter((a) => a.isCorrect).length
-      queuePracticeFinish(stage.sessionId, score, Math.round((Date.now() - stage.startedAt) / 1000))
+      queueSessionFinish(stage.sessionId, score, Math.round((Date.now() - stage.startedAt) / 1000))
       refreshAfterAnswers()
     }
     restart()
