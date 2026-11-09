@@ -225,7 +225,8 @@ export type Database = {
         Returns: { question_id: string; stem: string }[]
       }
       add_community_book: {
-        Args: { p_book_id: string; p_library: number }
+        // p_skip: migration 0021, the questions she already has and chose to leave out
+        Args: { p_book_id: string; p_library: number; p_skip?: string[] }
         Returns: string
       }
       // migration 0012: move every question of one book into another under one topic, then delete the first

@@ -216,13 +216,28 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [addedId, setAddedId] = useState<string | null>(null)
+  const [addedSkipped, setAddedSkipped] = useState(0)
+
+  // "Skip the ones I have": the same ones start ticked, alike ones don't (like Merge). null = not changed yet.
+  const found = duplicates?.status === 'done' ? duplicates.found : []
+  const [skipChoice, setSkipChoice] = useState<Set<string> | null>(null)
+  const skipped = skipChoice ?? new Set(found.filter((d) => d.exact).map((d) => d.incomingId))
+  function toggleSkip(id: string) {
+    const next = new Set(skipped)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSkipChoice(next)
+  }
+  const total = duplicates?.status === 'done' ? duplicates.total : book.questionCount
+  const toAdd = total - skipped.size
 
   async function handleAdd() {
     setBusy(true)
     setError(null)
     try {
-      const id = await addCommunityBook(book.id, library)
+      const id = await addCommunityBook(book.id, library, [...skipped])
       setAddedId(id)
+      setAddedSkipped(skipped.size)
       refreshCommunity()
     } catch (e) {
       setError(communityErrorMessage(e))
@@ -309,7 +324,9 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
         <div className="space-y-3">
           <p role="status" className="flex items-center gap-2 rounded-md bg-correct-soft px-3 py-2 font-semibold text-correct">
             <CircleCheck className="size-4 shrink-0" aria-hidden />
-            {addedId ? `Added to ${libraryNames[library - 1]}. It’s yours to keep.` : 'Already in your library.'}
+            {addedId
+              ? `Added to ${libraryNames[library - 1]}${addedSkipped > 0 ? `, without the ${plural(addedSkipped, 'question')} you already have` : ''}. It’s yours to keep.`
+              : 'Already in your library.'}
           </p>
           <div className="flex flex-col gap-2 sm:flex-row-reverse">
             <OpenBookLink id={copyId} label="Open your copy" />
@@ -320,7 +337,7 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
         </div>
       ) : (
         <div className="space-y-3">
-          {duplicates && <DuplicateWarning check={duplicates} total={book.questionCount} />}
+          {duplicates && <DuplicateWarning check={duplicates} skipped={skipped} onToggle={toggleSkip} disabled={busy} />}
 
           {/* Which library the copy goes in. A full one can't be picked. */}
           <fieldset>
@@ -358,10 +375,26 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
             </p>
           )}
 
+          {/* How many actually come over, once she's skipping some */}
+          {skipped.size > 0 && (
+            <p id="community-add-summary" className="text-sm text-muted-foreground">
+              {toAdd > 0 ? (
+                <>
+                  <span className="font-semibold text-foreground tabular-nums">{plural(toAdd, 'question')}</span> will be added ·{' '}
+                  <span className="tabular-nums">{skipped.size}</span> skipped
+                </>
+              ) : (
+                <span className="font-semibold text-foreground">You already have every question in this book. Untick one to add it.</span>
+              )}
+            </p>
+          )}
+
           <button
             type="button"
-            disabled={busy || firstWithRoom === 0}
+            // waits for the duplicate check, so she doesn't add it before seeing what she already has
+            disabled={busy || firstWithRoom === 0 || toAdd <= 0 || duplicates?.status === 'checking'}
             onClick={() => void handleAdd()}
+            aria-describedby={skipped.size > 0 ? 'community-add-summary' : undefined}
             className={cn('flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary font-heading text-lg font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}
           >
             {busy ? 'Adding…' : 'Add to my library'}
@@ -373,7 +406,8 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
   )
 }
 
-type DuplicateCheck = { status: 'checking' } | { status: 'done'; found: MergeDuplicate[] }
+/** total = how many questions the copy would get, before skipping any */
+type DuplicateCheck = { status: 'checking' } | { status: 'done'; found: MergeDuplicate[]; total: number }
 
 /**
  * The questions in a shared book that look like ones she already has (same check as merge and upload: every
@@ -389,11 +423,21 @@ function useAddDuplicates(bookId: string | null): DuplicateCheck | null {
   if (stems.isPending || bank.isPending || topics.isPending || subjects.isPending || books.isPending) return { status: 'checking' }
   const placeOf = makePlaceOf(topics.data ?? [], subjects.data ?? [], books.data ?? [])
   const mine = bank.data.map((q) => ({ id: q.id, stem: q.stem, place: placeOf(q) }))
-  return { status: 'done', found: findMergeDuplicates(stems.data, mine) }
+  return { status: 'done', found: findMergeDuplicates(stems.data, mine), total: stems.data.length }
 }
 
-/** Above "Add to my library": a heads-up, not a stop. Adding still copies every question (she decides). */
-function DuplicateWarning({ check, total }: { check: DuplicateCheck; total: number }) {
+/** Above "Add to my library": the questions she seems to have already. Ticked ones are left out of her copy. */
+function DuplicateWarning({
+  check,
+  skipped,
+  onToggle,
+  disabled,
+}: {
+  check: DuplicateCheck
+  skipped: ReadonlySet<string>
+  onToggle: (id: string) => void
+  disabled: boolean
+}) {
   if (check.status === 'checking') {
     return <p className="text-sm text-muted-foreground">Checking for questions you already have…</p>
   }
@@ -407,19 +451,28 @@ function DuplicateWarning({ check, total }: { check: DuplicateCheck; total: numb
     )
   }
   return (
-    <section aria-labelledby="community-dupes-heading" className="min-w-0 rounded-lg border border-highlight/50 bg-highlight-soft/50 p-3">
-      <h3 id="community-dupes-heading" className="flex items-center gap-1.5 font-bold">
-        <TriangleAlert className="size-4 shrink-0" aria-hidden />
+    <fieldset className="min-w-0 rounded-lg border border-highlight/50 bg-highlight-soft/50 p-3">
+      <legend className="sr-only">Questions you may already have</legend>
+      <p aria-hidden className="flex items-center gap-1.5 font-bold">
+        <TriangleAlert className="size-4 shrink-0" />
         <span className="tabular-nums">
-          {found.length} of {plural(total, 'question')}
+          {found.length} of {plural(check.total, 'question')}
         </span>{' '}
         {found.length === 1 ? 'looks' : 'look'} like {found.length === 1 ? 'one' : 'ones'} you already have
-      </h3>
-      <p className="mt-0.5 text-xs text-muted-foreground">They’ll still be added with the book. Tap a question to compare.</p>
+      </p>
+      <p className="mt-0.5 text-xs text-muted-foreground">Ticked ones are skipped (not added). Tap a question to compare.</p>
       <ul className="binder-scroll mt-2 max-h-[24dvh] space-y-1.5 overflow-y-auto pr-1">
         {found.map((d) => (
-          <li key={d.incomingId} className="rounded-md bg-card px-2.5 py-2">
-            <details className="group min-w-0">
+          <li key={d.incomingId} className="flex items-start gap-2.5 rounded-md bg-card px-2.5 py-2">
+            <input
+              type="checkbox"
+              checked={skipped.has(d.incomingId)}
+              onChange={() => onToggle(d.incomingId)}
+              disabled={disabled}
+              aria-label={`Skip: ${d.incomingStem}`}
+              className="mt-0.5 size-5 shrink-0 accent-primary"
+            />
+            <details className="group min-w-0 flex-1">
               <summary className="cursor-pointer list-none rounded outline-none focus-visible:ring-3 focus-visible:ring-ring/40 [&::-webkit-details-marker]:hidden">
                 <span className={cn('mr-1.5 inline-block rounded-full px-1.5 text-[11px] font-bold', d.exact ? 'bg-wrong-soft text-wrong' : 'bg-secondary text-foreground')}>
                   {d.exact ? 'Same' : `${Math.round(d.score * 100)}% alike`}
@@ -433,7 +486,7 @@ function DuplicateWarning({ check, total }: { check: DuplicateCheck; total: numb
           </li>
         ))}
       </ul>
-    </section>
+    </fieldset>
   )
 }
 

@@ -71,6 +71,7 @@ const KNOWN_MESSAGES = [
   'This book is already in your library.',
   'Pick one of your libraries.',
   'That library is full. Pick another one or make room first.',
+  'You skipped every question in this book. Untick one to add it.',
 ]
 
 export const GENERAL_ERROR = 'Couldn’t save. Check your internet connection and try again.'

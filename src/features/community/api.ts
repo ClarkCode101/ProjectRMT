@@ -78,9 +78,12 @@ export async function setBookShared(bookId: string, shared: boolean) {
   if (error) throw error
 }
 
-/** Makes her own copy of a shared book in one of her libraries. Returns the new book's id. */
-export async function addCommunityBook(bookId: string, library: number): Promise<string> {
-  const { data, error } = await supabase.rpc('add_community_book', { p_book_id: bookId, p_library: library })
+/**
+ * Makes her own copy of a shared book in one of her libraries, leaving out the questions in `skip`. Returns the
+ * new book's id. p_skip is only sent when she skips something, so adding still works before migration 0021.
+ */
+export async function addCommunityBook(bookId: string, library: number, skip: string[] = []): Promise<string> {
+  const { data, error } = await supabase.rpc('add_community_book', { p_book_id: bookId, p_library: library, ...(skip.length > 0 && { p_skip: skip }) })
   if (error) throw error
   return data
 }
