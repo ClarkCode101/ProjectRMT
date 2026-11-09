@@ -16,6 +16,8 @@ export type Book = {
   publishedAt: string | null
   /** the shared book this is her copy of; null = she made it herself (or the original was deleted) */
   copiedFrom: string | null
+  /** who made the original, for a book added from Community (live first name, migration 0015); null = her own book */
+  authorName: string | null
   /** the questions in it, for quick "is this question in that book?" checks */
   questionIds: ReadonlySet<string>
   /** each question's chapter in this book (null = no chapter) */
@@ -52,6 +54,12 @@ export function useBooks({ enabled = true }: { enabled?: boolean } = {}) {
         links = await loadLinks(false)
       }
 
+      // The author of each book she added from Community. Only a nice-to-have: if it fails (e.g. migration 0015
+      // not run yet), the books still load and just say "From Community".
+      const authors = new Map<string, string>()
+      const { data: authorRows } = await supabase.rpc('my_book_authors')
+      for (const a of authorRows ?? []) authors.set(a.book_id, a.author_name)
+
       const chaptersByBook = new Map<string, Map<string, string | null>>()
       for (const link of links) {
         const chapters = chaptersByBook.get(link.book_id) ?? new Map<string, string | null>()
@@ -68,6 +76,7 @@ export function useBooks({ enabled = true }: { enabled?: boolean } = {}) {
           createdAt: b.created_at,
           publishedAt: b.published_at,
           copiedFrom: b.copied_from,
+          authorName: authors.get(b.id) ?? null,
           questionIds: new Set(chapters.keys()),
           chapters,
         }

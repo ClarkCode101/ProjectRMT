@@ -302,10 +302,11 @@ function QuestionBankView({
                           <Users className="size-3" aria-hidden />
                           Shared to Community
                         </span>
-                      ) : book.copiedFrom ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-px text-xs font-semibold text-foreground">
-                          <Users className="size-3" aria-hidden />
-                          From Community
+                      ) : book.authorName || book.copiedFrom ? (
+                        // added from Community: who made it (or just where it came from, if the author is unknown)
+                        <span className="inline-flex max-w-56 items-center gap-1 rounded-full bg-secondary px-2 py-px text-xs font-semibold text-foreground">
+                          <Users className="size-3 shrink-0" aria-hidden />
+                          <span className="truncate">{book.authorName ? `by ${book.authorName}` : 'From Community'}</span>
                         </span>
                       ) : undefined
                     }

@@ -125,6 +125,8 @@ export type Database = {
           published_at: string | null
           /** the shared book this is a copy of; null = her own book (or the original was deleted) */
           copied_from: string | null
+          /** the account that shared the original (migration 0015); kept even if the original is deleted */
+          copied_author: string | null
         },
         'title'
       >
@@ -218,6 +220,11 @@ export type Database = {
       merge_books: {
         Args: { p_source: string; p_target: string; p_chapter: string }
         Returns: number
+      }
+      // migration 0015: the author's first name for each of her books copied from Community (read live)
+      my_book_authors: {
+        Args: Record<string, never>
+        Returns: { book_id: string; author_name: string }[]
       }
       // migration 0013: delete a book and her questions that lived only in it
       delete_book: {
