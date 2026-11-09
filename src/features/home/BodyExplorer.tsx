@@ -135,10 +135,17 @@ export function BodyStage({
     )
   }
 
-  // Width of each card column on laptops; the 3D view sits between them.
-  // The 3D box (below) is wider than the gap between these columns, so the cards sit over its empty sides.
-  // If the box were only the gap, a narrow box would make the camera back up and the body shrink.
+  // Card columns on laptops: placed from the MIDDLE (where the body is), not from the screen's edges,
+  // so the cards stay close to the body like labels in a diagram (they were stuck to the far edges before).
+  // The body's half-width grows with the screen's height (about 14% of it), so the columns sit "14dvh + 5rem"
+  // from the middle: about 5rem of breathing room between body and cards on any screen. Not tight against the arms
+  // (too close felt cramped), not at the screen's edges (too far felt empty). The min() keeps a column inside
+  // the stage on narrower laptops.
+  // The 3D box (below) is wider than the gap between the columns, so the cards sit over its empty sides
+  // (a narrow box would make the camera back up and the body shrink).
   const column = 'lg:absolute lg:top-0 lg:bottom-20 lg:flex lg:w-40 lg:flex-col lg:justify-evenly xl:w-44'
+  const leftOfBody = 'lg:right-[min(calc(50%+14dvh+5rem),calc(100%-11rem))]'
+  const rightOfBody = 'lg:left-[min(calc(50%+14dvh+5rem),calc(100%-11rem))]'
 
   return (
     <section aria-labelledby="body-heading" className="flex flex-col gap-3 md:min-h-0 md:flex-1">
@@ -205,8 +212,8 @@ export function BodyStage({
         {/* Subject cards. "contents" lets the same cards be one grid (small screens) or two side columns (laptops). */}
         <div role="group" aria-label="Choose a subject" className="order-3 mt-3 grid shrink-0 grid-cols-3 gap-2 lg:contents">
           {/* Left column sits a little lower and the right a little higher, like the picture. */}
-          <div className={cn('contents lg:left-0 lg:pt-[8%]', column)}>{left.map(card)}</div>
-          <div className={cn('contents lg:right-0 lg:pb-[8%]', column)}>{right.map(card)}</div>
+          <div className={cn('contents lg:pt-[8%]', leftOfBody, column)}>{left.map(card)}</div>
+          <div className={cn('contents lg:pb-[8%]', rightOfBody, column)}>{right.map(card)}</div>
         </div>
 
         {/* Turn handle under the feet, like a turntable */}
@@ -229,8 +236,8 @@ export function BodyStage({
           </div>
         </div>
 
-        {/* The overall score: the body's "scan readout". Laptops: bottom-right corner, opposite the legend. */}
-        {readout && <div className="order-2 mx-auto mt-3 w-full max-w-sm lg:absolute lg:right-0 lg:bottom-0 lg:mt-0 lg:w-64 xl:w-72">{readout}</div>}
+        {/* The overall score: the body's "scan readout". Laptops: under the right-hand cards (same distance from the body). */}
+        {readout && <div className={cn('order-2 mx-auto mt-3 w-full max-w-sm lg:absolute lg:bottom-0 lg:mx-0 lg:mt-0 lg:w-64 xl:w-72', rightOfBody)}>{readout}</div>}
       </div>
     </section>
   )
