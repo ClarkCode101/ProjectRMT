@@ -1,10 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { CalendarClock, Check, RotateCcw, Target, UserRound } from 'lucide-react'
+import { CalendarClock, Check, RotateCcw, TabletSmartphone, Target, UserRound } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { FullPageMessage } from '@/components/FullPageMessage'
+import { ShareKey } from '@/components/InstallHint'
 import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/authContext'
+import { useInstall } from '@/lib/install'
 import { countdownLabel, daysUntil, isValidDate } from '@/lib/planner'
 import { firstName, saveFirstName } from '@/lib/profile'
 import { cn } from '@/lib/utils'
@@ -151,6 +153,53 @@ function SettingsForm({ initial }: { initial: StudySettings }) {
   )
 }
 
+/** Install app: what to do depends on the device (see lib/install.ts). The same help as the tip on top. */
+function InstallApp() {
+  const { mode, promptInstall } = useInstall()
+  const [showSteps, setShowSteps] = useState(false)
+
+  return (
+    <Section icon={<TabletSmartphone className="size-5" aria-hidden />} title="Install app" hint="Add ProjectRMT to your Home Screen so it opens like an app.">
+      {mode === 'installed' && (
+        <p className="inline-flex items-center gap-1.5 font-semibold text-correct">
+          <Check className="size-4" aria-hidden />
+          You’re using the installed app.
+        </p>
+      )}
+
+      {mode === 'prompt' && (
+        <Button type="button" className="h-11 rounded-lg px-5 font-heading font-bold" onClick={promptInstall}>
+          Install app
+        </Button>
+      )}
+
+      {mode === 'ios' &&
+        (showSteps ? (
+          <ol className="list-decimal space-y-1.5 pl-5 text-sm">
+            <li>
+              Tap <ShareKey /> in Safari’s toolbar. On iPhone, if you don’t see it, tap the More button (three dots) first.
+            </li>
+            <li>
+              Choose <span className="font-semibold">Add to Home Screen</span>, then tap <span className="font-semibold">Add</span>.
+            </li>
+            <li>Open ProjectRMT from its new icon on your Home Screen.</li>
+          </ol>
+        ) : (
+          <Button type="button" className="h-11 rounded-lg px-5 font-heading font-bold" onClick={() => setShowSteps(true)}>
+            Show me how
+          </Button>
+        ))}
+
+      {mode === 'manual' && (
+        <p className="text-sm">
+          Open your browser’s menu and look for <span className="font-semibold">Install app</span> or{' '}
+          <span className="font-semibold">Add to Home Screen</span>. Works in Safari, Chrome and Edge.
+        </p>
+      )}
+    </Section>
+  )
+}
+
 const CONFIRM_WORD = 'RESET'
 
 /** Danger zone: wipes her progress after she types RESET. Kept apart from the form so it can't be hit by accident. */
@@ -260,6 +309,7 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader title="Settings" subtitle="You and your study plan." />
       <SettingsForm initial={settings.data} />
+      <InstallApp />
       <ResetProgress />
     </div>
   )

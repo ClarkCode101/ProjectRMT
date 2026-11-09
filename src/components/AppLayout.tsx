@@ -19,6 +19,7 @@ import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { Dialog } from './Dialog'
 import { FullPageMessage } from './FullPageMessage'
+import { InstallHint } from './InstallHint'
 import type { LayoutContext } from './layoutContext'
 import { Brand, Logo } from './report'
 
@@ -209,6 +210,9 @@ export function AppLayout() {
               )}
             </div>
           </div>
+
+          {/* "Add to Home Screen" tip. Only in the browser, never during a quiz (this whole block hides in focus mode). */}
+          <InstallHint />
         </>
       )}
 

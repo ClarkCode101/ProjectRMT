@@ -95,7 +95,8 @@ export const heroButtonClass =
 
 /**
  * The ProjectRMT mark: a results sheet with a gold "passed" check, on the deep blue tile.
- * Same drawing as public/favicon.svg; keep the two in sync.
+ * Same drawing as public/favicon.svg and public/icons/app-icon.svg (the app icon PNGs come from that one);
+ * keep them in sync.
  */
 export function Logo({ className }: { className?: string }) {
   return (
