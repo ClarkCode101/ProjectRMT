@@ -29,7 +29,10 @@ and seed questions.
    6. Every later file in `supabase/migrations/`, in number order (`0009_per_user_builtin_edits.sql`
       makes fixes to built-in questions per account, so one account's edits don't change them for others;
       `0010_community.sql` adds the Community shelf, where accounts share books and add their own copies;
-      `0011_live_author_name.sql` makes the author's name there follow their account)
+      `0011_live_author_name.sql` makes the author's name there follow their account;
+      `0012_merge_books.sql` lets her merge one of her books into another;
+      `0013_delete_book_questions.sql` deletes a book's book-only questions with it and cleans up ones left behind;
+      `0014_no_builtin_in_books.sql` keeps built-in questions out of her books)
 3. **Authentication → Sign In / Providers**: keep Email enabled and turn **off**
    "Allow new users to sign up" (the app is private).
 4. **Authentication → Users → Add user**: create her account (email + password,

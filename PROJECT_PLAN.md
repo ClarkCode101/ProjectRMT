@@ -56,7 +56,7 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 - [x] **Manual add question** form
 - [x] **Bulk upload**: PDF / DOCX / pasted text → parse into questions → review screen → save
 - [x] **Duplicate detection** (see §5) with side-by-side compare: `Skip` / `Save anyway` / `Replace`
-- [x] **Verification status**: `verified` by default (built-in set fact-checked, with a reference in each explanation; ones she types are hers). `unverified` = "needs a look": uploads not checked yet, or a question she reported from a quiz ("Report a problem")
+- [x] **Verification status**: `verified` by default (built-in set fact-checked, with a reference in each explanation; ones she types are hers; uploads too, since she reviews them before saving). `unverified` = "needs a look": a question she reported from a quiz ("Report a problem"), or an upload saved before 2026-11-09 (uploads used to start as "needs a look")
 - [x] **Topic coverage map**: question count per topic (✅ enough / ⚠️ few / ❌ none)
 
 ### Phase 3 — Study modes
@@ -91,7 +91,7 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 ### Community shelf (migration 0010)
 - **Share**: Edit book → "Share to Community" switch (saves right away). Only books with at least one question.
 - **Browse**: `/community` (its own icon in the main nav; it took Quick reference's spot, which is off the menus for now but `/reference` still works): search by book or classmate, subject chips, Newest / Most added, a peek at the first 5 questions.
-- **Add to library**: makes the user's **own copy** (book + questions + chapters) in a library they pick (12-slot limit applies). Built-in questions are linked, not copied. Copied questions are book-only (`in_subject = false`). The copy is kept even if the author edits, stops sharing or deletes the original.
+- **Add to library**: makes the user's **own copy** (book + questions + chapters) in a library they pick (12-slot limit applies). Built-in questions are skipped (they can't be in anyone's books since migration 0014; they live in the subject books). Copied questions are book-only (`in_subject = false`) and start ready to use (`verified`, not "Needs a look"). The copy is kept even if the author edits, stops sharing or deletes the original.
 - RLS is unchanged; four `security definer` functions do the sharing (`publish_book`, `community_books`, `community_book_preview`, `add_community_book`). `published_at` and `copied_from` can only be set by them.
 - **Author name** is read live from the author's account (first name in Settings) every time, so a new name shows on all their shared books right away; no first name = "A classmate" (migration 0011).
 
@@ -465,6 +465,7 @@ mtle-reviewer/
 16. [ ] PWA + iOS polish — installable (manifest, icons, service worker caching the app shell), install tip + Settings "Install app" done; offline Practice, Mock exam and Flashcards done (lib/offline: saved question bank in IndexedDB + outbox for answers and card ratings); still online-only: books as a source, editing/uploading questions, Report a problem
 17. [x] Deploy to Vercel/Netlify — deployed on Cloudflare Pages instead
 18. [x] Community shelf: share a book, browse, add your own copy (migration 0010; online only)
+19. [x] Merge books: hold one of her books on the shelf and drop it on another (or Edit book → "Merge into…"); its questions go into the other book under one topic (its name, editable), then it's removed. One database step (`merge_books`, migration 0012)
 
 ---
 
