@@ -71,8 +71,8 @@ function CommunityView({
           <Users className="mx-auto size-10 text-primary/60" aria-hidden />
           <p className="mt-3 font-heading text-lg font-bold">No shared books yet</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-            Be the first: open one of your books on the Questions shelf, tap the pencil next to its name, and turn on{' '}
-            <span className="font-semibold text-foreground">Share to Community</span>.
+            Be the first: open one of your books on the Questions shelf and tap the{' '}
+            <span className="font-semibold text-foreground">Share to Community</span> button at the top, next to Upload.
           </p>
         </div>
       ) : (

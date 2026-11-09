@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, Upload } from 'lucide-react'
+import { ArrowLeft, Plus, Upload, Users } from 'lucide-react'
 import { Link } from 'react-router'
 import { cn } from '@/lib/utils'
 
@@ -8,7 +8,20 @@ import { cn } from '@/lib/utils'
 
 const focusRing = 'outline-none focus-visible:ring-3 focus-visible:ring-ring/40'
 
-export function DrawerBar({ title, addTo, addLabel, uploadTo = '/questions/upload' }: { title: string; addTo: string; addLabel: string; uploadTo?: string }) {
+export function DrawerBar({
+  title,
+  addTo,
+  addLabel,
+  uploadTo = '/questions/upload',
+  share,
+}: {
+  title: string
+  addTo: string
+  addLabel: string
+  uploadTo?: string
+  /** Only in her own books: the Share to Community button (it opens a dialog to confirm). Filled when it's shared. */
+  share?: { shared: boolean; onClick: () => void }
+}) {
   return (
     <div className="sticky top-0 z-20 -mx-4 border-b bg-background/95 px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 backdrop-blur md:mx-0 md:px-0">
       <div className="flex items-center gap-2">
@@ -22,6 +35,23 @@ export function DrawerBar({ title, addTo, addLabel, uploadTo = '/questions/uploa
         </Link>
         {/* which book is open, small (the big title is on the binder page) */}
         <p className="min-w-0 flex-1 truncate text-center font-heading text-sm font-bold text-muted-foreground">{title}</p>
+        {share && (
+          <button
+            type="button"
+            onClick={share.onClick}
+            aria-label={share.shared ? 'Shared to Community. Stop sharing…' : 'Share to Community…'}
+            title={share.shared ? 'Shared to Community' : 'Share to Community'}
+            className={cn(
+              'flex size-11 shrink-0 items-center justify-center rounded-lg border',
+              focusRing,
+              share.shared
+                ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90'
+                : 'bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground',
+            )}
+          >
+            <Users className="size-4" aria-hidden />
+          </button>
+        )}
         {/* Upload a file of questions (the shelves screen has no buttons, so this is where it lives) */}
         <Link
           to={uploadTo}

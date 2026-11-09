@@ -271,8 +271,6 @@ function BookForm({
         </div>
       </fieldset>
 
-      {book && <ShareSwitch book={book} />}
-
       {noRoomAnywhere && (
         <p role="alert" className="rounded-md bg-highlight-soft px-3 py-2 text-sm font-semibold">
           All three libraries are full. Delete a book you don’t need anymore to make room.
@@ -1209,71 +1207,86 @@ function SplitForm({
 }
 
 /**
- * "Share to Community" in Edit book. It saves right away (not with Save), like a phone's settings switch,
- * so she can turn it on or off without touching the rest of the form.
+ * "Share to Community" from the Share button in a book's top bar. Sharing goes out to other people, so the
+ * button only opens this; she says yes here (one extra tap, so a stray tap on the iPad shares nothing).
  */
-function ShareSwitch({ book }: { book: Book }) {
+export function ShareDialog({ open, onClose, book }: { open: boolean; onClose: () => void; book: Book }) {
+  return (
+    <Dialog open={open} onClose={onClose} labelledBy="share-dialog-heading" variant="sheet">
+      {open && <ShareForm key={book.id} book={book} onClose={onClose} />}
+    </Dialog>
+  )
+}
+
+function ShareForm({ book, onClose }: { book: Book; onClose: () => void }) {
   const refreshCommunity = useRefreshCommunity()
-  const [shared, setShared] = useState(book.publishedAt !== null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const empty = book.questionIds.size === 0
-  // An empty book can't be shared, but if it somehow is, she can still turn it off.
-  const disabled = busy || (empty && !shared)
+  const shared = book.publishedAt !== null
+  // An empty book can't be shared (but if it somehow is, she can still stop sharing it).
+  const empty = book.questionIds.size === 0 && !shared
 
-  async function toggle() {
-    const next = !shared
+  async function change() {
     setBusy(true)
     setError(null)
     try {
-      await setBookShared(book.id, next)
-      setShared(next)
-      refreshCommunity()
+      await setBookShared(book.id, !shared)
+      refreshCommunity() // also refreshes her books, so the button and the "Shared" tag update
+      onClose()
     } catch (e) {
       setError(communityErrorMessage(e))
-    } finally {
       setBusy(false)
     }
   }
 
   return (
-    <div className="space-y-2 rounded-lg border bg-card p-3">
-      <div className="flex items-start gap-3">
-        <Users className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
-        <div className="min-w-0 flex-1">
-          <p id={`share-${book.id}`} className="font-bold">
-            Share to Community
-          </p>
-          <p id={`share-hint-${book.id}`} className="text-sm text-muted-foreground">
-            {empty && !shared
-              ? 'Add at least one question first.'
-              : shared
-                ? 'Everyone with a ProjectRMT account can see it and add their own copy.'
-                : 'Only you can see this book.'}
-          </p>
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary">
+            <Users className="size-5" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <h2 id="share-dialog-heading" className="font-heading text-lg font-bold">
+              {empty ? 'Nothing to share yet' : shared ? `Stop sharing “${book.title}”?` : `Share “${book.title}” to Community?`}
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {empty
+                ? 'Add at least one question to this book first.'
+                : shared
+                  ? 'It leaves Community. Classmates who already added it keep their copies.'
+                  : 'Everyone with a ProjectRMT account can see it and add their own copy. You can stop sharing anytime.'}
+            </p>
+          </div>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={shared}
-          aria-labelledby={`share-${book.id}`}
-          aria-describedby={`share-hint-${book.id}`}
-          disabled={disabled}
-          onClick={() => void toggle()}
-          className={cn(
-            'relative mt-0.5 h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50',
-            focusRing,
-            shared ? 'bg-primary' : 'bg-muted-foreground/40',
-          )}
-        >
-          <span className={cn('absolute top-1 left-1 size-5 rounded-full bg-white shadow transition-transform', shared && 'translate-x-5')} />
-        </button>
+        <CloseButton onClick={onClose} />
       </div>
-      {shared && <p className="text-xs text-muted-foreground">If you stop sharing later, classmates who already added it keep their copies.</p>}
+
       {error && (
         <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
           {error}
         </p>
+      )}
+
+      {empty ? (
+        <Button type="button" variant="outline" className="h-11 w-full rounded-lg" onClick={onClose}>
+          Okay
+        </Button>
+      ) : (
+        // The safe choice ("Cancel" / "Keep sharing") comes first so it gets the focus.
+        <div className="flex flex-col gap-2 sm:flex-row-reverse">
+          <Button type="button" variant="outline" className="h-11 flex-1 rounded-lg" onClick={onClose}>
+            {shared ? 'Keep sharing' : 'Cancel'}
+          </Button>
+          <Button
+            type="button"
+            disabled={busy}
+            className={cn('h-11 flex-1 rounded-lg font-heading font-bold', shared && 'bg-wrong text-white hover:bg-wrong/90')}
+            onClick={() => void change()}
+          >
+            {busy ? 'Saving…' : shared ? 'Stop sharing' : 'Share'}
+          </Button>
+        </div>
       )}
     </div>
   )

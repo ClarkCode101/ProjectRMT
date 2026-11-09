@@ -18,7 +18,7 @@ import { reviewStatesOptions } from '@/features/flashcards/api'
 import { countDue } from '@/lib/fsrs'
 import { useQuery } from '@tanstack/react-query'
 import { deleteQuestion, setQuestionStatus, useQuestionBank, useRefreshBank, type BankQuestion } from './api'
-import { AddToBookDialog, BookDialog, ChapterDialog, LibraryDialog, MergeBookDialog, MergeIntoSubjectDialog, RenameTopicDialog, SplitTopicDialog, TopicMenuDialog } from './BookDialogs'
+import { AddToBookDialog, BookDialog, ChapterDialog, LibraryDialog, MergeBookDialog, MergeIntoSubjectDialog, RenameTopicDialog, ShareDialog, SplitTopicDialog, TopicMenuDialog } from './BookDialogs'
 import { Bookshelf } from './Bookshelf'
 import {
   addToBook,
@@ -116,6 +116,7 @@ function QuestionBankView({
   // The New book dialog. forQuestion: opened from "Add to book" on a question, so that question goes into the new book.
   const [newBook, setNewBook] = useState<{ forQuestion: string | null } | null>(null)
   const [editingBook, setEditingBook] = useState(false)
+  const [sharing, setSharing] = useState(false)
   // The book she just made, so it slides onto the shelf.
   const [arrivingId, setArrivingId] = useState<string | null>(null)
   // Merging one of her books into another: dropped on the shelf (target picked), or from Edit book (targetId null).
@@ -377,6 +378,8 @@ function QuestionBankView({
             addLabel={addLabel}
             // Upload from inside a book: into that book (her book), or with its subject already set
             uploadTo={book ? `/questions/upload?book=${book.id}` : subject ? `/questions/upload?subject=${subject.subjectId}` : '/questions/upload'}
+            // only her own books can be shared (not a subject or All questions)
+            share={book ? { shared: book.publishedAt !== null, onClick: () => setSharing(true) } : undefined}
           />
 
           <OpenBinder
@@ -570,6 +573,8 @@ function QuestionBankView({
           }}
         />
       )}
+      {/* Share to Community / Stop sharing, from the Share button in the top bar */}
+      {book && <ShareDialog open={sharing} onClose={() => setSharing(false)} book={book} />}
       {/* The ⋯ menu of one of her topics (in her book, or her own topic in a subject): Rename, Move to its own book */}
       {topicActions && (
         <>

@@ -89,7 +89,7 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 > The one exception is the **Community shelf** (migration 0010): a user can choose to share one of their books, uploads included, with the other logged-in accounts (a group of about 15, decided by the owner, 2026-11-09). If the app ever opens to the public, revisit this before then.
 
 ### Community shelf (migration 0010)
-- **Share**: Edit book → "Share to Community" switch (saves right away). Only books with at least one question.
+- **Share**: the people button in an open book's top bar (next to Upload; filled when shared) → confirm "Share to Community?" / "Stop sharing?". Only her own books, with at least one question.
 - **Browse**: `/community` (its own icon in the main nav; it took Quick reference's spot, which is off the menus for now but `/reference` still works): search by book or classmate, subject chips, Newest / Most added, a peek at the first 5 questions.
 - **Add to library**: makes the user's **own copy** (book + questions + chapters) in a library they pick (12-slot limit applies). Built-in questions are skipped (they can't be in anyone's books since migration 0014; they live in the subject books). Copied questions are book-only (`in_subject = false`) and start ready to use (`verified`, not "Needs a look"). The copy is kept even if the author edits, stops sharing or deletes the original.
 - RLS is unchanged; four `security definer` functions do the sharing (`publish_book`, `community_books`, `community_book_preview`, `add_community_book`). `published_at` and `copied_from` can only be set by them.
