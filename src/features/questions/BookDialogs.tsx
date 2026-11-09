@@ -1,9 +1,9 @@
-import { Check, Plus, Users, X } from 'lucide-react'
+import { Check, Combine, Plus, Users, X } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { BOOK_COLORS, BOOK_SPINE, BOOK_TITLE_MAX, CHAPTER_MAX, chapterList, cleanBookTitle, cleanChapter, cleanLibraryName, LIBRARY_NAME_MAX } from '@/lib/books'
+import { BOOK_COLORS, BOOK_SPINE, BOOK_TITLE_MAX, CHAPTER_MAX, chapterList, cleanBookTitle, cleanChapter, cleanLibraryName, LIBRARY_NAME_MAX, mergeTopicName } from '@/lib/books'
 import { communityErrorMessage } from '@/lib/community'
 import { setBookShared, useRefreshCommunity } from '@/features/community/api'
 import type { BookColor } from '@/lib/database.types'
@@ -11,7 +11,7 @@ import { useBookTopicId, useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { setQuestionPlace, useRefreshBank, type BankQuestion } from './api'
 import { ChipRadio } from './QuestionFormParts'
-import { addToBook, createBook, deleteBook, removeFromBook, renameLibrary, setChapter, updateBook, useRefreshBooks, type Book } from './booksApi'
+import { addToBook, createBook, deleteBook, mergeBooks, removeFromBook, renameLibrary, setChapter, updateBook, useRefreshBooks, type Book } from './booksApi'
 
 const focusRing = 'outline-none focus-visible:ring-3 focus-visible:ring-ring/40'
 const SAVE_ERROR = 'Couldn’t save. Check your internet connection and try again.'
@@ -39,6 +39,8 @@ export function BookDialog({
   defaultLibrary = 1,
   onCreated,
   onDeleted,
+  onMergeRequest,
+  deletesQuestions = 0,
 }: {
   open: boolean
   onClose: () => void
@@ -48,11 +50,15 @@ export function BookDialog({
   defaultLibrary?: number
   onCreated?: (id: string, library: number) => void
   onDeleted?: () => void
+  /** "Merge into another book…": open the Merge dialog (only given when she has another book) */
+  onMergeRequest?: () => void
+  /** how many of her questions live only in this book (deleted with it, migration 0013) */
+  deletesQuestions?: number
 }) {
   return (
     <Dialog open={open} onClose={onClose} labelledBy="book-dialog-heading" variant="sheet" closeOnBackdrop={false}>
       {/* key: opening it again starts from the book's current name, color and library */}
-      {open && <BookForm key={book?.id ?? 'new'} book={book} libraries={libraries} defaultLibrary={defaultLibrary} onClose={onClose} onCreated={onCreated} onDeleted={onDeleted} />}
+      {open && <BookForm key={book?.id ?? 'new'} book={book} libraries={libraries} defaultLibrary={defaultLibrary} onClose={onClose} onCreated={onCreated} onDeleted={onDeleted} onMergeRequest={onMergeRequest} deletesQuestions={deletesQuestions} />}
     </Dialog>
   )
 }
@@ -64,6 +70,8 @@ function BookForm({
   onClose,
   onCreated,
   onDeleted,
+  onMergeRequest,
+  deletesQuestions,
 }: {
   book?: Book
   libraries: LibraryChoice
@@ -71,8 +79,11 @@ function BookForm({
   onClose: () => void
   onCreated?: (id: string, library: number) => void
   onDeleted?: () => void
+  onMergeRequest?: () => void
+  deletesQuestions: number
 }) {
   const refreshBooks = useRefreshBooks()
+  const refreshBank = useRefreshBank()
   const [title, setTitle] = useState(book?.title ?? '')
   const [color, setColor] = useState<BookColor>(book?.color ?? 'teal')
   // A library can take this book if it has room, or if the book is already in it.
@@ -121,6 +132,7 @@ function BookForm({
     try {
       await deleteBook(book.id)
       refreshBooks()
+      refreshBank() // the questions that lived only in it are gone too
       onDeleted?.()
       onClose()
     } catch {
@@ -137,8 +149,18 @@ function BookForm({
             Delete “{book.title}”?
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            The book is removed from your shelf. Its questions stay in their subjects, so nothing else is lost.
-            {book.publishedAt && ' It also leaves Community; classmates who already added it keep their copies.'}
+            The book is removed from your shelf.{' '}
+            {deletesQuestions > 0 ? (
+              <>
+                <span className="font-semibold text-foreground">
+                  {deletesQuestions} question{deletesQuestions === 1 ? '' : 's'} that {deletesQuestions === 1 ? 'is' : 'are'} only in this book will be deleted too.
+                </span>{' '}
+                To keep {deletesQuestions === 1 ? 'it' : 'them'}, merge this book into another one instead.{' '}
+              </>
+            ) : (
+              'Its questions stay in their subjects or your other books, so nothing else is lost. '
+            )}
+            {book.publishedAt && 'It also leaves Community; classmates who already added it keep their copies.'}
           </p>
         </div>
         {saveError && (
@@ -266,11 +288,172 @@ function BookForm({
         <button type="submit" disabled={busy || noRoomAnywhere} className={cn('h-11 flex-1 rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}>
           {busy ? 'Saving…' : book ? 'Save' : 'Put it on the shelf'}
         </button>
+        {book && onMergeRequest && (
+          <Button type="button" variant="outline" className="h-11 flex-1 rounded-lg" onClick={onMergeRequest}>
+            <Combine className="size-4" aria-hidden />
+            Merge into…
+          </Button>
+        )}
         {book && (
           <Button type="button" variant="ghost" className="h-11 flex-1 rounded-lg text-wrong hover:bg-wrong-soft hover:text-wrong" onClick={() => setConfirmingDelete(true)}>
             Delete book
           </Button>
         )}
+      </div>
+    </form>
+  )
+}
+
+/** Messages merge_books raises on purpose (migration 0012): written for her, so they're shown as they are. */
+const MERGE_MESSAGES = ['Pick a different book to merge into.', 'Book not found.', 'Keep the topic name to 40 letters or fewer.']
+
+/**
+ * Merge one of her books into another: all its questions go into the other book under one topic
+ * (its name, which she can change), then it's removed from the shelf. Opened by dropping a book on another
+ * one on the shelf (`target` already picked), or from Edit book (she picks the target here).
+ */
+export function MergeBookDialog({
+  open,
+  onClose,
+  source,
+  target,
+  books,
+  onMerged,
+}: {
+  open: boolean
+  onClose: () => void
+  source: Book | null
+  /** the book it was dropped on; null = she picks one in the dialog */
+  target: Book | null
+  /** all her books (the ones it can go into are picked from these) */
+  books: Book[]
+  onMerged: (targetId: string) => void
+}) {
+  return (
+    <Dialog open={open} onClose={onClose} labelledBy="merge-dialog-heading" variant="sheet" closeOnBackdrop={false}>
+      {/* key: every merge starts fresh (the topic name comes from the book being merged) */}
+      {open && source && <MergeForm key={`${source.id}-${target?.id ?? ''}`} source={source} target={target} books={books} onClose={onClose} onMerged={onMerged} />}
+    </Dialog>
+  )
+}
+
+function MergeForm({ source, target, books, onClose, onMerged }: { source: Book; target: Book | null; books: Book[]; onClose: () => void; onMerged: (targetId: string) => void }) {
+  const refreshBooks = useRefreshBooks()
+  const refreshCommunity = useRefreshCommunity()
+  const [targetId, setTargetId] = useState<string | null>(target?.id ?? null)
+  const [topic, setTopic] = useState(() => mergeTopicName(source.title))
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const others = books.filter((b) => b.id !== source.id)
+  const chosen = others.find((b) => b.id === targetId) ?? null
+  const count = source.questionIds.size
+
+  async function handleMerge(event: FormEvent) {
+    event.preventDefault()
+    if (!chosen) return
+    const cleaned = cleanChapter(topic)
+    if ('error' in cleaned) {
+      setError(cleaned.error)
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      await mergeBooks(source.id, chosen.id, cleaned.chapter)
+      refreshBooks()
+      if (source.publishedAt) refreshCommunity() // it left Community
+      onMerged(chosen.id)
+      onClose()
+    } catch (e) {
+      const message = (e as { message?: string } | null)?.message ?? ''
+      setError(MERGE_MESSAGES.includes(message) ? message : SAVE_ERROR)
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={(e) => void handleMerge(e)} noValidate className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <h2 id="merge-dialog-heading" className="font-heading text-lg leading-snug font-bold">
+          {chosen ? `Merge “${source.title}” into “${chosen.title}”?` : `Merge “${source.title}” into…`}
+        </h2>
+        <CloseButton onClick={onClose} />
+      </div>
+
+      {/* From Edit book: pick the book it goes into */}
+      {!target && (
+        <fieldset className="min-w-0">
+          <legend className="mb-1.5 font-bold">Into which book?</legend>
+          {others.length === 0 ? (
+            <p className="text-sm text-muted-foreground">You don’t have another book to merge it into.</p>
+          ) : (
+            <ul className="binder-scroll max-h-[32dvh] space-y-1.5 overflow-y-auto pr-1">
+              {others.map((b) => (
+                <li key={b.id}>
+                  <label
+                    className={cn(
+                      'flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
+                      targetId === b.id ? 'border-primary bg-primary/5' : 'bg-card hover:border-primary/50',
+                    )}
+                  >
+                    <input type="radio" name="merge-target" checked={targetId === b.id} onChange={() => setTargetId(b.id)} className="size-5 shrink-0 accent-primary" />
+                    <span aria-hidden className="h-7 w-2.5 shrink-0 rounded-[2px]" style={{ background: BOOK_SPINE[b.color] }} />
+                    <span className="min-w-0 flex-1 truncate font-semibold">{b.title}</span>
+                    <span className="shrink-0 text-sm text-muted-foreground tabular-nums">{b.questionIds.size}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+        </fieldset>
+      )}
+
+      <div className="space-y-1.5">
+        <Label htmlFor="merge-topic" className="font-bold">
+          {chosen ? `Topic in ${chosen.title}` : 'Topic name'}
+        </Label>
+        <input
+          id="merge-topic"
+          value={topic}
+          maxLength={CHAPTER_MAX + 20}
+          placeholder="Empty = no topic"
+          onChange={(e) => {
+            setTopic(e.target.value)
+            setError(null)
+          }}
+          aria-describedby="merge-summary"
+          className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        />
+      </div>
+
+      <div id="merge-summary" className="space-y-1.5 text-sm text-muted-foreground">
+        <p>
+          <span className="font-semibold text-foreground tabular-nums">
+            {count} question{count === 1 ? '' : 's'}
+          </span>{' '}
+          go into {chosen ? <span className="font-semibold text-foreground">{chosen.title}</span> : 'the book you pick'}
+          {topic.trim() ? <> under the topic “{topic.trim()}”</> : ' with no topic'}. Ones already in it stay where they are.
+        </p>
+        <p>
+          “{source.title}” will be removed from your shelf. Its questions are kept.
+          {source.publishedAt && ' It also leaves Community; classmates who added it keep their copies.'}
+        </p>
+      </div>
+
+      {error && (
+        <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
+          {error}
+        </p>
+      )}
+
+      {/* "Cancel" is first in the code, so it gets the focus; Merge sits on the right / bottom for the thumb. */}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        <Button type="button" variant="outline" className="h-11 flex-1 rounded-lg" onClick={onClose}>
+          Cancel
+        </Button>
+        <button type="submit" disabled={busy || !chosen} className={cn('h-11 flex-1 rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}>
+          {busy ? 'Merging…' : 'Merge books'}
+        </button>
       </div>
     </form>
   )

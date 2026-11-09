@@ -115,10 +115,24 @@ export async function updateBook(id: string, changes: { title: string; color: Bo
   if (error) throw error
 }
 
-/** Deletes the book. Its questions stay in their subjects (only the links go, see migration 0004). */
-export async function deleteBook(id: string) {
-  const { error } = await supabase.from('books').delete().eq('id', id)
+/**
+ * Deletes the book, and in the same step her questions that lived only in it (migration 0013), so none are left
+ * with no home. Questions in a subject or in another book stay. Returns how many questions were deleted.
+ */
+export async function deleteBook(id: string): Promise<number> {
+  const { data, error } = await supabase.rpc('delete_book', { p_book_id: id })
   if (error) throw error
+  return data
+}
+
+/**
+ * Moves every question of `sourceId` into `targetId` under one topic (null = no topic), then deletes the source
+ * book, all in one step on the database (migration 0012). Returns how many questions were added.
+ */
+export async function mergeBooks(sourceId: string, targetId: string, chapter: string | null): Promise<number> {
+  const { data, error } = await supabase.rpc('merge_books', { p_source: sourceId, p_target: targetId, p_chapter: chapter ?? '' })
+  if (error) throw error
+  return data
 }
 
 /** Puts questions in a book (optionally in a chapter). Ones already in it are skipped, so this is safe to repeat. */

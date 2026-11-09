@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { filterQuestions, summarizeCoverage, type BankFilters } from '@/lib/questions'
 import { BOOK_SUBJECT_CODE, useSubjectOfTopic, useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
-import { BOOK_SPINE, bookAccuracy, booksContaining, chapterList, LIBRARY_COUNT, libraryNames, NO_CHAPTER, roomLeft, SUBJECT_COLOR } from '@/lib/books'
+import { BOOK_SPINE, bookAccuracy, booksContaining, chapterList, LIBRARY_COUNT, libraryNames, NO_CHAPTER, questionsOnlyIn, roomLeft, SUBJECT_COLOR } from '@/lib/books'
 import { summarizePerformance, type SubjectInfo } from '@/lib/quiz'
 import { useTopicPerformance } from '@/features/dashboard/api'
 import { attemptHistoryOptions } from '@/features/quiz/api'
@@ -18,7 +18,7 @@ import { reviewStatesOptions } from '@/features/flashcards/api'
 import { countDue } from '@/lib/fsrs'
 import { useQuery } from '@tanstack/react-query'
 import { deleteQuestion, setQuestionStatus, useQuestionBank, useRefreshBank, type BankQuestion } from './api'
-import { AddToBookDialog, BookDialog, ChapterDialog, LibraryDialog } from './BookDialogs'
+import { AddToBookDialog, BookDialog, ChapterDialog, LibraryDialog, MergeBookDialog } from './BookDialogs'
 import { Bookshelf } from './Bookshelf'
 import { addToBook, removeFromBook, useBooks, useLibraryNames, useRefreshBooks, type Book } from './booksApi'
 import { ChapterContents, Contents, OpenBinder, TitlePage } from './BinderPage'
@@ -107,6 +107,8 @@ function QuestionBankView({
   const [editingBook, setEditingBook] = useState(false)
   // The book she just made, so it slides onto the shelf.
   const [arrivingId, setArrivingId] = useState<string | null>(null)
+  // Merging one of her books into another: dropped on the shelf (target picked), or from Edit book (targetId null).
+  const [merging, setMerging] = useState<{ sourceId: string; targetId: string | null } | null>(null)
 
   // ---------- Flashcards due in the open book (the count on Study → Flashcards) ----------
   const reviewStates = useQuery({ ...reviewStatesOptions, enabled: !atShelf })
@@ -158,7 +160,7 @@ function QuestionBankView({
   const subject = coverage.find((s) => s.subjectId === subjectId)
 
   // Questions are ready to use by default (the built-in set is fact-checked; ones she types are hers).
-  // Only two kinds "need a look": uploads not checked yet, and ones she reported from a quiz.
+  // Only two kinds "need a look": ones she reported from a quiz, and uploads saved before uploads started as ready to use.
   const needsLook = questions.filter((q) => q.status === 'unverified')
   const subjectOfTopic = new Map(topics.map((t) => [t.id, t.subject_id]))
   const flaggedBySubject = new Map<number, number>()
@@ -263,6 +265,7 @@ function QuestionBankView({
             bookAccuracy={bookScores}
             arrivingId={arrivingId}
             onNewBook={() => setNewBook({ forQuestion: null })}
+            onMerge={(sourceId, targetId) => setMerging({ sourceId, targetId })}
           />
           {/* Nothing else on this screen: the shelves are the way in. Add, Upload and search live inside each book. */}
         </>
@@ -441,8 +444,30 @@ function QuestionBankView({
           book={book}
           libraries={{ names, roomLeft: roomByLibrary }}
           onDeleted={() => setSearchParams({ lib: String(book.library) })}
+          deletesQuestions={questionsOnlyIn(book.id, books, questions)}
+          onMergeRequest={
+            books.length > 1
+              ? () => {
+                  setEditingBook(false)
+                  setMerging({ sourceId: book.id, targetId: null })
+                }
+              : undefined
+          }
         />
       )}
+      {/* Merge one of her books into another (it's then removed; its questions go into the other one) */}
+      <MergeBookDialog
+        open={merging !== null}
+        onClose={() => setMerging(null)}
+        source={books.find((b) => b.id === merging?.sourceId) ?? null}
+        target={books.find((b) => b.id === merging?.targetId) ?? null}
+        books={books}
+        onMerged={(targetId) => {
+          setArrivingId(targetId) // the book that took it in does a little hop on the shelf
+          // Merged from inside the book (Edit book): that book is gone, so open the one it went into.
+          if (book) setSearchParams({ book: targetId }, { replace: true })
+        }}
+      />
       <LibraryDialog open={renamingLibrary} onClose={() => setRenamingLibrary(false)} slot={library} name={names[library - 1]} />
 
       <Dialog open={optionsOpen} onClose={() => setOptionsOpen(false)} labelledBy="q-options-heading" variant="sheet" closeOnBackdrop={false}>
@@ -552,7 +577,7 @@ function QuestionRow({
   const subject = subjectOf(q.topic_id)
   const isMine = q.owner_id !== null
   const verified = q.status === 'verified'
-  // An unchecked upload "needs a look"; anything else that isn't verified was reported from a quiz.
+  // Uploads saved before they started as ready to use (old ones) still "need a look"; anything else that isn't verified was reported from a quiz.
   const needsLookLabel = q.source === 'upload' ? 'Needs a look' : 'Reported'
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -672,10 +697,13 @@ function QuestionRow({
                 Topic
               </Button>
             )}
-            <Button variant="outline" className="h-10 rounded-lg" onClick={() => setAddToBookOpen(true)}>
-              <BookPlus className="size-4" aria-hidden />
-              Add to book{inBooks.length > 0 && <span className="text-muted-foreground tabular-nums">· {inBooks.length}</span>}
-            </Button>
+            {/* Built-in questions already live in their subject book, so they can't go into hers (migration 0014). */}
+            {isMine && (
+              <Button variant="outline" className="h-10 rounded-lg" onClick={() => setAddToBookOpen(true)}>
+                <BookPlus className="size-4" aria-hidden />
+                Add to book{inBooks.length > 0 && <span className="text-muted-foreground tabular-nums">· {inBooks.length}</span>}
+              </Button>
+            )}
             {openBook && (
               <Button
                 variant="ghost"

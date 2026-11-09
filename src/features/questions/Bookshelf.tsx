@@ -20,6 +20,8 @@ import type { Book } from './booksApi'
 // - Swipe the wall (or ‹ ›, or the tabs) to go to another library.
 // - Tapping a book pulls it off the shelf, brings it to the middle and opens its cover, then shows its questions.
 // - A red ribbon on a book means some of its questions need a look.
+// - Hold one of her books (not a subject book) and drag it onto another one of hers to merge them
+//   (migration 0012). Letting go opens a confirm sheet first. Edit book → "Merge into…" does the same without dragging.
 
 /** One topic bar on a subject's cover (same colors as the coverage meters elsewhere). Height and fill differ too, so color is never the only signal. */
 const BAR: Record<CoverageLevel, string> = {
@@ -34,6 +36,8 @@ const OPEN_MS = 780
 const SWIPE_PX = 70
 /** How far a drag must go (px) before it counts as a swipe instead of a tap. */
 const TAP_SLOP = 8
+/** How long a book must be held (ms) before it lifts off the shelf to be dragged. */
+const HOLD_MS = 400
 
 /** Books per shelf: 3 on phones, 6 from 640px up. Read from the screen width (and kept in step when it changes). */
 const WIDE = '(min-width: 640px)'
@@ -68,6 +72,8 @@ type ShelfBook = {
   art: ReactNode
   /** a subject's topic bars */
   footer?: ReactNode
+  /** her own book's id: only these can be dragged and merged (subject books can't) */
+  bookId?: string
 }
 
 /** The cover's size: the same for every book, so the shelves line up. */
@@ -126,7 +132,18 @@ function CoverFace({ book }: { book: ShelfBook }) {
 }
 
 /** One book facing out on the shelf. A plain tap plays the open-book scene; Ctrl/⌘-click still opens normally. */
-function Cover({ book, arriving, onOpen }: { book: ShelfBook; arriving: boolean; onOpen: (book: ShelfBook, rect: DOMRect) => void }) {
+function Cover({
+  book,
+  arriving,
+  drag,
+  onOpen,
+}: {
+  book: ShelfBook
+  arriving: boolean
+  /** while a book is being dragged: this is the one lifted ('source') or the one it's over ('target') */
+  drag: 'source' | 'target' | null
+  onOpen: (book: ShelfBook, rect: DOMRect) => void
+}) {
   const stars = book.accuracy === undefined ? null : starsFor(book.accuracy)
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return
@@ -137,13 +154,20 @@ function Cover({ book, arriving, onOpen }: { book: ShelfBook; arriving: boolean;
     <Link
       to={book.to}
       onClick={handleClick}
+      // her books can be held and dragged: no browser link drag, link preview or right-click menu getting in the way
+      data-book-id={book.bookId}
+      draggable={false}
+      onContextMenu={book.bookId ? (e) => e.preventDefault() : undefined}
       aria-label={`${book.label}${stars === null ? '' : `, ${stars} of ${MAX_STARS} stars`}`}
       className={cn(
         COVER_SIZE,
-        'group relative block shrink-0 rounded-l-[3px] rounded-r-lg outline-none',
+        'group relative block shrink-0 rounded-l-[3px] rounded-r-lg outline-none [-webkit-touch-callout:none]',
         // a soft shadow (the app's navy, like the other scenes), and a little hop when pointed at
-        'shadow-[0_8px_16px_-10px_rgb(7_71_94/0.55)] transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-2 hover:-rotate-2 focus-visible:-translate-y-2 focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:ring-offset-2',
+        'shadow-[0_8px_16px_-10px_rgb(7_71_94/0.55)] transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-2 hover:-rotate-2 focus-visible:-translate-y-2 focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:ring-offset-2',
         arriving && 'book-arrive',
+        // the lifted book leaves a faint gap; the one under it glows gold and leans in, ready to take it
+        drag === 'source' && 'scale-95 opacity-35',
+        drag === 'target' && '-translate-y-2 scale-110 ring-4 ring-highlight ring-offset-2',
       )}
     >
       <CoverFace book={book} />
@@ -224,6 +248,15 @@ function OpeningBook({ book, rect }: { book: ShelfBook; rect: DOMRect }) {
   )
 }
 
+/** A book being dragged to merge: which one, where the finger is, and which of her books it's over. */
+type DragState = { bookId: string; x: number; y: number; overId: string | null }
+
+/** Which of her books is under the finger (not the lifted one), or null. */
+function bookUnder(x: number, y: number, except: string) {
+  const id = document.elementFromPoint(x, y)?.closest('[data-book-id]')?.getAttribute('data-book-id') ?? null
+  return id === except ? null : id
+}
+
 export function Bookshelf({
   libraryNames,
   library,
@@ -236,6 +269,7 @@ export function Bookshelf({
   bookAccuracy,
   arrivingId,
   onNewBook,
+  onMerge,
 }: {
   libraryNames: string[]
   /** the library on screen (1–3) */
@@ -252,6 +286,8 @@ export function Bookshelf({
   /** the book she just made, so it drops onto the shelf */
   arrivingId: string | null
   onNewBook: () => void
+  /** she dropped one of her books on another: ask before merging */
+  onMerge: (sourceId: string, targetId: string) => void
 }) {
   const perShelf = usePerShelf()
   const navigate = useNavigate()
@@ -301,6 +337,7 @@ export function Bookshelf({
       flagged: 0,
       accuracy: bookAccuracy ? (bookAccuracy.get(b.id) ?? null) : undefined,
       label: `${b.title}: ${plural(b.questionIds.size, 'question')}`,
+      bookId: b.id,
       art: (
         // her book's emblem: its first letter in a ring
         <span
@@ -313,6 +350,40 @@ export function Bookshelf({
     })
   }
 
+  // ---------- Hold a book and drop it on another to merge (state used by the covers below) ----------
+  // dragging: the lifted book, where the finger is, and which of her books it's over (null = none)
+  const [dragging, setDragging] = useState<DragState | null>(null)
+  const draggingRef = useRef<DragState | null>(null) // the same, for the pointer handlers (no waiting for a re-render)
+  const hold = useRef<{ timer: number; x: number; y: number } | null>(null)
+  const wallRef = useRef<HTMLDivElement>(null)
+
+  function moveDrag(next: DragState | null) {
+    draggingRef.current = next
+    setDragging(next)
+  }
+  function cancelHold() {
+    if (hold.current) window.clearTimeout(hold.current.timer)
+    hold.current = null
+  }
+  useEffect(() => () => {
+    if (hold.current) window.clearTimeout(hold.current.timer)
+  }, [])
+
+  // On a touch screen, a finger moving while a book is lifted must drag the book, not scroll the page.
+  // (A listener that isn't "passive" is the only way to stop the scroll on iPad Safari.)
+  useEffect(() => {
+    const wall = wallRef.current
+    if (!wall) return
+    const stopScroll = (e: TouchEvent) => {
+      if (draggingRef.current) e.preventDefault()
+    }
+    wall.addEventListener('touchmove', stopScroll, { passive: false })
+    return () => wall.removeEventListener('touchmove', stopScroll)
+  }, [])
+
+  const draggedBook = dragging ? shelfBooks.find((b) => b.bookId === dragging.bookId) : undefined
+  const overBook = dragging?.overId ? shelfBooks.find((b) => b.bookId === dragging.overId) : undefined
+
   // The library's progress: stars earned out of all it could have.
   const earned = shelfBooks.reduce((sum, b) => sum + (b.accuracy === undefined ? 0 : starsFor(b.accuracy)), 0)
   const possible = shelfBooks.length * MAX_STARS
@@ -321,7 +392,14 @@ export function Bookshelf({
   // Every spot is drawn: books, then "New book" (if there's room), then faint empty slots.
   const slots: { key: string; node: ReactNode }[] = shelfBooks.map((b) => ({
     key: b.key,
-    node: <Cover book={b} arriving={b.key === arrivingId} onOpen={openBook} />,
+    node: (
+      <Cover
+        book={b}
+        arriving={b.key === arrivingId}
+        drag={!dragging || !b.bookId ? null : b.bookId === dragging.bookId ? 'source' : b.bookId === dragging.overId ? 'target' : null}
+        onOpen={openBook}
+      />
+    ),
   }))
   if (room > 0) slots.push({ key: 'new', node: <NewBookSlot onClick={onNewBook} /> })
   while (slots.length < LIBRARY_SLOTS) slots.push({ key: `empty${slots.length}`, node: <EmptySlot /> })
@@ -357,11 +435,40 @@ export function Bookshelf({
   const [dragPx, setDragPx] = useState(0)
   const justDragged = useRef(false)
 
-  function onPointerDown(e: PointerEvent) {
+  function onPointerDown(e: PointerEvent<HTMLDivElement>) {
     if (e.button !== 0) return
     drag.current = { x: e.clientX, active: false }
+
+    // Pressing on one of her books: if the finger stays still long enough, lift it to drag.
+    const bookId = (e.target as Element).closest('[data-book-id]')?.getAttribute('data-book-id')
+    if (!bookId) return
+    const wall = e.currentTarget
+    const { pointerId, clientX: x, clientY: y } = e
+    cancelHold()
+    hold.current = {
+      x,
+      y,
+      timer: window.setTimeout(() => {
+        hold.current = null
+        drag.current = null // it's a book drag now, not a swipe
+        try {
+          wall.setPointerCapture(pointerId)
+        } catch {
+          // the finger was already lifted
+        }
+        navigator.vibrate?.(15) // a small "tick" on phones that can (iPad Safari can't)
+        moveDrag({ bookId, x, y, overId: null })
+      }, HOLD_MS),
+    }
   }
   function onPointerMove(e: PointerEvent<HTMLDivElement>) {
+    const lifted = draggingRef.current
+    if (lifted) {
+      moveDrag({ ...lifted, x: e.clientX, y: e.clientY, overId: bookUnder(e.clientX, e.clientY, lifted.bookId) })
+      return
+    }
+    // Moved before the hold time: it's a swipe or a scroll, not a book drag.
+    if (hold.current && Math.hypot(e.clientX - hold.current.x, e.clientY - hold.current.y) > TAP_SLOP) cancelHold()
     if (!drag.current) return
     const dx = e.clientX - drag.current.x
     if (!drag.current.active) {
@@ -373,6 +480,15 @@ export function Bookshelf({
     setDragPx(dx * 0.6) // a little resistance, like pulling something heavy
   }
   function onPointerUp(e: PointerEvent) {
+    cancelHold()
+    const lifted = draggingRef.current
+    if (lifted) {
+      moveDrag(null)
+      justDragged.current = true // so letting go doesn't also open the book under the finger
+      const target = bookUnder(e.clientX, e.clientY, lifted.bookId)
+      if (target) onMerge(lifted.bookId, target)
+      return
+    }
     const d = drag.current
     drag.current = null
     if (!d?.active) return
@@ -444,8 +560,11 @@ export function Bookshelf({
         onPointerCancel={() => {
           drag.current = null
           setDragPx(0)
+          cancelHold()
+          moveDrag(null)
         }}
         onClickCapture={onClickCapture}
+        ref={wallRef}
         className="touch-pan-y overflow-hidden rounded-2xl select-none"
       >
         <div
@@ -475,8 +594,14 @@ export function Bookshelf({
             {/* the same soft bench surface as the other pages, under the last shelf */}
             <div className="relative -mt-4 pt-6 pb-3">
               <LabBench className="h-full" />
-              <p className="relative text-center text-xs text-muted-foreground" aria-live="polite">
-                {room === 0 ? `${name} is full. Put new books in another library.` : `${plural(room, 'free slot')} · swipe for your other libraries`}
+              <p className={cn('relative text-center text-xs', dragging ? 'font-bold text-foreground' : 'text-muted-foreground')} aria-live="polite">
+                {dragging
+                  ? overBook
+                    ? `Let go to merge into ${overBook.title}`
+                    : 'Drop it on another of your books to merge them'
+                  : room === 0
+                    ? `${name} is full. Put new books in another library.`
+                    : `${plural(room, 'free slot')} · swipe for your other libraries · hold a book to merge`}
               </p>
             </div>
           </div>
@@ -486,6 +611,15 @@ export function Bookshelf({
       <CoverKey />
 
       {opening && <OpeningBook book={opening.book} rect={opening.rect} />}
+
+      {/* The lifted book, following the finger (it can't be pointed at, so the book under it can be found) */}
+      {dragging && draggedBook && (
+        <div aria-hidden className={cn(COVER_SIZE, 'pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2')} style={{ left: dragging.x, top: dragging.y }}>
+          <div className="size-full scale-110 rotate-6 rounded-r-lg shadow-[0_24px_40px_-14px_rgb(7_71_94/0.7)]">
+            <CoverFace book={draggedBook} />
+          </div>
+        </div>
+      )}
     </section>
   )
 }
