@@ -1,5 +1,5 @@
-import { CalendarClock, Flame } from 'lucide-react'
-import { useState } from 'react'
+import { CalendarClock, CircleCheck, Flame, Target } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
@@ -7,20 +7,24 @@ import { NoteCard } from '@/components/NoteCard'
 import { Button } from '@/components/ui/button'
 import { NOTES } from '@/data/encouragements'
 import { useTopicPerformance } from '@/features/dashboard/api'
+import { useAuth } from '@/features/auth/authContext'
 import { DEFAULT_DAILY_TARGET, useStudySettings } from '@/features/settings/api'
 import { currentStreak, dailyActivity } from '@/lib/activity'
+import { firstName } from '@/lib/profile'
 import { countdownLabel, daysUntil, milestoneKey, milestoneReached, pickNote } from '@/lib/planner'
-import { overallStats, summarizePerformance, type SubjectSummary } from '@/lib/quiz'
+import { overallStats, PASSING_RATE, summarizePerformance, type SubjectSummary } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
-import { verseOfTheDay } from '@/lib/verses'
+import { useCountUp } from '@/lib/useCountUp'
+import { cn } from '@/lib/utils'
 import { useAttemptHistory } from './api'
-import { BodyStage, SubjectInfoCard } from './BodyExplorer'
-import { ReadinessCard, TodayAndVerse } from './HomeCards'
+import { BodyStage, NextUpBar } from './BodyExplorer'
+import { readinessGoal, STATUS_COLOR } from './organs'
+import { changedSince, makeSnapshot, readSnapshot, writeSnapshot } from './snapshot'
 
 function greeting(hour: number) {
-  if (hour < 12) return 'Good morning!'
-  if (hour < 18) return 'Good afternoon!'
-  return 'Good evening!'
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
 }
 
 /** The subject to show first: the weakest one below 60%, else one not tried yet, else the lowest score. */
@@ -60,9 +64,19 @@ export default function HomePage() {
   const [now] = useState(() => new Date())
   const attempts = useAttemptHistory()
   const settings = useStudySettings()
-  // null = nothing tapped yet, so show the subject that needs the most work.
+  const name = firstName(useAuth().session?.user)
+  // The subject she tapped (card or organ); null = nothing tapped yet, so Next up shows the "Start here" one.
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [seenMilestones, setSeenMilestones] = useState(readSeen)
+  // "Since last time": the scores Home showed on her last visit (read once), so what changed can count up.
+  const [lastVisit] = useState(readSnapshot)
+
+  // Remember today's scores for the next visit (right away, so a refresh doesn't replay the count-up).
+  useEffect(() => {
+    if (!performance.data || !subjects.data || !topics.data) return
+    const latest = summarizePerformance(performance.data, subjects.data, topics.data)
+    writeSnapshot(makeSnapshot(latest, overallStats(latest).accuracy))
+  }, [performance.data, subjects.data, topics.data])
 
   if (performance.isPending || subjects.isPending || topics.isPending) return <FullPageMessage>Loading…</FullPageMessage>
   if (performance.isError || subjects.isError || topics.isError) {
@@ -71,8 +85,13 @@ export default function HomePage() {
 
   const summary = summarizePerformance(performance.data, subjects.data, topics.data)
   const stats = overallStats(summary)
-  const selected = summary.find((s) => s.subjectId === selectedId) ?? pickFocus(summary)
+  // "Start here": the subject that needs the most work.
+  const startHere = pickFocus(summary)
+  const selected = summary.find((s) => s.subjectId === selectedId) ?? startHere
   const selectedTopicIds = topics.data.filter((t) => t.subject_id === selected?.subjectId).map((t) => t.id)
+  // Subjects she practiced since her last visit (their labels count up), and where the readiness number starts.
+  const changed = changedSince(lastVisit, summary)
+  const readinessFrom = Object.keys(changed).length > 0 ? (lastVisit?.overall ?? null) : null
 
   // Planner: days to the board exam.
   const examDate = settings.data?.examDate ?? null
@@ -92,55 +111,75 @@ export default function HomePage() {
     setSeenMilestones((list) => [...list, milestoneSeenKey])
   }
 
-  return (
-    // Tablet and up: two columns that exactly fill the screen height, so nothing scrolls.
-    // (2.75rem = the page's top/bottom padding in AppLayout, 2.5rem, plus a little room to spare.)
-    // On a very short window it stops shrinking at min-h and the page scrolls instead of squeezing.
-    // Phone: one column that scrolls as usual.
-    <div className="grid gap-5 md:h-[calc(100dvh-2.75rem)] md:min-h-[34rem] md:grid-cols-2 md:grid-rows-[minmax(0,1fr)] lg:gap-6">
-      <div className="flex flex-col gap-2 md:min-h-0">
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-          <div>
-            <h1 className="text-2xl leading-tight font-bold">{greeting(now.getHours())}</h1>
-            <p className="text-sm text-muted-foreground">Turn the body and tap an organ to explore a subject.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-          {/* Planner: the countdown, or a nudge to set the exam date */}
-          {settings.isSuccess && (
-            <Link
-              to="/settings"
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold shadow-[0_8px_20px_-14px_rgb(7_71_94/0.5)] outline-none hover:ring-1 hover:ring-primary focus-visible:ring-3 focus-visible:ring-ring/40"
-            >
-              <CalendarClock className="size-4 text-primary" aria-hidden />
-              {countdown ?? (examDate ? 'Set your next exam date' : 'Set your exam date')}
-            </Link>
-          )}
-          {/* Review again lives on Practice (and after each quiz), not here: Home stays about the body and one next step. */}
-          </div>
-        </div>
-        <BodyStage summary={summary} selected={selected} onSelect={setSelectedId} />
-      </div>
+  const done = days.at(-1)?.answered ?? 0
+  const target = settings.data?.dailyTarget ?? DEFAULT_DAILY_TARGET
 
-      <div className="flex flex-col gap-4 md:min-h-0">
-        {selected && <SubjectInfoCard subject={selected} subjectTopicIds={selectedTopicIds} />}
-        <TodayAndVerse
-          days={days}
-          target={settings.data?.dailyTarget ?? DEFAULT_DAILY_TARGET}
-          streak={streak}
-          verse={verseOfTheDay(now)}
-        />
-        {/* Picking a subject here only changes the card above (and its Practice button), so Home keeps one way to practice. */}
-        <ReadinessCard
-          stats={stats}
-          summary={summary}
-          selectedId={selected?.subjectId ?? null}
-          onSelect={(id) => {
-            setSelectedId(id)
-            // Phones: the subject card is far above, so bring it into view. Laptops: it's already in view, nothing moves.
-            requestAnimationFrame(() => document.getElementById('subject-info')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }))
-          }}
-        />
-      </div>
+  return (
+    // Home is the body: greeting, readiness and stats on top, the body with a card per subject in the middle,
+    // and the Next up bar with the Practice button at the bottom.
+    // Tablet and up: at least one screen tall; laptops: exactly one screen (2.5rem = AppLayout's top + bottom padding),
+    // stopping at min-h on a very short window so it scrolls instead of squeezing. Phones: scrolls as usual.
+    <div className="flex flex-col gap-3 md:min-h-[calc(100dvh-2.5rem)] lg:h-[calc(100dvh-2.5rem)] lg:min-h-[36rem]">
+      {/* The body is the star, so the top is ONE light line: the greeting, and the small stats on the same line.
+          The overall score sits with the body (its "scan readout", bottom right of the stage).
+          The next step lives in ONE place only, the Next up bar at the bottom. */}
+      <header>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
+          <h1 className="text-2xl leading-tight font-bold">
+            {greeting(now.getHours())}
+            {name ? `, ${name}!` : '!'}
+          </h1>
+
+          {/* Quiet stats: icon + words, no boxes. Review again lives on Practice (and after each quiz), not here. */}
+          <ul className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted-foreground" aria-label="Your stats">
+            <li className="flex items-center gap-1.5">
+              <Flame className={cn('size-4', streak > 0 ? 'text-highlight' : 'text-muted-foreground')} aria-hidden />
+              {streak > 0 ? (
+                <span>
+                  <span className="font-bold text-foreground tabular-nums">{streak}-day</span> streak
+                </span>
+              ) : (
+                'No streak yet'
+              )}
+            </li>
+            {/* Today's goal: turns green with a check once it's reached, so the day has a clear finish line. */}
+            <li className="flex items-center gap-1.5">
+              {done >= target ? <CircleCheck className="size-4 text-correct" aria-hidden /> : <Target className="size-4 text-primary" aria-hidden />}
+              <span>
+                <span className={cn('font-bold tabular-nums', done >= target ? 'text-correct' : 'text-foreground')}>
+                  {done}/{target}
+                </span>{' '}
+                {done >= target ? 'done today' : 'today'}
+              </span>
+            </li>
+            {/* Planner: once the date is set, the countdown sits on the overall readout instead.
+                Until then (or once it has passed), a nudge to set it. Padding makes it easy to tap on an iPad. */}
+            {settings.isSuccess && !countdown && (
+              <li>
+                <Link
+                  to="/settings"
+                  className="-my-2 flex items-center gap-1.5 rounded-md py-2 font-semibold text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40"
+                >
+                  <CalendarClock className="size-4" aria-hidden />
+                  {examDate ? 'Set next exam date' : 'Set exam date'}
+                </Link>
+              </li>
+            )}
+          </ul>
+        </div>
+      </header>
+
+      <BodyStage
+        summary={summary}
+        selected={selected}
+        previous={changed}
+        onSelect={setSelectedId}
+        readout={<ReadinessLine rate={stats.accuracy} from={readinessFrom} countdown={countdown} />}
+      />
+
+      {/* Practice is always one tap away; tapping a card or organ above changes which subject it's for.
+          At the bottom: most use an iPad, held in both hands, and the bottom edge is where the thumbs reach. */}
+      {selected && <NextUpBar subject={selected} subjectTopicIds={selectedTopicIds} />}
 
       {/* Streak milestone: a celebration with her note (once per milestone, on this device). */}
       <Dialog open={showMilestone} onClose={closeMilestone} labelledBy="milestone-heading">
@@ -161,5 +200,52 @@ export default function HomePage() {
         </div>
       </Dialog>
     </div>
+  )
+}
+
+/**
+ * The overall score as the body's "scan readout" (it sits under the body, bottom right of the stage):
+ * the score, the distance to the goal ("32% to go to passing"), a bar with a marker at the 60% passing line,
+ * and the days left once the exam date is set.
+ * "Overall", not "board-ready": with only a few answers per subject, it's a score, not a verdict.
+ * `from`: last visit's score, so it counts up to today's (same as the subject cards).
+ */
+function ReadinessLine({ rate, from, countdown }: { rate: number | null; from: number | null; countdown: string | null }) {
+  const pct = rate === null ? 0 : Math.min(100, Math.round(rate * 100))
+  const shown = useCountUp(from === null ? pct : Math.min(100, Math.round(from * 100)), pct)
+  const isPassing = rate !== null && rate >= PASSING_RATE
+
+  if (rate === null) {
+    return <p className="text-sm text-muted-foreground">Answer a few questions to see your overall score.</p>
+  }
+  return (
+    <section aria-label="Overall score" className="w-full pb-3">
+      <p className="flex items-baseline justify-between gap-3">
+        <span>
+          <span className={cn('font-heading text-2xl font-bold tabular-nums', isPassing ? 'text-correct' : STATUS_COLOR.low)}>{shown}%</span>{' '}
+          <span className="text-sm text-muted-foreground">overall</span>
+        </span>
+        <span className={cn('text-right text-xs font-semibold', isPassing ? 'text-correct' : 'text-foreground')}>{readinessGoal(rate)}</span>
+      </p>
+
+      {/* The bar (fills along with the counting number), with a labelled marker at the 60% passing line */}
+      <div
+        role="meter"
+        aria-label="Overall score"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+        aria-valuetext={`${pct}%, passing is 60%`}
+        className="relative mt-1.5 h-2 rounded-full bg-secondary"
+      >
+        <div className={cn('h-full rounded-full', isPassing ? 'bg-correct' : 'bg-highlight')} style={{ width: `${shown}%` }} />
+        <span aria-hidden className="absolute -top-0.5 -bottom-0.5 w-0.5 rounded-full bg-foreground/60" style={{ left: `${PASSING_RATE * 100}%` }} />
+        <span aria-hidden className="absolute top-full mt-1 -translate-x-1/2 text-[10px] leading-none font-semibold text-muted-foreground" style={{ left: `${PASSING_RATE * 100}%` }}>
+          60%
+        </span>
+      </div>
+
+      {countdown && <p className="mt-4 text-xs text-muted-foreground">{countdown}</p>}
+    </section>
   )
 }

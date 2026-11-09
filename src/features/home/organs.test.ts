@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SubjectSummary } from '@/lib/quiz'
-import { correctCount, correctToPass, MIN_ANSWERED, organLook, statusDetail, subjectStatus } from './organs'
+import { correctCount, correctToPass, MIN_ANSWERED, nextMilestone, organLook, readinessGoal, scoreCaption, subjectStatus } from './organs'
 
 function subject(attempts: number, correct: number): SubjectSummary {
   const accuracy = attempts === 0 ? null : correct / attempts
@@ -36,17 +36,36 @@ describe('correctToPass', () => {
   })
 })
 
-describe('statusDetail', () => {
-  it('says how many more answers a new score needs', () => {
-    expect(statusDetail(subject(2, 1))).toBe(`1 of 2 correct · ${MIN_ANSWERED - 2} more for a real score`)
+describe('scoreCaption', () => {
+  it('says "Not started" before any answer', () => {
+    expect(scoreCaption(subject(0, 0))).toBe('Not started')
   })
 
-  it('says how to pass when below 60%', () => {
-    expect(statusDetail(subject(12, 5))).toBe('5 of 12 correct · 6 right in a row to pass')
+  it('says "answered" while getting started (it follows "2/10")', () => {
+    expect(scoreCaption(subject(2, 0))).toBe('answered')
   })
 
-  it('invites a first answer when nothing is answered', () => {
-    expect(statusDetail(subject(0, 0))).toBe('Answer a few to see your score')
+  it('names the status once the score is real', () => {
+    expect(scoreCaption(subject(12, 4))).toBe('Below 60%')
+    expect(scoreCaption(subject(10, 8))).toBe('Passing')
+  })
+})
+
+describe('readinessGoal', () => {
+  it('says how far to 60%, then cheers once there', () => {
+    expect(readinessGoal(0.28)).toBe('32% to go to passing')
+    expect(readinessGoal(0.594)).toBe('1% to go to passing')
+    expect(readinessGoal(0.6)).toBe('Passing · keep it above 60%')
+    expect(readinessGoal(0.85)).toBe('Passing · keep it above 60%')
+  })
+})
+
+describe('nextMilestone', () => {
+  it('names the next small win for each stage', () => {
+    expect(nextMilestone(subject(0, 0))).toBe('Not started yet')
+    expect(nextMilestone(subject(3, 1))).toBe(`${MIN_ANSWERED - 3} more for a real score`)
+    expect(nextMilestone(subject(12, 5))).toBe('6 right in a row to pass')
+    expect(nextMilestone(subject(10, 8))).toBe('Passing · keep it up')
   })
 })
 

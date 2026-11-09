@@ -1,33 +1,44 @@
-import { ChevronLeft, ChevronRight, Crosshair, Dices, Play, X } from 'lucide-react'
-import { lazy, Suspense, useRef, useState } from 'react'
+import { ChevronLeft, ChevronRight, Dices, Play, X } from 'lucide-react'
+import { lazy, Suspense, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Dialog } from '@/components/Dialog'
-import { heroButtonClass, LowFlag } from '@/components/report'
-import { formatPercent, PASSING_RATE, type SubjectSummary } from '@/lib/quiz'
+import { heroButtonClass } from '@/components/report'
+import { PASSING_RATE, type SubjectSummary } from '@/lib/quiz'
+import { useCountUp } from '@/lib/useCountUp'
 import { cn } from '@/lib/utils'
 import type { Body3DControls, OrganAnchor } from './Body3D'
 import { WarmupCard } from './HomeCards'
 import { OrganIcon } from './OrganIcon'
-import { ORGANS, organLook, STATUS_COLOR, STATUS_TEXT, statusDetail, subjectStatus, type SubjectStatus } from './organs'
+import type { ScoreSnapshot } from './snapshot'
+import { correctCount, correctToPass, MIN_ANSWERED, nextMilestone, ORGANS, organLook, scoreCaption, STATUS_COLOR, subjectStatus, type SubjectStatus } from './organs'
 
 // three.js is big, so the 3D body downloads separately, after the rest of Home shows.
 const Body3D = lazy(() => import('./Body3D'))
 
 /**
  * The centerpiece of Home: a 3D body you can turn, with a card for each subject around it.
- * Laptops: cards in two columns beside the body, with dashed lines to their organ (like a labelled diagram).
+ * Laptops: cards in two columns beside the body, each joined to its organ by a faint line (like a labelled diagram).
  * Tablets and phones: the cards sit in a grid under the body.
  * From tablet size up, the stage stretches to fill the height it is given, so Home fits without scrolling.
  * The cards are the keyboard / screen-reader way to choose; the 3D body is extra.
+ *
+ * Tapping a card (or its organ) only CHOOSES the subject: the Next up bar below then points its Practice button at it.
  */
 export function BodyStage({
   summary,
   selected,
+  previous,
   onSelect,
+  readout,
 }: {
   summary: SubjectSummary[]
+  /** the subject in the Next up bar: it glows on the body and gets the solid line */
   selected: SubjectSummary | undefined
+  /** subjects she answered more in since her last visit, with their old numbers (their labels count up from them) */
+  previous: Record<string, ScoreSnapshot>
   onSelect: (subjectId: number) => void
+  /** the overall score, shown with the body like a scan readout (bottom right on laptops, under Turn on smaller screens) */
+  readout?: ReactNode
 }) {
   const mapped = summary.filter((s) => ORGANS[s.code])
   const controls = useRef<Body3DControls | null>(null)
@@ -35,6 +46,8 @@ export function BodyStage({
   const canvasBoxRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef(new Map<string, HTMLElement>())
   const lineRefs = useRef(new Map<string, SVGGElement>())
+  // The card she's pointing at or tabbed to (its line shows too); null = none.
+  const [pointedCode, setPointedCode] = useState<string | null>(null)
 
   // Runs every frame: move each dashed line so it joins its card to the organ, wherever the body has turned.
   // Done directly on the SVG (not through React state) so turning stays smooth.
@@ -72,9 +85,9 @@ export function BodyStage({
 
   function card(s: SubjectSummary) {
     const status = subjectStatus(s)
-    // Not a real score yet (fewer than 10 answered): the line under the score says how many she answered.
-    const scoreIsReal = status === 'low' || status === 'passing'
     const isSelected = s.subjectId === selected?.subjectId
+    const before = previous[s.code]
+    const organ = ORGANS[s.code]
     return (
       <button
         key={s.code}
@@ -85,27 +98,39 @@ export function BodyStage({
         type="button"
         aria-pressed={isSelected}
         onClick={() => onSelect(s.subjectId)}
+        // Pointing at (or tabbing to) a card shows its line to the organ.
+        onPointerEnter={() => setPointedCode(s.code)}
+        onPointerLeave={() => setPointedCode(null)}
+        onFocus={() => setPointedCode(s.code)}
+        onBlur={() => setPointedCode(null)}
         className={cn(
-          'rounded-xl bg-card p-2 text-left shadow-[0_10px_28px_-18px_rgb(7_71_94/0.55)] outline-none transition-[box-shadow,transform] focus-visible:ring-3 focus-visible:ring-ring/40 lg:p-2.5',
-          isSelected ? 'bg-primary/[0.04] ring-2 ring-primary' : 'hover:-translate-y-0.5',
+          // A small "lab result" card: white, thin border, light shadow (the box says "you can tap me").
+          // It never moves: hover and the chosen state only change the border and shadow, so tapping feels steady.
+          'relative flex w-full min-w-0 flex-col gap-2 rounded-2xl border bg-card px-3 py-2.5 text-left shadow-[0_6px_18px_-12px_rgb(7_71_94/0.45)] outline-none transition-[box-shadow,border-color] focus-visible:ring-3 focus-visible:ring-ring/40',
+          isSelected
+            ? 'border-primary bg-primary/[0.04] shadow-[0_10px_28px_-16px_rgb(7_71_94/0.6)] ring-1 ring-primary'
+            : 'hover:border-primary/40 hover:shadow-[0_12px_28px_-14px_rgb(7_71_94/0.5)]',
+          // Just practiced this one: a soft gold flash while its number counts up.
+          before && 'score-bump',
         )}
       >
-        {/* A label, not a report: which subject (and its organ, tying the card to the body), then how she's doing.
-            The score and the ring (colored by status) are what she sees first; details are in the subject card below. */}
-        <span className="block font-heading text-sm leading-tight font-bold">{s.code}</span>
-        {/* Its own line, so "Brain & tissue" and "Blood donation" show in full. */}
-        <span className="block truncate text-xs leading-snug text-muted-foreground max-lg:hidden">{ORGANS[s.code].name}</span>
-        <span className="mt-1.5 flex min-w-0 items-center gap-2 lg:gap-2.5">
-          <ScoreRing rate={s.accuracy} status={status} code={s.code} />
-          <span className="min-w-0">
-            <span className={cn('block font-heading text-2xl leading-none font-bold tabular-nums', status === 'new' && 'text-muted-foreground')}>
-              {s.accuracy === null ? '—' : formatPercent(s.accuracy)}
-            </span>
-            <span className={cn('mt-1 block truncate text-xs leading-snug', scoreIsReal ? cn('font-semibold', STATUS_COLOR[status]) : 'text-muted-foreground')}>
-              {status === 'starting' ? `${s.attempts} answered` : STATUS_TEXT[status]}
-            </span>
+        {/* Top row: the organ (icon on a tint of its own color, like on the body), the subject, the number */}
+        <span className="flex items-center gap-2">
+          <span className="grid size-8 shrink-0 place-items-center rounded-full lg:size-9" style={{ backgroundColor: `${organ.color}26` }}>
+            <OrganIcon code={s.code} className="size-4.5 lg:size-5" />
           </span>
+          <span className="min-w-0 flex-1 truncate font-heading text-sm leading-tight font-bold">
+            {s.code}
+            <span className="sr-only"> ({organ.name})</span>
+          </span>
+          <ScoreNumber subject={s} before={before} />
         </span>
+
+        {/* The bar, in the same language as the readiness bar at the top */}
+        <ProgressBar subject={s} status={status} />
+
+        {/* The next small win: what to do to reach the next step */}
+        <span className="block truncate text-xs leading-tight text-muted-foreground">{nextMilestone(s)}</span>
       </button>
     )
   }
@@ -113,7 +138,7 @@ export function BodyStage({
   // Width of each card column on laptops; the 3D view sits between them.
   // The 3D box (below) is wider than the gap between these columns, so the cards sit over its empty sides.
   // If the box were only the gap, a narrow box would make the camera back up and the body shrink.
-  const column = 'lg:absolute lg:top-0 lg:bottom-11 lg:flex lg:w-36 lg:flex-col lg:justify-evenly xl:w-40'
+  const column = 'lg:absolute lg:top-0 lg:bottom-20 lg:flex lg:w-40 lg:flex-col lg:justify-evenly xl:w-44'
 
   return (
     <section aria-labelledby="body-heading" className="flex flex-col gap-3 md:min-h-0 md:flex-1">
@@ -146,27 +171,35 @@ export function BodyStage({
           </Suspense>
         </div>
 
-        {/* Dashed leader lines (laptops only, where the cards sit beside the body) */}
+        {/* Leader lines (laptops only, where the cards sit beside the body): every card is joined to its organ,
+            like a labelled diagram, so "this card = this organ" is clear at a glance.
+            Thin, dotted and faint, so they stay in the background; pointing at a card makes its line stronger;
+            the chosen subject's line is solid blue. */}
         <svg aria-hidden className="pointer-events-none absolute inset-0 hidden size-full overflow-visible lg:block">
-          {mapped.map((s) => (
-            <g
-              key={s.code}
-              ref={(el) => {
-                if (el) lineRefs.current.set(s.code, el)
-                else lineRefs.current.delete(s.code)
-              }}
-              className="transition-opacity duration-300"
-            >
-              {/* The chosen subject's line is solid and thicker, so card and organ clearly point at each other. */}
-              <polyline
-                fill="none"
-                stroke={s.subjectId === selected?.subjectId ? 'var(--primary)' : 'var(--muted-foreground)'}
-                strokeWidth={s.subjectId === selected?.subjectId ? 2 : 1.5}
-                strokeDasharray={s.subjectId === selected?.subjectId ? undefined : '4 3'}
-              />
-              <circle r="3.5" fill={s.subjectId === selected?.subjectId ? 'var(--primary)' : 'var(--muted-foreground)'} />
-            </g>
-          ))}
+          {mapped.map((s) => {
+            const isSelected = s.subjectId === selected?.subjectId
+            const isPointed = s.code === pointedCode
+            return (
+              <g
+                key={s.code}
+                ref={(el) => {
+                  if (el) lineRefs.current.set(s.code, el)
+                  else lineRefs.current.delete(s.code)
+                }}
+                className="transition-opacity duration-300"
+              >
+                <polyline
+                  fill="none"
+                  stroke={isSelected ? 'var(--primary)' : 'var(--muted-foreground)'}
+                  strokeOpacity={isSelected ? 1 : isPointed ? 0.8 : 0.35}
+                  strokeWidth={isSelected ? 2 : 1.25}
+                  strokeDasharray={isSelected ? undefined : '2 4'}
+                  strokeLinecap="round"
+                />
+                <circle r={isSelected ? 3.5 : 2.5} fill={isSelected ? 'var(--primary)' : 'var(--muted-foreground)'} fillOpacity={isSelected ? 1 : isPointed ? 0.8 : 0.5} />
+              </g>
+            )
+          })}
         </svg>
 
         {/* Subject cards. "contents" lets the same cards be one grid (small screens) or two side columns (laptops). */}
@@ -195,131 +228,115 @@ export function BodyStage({
             <span aria-hidden className="h-px flex-1 bg-gradient-to-l from-transparent to-foreground/30" />
           </div>
         </div>
-      </div>
 
+        {/* The overall score: the body's "scan readout". Laptops: bottom-right corner, opposite the legend. */}
+        {readout && <div className="order-2 mx-auto mt-3 w-full max-w-sm lg:absolute lg:right-0 lg:bottom-0 lg:mt-0 lg:w-64 xl:w-72">{readout}</div>}
+      </div>
     </section>
   )
 }
 
-/** Ring color by how she's doing, matching the status line under the score. */
-const RING_COLOR: Record<SubjectStatus, string> = {
-  new: 'var(--secondary)',
-  starting: 'var(--primary)',
-  low: '#B97A12', // amber, dark enough to see on white (3:1)
-  passing: 'var(--correct)',
+/** Bar color by how she's doing (same colors as the readiness bar and the number). */
+const BAR_COLOR: Record<SubjectStatus, string> = {
+  new: 'bg-secondary',
+  starting: 'bg-primary',
+  low: 'bg-highlight',
+  passing: 'bg-correct',
 }
 
 /**
- * The organ's icon inside a ring that fills with the score, colored by status (not by organ:
- * red would read as "bad" for the heart and the blood drop). The tick marks 60% (passing).
+ * The card's bar. Getting started: fills with answers toward the 10 a real score needs (matches "2/10").
+ * After that: fills with the score, with a marker at 60% (passing), like the readiness bar at the top.
  */
-function ScoreRing({ rate, status, code }: { rate: number | null; status: SubjectStatus; code: string }) {
-  const color = RING_COLOR[status]
-  const r = 15
-  const length = 2 * Math.PI * r
-  const tick = (PASSING_RATE * 360 - 90) * (Math.PI / 180) // 60% of the way round, starting at the top
+function ProgressBar({ subject, status }: { subject: SubjectSummary; status: SubjectStatus }) {
+  const isReal = status === 'low' || status === 'passing'
+  const fill = Math.min(1, isReal ? (subject.accuracy ?? 0) : subject.attempts / MIN_ANSWERED)
   return (
-    <span className="relative grid size-10 shrink-0 place-items-center lg:size-11 tall:size-12">
-      <svg viewBox="0 0 36 36" className="absolute inset-0 size-full -rotate-90" aria-hidden>
-        <circle cx="18" cy="18" r={r} fill="none" stroke="var(--secondary)" strokeWidth="3.5" />
-        {rate !== null && rate > 0 && (
-          <circle cx="18" cy="18" r={r} fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" strokeDasharray={`${rate * length} ${length}`} />
-        )}
-      </svg>
-      <svg viewBox="0 0 36 36" className="absolute inset-0 size-full" aria-hidden>
-        <line
-          x1={18 + 12 * Math.cos(tick)}
-          y1={18 + 12 * Math.sin(tick)}
-          x2={18 + 19 * Math.cos(tick)}
-          y2={18 + 19 * Math.sin(tick)}
-          stroke="var(--foreground)"
-          strokeOpacity="0.4"
-          strokeWidth="1.5"
-        />
-      </svg>
-      <OrganIcon code={code} className="size-4 lg:size-5" />
+    <span aria-hidden className="relative block h-1.5 rounded-full bg-secondary">
+      <span className={cn('block h-full rounded-full', BAR_COLOR[status])} style={{ width: `${fill * 100}%` }} />
+      {isReal && <span className="absolute -top-0.5 -bottom-0.5 w-0.5 rounded-full bg-foreground/50" style={{ left: `${PASSING_RATE * 100}%` }} />}
     </span>
   )
 }
 
-/** The small secondary buttons under the subject card's Practice button (tinted, not gold). */
-const smallButtonClass =
-  'flex h-10 min-w-0 items-center justify-center gap-2 rounded-lg bg-primary/[0.08] px-3 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
+/**
+ * The big number on a card: "2/10" while getting started, the score once it's real, colored like the ring.
+ * If she practiced it since her last visit (`before`), it counts up from the old number.
+ */
+function ScoreNumber({ subject, before }: { subject: SubjectSummary; before: ScoreSnapshot | undefined }) {
+  const status = subjectStatus(subject)
+  const isReal = status === 'low' || status === 'passing'
+  // Count answers while getting started; count the percent once the score is real (from 0 if it just became real).
+  const to = isReal ? Math.round((subject.accuracy ?? 0) * 100) : subject.attempts
+  const wasReal = before !== undefined && before.attempts >= MIN_ANSWERED && before.accuracy !== null
+  const from = before === undefined ? to : isReal ? (wasReal ? Math.round(before.accuracy! * 100) : 0) : before.attempts
+  const shown = useCountUp(from, to)
+  return (
+    <span className={cn('shrink-0 font-heading text-xl leading-none font-bold tabular-nums lg:text-2xl', isReal ? STATUS_COLOR[status] : 'text-foreground/75')}>
+      {status === 'new' ? '—' : isReal ? `${shown}%` : `${shown}/${MIN_ANSWERED}`}
+      <span className="sr-only"> {scoreCaption(subject)}</span>
+    </span>
+  )
+}
 
 /**
- * Details of the chosen subject, laid out like a patient info card:
- * who it is (subject + body part), answered count and weakest topic, and the score on top;
- * the screen's ONE orange button below, then two quiet links (weakest topic only, one warm-up question).
- * Uses its own width (container query), not the screen's, so it fits a narrow tablet column too.
+ * Next up: always on screen, so Practice is one tap away the moment Home opens.
+ * Shows the subject that needs the most work until she taps another card or organ, then that one.
+ * Three parts in a row: who (organ, subject, correct count) | how close to the goal | two buttons (Warm-up, gold Practice).
+ * The middle fills the bar with something that pulls her forward: the distance to the next goal, as a bar and as steps.
+ * Narrow (iPad portrait, phones): the three parts stack, Practice last (nearest the thumbs).
+ * Uses its own width (container query), not the screen's.
  */
-export function SubjectInfoCard({ subject, subjectTopicIds }: { subject: SubjectSummary; subjectTopicIds: number[] }) {
+export function NextUpBar({ subject, subjectTopicIds }: { subject: SubjectSummary; subjectTopicIds: number[] }) {
   const organ = ORGANS[subject.code]
   const status = subjectStatus(subject)
-  const weakest = subject.topics[0] // topics are sorted weakest first
   const [warmupOpen, setWarmupOpen] = useState(false)
   return (
-    // id + scroll-mt: Board readiness scrolls here when she picks a subject from it (phones).
-    <section id="subject-info" aria-labelledby="subject-info-heading" className="@container shrink-0 scroll-mt-4 rounded-2xl border bg-card p-4 shadow-[0_12px_32px_-24px_rgb(7_71_94/0.45)]">
-      {/* key: replay the entrance when another subject is chosen */}
-      <div key={subject.subjectId} className="animate-in fade-in space-y-3 duration-300">
-        {/* Header: organ picture, names, score */}
-        <div className="flex items-start gap-3 @md:gap-4">
-          <div className="hidden size-16 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(160deg,#0B2536,#07475E)] @md:flex tall:size-18">
-            <OrganIcon code={subject.code} className="size-10 drop-shadow-[0_0_12px_rgb(255_255_255/0.25)] tall:size-12" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              {subject.code}
-              {organ && <> · {organ.name}</>}
-            </p>
-            {/* Long names (HTMLE) stop at two lines; the full name is in the tooltip. */}
-            <h2 id="subject-info-heading" title={subject.name} className="line-clamp-2 font-heading text-lg leading-tight font-bold">
+    <section aria-labelledby="next-up-heading" className="@container shrink-0 rounded-2xl border bg-card p-3 shadow-[0_12px_32px_-24px_rgb(7_71_94/0.45)] lg:px-5">
+      {/* No entrance animation and a fixed height (one-line title, steps row always there): switching subjects
+          only swaps the words and numbers, so nothing on Home shifts or flickers when she taps a card. */}
+      <div className="flex flex-col gap-3 @3xl:flex-row @3xl:items-center @3xl:gap-6">
+        {/* Who: the organ on a tint of its own color (same as its card), the subject, and the correct count */}
+        <div className="flex min-w-0 items-center gap-3 @3xl:w-60 @3xl:shrink-0">
+          <span className="grid size-12 shrink-0 place-items-center rounded-full" style={{ backgroundColor: `${organ?.color ?? '#0B6382'}26` }}>
+            <OrganIcon code={subject.code} className="size-7" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-bold tracking-wide text-primary uppercase">Next up</p>
+            {/* Always one line, so the bar keeps the same height; long names (HTMLE) show in full in the tooltip */}
+            <h2 id="next-up-heading" title={subject.name} className="truncate font-heading text-lg leading-tight font-bold">
               {subject.name}
             </h2>
-            {/* What next, in numbers: "7 of 21 correct · 6 right in a row to pass" (the Home cards only show the score). */}
-            <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">{subject.attempts === 0 ? 'Nothing answered yet' : statusDetail(subject)}</p>
-            {weakest && (
-              <p className="truncate text-sm text-muted-foreground">
-                {'Weakest: '}
-                <span className="font-semibold text-foreground">{weakest.name}</span>{' '}
-                <span className={cn('font-semibold', weakest.belowPassing ? 'text-wrong' : 'text-foreground')}>{formatPercent(weakest.accuracy)}</span>
-              </p>
-            )}
-          </div>
-          <div className="shrink-0 text-right">
-            <p className={cn('font-heading text-3xl leading-none font-bold tabular-nums tall:text-4xl', status === 'low' && STATUS_COLOR.low)}>
-              {subject.accuracy === null ? '—' : formatPercent(subject.accuracy)}
-            </p>
-            <p className={cn('mt-1 flex items-center justify-end gap-1.5 text-xs font-semibold whitespace-nowrap', STATUS_COLOR[status])}>
-              {status === 'low' && <LowFlag />}
-              {STATUS_TEXT[status]}
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {subject.attempts === 0 ? 'Nothing answered yet' : `${correctCount(subject)} of ${subject.attempts} correct`}
             </p>
           </div>
         </div>
 
-        {/* The ONE practice button on Home. Everything else on Home only chooses which subject it points to. */}
-        <Link
-          to={`/practice?subject=${subject.subjectId}`}
-          className={cn(heroButtonClass, 'h-11 w-full px-4 text-base whitespace-nowrap focus-visible:ring-ring/50 sm:flex sm:w-full')}
-        >
-          <Play className="size-4 fill-current" aria-hidden />
-          Practice {subject.code}
-        </Link>
+        {/* A thin divider between "who" and "how close" on wide bars */}
+        <span aria-hidden className="hidden w-px self-stretch bg-secondary @3xl:block" />
 
-        {/* Smaller ways in: just the weakest topic (when it's below 60%), or a single warm-up question.
-            Small tinted buttons: clearly tappable, but shorter and without the gold, so the button above stays the main one.
-            Two equal halves when both show, so the row looks even. */}
-        <div className={cn('grid gap-2', weakest?.belowPassing && 'grid-cols-2')}>
-          {weakest?.belowPassing && (
-            <Link to={`/practice?subject=${subject.subjectId}&topic=${weakest.topicId}`} title={`Practice ${weakest.name} only`} className={smallButtonClass}>
-              <Crosshair className="size-4 shrink-0" aria-hidden />
-              <span className="truncate">{weakest.name} only</span>
-            </Link>
-          )}
-          <button type="button" onClick={() => setWarmupOpen(true)} aria-haspopup="dialog" className={smallButtonClass}>
+        <GoalProgress subject={subject} status={status} />
+
+        {/* Two buttons: a quiet Warm-up, then the gold Practice (the ONE main button on Home), always last.
+            Narrow: side by side under the rest, Practice wider. */}
+        <div className="grid shrink-0 grid-cols-[auto_1fr] gap-2 @3xl:flex @3xl:items-center">
+          <button
+            type="button"
+            onClick={() => setWarmupOpen(true)}
+            aria-haspopup="dialog"
+            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-primary/[0.08] px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px"
+          >
             <Dices className="size-4 shrink-0" aria-hidden />
-            <span className="truncate">Warm-up question</span>
+            Warm-up
           </button>
+          <Link
+            to={`/practice?subject=${subject.subjectId}`}
+            className={cn(heroButtonClass, 'h-11 w-full px-5 text-base whitespace-nowrap focus-visible:ring-ring/50 sm:flex sm:w-full @3xl:w-auto')}
+          >
+            <Play className="size-4 fill-current" aria-hidden />
+            Practice {subject.code}
+          </Link>
         </div>
       </div>
 
@@ -338,5 +355,69 @@ export function SubjectInfoCard({ subject, subjectTopicIds }: { subject: Subject
         </div>
       </Dialog>
     </section>
+  )
+}
+
+/** Most steps drawn in the row of steps; past this the row would turn into a gray smear, so it shows this many plus "+". */
+const MAX_STEPS = 20
+
+/**
+ * The middle of the Next up bar: how close this subject is to its next goal.
+ * - Getting started (or new): "3/10 answered", "7 more for a real score", the bar filling toward 10, and 10 steps (3 filled).
+ * - Below 60%: "33% now", "14 right in a row to reach 60%", the score bar with the 60% line, and 14 empty steps to fill.
+ * - Passing: the score in green and "Passing · keep it above 60%".
+ * The steps make "how many more" something she can see and count, not just read.
+ */
+function GoalProgress({ subject, status }: { subject: SubjectSummary; status: SubjectStatus }) {
+  const isReal = status === 'low' || status === 'passing'
+  const pct = Math.round((subject.accuracy ?? 0) * 100)
+  const fill = Math.min(1, isReal ? (subject.accuracy ?? 0) : subject.attempts / MIN_ANSWERED)
+  // Steps: answers toward 10 while getting started (some already filled); right answers in a row still needed when low.
+  const steps = status === 'low' ? correctToPass(subject) : isReal ? 0 : MIN_ANSWERED
+  const filledSteps = isReal ? 0 : subject.attempts
+  const shownSteps = Math.min(steps, MAX_STEPS)
+
+  return (
+    <div className="min-w-0 flex-1">
+      <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+        <span>
+          <span className={cn('font-heading text-2xl leading-none font-bold tabular-nums', isReal ? STATUS_COLOR[status] : 'text-foreground/75')}>
+            {status === 'new' ? '—' : isReal ? `${pct}%` : `${subject.attempts}/${MIN_ANSWERED}`}
+          </span>{' '}
+          <span className="text-sm text-muted-foreground">{status === 'new' ? 'not started' : isReal ? 'now' : 'answered'}</span>
+        </span>
+        <span className="text-sm text-muted-foreground">
+          {status === 'passing' ? (
+            <span className="font-semibold text-correct">Passing · keep it above 60%</span>
+          ) : status === 'low' ? (
+            <>
+              <span className="font-bold text-foreground">{steps} right in a row</span> to reach 60%
+            </>
+          ) : (
+            <>
+              <span className="font-bold text-foreground">
+                {MIN_ANSWERED - subject.attempts} more {MIN_ANSWERED - subject.attempts === 1 ? 'answer' : 'answers'}
+              </span>{' '}
+              for a real score
+            </>
+          )}
+        </span>
+      </p>
+
+      {/* The bar: score with the 60% line once it's real, answers toward 10 before that */}
+      <div aria-hidden className="relative mt-2 h-2 rounded-full bg-secondary">
+        <div className={cn('h-full rounded-full', status === 'passing' ? 'bg-correct' : status === 'low' ? 'bg-highlight' : 'bg-primary')} style={{ width: `${fill * 100}%` }} />
+        {isReal && <span className="absolute -top-0.5 -bottom-0.5 w-0.5 rounded-full bg-foreground/50" style={{ left: `${PASSING_RATE * 100}%` }} />}
+      </div>
+
+      {/* The steps still to take (filled ones are already done). The row is always there (empty when passing),
+          so the bar's height never changes between subjects. */}
+      <div aria-hidden className="mt-1.5 flex h-2.5 items-center gap-1">
+        {Array.from({ length: shownSteps }, (_, i) => (
+          <span key={i} className={cn('h-1.5 flex-1 rounded-full', i < filledSteps ? 'bg-primary' : 'bg-secondary')} />
+        ))}
+        {steps > MAX_STEPS && <span className="text-[10px] leading-none font-bold text-muted-foreground">+{steps - MAX_STEPS}</span>}
+      </div>
+    </div>
   )
 }

@@ -9,6 +9,8 @@ export type Organ = {
   /** which side of the body its card goes on (laptop), and its place from the top on that side */
   side: 'left' | 'right'
   rank: number
+  /** the organ's own color (same as on the 3D body), used to tint its icon on the card */
+  color: string
   /** small flat picture for cards; viewBox + shapes */
   iconBox: string
   icon: ReactNode
@@ -20,6 +22,7 @@ export const ORGANS: Record<string, Organ> = {
     about: 'Tissue processing, staining, cytology, MT laws and ethics.',
     side: 'right',
     rank: 1,
+    color: '#9B7BEA',
     iconBox: '84 16 32 28',
     icon: <ellipse cx="100" cy="30" rx="14" ry="11" fill="#9B7BEA" />,
   },
@@ -28,6 +31,7 @@ export const ORGANS: Record<string, Organ> = {
     about: 'Bacteria, TB, fungi, viruses and parasites.',
     side: 'left',
     rank: 1,
+    color: '#4FB6E8',
     iconBox: '72 96 56 50',
     icon: (
       <>
@@ -41,6 +45,7 @@ export const ORGANS: Record<string, Organ> = {
     about: 'Blood cells, anemias, leukemias and clotting.',
     side: 'right',
     rank: 2,
+    color: '#E5484D',
     iconBox: '94 114 24 26',
     icon: <path d="M106 122c2-4 8-4 9 1 1 5-5 10-9 13-4-3-10-8-9-13 1-5 7-5 9-1z" fill="#E5484D" />,
   },
@@ -49,6 +54,7 @@ export const ORGANS: Record<string, Organ> = {
     about: 'Liver and kidney function, enzymes, glucose, lipids and electrolytes.',
     side: 'left',
     rank: 3,
+    color: '#B9773F',
     iconBox: '72 136 38 26',
     icon: <path d="M78 146c8-4 22-5 27-1 2 3-3 9-12 12-9 3-17 1-17-4 0-3 1-5 2-7z" fill="#B9773F" />,
   },
@@ -57,6 +63,7 @@ export const ORGANS: Record<string, Organ> = {
     about: 'Urinalysis and other body fluids.',
     side: 'right',
     rank: 3,
+    color: '#E8875A',
     iconBox: '72 160 56 28',
     icon: (
       <>
@@ -73,6 +80,7 @@ export const ORGANS: Record<string, Organ> = {
     about: 'Blood typing, crossmatching, transfusion and immunology.',
     side: 'left',
     rank: 2,
+    color: '#E5484D',
     iconBox: '42 182 20 20',
     icon: <path d="M52 185c3 5 5 8 5 10a5 5 0 0 1-10 0c0-2 2-5 5-10z" fill="#E5484D" />,
   },
@@ -104,6 +112,31 @@ export const STATUS_COLOR: Record<SubjectStatus, string> = {
   passing: 'text-correct',
 }
 
+/** The small line under the big number. */
+export function scoreCaption(s: SubjectSummary): string {
+  const status = subjectStatus(s)
+  return status === 'starting' ? 'answered' : STATUS_TEXT[status]
+}
+
+/** Home's overall line, told as distance to the goal ("32% to go to passing"), which pulls harder than "you're at 28%". */
+export function readinessGoal(rate: number): string {
+  const pct = Math.round(rate * 100)
+  const toGo = Math.round(PASSING_RATE * 100) - pct
+  return toGo > 0 ? `${toGo}% to go to passing` : 'Passing · keep it above 60%'
+}
+
+/** The next small win on a subject card: what to do to reach the next step. */
+export function nextMilestone(s: SubjectSummary): string {
+  const status = subjectStatus(s)
+  if (status === 'new') return 'Not started yet'
+  if (status === 'starting') return `${MIN_ANSWERED - s.attempts} more for a real score`
+  if (status === 'low') {
+    const k = correctToPass(s)
+    return `${k} right in a row to pass`
+  }
+  return 'Passing · keep it up'
+}
+
 /** How many she got right (attempts × accuracy, rounded). */
 export function correctCount(s: SubjectSummary): number {
   return s.accuracy === null ? 0 : Math.round(s.accuracy * s.attempts)
@@ -116,19 +149,6 @@ export function correctCount(s: SubjectSummary): number {
 export function correctToPass(s: SubjectSummary): number {
   const k = (PASSING_RATE * s.attempts - correctCount(s)) / (1 - PASSING_RATE)
   return Math.max(0, Math.ceil(k - 1e-9))
-}
-
-/** The one-line "what next" in the subject card under the body. */
-export function statusDetail(s: SubjectSummary): string {
-  const status = subjectStatus(s)
-  if (status === 'new') return 'Answer a few to see your score'
-  const right = `${correctCount(s)} of ${s.attempts} correct`
-  if (status === 'starting') return `${right} · ${MIN_ANSWERED - s.attempts} more for a real score`
-  if (status === 'low') {
-    const k = correctToPass(s)
-    return `${right} · ${k} right in a row to pass`
-  }
-  return right
 }
 
 /**

@@ -122,6 +122,16 @@
   }
 }
 
+/* Home "since last time": a subject she practiced since her last visit flashes soft gold once,
+   while its number counts up (no fill-mode, so it returns to its normal look after). */
+/* Only the middle step is set: it starts from and returns to the card's own white and shadow. */
+@keyframes score-bump {
+  25% { background-color: var(--highlight-soft); box-shadow: 0 0 0 3px rgb(233 162 59 / 0.45); }
+}
+.score-bump {
+  animation: score-bump 1.6s ease-out 250ms;
+}
+
 /* Body Explorer: a soft ring that keeps pulsing on the chosen organ. */
 @keyframes explorer-pulse {
   from { r: 4; opacity: 0.9; }
