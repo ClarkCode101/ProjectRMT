@@ -126,14 +126,12 @@ export default function QuestionUploadPage() {
               {stage.added} {stage.added === 1 ? 'question' : 'questions'} added
             </h1>
             {stage.replaced > 0 && <p className="text-white/85">{stage.replaced} existing {stage.replaced === 1 ? 'question was' : 'questions were'} replaced.</p>}
-            <p className="mt-2 text-white/85">
-              A computer read them, so they’re marked <span className="font-semibold text-white">Needs a look</span>. Check that each one is right.
-            </p>
+            <p className="mt-2 text-white/85">They’re ready to use in Practice, Mock exam and Flashcards.</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-            {/* back to the book they went into (with its "Needs a look" filter), or all questions */}
-            <Link to={target.kind === 'free' ? '/questions?view=all&needs=1' : `${backTo}&needs=1`} className={headerButtonClass}>
-              Check them now
+            {/* back to the book they went into, or all questions */}
+            <Link to={target.kind === 'free' ? '/questions?view=all' : backTo} className={headerButtonClass}>
+              See them
             </Link>
             <button type="button" onClick={startOver} className="h-12 rounded-lg px-4 font-semibold text-white/90 hover:bg-white/10 sm:h-11">
               Upload another

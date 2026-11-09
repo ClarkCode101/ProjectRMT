@@ -31,10 +31,11 @@ export async function checkDuplicates(
 /**
  * Saves the reviewed questions:
  * 1. an `uploads` record for the file (the file itself is not stored, migration 0003),
- * 2. the new questions in one insert, marked as from this upload and "unverified",
- * 3. each replaced question overwritten with the new text (also back to "unverified"),
+ * 2. the new questions in one insert, marked as from this upload and "verified" (she reviewed them before saving),
+ * 3. each replaced question overwritten with the new text (also "verified"),
  * 4. uploading into one of her books (`bookId`): the new ones live only in that book (in_subject false), and every
- *    saved question goes into the book, under its topic there (chapter).
+ *    saved question goes into the book, under its topic there (chapter); except a replaced built-in question,
+ *    which stays in its subject book only (built-in questions can't go into her books, migration 0014).
  */
 export async function saveUpload(
   fileName: string,
@@ -55,7 +56,7 @@ export async function saveUpload(
       ...draftToRow(draft),
       source: 'upload' as const,
       upload_id: upload.id,
-      status: 'unverified' as const,
+      status: 'verified' as const, // she reviewed them before saving, so they're ready to use (not "Needs a look")
       ...(bookId !== null && { in_subject: false }),
     }))
     const { data, error } = await supabase.from('questions').insert(rows).select('id')
@@ -64,18 +65,21 @@ export async function saveUpload(
   }
 
   let replaced = 0
+  // Built-in questions she replaced: they stay in their subject book and don't go into hers (migration 0014).
+  const builtinIds = new Set<string>()
   const partlySaved = () => new Error(`Added ${writes.inserts.length} questions, but only ${replaced} of ${writes.replacements.length} replacements were saved.`)
   for (const { id, draft } of writes.replacements) {
     const { data, error } = await supabase
       .from('questions')
-      .update({ ...draftToRow(draft), status: 'unverified' })
+      .update({ ...draftToRow(draft), status: 'verified' })
       .eq('id', id)
       .select('id')
     if (error) throw partlySaved()
     // Nothing changed = it's a built-in question (read-only since migration 0009): save it as her own version instead.
     if (data.length === 0) {
+      builtinIds.add(id)
       try {
-        await saveOverride({ question_id: id, ...draftToRow(draft), status: 'unverified' })
+        await saveOverride({ question_id: id, ...draftToRow(draft), status: 'verified' })
       } catch {
         throw partlySaved()
       }
@@ -88,7 +92,7 @@ export async function saveUpload(
     const byChapter = new Map<string | null, string[]>()
     const put = (id: string, chapter: string | null) => byChapter.set(chapter, [...(byChapter.get(chapter) ?? []), id])
     newIds.forEach((id, i) => put(id, writes.insertChapters[i] ?? null))
-    writes.replacements.forEach((r) => put(r.id, r.chapter))
+    writes.replacements.filter((r) => !builtinIds.has(r.id)).forEach((r) => put(r.id, r.chapter))
     for (const [chapter, ids] of byChapter) await addToBook(bookId, ids, chapter)
   }
   return { added: writes.inserts.length, replaced }
