@@ -33,7 +33,9 @@ and seed questions.
       `0012_merge_books.sql` lets her merge one of her books into another;
       `0013_delete_book_questions.sql` deletes a book's book-only questions with it and cleans up ones left behind;
       `0014_no_builtin_in_books.sql` keeps built-in questions out of her books;
-      `0015_copy_author.sql` shows "by <author>" on books added from Community)
+      `0015_copy_author.sql` shows "by <author>" on books added from Community;
+      `0016_split_topic.sql` turns a topic in her book back into its own book;
+      `0017_merge_skip_duplicates.sql` lets a merge skip the duplicates she ticks)
 3. **Authentication → Sign In / Providers**: keep Email enabled and turn **off**
    "Allow new users to sign up" (the app is private).
 4. **Authentication → Users → Add user**: create her account (email + password,
