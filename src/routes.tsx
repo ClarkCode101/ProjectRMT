@@ -15,6 +15,7 @@ const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'))
 const QuestionsPage = lazy(() => import('@/features/questions/QuestionsPage'))
 const QuestionEditorPage = lazy(() => import('@/features/questions/QuestionEditorPage'))
 const QuestionUploadPage = lazy(() => import('@/features/questions/QuestionUploadPage'))
+const CommunityPage = lazy(() => import('@/features/community/CommunityPage'))
 
 export const router = createBrowserRouter([
   {
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
       { path: '/questions/new', element: <QuestionEditorPage /> },
       { path: '/questions/upload', element: <QuestionUploadPage /> },
       { path: '/questions/:id/edit', element: <QuestionEditorPage /> },
+      { path: '/community', element: <CommunityPage /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
