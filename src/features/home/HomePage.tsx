@@ -56,6 +56,24 @@ function markSeen(key: string) {
   }
 }
 
+// The day the body last danced for reaching the daily goal, on this device (so it dances once a day).
+const GOAL_DANCE_KEY = 'projectrmt:goal-dance-day'
+
+function readDanceDay(): string | null {
+  try {
+    return localStorage.getItem(GOAL_DANCE_KEY)
+  } catch {
+    return null
+  }
+}
+function markDanceDay(day: string) {
+  try {
+    localStorage.setItem(GOAL_DANCE_KEY, day)
+  } catch {
+    // storage blocked: it may dance again on the next visit, that's all
+  }
+}
+
 export default function HomePage() {
   const performance = useTopicPerformance()
   const subjects = useSubjects()
@@ -70,6 +88,19 @@ export default function HomePage() {
   const [seenMilestones, setSeenMilestones] = useState(readSeen)
   // "Since last time": the scores Home showed on her last visit (read once), so what changed can count up.
   const [lastVisit] = useState(readSnapshot)
+
+  // Daily goal reached: the body does a little dance, once a day (the first Home visit after reaching it).
+  // Waits for both her answers and her goal to load, so it never dances on a placeholder goal.
+  const [dancedOn] = useState(readDanceDay)
+  const today = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
+  const goalReached =
+    attempts.isSuccess &&
+    settings.isSuccess &&
+    (dailyActivity(attempts.data, now).at(-1)?.answered ?? 0) >= (settings.data?.dailyTarget ?? DEFAULT_DAILY_TARGET)
+  const celebrate = goalReached && dancedOn !== today
+  useEffect(() => {
+    if (celebrate) markDanceDay(today)
+  }, [celebrate, today])
 
   // Remember today's scores for the next visit (right away, so a refresh doesn't replay the count-up).
   useEffect(() => {
@@ -174,6 +205,7 @@ export default function HomePage() {
         selected={selected}
         previous={changed}
         onSelect={setSelectedId}
+        celebrate={celebrate}
         readout={<ReadinessLine rate={stats.accuracy} from={readinessFrom} countdown={countdown} />}
       />
 

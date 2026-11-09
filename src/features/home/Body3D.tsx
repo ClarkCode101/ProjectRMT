@@ -19,6 +19,8 @@ type Props = {
   onFrame?: (anchors: OrganAnchor[]) => void
   /** gives the page a way to turn the body (the ‹ › buttons) */
   ref?: Ref<Body3DControls>
+  /** true = do a little dance (Home sets it once a day, when the daily goal is reached) */
+  celebrate?: boolean
   className?: string
 }
 
@@ -260,8 +262,29 @@ function sweep(points: THREE.Vector3[], radii: number[], material: THREE.Materia
   return new THREE.Mesh(geometry, material)
 }
 
+/** The four joints the body can move at (both skin copies get their own; the scene moves them together). */
+type Limbs = { armL: THREE.Group; armR: THREE.Group; legL: THREE.Group; legR: THREE.Group }
+
+/**
+ * A joint: a group sitting at `at` (shoulder or hip). Parts added to `.inner` keep their normal positions,
+ * but turning the joint swings them around that point, like an arm around the shoulder.
+ * (There's no elbow or knee bend: each limb is one smooth piece.)
+ */
+function joint(at: THREE.Vector3) {
+  const pivot = new THREE.Group()
+  pivot.position.copy(at)
+  const inner = new THREE.Group()
+  inner.position.copy(at).negate()
+  pivot.add(inner)
+  return { pivot, inner }
+}
+
+const SHOULDER = (side: number) => new THREE.Vector3(side * 0.185, 1.425, 0)
+const HIP = (side: number) => new THREE.Vector3(side * 0.09, 0.93, 0)
+
 function buildSkin(material: THREE.Material) {
   const body = new THREE.Group()
+  const limbs: Partial<Limbs> = {}
   const v = (x: number, y: number, z = 0) => new THREE.Vector3(x, y, z)
   const ball = (radius: [number, number, number], position: THREE.Vector3) => {
     const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), material)
@@ -284,32 +307,43 @@ function buildSkin(material: THREE.Material) {
   body.add(ball([0.1, 0.12, 0.11], v(0, 1.665)))
 
   for (const side of [-1, 1]) {
+    const arm = joint(SHOULDER(side))
+    const leg = joint(HIP(side))
+    body.add(arm.pivot, leg.pivot)
+    if (side < 0) Object.assign(limbs, { armL: arm.pivot, legL: leg.pivot })
+    else Object.assign(limbs, { armR: arm.pivot, legR: leg.pivot })
+
     // Arm in one piece: from inside the shoulder, over the shoulder, down to the wrist; then the hand.
-    body.add(
+    arm.inner.add(
       sweep(
         [v(side * 0.11, 1.445), v(side * 0.185, 1.425), v(side * 0.225, 1.32, 0.005), v(side * 0.248, 1.13, 0.012), v(side * 0.265, 1.0, 0.022), v(side * 0.278, 0.875, 0.03)],
         [0.05, 0.053, 0.046, 0.039, 0.035, 0.029],
         material,
       ),
     )
-    body.add(ball([0.029, 0.029, 0.029], v(side * 0.278, 0.875, 0.03))) // rounds off the wrist
+    arm.inner.add(ball([0.029, 0.029, 0.029], v(side * 0.278, 0.875, 0.03))) // rounds off the wrist
     const hand = ball([0.028, 0.055, 0.017], v(side * 0.284, 0.82, 0.034))
     hand.rotation.z = side * 0.06
-    body.add(hand)
+    arm.inner.add(hand)
 
     // Leg in one piece: hip to ankle, thick thigh, slimmer knee, calf, thin ankle; then the foot.
-    body.add(
+    leg.inner.add(
       sweep(
         [v(side * 0.085, 0.95), v(side * 0.095, 0.72, 0.01), v(side * 0.1, 0.5, 0.015), v(side * 0.1, 0.3), v(side * 0.103, 0.08, -0.01)],
         [0.078, 0.066, 0.05, 0.047, 0.034],
         material,
       ),
     )
-    body.add(ball([0.034, 0.034, 0.034], v(side * 0.103, 0.08, -0.01))) // rounds off the ankle
-    body.add(ball([0.038, 0.028, 0.085], v(side * 0.105, 0.035, 0.035)))
+    leg.inner.add(ball([0.034, 0.034, 0.034], v(side * 0.103, 0.08, -0.01))) // rounds off the ankle
+    leg.inner.add(ball([0.038, 0.028, 0.085], v(side * 0.105, 0.035, 0.035)))
   }
+  body.userData.limbs = limbs as Limbs
   return body
 }
+
+/** What the body says when she pokes it (not an organ). */
+const POKE_WORDS = ['Ouch!', 'Hey!', 'That tickles!', 'Easy there!']
+const DANCE_SECONDS = 3.4
 
 /** True when the browser can draw 3D (WebGL). Some old phones or locked-down browsers can't. */
 function canUseWebGL() {
@@ -324,9 +358,13 @@ function canUseWebGL() {
 /** Not started: the organ shows in this grey until she answers something in its subject. */
 const NOT_STARTED_GREY = new THREE.Color('#B8C4CE')
 
-export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, className }: Props) {
+export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, className, celebrate = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [supported] = useState(canUseWebGL)
+  // The little speech bubble when she pokes the body ("Ouch!"); id restarts its pop-in animation.
+  const [bubble, setBubble] = useState<{ x: number; y: number; text: string; id: number } | null>(null)
+  // The scene puts its "start dancing" function here, so the celebrate prop can reach it.
+  const danceRef = useRef<(() => void) | null>(null)
   // The scene puts its turn function here; the page reaches it through `ref`.
   const rotateRef = useRef<((radians: number) => void) | null>(null)
   useImperativeHandle(ref, () => ({ rotateBy: (radians) => rotateRef.current?.(radians) }), [])
@@ -380,7 +418,8 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
       object.add(shape)
       object.userData.code = spec.code
       figure.add(object)
-      const anchor = spec.anchor ? new THREE.Vector3(...spec.anchor) : center
+      // The card line ends at the fixed anchor, or else at the organ's live position (so it follows a moving arm).
+      const anchor = spec.anchor ? new THREE.Vector3(...spec.anchor) : object.position
       return { code: spec.code, object, center, anchor, color: new THREE.Color(spec.color) }
     })
     // Skin is drawn after the organs so they show through it, in two passes:
@@ -392,6 +431,12 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
     const skin = buildSkin(skinMaterial())
     skin.traverse((o) => (o.renderOrder = 2))
     figure.add(skin)
+    // Both skin copies move together; the blood drop (BBIS) rides on her left arm.
+    const limbSets = [depthOnly.userData.limbs as Limbs, skin.userData.limbs as Limbs]
+    const bloodDrop = organs.find((o) => o.code === 'BBIS')
+    const leftShoulder = SHOULDER(-1)
+    const zAxis = new THREE.Vector3(0, 0, 1)
+    const dropAt = new THREE.Vector3()
 
     // A soft shadow under the feet, so the body stands on the floor instead of floating.
     const shadowCanvas = document.createElement('canvas')
@@ -449,13 +494,64 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
       if (!dragging) return
       dragging = false
       renderer.domElement.style.cursor = 'grab'
-      // Barely moved = a tap: select the organ under the finger.
+      // Barely moved = a tap: select the organ under the finger, or else poke the body.
       if (Math.abs(e.clientX - downX) < 6) {
         const code = pick(e)
         if (code) latest.current.onPick(code)
+        else poke()
       } else if (!reduceMotion) {
         target += velocity * 8 // glide
       }
+    }
+
+    // ---- Play: poke the body (not an organ) and it flinches and says "Ouch!"; three quick pokes and it dances ----
+    let danceStart: number | null = null
+    let flinchStart: number | null = null
+    let pokeTimes: number[] = []
+    let bubbleTimer = 0
+    let bubbleId = 0
+    const ripples: { mesh: THREE.Mesh; start: number }[] = []
+
+    function startDance() {
+      if (reduceMotion) return
+      danceStart = clock.getElapsedTime()
+    }
+    danceRef.current = startDance
+
+    function poke() {
+      // (pick() just aimed the raycaster at the same spot)
+      const hit = raycaster.intersectObject(skin, true)[0]
+      if (!hit) return
+      const now = performance.now()
+      pokeTimes = [...pokeTimes.filter((when) => now - when < 900), now]
+      if (pokeTimes.length >= 3) {
+        pokeTimes = []
+        startDance()
+        return
+      }
+      if (!reduceMotion) {
+        flinchStart = clock.getElapsedTime()
+        // A small ring that spreads out from the spot she touched.
+        const ripple = new THREE.Mesh(
+          new THREE.RingGeometry(0.012, 0.018, 32),
+          new THREE.MeshBasicMaterial({ color: '#0B6382', transparent: true, opacity: 0.7, depthTest: false, side: THREE.DoubleSide }),
+        )
+        ripple.renderOrder = 3
+        ripple.position.copy(hit.point)
+        ripple.lookAt(camera.position)
+        scene.add(ripple)
+        ripples.push({ mesh: ripple, start: clock.getElapsedTime() })
+      }
+      // The speech bubble, just above the spot (in the container's pixels).
+      const onScreen = hit.point.clone().project(camera)
+      setBubble({
+        x: (onScreen.x * 0.5 + 0.5) * width,
+        y: (-onScreen.y * 0.5 + 0.5) * height,
+        text: POKE_WORDS[Math.floor(Math.random() * POKE_WORDS.length)],
+        id: ++bubbleId,
+      })
+      window.clearTimeout(bubbleTimer)
+      bubbleTimer = window.setTimeout(() => setBubble(null), 1100)
     }
 
     const raycaster = new THREE.Raycaster()
@@ -506,6 +602,71 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
       angle += (target - angle) * (reduceMotion ? 1 : 0.12)
       figure.rotation.y = angle
 
+      // Dance and flinch: a pose for the joints and the whole figure, back to standing when done.
+      let armL = 0
+      let armR = 0
+      let legL = 0
+      let legR = 0
+      let bounce = 0
+      let sway = 0
+      let tilt = 0
+      let squash = 0
+      if (danceStart !== null) {
+        const u = t - danceStart
+        if (u > DANCE_SECONDS) danceStart = null
+        else {
+          const ease = Math.min(1, u / 0.3, (DANCE_SECONDS - u) / 0.3) // fade in and out of the moves
+          const beatPhase = u * Math.PI * 2 * 1.8 // about 108 beats a minute
+          bounce = ease * 0.035 * Math.abs(Math.sin(beatPhase))
+          sway = ease * 0.03 * Math.sin(beatPhase / 2)
+          tilt = ease * 0.06 * Math.sin(beatPhase / 2)
+          // Arms take turns going up; legs take turns with a small kick forward.
+          armL = -ease * (0.6 + 0.6 * Math.sin(beatPhase))
+          armR = ease * (0.6 - 0.6 * Math.sin(beatPhase))
+          legL = -ease * 0.3 * Math.max(0, Math.sin(beatPhase / 2))
+          legR = -ease * 0.3 * Math.max(0, -Math.sin(beatPhase / 2))
+        }
+      }
+      if (flinchStart !== null) {
+        const u = t - flinchStart
+        if (u > 0.45) flinchStart = null
+        else {
+          const k = 1 - u / 0.45
+          tilt += Math.sin(u * 60) * 0.035 * k // a quick shake
+          squash = 0.03 * k // and a little "oof"
+        }
+      }
+      figure.position.set(sway, bounce, 0)
+      figure.rotation.z = tilt
+      figure.scale.set(1 + squash * 0.6, 1 - squash, 1 + squash * 0.6)
+      for (const limbs of limbSets) {
+        limbs.armL.rotation.z = armL
+        limbs.armR.rotation.z = armR
+        limbs.legL.rotation.x = legL
+        limbs.legR.rotation.x = legR
+      }
+      if (bloodDrop) {
+        // The drop sits on her left arm, so it swings around the shoulder with it.
+        dropAt.copy(bloodDrop.center).sub(leftShoulder).applyAxisAngle(zAxis, armL).add(leftShoulder)
+        bloodDrop.object.position.copy(dropAt)
+        bloodDrop.object.rotation.z = armL
+      }
+
+      // Poke ripples: spread out and fade, then go away.
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const { mesh, start } = ripples[i]
+        const u = (t - start) / 0.55
+        if (u >= 1) {
+          scene.remove(mesh)
+          mesh.geometry.dispose()
+          ;(mesh.material as THREE.Material).dispose()
+          ripples.splice(i, 1)
+        } else {
+          mesh.scale.setScalar(1 + 3 * u)
+          ;(mesh.material as THREE.MeshBasicMaterial).opacity = 0.7 * (1 - u)
+        }
+      }
+
       const { selectedCode: selected, looks: organLooks, onFrame: report } = latest.current
       // A little life: slow breathing (lungs, about 4 seconds a breath) and a soft heartbeat (about 70 a minute,
       // "lub-dub"). Applied to the shape inside each organ's group, so the chosen organ's grow-and-pulse still works.
@@ -553,6 +714,8 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
 
     return () => {
       cancelAnimationFrame(frame)
+      window.clearTimeout(bubbleTimer)
+      danceRef.current = null
       resize.disconnect()
       io.disconnect()
       rotateRef.current = null
@@ -573,9 +736,26 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
     }
   }, [supported])
 
+  // Daily goal reached: a little dance, shortly after Home opens (Home makes sure it's once a day).
+  useEffect(() => {
+    if (!celebrate) return
+    const id = window.setTimeout(() => danceRef.current?.(), 700)
+    return () => window.clearTimeout(id)
+  }, [celebrate])
+
   return (
-    <div ref={containerRef} className={className} aria-hidden>
+    <div ref={containerRef} className={className} style={{ position: 'relative' }} aria-hidden>
       {!supported && <p className="grid h-full place-items-center p-4 text-center text-sm text-muted-foreground">The 3D body can’t be shown on this device. Use the subject cards instead.</p>}
+      {/* "Ouch!": pops up just above where she poked */}
+      {bubble && (
+        <span
+          key={bubble.id}
+          className="animate-in fade-in zoom-in-75 pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-full bg-card px-3 py-1 font-heading text-sm font-bold whitespace-nowrap text-primary-deep shadow-md ring-1 ring-border duration-150"
+          style={{ left: bubble.x, top: bubble.y - 10 }}
+        >
+          {bubble.text}
+        </span>
+      )}
     </div>
   )
 }

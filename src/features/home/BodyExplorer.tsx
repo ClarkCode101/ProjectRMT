@@ -30,6 +30,7 @@ export function BodyStage({
   previous,
   onSelect,
   readout,
+  celebrate = false,
 }: {
   summary: SubjectSummary[]
   /** the subject in the Next up bar: it glows on the body and gets the solid line */
@@ -39,6 +40,8 @@ export function BodyStage({
   onSelect: (subjectId: number) => void
   /** the overall score, shown with the body like a scan readout (bottom right on laptops, under Turn on smaller screens) */
   readout?: ReactNode
+  /** true = the body does a little dance (daily goal reached) */
+  celebrate?: boolean
 }) {
   const mapped = summary.filter((s) => ORGANS[s.code])
   const controls = useRef<Body3DControls | null>(null)
@@ -173,6 +176,7 @@ export function BodyStage({
               }}
               onFrame={drawLines}
               ref={controls}
+              celebrate={celebrate}
               className="size-full"
             />
           </Suspense>
