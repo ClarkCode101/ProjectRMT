@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Database, QuestionSource, VerifyStatus } from '@/lib/database.types'
+import { markBankStale } from '@/lib/offline/bank'
 import { parseChoiceNotes, parseChoices } from '@/lib/quiz'
 import { draftToRow, type QuestionDraft } from '@/lib/questions'
 import { supabase } from '@/lib/supabase'
@@ -66,6 +67,8 @@ export function useRefreshBank() {
     void queryClient.invalidateQueries({ queryKey: ['source-counts'] })
     // a question moved in or out of its subject (in_subject) changes that subject's score
     void queryClient.invalidateQueries({ queryKey: ['topic-performance'] })
+    // the copy saved for offline Practice is now out of date: get a new one at the next chance
+    markBankStale()
   }
 }
 

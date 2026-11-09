@@ -1,6 +1,8 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { Json, QuestionSource, SessionMode } from '@/lib/database.types'
 import { parseChoiceNotes, parseChoices } from '@/lib/quiz'
+import { allAttempts, filterBankQuestions, withOfflineFallback } from '@/lib/offline/bank'
+import { queueAttempt, queueFinish, queueSession } from '@/lib/offline/outbox'
 import type { HistoryAttempt } from '@/lib/selection'
 import { supabase } from '@/lib/supabase'
 
@@ -65,6 +67,14 @@ const ID_BATCH = 100
  */
 export async function fetchQuestions(filters: QuizFilters, subjectTopicIds: number[]): Promise<QuizQuestion[]> {
   if (!filters.questionIds && filters.source === 'upload' && !filters.uploadId) return [] // no file chosen yet
+  // No internet: the same filters on the copy saved on this device (lib/offline/bank.ts).
+  return withOfflineFallback(
+    () => fetchQuestionsOnline(filters, subjectTopicIds),
+    (bank) => filterBankQuestions(bank.questions, filters, subjectTopicIds),
+  )
+}
+
+async function fetchQuestionsOnline(filters: QuizFilters, subjectTopicIds: number[]): Promise<QuizQuestion[]> {
 
   // Exact questions (a book, her mistakes, a saved mock).
   if (filters.questionIds) return fetchByIds(filters.questionIds, false)
@@ -160,21 +170,24 @@ export function questionPoolOptions(filters: QuizFilters, subjectTopicIds: numbe
 /** Every answer she has given (which question, right or wrong, when). Used by smart selection. */
 export const attemptHistoryOptions = queryOptions({
   queryKey: ['attempt-history'],
-  queryFn: async (): Promise<HistoryAttempt[]> => {
-    const all: HistoryAttempt[] = []
-    for (let from = 0; ; from += PAGE_SIZE) {
-      // RLS returns only her own attempts.
-      const { data, error } = await supabase
-        .from('attempts')
-        .select('question_id, is_correct, created_at')
-        .order('id')
-        .range(from, from + PAGE_SIZE - 1)
-      if (error) throw error
-      all.push(...data)
-      if (data.length < PAGE_SIZE) return all
-    }
-  },
+  // No internet: the answers saved on this device, plus the ones still waiting to be sent.
+  queryFn: () => withOfflineFallback(fetchAttemptHistory, allAttempts),
 })
+
+async function fetchAttemptHistory(): Promise<HistoryAttempt[]> {
+  const all: HistoryAttempt[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    // RLS returns only her own attempts.
+    const { data, error } = await supabase
+      .from('attempts')
+      .select('question_id, is_correct, created_at')
+      .order('id')
+      .range(from, from + PAGE_SIZE - 1)
+    if (error) throw error
+    all.push(...data)
+    if (data.length < PAGE_SIZE) return all
+  }
+}
 
 export type UploadSummary = { id: string; file_name: string; question_count: number | null; created_at: string | null }
 
@@ -194,30 +207,41 @@ export function useUploads() {
   })
 }
 
-/** Creates a quiz_sessions row and returns its id. */
+/** The filters as saved with a session (quiz_sessions.filters). */
+function sessionFilters(filters: QuizFilters) {
+  return {
+    source: filters.source,
+    upload_id: filters.source === 'upload' ? (filters.uploadId ?? null) : null,
+    verified_only: Boolean(filters.verifiedOnly),
+    subject_id: filters.subjectId,
+    topic_id: filters.topicId,
+    from_mistakes: Boolean(filters.questionIds) && !filters.bookId,
+    book_id: filters.bookId ?? null,
+  }
+}
+
+/** Creates a quiz_sessions row and returns its id. Needs internet (Mock exam). */
 export async function startSession(filters: QuizFilters, totalItems: number, mode: SessionMode = 'practice'): Promise<string> {
   const { data, error } = await supabase
     .from('quiz_sessions')
-    .insert({
-      mode,
-      total_items: totalItems,
-      filters: {
-        source: filters.source,
-        upload_id: filters.source === 'upload' ? (filters.uploadId ?? null) : null,
-        verified_only: Boolean(filters.verifiedOnly),
-        subject_id: filters.subjectId,
-        topic_id: filters.topicId,
-        from_mistakes: Boolean(filters.questionIds) && !filters.bookId,
-        book_id: filters.bookId ?? null,
-      },
-    })
+    .insert({ mode, total_items: totalItems, filters: sessionFilters(filters) })
     .select('id')
     .single()
   if (error) throw error
   return data.id
 }
 
-export async function recordAttempt(attempt: {
+// ---------- Practice: saved through the outbox, so it works offline (lib/offline/outbox.ts) ----------
+
+/** Starts a Practice session on the device and returns its id right away (no waiting for the server). */
+export function queuePracticeSession(filters: QuizFilters, totalItems: number): string {
+  const id = crypto.randomUUID()
+  queueSession({ id, mode: 'practice', total_items: totalItems, filters: sessionFilters(filters), started_at: new Date().toISOString() })
+  return id
+}
+
+/** Saves one Practice answer. */
+export function queuePracticeAnswer(answer: {
   sessionId: string
   questionId: string
   /** index in the ORIGINAL choices order, not the shuffled display order */
@@ -225,14 +249,20 @@ export async function recordAttempt(attempt: {
   isCorrect: boolean
   timeMs: number
 }) {
-  const { error } = await supabase.from('attempts').insert({
-    session_id: attempt.sessionId,
-    question_id: attempt.questionId,
-    selected_index: attempt.selectedIndex,
-    is_correct: attempt.isCorrect,
-    time_ms: attempt.timeMs,
+  queueAttempt({
+    id: crypto.randomUUID(),
+    session_id: answer.sessionId,
+    question_id: answer.questionId,
+    selected_index: answer.selectedIndex,
+    is_correct: answer.isCorrect,
+    time_ms: answer.timeMs,
+    created_at: new Date().toISOString(),
   })
-  if (error) throw error
+}
+
+/** Saves the score of a Practice session. */
+export function queuePracticeFinish(sessionId: string, score: number, durationSec: number) {
+  queueFinish(sessionId, score, durationSec)
 }
 
 /** Saves many answers at once (the mock exam saves them all when she submits). */

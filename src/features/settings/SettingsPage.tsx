@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { CalendarClock, Check, RotateCcw, TabletSmartphone, Target, UserRound } from 'lucide-react'
+import { CalendarClock, Check, CloudDownload, CloudUpload, RotateCcw, TabletSmartphone, Target, UserRound } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { ShareKey } from '@/components/InstallHint'
@@ -7,6 +7,9 @@ import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/authContext'
 import { useInstall } from '@/lib/install'
+import { downloadBank, useBankStatus } from '@/lib/offline/bank'
+import { usePendingAnswerCount } from '@/lib/offline/outbox'
+import { useOnline } from '@/lib/offline/useOfflineSync'
 import { countdownLabel, daysUntil, isValidDate } from '@/lib/planner'
 import { firstName, saveFirstName } from '@/lib/profile'
 import { cn } from '@/lib/utils'
@@ -200,6 +203,66 @@ function InstallApp() {
   )
 }
 
+/** "just now", "5 min ago", "3 h ago", or the date. */
+function timeAgo(time: number, now: number) {
+  const minutes = Math.round((now - time) / 60_000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes} min ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours} h ago`
+  return `on ${new Date(time).toLocaleDateString()}`
+}
+
+/** Offline practice: what's saved on this device, and answers still waiting to reach the server (lib/offline). */
+function OfflinePractice() {
+  const bank = useBankStatus()
+  const pending = usePendingAnswerCount()
+  const online = useOnline()
+  const [failed, setFailed] = useState(false)
+  const [now] = useState(() => Date.now()) // when the page opened, for "updated 2 h ago"
+
+  async function update() {
+    setFailed(false)
+    setFailed(!(await downloadBank()))
+  }
+
+  return (
+    <Section icon={<CloudDownload className="size-5" aria-hidden />} title="Offline practice" hint="Practice works without internet, using questions saved on this device.">
+      <div className="space-y-3">
+        <div className="space-y-1 text-sm" aria-live="polite">
+          <p>
+            {bank.downloading ? (
+              'Saving questions…'
+            ) : bank.questionCount !== null && bank.savedAt !== null ? (
+              <>
+                <span className="font-semibold tabular-nums">{bank.questionCount.toLocaleString()}</span> questions saved · updated{' '}
+                {timeAgo(bank.savedAt, now)}
+              </>
+            ) : (
+              'Nothing saved yet. It saves by itself while you’re online.'
+            )}
+          </p>
+          {pending > 0 ? (
+            <p className="inline-flex items-center gap-1.5 font-semibold">
+              <CloudUpload className="size-4 text-primary" aria-hidden />
+              {pending} {pending === 1 ? 'answer' : 'answers'} waiting to sync
+            </p>
+          ) : (
+            <p className="inline-flex items-center gap-1.5 text-muted-foreground">
+              <Check className="size-4 text-correct" aria-hidden />
+              All answers synced
+            </p>
+          )}
+          {failed && <p className="text-destructive">Couldn’t update. Check your internet connection and try again.</p>}
+        </div>
+        <Button type="button" variant="outline" className="h-11 rounded-lg px-4 font-semibold" disabled={!online || bank.downloading} onClick={update}>
+          {online ? 'Update now' : 'Offline'}
+        </Button>
+      </div>
+    </Section>
+  )
+}
+
 const CONFIRM_WORD = 'RESET'
 
 /** Danger zone: wipes her progress after she types RESET. Kept apart from the form so it can't be hit by accident. */
@@ -310,6 +373,7 @@ export default function SettingsPage() {
       <PageHeader title="Settings" subtitle="You and your study plan." />
       <SettingsForm initial={settings.data} />
       <InstallApp />
+      <OfflinePractice />
       <ResetProgress />
     </div>
   )

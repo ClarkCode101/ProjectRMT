@@ -16,7 +16,14 @@ export const missingEnvVars = [
 /** False until the settings are filled in; the app shows a setup screen instead of crashing. */
 export const isSupabaseConfigured = missingEnvVars.length === 0
 
-export const supabase = createClient<Database>(
-  url ?? 'http://localhost:54321',
-  publishableKey ?? 'missing-publishable-key',
-)
+const supabaseUrl = url ?? 'http://localhost:54321'
+
+/**
+ * Where supabase-js keeps her login on this device (localStorage). This is the same name it picks by itself,
+ * written out here so the offline mode can read it (see AuthProvider). Changing it would log everyone out.
+ */
+export const AUTH_STORAGE_KEY = `sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`
+
+export const supabase = createClient<Database>(supabaseUrl, publishableKey ?? 'missing-publishable-key', {
+  auth: { storageKey: AUTH_STORAGE_KEY },
+})

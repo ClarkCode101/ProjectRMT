@@ -15,6 +15,7 @@ import {
 import { Suspense, useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '@/features/auth/authContext'
+import { useOfflineSync } from '@/lib/offline/useOfflineSync'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { Dialog } from './Dialog'
@@ -100,6 +101,9 @@ export function AppLayout() {
   const [focusMode, setFocusMode] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+
+  // Sends answers waiting on the device and keeps the offline question bank fresh.
+  useOfflineSync(session?.user.id ?? null)
 
   const email = session?.user.email ?? ''
   const displayName = email.split('@')[0] || 'Reviewer'

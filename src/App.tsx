@@ -7,7 +7,9 @@ import { router } from './routes'
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { staleTime: 60 * 1000, retry: 1 },
+    // offlineFirst: still run a query when the device is offline (instead of waiting forever),
+    // so it can answer from the copy saved on the device (lib/offline/bank.ts).
+    queries: { staleTime: 60 * 1000, retry: 1, networkMode: 'offlineFirst' },
   },
 })
 

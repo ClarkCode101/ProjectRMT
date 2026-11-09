@@ -14,9 +14,9 @@ import { buildHistory, pickQuestions } from '@/lib/selection'
 import {
   attemptHistoryOptions,
   fetchQuestions,
-  finishSession,
+  queuePracticeFinish,
+  queuePracticeSession,
   questionPoolOptions,
-  startSession,
   type QuizFilters,
   type QuizQuestion,
 } from './api'
@@ -96,10 +96,15 @@ export default function PracticePage() {
         setMessage('No questions match these filters yet. Try a different subject, topic, or source.')
         return
       }
-      const sessionId = await startSession(filters, picked.length)
+      // Saved on the device first and sent in the background, so this works offline too.
+      const sessionId = queuePracticeSession(filters, picked.length)
       setStage({ name: 'quiz', sessionId, questions: picked, startedAt: Date.now() })
     } catch {
-      setMessage('Couldn’t load the questions. Check your internet connection and try again.')
+      setMessage(
+        navigator.onLine
+          ? 'Couldn’t load the questions. Check your internet connection and try again.'
+          : 'You’re offline, and no questions are saved on this device yet. Open the app once with internet to save them.',
+      )
     } finally {
       setStarting(false)
     }
@@ -149,9 +154,7 @@ export default function PracticePage() {
     if (stage.name !== 'quiz') return
     const score = answers.filter((a) => a.isCorrect).length
     setStage({ name: 'results', answers })
-    finishSession(stage.sessionId, score, Math.round((Date.now() - stage.startedAt) / 1000)).catch(() => {
-      // Not critical: attempts are already saved; only the session summary is missing.
-    })
+    queuePracticeFinish(stage.sessionId, score, Math.round((Date.now() - stage.startedAt) / 1000))
     refreshAfterAnswers()
   }
 
@@ -167,7 +170,7 @@ export default function PracticePage() {
     if (stage.name !== 'quiz') return
     if (answers.length > 0) {
       const score = answers.filter((a) => a.isCorrect).length
-      finishSession(stage.sessionId, score, Math.round((Date.now() - stage.startedAt) / 1000)).catch(() => {})
+      queuePracticeFinish(stage.sessionId, score, Math.round((Date.now() - stage.startedAt) / 1000))
       refreshAfterAnswers()
     }
     restart()

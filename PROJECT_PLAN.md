@@ -454,7 +454,7 @@ mtle-reviewer/
 13. [x] Flashcards (ts-fsrs)
 14. [x] Reference page, planner, streak, encouragements (notes live in src/data/encouragements.ts, not the encouragements table)
 15. [ ] Image-based questions (blood smears, parasite ova, urine crystals, colonies) — moved up from Phase 4
-16. [ ] PWA + iOS polish — installable (manifest, icons, service worker caching the app shell), install tip + Settings "Install app" done; still to do: offline quiz from cached questions + queued attempts
+16. [ ] PWA + iOS polish — installable (manifest, icons, service worker caching the app shell), install tip + Settings "Install app" done; offline Practice done (lib/offline: saved question bank in IndexedDB + outbox for answers); Mock exam and Flashcards still need internet
 17. [x] Deploy to Vercel/Netlify — deployed on Cloudflare Pages instead
 
 ---

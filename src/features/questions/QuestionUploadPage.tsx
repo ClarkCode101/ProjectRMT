@@ -5,6 +5,7 @@ import { Link, useLocation, useSearchParams } from 'react-router'
 import { backLinkClass, headerButtonClass, PageHeader } from '@/components/dashboard'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { heroButtonClass } from '@/components/report'
+import { markBankStale } from '@/lib/offline/bank'
 import { ACCEPTED_FILES, extractText, UnreadableFileError } from '@/lib/parsers/extractText'
 import { parseQuestions } from '@/lib/parsers/questionParser'
 import { useBookTopicId, useSubjects, useTopics } from '@/lib/referenceData'
@@ -163,6 +164,7 @@ export default function QuestionUploadPage() {
           void queryClient.invalidateQueries({ queryKey: ['uploads'] }) // new file for "One upload"
           void queryClient.invalidateQueries({ queryKey: ['books'] }) // they went into her book
           void queryClient.invalidateQueries({ queryKey: ['source-counts'] })
+          markBankStale() // new questions: save them for offline Practice at the next chance
           setStage({ name: 'done', added, replaced, fileName: stage.fileName })
         }}
       />

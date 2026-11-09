@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { withOfflineFallback } from './offline/bank'
 import { supabase } from './supabase'
 
 // Subjects and topics rarely change, so cache them for a long time.
@@ -15,11 +16,16 @@ type SubjectRow = { id: number; code: string; name: string; sort_order: number |
 const subjectsQuery = {
   queryKey: ['subjects'],
   staleTime: ONE_HOUR,
-  queryFn: async (): Promise<SubjectRow[]> => {
-    const { data, error } = await supabase.from('subjects').select('id, code, name, sort_order').order('sort_order')
-    if (error) throw error
-    return data
-  },
+  // No internet: the copy saved on this device (lib/offline/bank.ts).
+  queryFn: () =>
+    withOfflineFallback(
+      async (): Promise<SubjectRow[]> => {
+        const { data, error } = await supabase.from('subjects').select('id, code, name, sort_order').order('sort_order')
+        if (error) throw error
+        return data
+      },
+      (bank) => bank.subjects,
+    ),
 }
 
 /** The six board subjects (everything that lists, picks or scores subjects uses this). */
@@ -58,10 +64,14 @@ export function useTopics() {
   return useQuery({
     queryKey: ['topics'],
     staleTime: ONE_HOUR,
-    queryFn: async () => {
-      const { data, error } = await supabase.from('topics').select('id, subject_id, name').order('name')
-      if (error) throw error
-      return data
-    },
+    queryFn: () =>
+      withOfflineFallback(
+        async () => {
+          const { data, error } = await supabase.from('topics').select('id, subject_id, name').order('name')
+          if (error) throw error
+          return data
+        },
+        (bank) => bank.topics,
+      ),
   })
 }

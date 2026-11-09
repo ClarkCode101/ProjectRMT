@@ -1,4 +1,4 @@
-import { Check, Flag, Flame, X } from 'lucide-react'
+import { Check, CloudOff, Flag, Flame, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { SampleRun, type SampleState } from '@/components/report'
@@ -8,7 +8,8 @@ import { shuffledChoiceOrder } from '@/lib/quiz'
 import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { setQuestionStatus, useRefreshBank } from '@/features/questions/api'
-import { recordAttempt, type QuizQuestion } from './api'
+import { useOnline } from '@/lib/offline/useOfflineSync'
+import { queuePracticeAnswer, type QuizQuestion } from './api'
 
 export type AnswerResult = { question: QuizQuestion; selectedIndex: number; isCorrect: boolean }
 
@@ -50,7 +51,7 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
   const [choiceOrders] = useState(() => questions.map((q) => shuffledChoiceOrder(q.choices.length)))
   const [current, setCurrent] = useState(0)
   const [answers, setAnswers] = useState<AnswerResult[]>([])
-  const [saveError, setSaveError] = useState(false)
+  const online = useOnline()
   // Questions she flagged as wrong or unclear in this quiz ("Report a problem"); 'error' = couldn't save the flag.
   const [reported, setReported] = useState<Record<string, 'saving' | 'done' | 'error'>>({})
   // When the current question appeared on screen (for time_ms).
@@ -87,14 +88,14 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
     }
     setAnswers((prev) => [...prev, result])
 
-    // Save in the background; the quiz keeps going even if this fails.
-    recordAttempt({
+    // Saved on the device right away, then sent in the background (waits there while offline).
+    queuePracticeAnswer({
       sessionId,
       questionId: question.id,
       selectedIndex: originalIndex,
       isCorrect: result.isCorrect,
       timeMs: Date.now() - shownAt.current,
-    }).catch(() => setSaveError(true))
+    })
   }
 
   function next() {
@@ -271,9 +272,10 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
         </div>
       )}
 
-      {saveError && (
-        <p role="alert" className="text-sm text-destructive">
-          Some answers weren’t saved. Check your internet connection; you can keep going.
+      {!online && (
+        <p role="status" className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+          <CloudOff className="size-4 shrink-0" aria-hidden />
+          Offline. Your answers are saved on this device and sync when you’re back online.
         </p>
       )}
 
