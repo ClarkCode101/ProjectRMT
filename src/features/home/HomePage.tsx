@@ -1,4 +1,4 @@
-import { CalendarClock, Flame, RotateCcw } from 'lucide-react'
+import { CalendarClock, Flame } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { Dialog } from '@/components/Dialog'
@@ -7,7 +7,6 @@ import { NoteCard } from '@/components/NoteCard'
 import { Button } from '@/components/ui/button'
 import { NOTES } from '@/data/encouragements'
 import { useTopicPerformance } from '@/features/dashboard/api'
-import { useMistakes } from '@/features/mistakes/api'
 import { DEFAULT_DAILY_TARGET, useStudySettings } from '@/features/settings/api'
 import { currentStreak, dailyActivity } from '@/lib/activity'
 import { countdownLabel, daysUntil, milestoneKey, milestoneReached, pickNote } from '@/lib/planner'
@@ -54,7 +53,6 @@ function markSeen(key: string) {
 }
 
 export default function HomePage() {
-  const mistakes = useMistakes()
   const performance = useTopicPerformance()
   const subjects = useSubjects()
   const topics = useTopics()
@@ -75,7 +73,6 @@ export default function HomePage() {
   const stats = overallStats(summary)
   const selected = summary.find((s) => s.subjectId === selectedId) ?? pickFocus(summary)
   const selectedTopicIds = topics.data.filter((t) => t.subject_id === selected?.subjectId).map((t) => t.id)
-  const mistakeCount = mistakes.data?.length ?? 0
 
   // Planner: days to the board exam.
   const examDate = settings.data?.examDate ?? null
@@ -118,16 +115,7 @@ export default function HomePage() {
               {countdown ?? (examDate ? 'Set your next exam date' : 'Set your exam date')}
             </Link>
           )}
-          {mistakeCount > 0 && (
-            <Link
-              to="/practice?from=mistakes"
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-card px-4 text-sm font-semibold shadow-[0_8px_20px_-14px_rgb(7_71_94/0.5)] outline-none hover:ring-1 hover:ring-primary focus-visible:ring-3 focus-visible:ring-ring/40"
-            >
-              <RotateCcw className="size-4" aria-hidden />
-              Review again
-              <span className="rounded-full bg-wrong-soft px-1.5 font-bold text-wrong tabular-nums">{mistakeCount}</span>
-            </Link>
-          )}
+          {/* Review again lives on Practice (and after each quiz), not here: Home stays about the body and one next step. */}
           </div>
         </div>
         <BodyStage summary={summary} selected={selected} onSelect={setSelectedId} />
