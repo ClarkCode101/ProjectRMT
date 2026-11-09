@@ -12,6 +12,8 @@ export type Body3DControls = { rotateBy: (radians: number) => void }
 
 type Props = {
   selectedCode: string | undefined
+  /** how each organ looks, by subject code: grey (not started), its color, or glowing (passing) */
+  looks?: Record<string, 'grey' | 'color' | 'glow'>
   onPick: (code: string) => void
   /** called every frame with the organ positions in CSS pixels, relative to the canvas */
   onFrame?: (anchors: OrganAnchor[]) => void
@@ -20,7 +22,16 @@ type Props = {
   className?: string
 }
 
-type OrganSpec = { code: string; color: string; build: () => THREE.Object3D }
+type OrganSpec = {
+  code: string
+  color: string
+  build: () => THREE.Object3D
+  /**
+   * Where its card line ends, if not the middle of the organ. For the pairs (lungs, kidneys) the middle is the
+   * empty space between them (for the lungs, that's where the heart is), so the line goes to the one on its card's side.
+   */
+  anchor?: [number, number, number]
+}
 
 function ellipsoid(radius: [number, number, number], position: [number, number, number], material: THREE.Material) {
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), material)
@@ -38,6 +49,7 @@ const ORGAN_SPECS: OrganSpec[] = [
   {
     code: 'MICRO',
     color: '#4FB6E8',
+    anchor: [-0.07, 1.31, 0], // the lung on the left, where its card is
     build: () => {
       const g = new THREE.Group()
       const m = organMaterial('#4FB6E8')
@@ -72,6 +84,7 @@ const ORGAN_SPECS: OrganSpec[] = [
   {
     code: 'CM',
     color: '#E8875A',
+    anchor: [0.065, 1.07, -0.03], // the kidney on the right, where its card is
     build: () => {
       const g = new THREE.Group()
       const m = organMaterial('#E8875A')
@@ -125,7 +138,7 @@ function skinMaterial() {
       void main() {
         float rim = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.2);
         vec3 color = mix(fillColor, rimColor, rim);
-        gl_FragColor = vec4(color, 0.16 + rim * 0.7);
+        gl_FragColor = vec4(color, 0.14 + rim * 0.75);
       }`,
   })
 }
@@ -186,16 +199,19 @@ function canUseWebGL() {
   }
 }
 
-export default function Body3D({ selectedCode, onPick, onFrame, ref, className }: Props) {
+/** Not started: the organ shows in this grey until she answers something in its subject. */
+const NOT_STARTED_GREY = new THREE.Color('#B8C4CE')
+
+export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [supported] = useState(canUseWebGL)
   // The scene puts its turn function here; the page reaches it through `ref`.
   const rotateRef = useRef<((radians: number) => void) | null>(null)
   useImperativeHandle(ref, () => ({ rotateBy: (radians) => rotateRef.current?.(radians) }), [])
   // Latest props, read inside the animation loop without restarting the scene.
-  const latest = useRef({ selectedCode, onPick, onFrame })
+  const latest = useRef({ selectedCode, looks, onPick, onFrame })
   useEffect(() => {
-    latest.current = { selectedCode, onPick, onFrame }
+    latest.current = { selectedCode, looks, onPick, onFrame }
   })
 
   useEffect(() => {
@@ -238,7 +254,8 @@ export default function Body3D({ selectedCode, onPick, onFrame, ref, className }
       object.add(shape)
       object.userData.code = spec.code
       figure.add(object)
-      return { code: spec.code, object, center }
+      const anchor = spec.anchor ? new THREE.Vector3(...spec.anchor) : center
+      return { code: spec.code, object, center, anchor, color: new THREE.Color(spec.color) }
     })
     // Skin is drawn after the organs so they show through it, in two passes:
     // 1) an invisible pass that only records the nearest surface, 2) the glass look on that surface only.
@@ -346,15 +363,21 @@ export default function Body3D({ selectedCode, onPick, onFrame, ref, className }
       angle += (target - angle) * (reduceMotion ? 1 : 0.12)
       figure.rotation.y = angle
 
-      const { selectedCode: selected, onFrame: report } = latest.current
+      const { selectedCode: selected, looks: organLooks, onFrame: report } = latest.current
       for (const o of organs) {
         const isSelected = o.code === selected
         const pulse = isSelected && !reduceMotion ? 1 + Math.sin(t * 4) * 0.06 : 1
         o.object.scale.setScalar(isSelected ? 1.12 * pulse : 1)
+        // Grey until she starts the subject, then its own color; a passing subject glows a little.
+        // (No look given, e.g. scores still loading: its color.)
+        const look = organLooks?.[o.code] ?? 'color'
+        const shown = look === 'grey' ? NOT_STARTED_GREY : o.color
         o.object.traverse((child) => {
           if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-            // Organs stay solid (see-through organs would hide behind the skin's first pass); the chosen one glows.
-            child.material.emissiveIntensity = isSelected ? 0.6 : 0.1
+            // Organs stay solid (see-through organs would hide behind the skin's first pass); the chosen one glows most.
+            child.material.color.copy(shown)
+            child.material.emissive.copy(shown)
+            child.material.emissiveIntensity = isSelected ? 0.6 : look === 'glow' ? 0.35 : 0.1
           }
         })
       }
@@ -365,7 +388,7 @@ export default function Body3D({ selectedCode, onPick, onFrame, ref, className }
         figure.updateMatrixWorld()
         report(
           organs.map((o) => {
-            worldPos.copy(o.center).applyMatrix4(figure.matrixWorld)
+            worldPos.copy(o.anchor).applyMatrix4(figure.matrixWorld)
             // Facing us when the organ is on the camera side of the body (kidneys sit a bit behind).
             const facing = worldPos.z > -0.07
             projected.copy(worldPos).project(camera)

@@ -3,12 +3,12 @@ import { lazy, Suspense, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { Dialog } from '@/components/Dialog'
 import { heroButtonClass, LowFlag } from '@/components/report'
-import { formatPercent, type SubjectSummary } from '@/lib/quiz'
+import { formatPercent, PASSING_RATE, type SubjectSummary } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
 import type { Body3DControls, OrganAnchor } from './Body3D'
 import { WarmupCard } from './HomeCards'
 import { OrganIcon } from './OrganIcon'
-import { ORGANS, STATUS_COLOR, STATUS_TEXT, subjectStatus } from './organs'
+import { ORGANS, organLook, STATUS_COLOR, STATUS_TEXT, statusDetail, subjectStatus, type SubjectStatus } from './organs'
 
 // three.js is big, so the 3D body downloads separately, after the rest of Home shows.
 const Body3D = lazy(() => import('./Body3D'))
@@ -62,14 +62,18 @@ export function BodyStage({
     }
   }
 
+  // How each organ looks on the body: grey (not started), its color, or glowing (passing).
+  const looks = Object.fromEntries(mapped.map((s) => [s.code, organLook(s)]))
+
   // Each side's cards top to bottom, in the order their organs sit in the body.
   const bySide = (side: 'left' | 'right') => mapped.filter((s) => ORGANS[s.code].side === side).sort((a, b) => ORGANS[a.code].rank - ORGANS[b.code].rank)
   const left = bySide('left')
   const right = bySide('right')
 
   function card(s: SubjectSummary) {
-    const organ = ORGANS[s.code]
     const status = subjectStatus(s)
+    // Not a real score yet (fewer than 10 answered): the line under the score says how many she answered.
+    const scoreIsReal = status === 'low' || status === 'passing'
     const isSelected = s.subjectId === selected?.subjectId
     return (
       <button
@@ -83,25 +87,33 @@ export function BodyStage({
         onClick={() => onSelect(s.subjectId)}
         className={cn(
           'rounded-xl bg-card p-2 text-left shadow-[0_10px_28px_-18px_rgb(7_71_94/0.55)] outline-none transition-[box-shadow,transform] focus-visible:ring-3 focus-visible:ring-ring/40 lg:p-2.5',
-          isSelected ? 'ring-2 ring-primary' : 'hover:-translate-y-0.5',
+          isSelected ? 'bg-primary/[0.04] ring-2 ring-primary' : 'hover:-translate-y-0.5',
         )}
       >
-        <span className="flex h-10 items-center justify-center rounded-lg bg-background tall:h-14">
-          <OrganIcon code={s.code} className="size-7 tall:size-10" />
+        {/* A label, not a report: which subject (and its organ, tying the card to the body), then how she's doing.
+            The score and the ring (colored by status) are what she sees first; details are in the subject card below. */}
+        <span className="block font-heading text-sm leading-tight font-bold">{s.code}</span>
+        {/* Its own line, so "Brain & tissue" and "Blood donation" show in full. */}
+        <span className="block truncate text-xs leading-snug text-muted-foreground max-lg:hidden">{ORGANS[s.code].name}</span>
+        <span className="mt-1.5 flex min-w-0 items-center gap-2 lg:gap-2.5">
+          <ScoreRing rate={s.accuracy} status={status} code={s.code} />
+          <span className="min-w-0">
+            <span className={cn('block font-heading text-2xl leading-none font-bold tabular-nums', status === 'new' && 'text-muted-foreground')}>
+              {s.accuracy === null ? '—' : formatPercent(s.accuracy)}
+            </span>
+            <span className={cn('mt-1 block truncate text-xs leading-snug', scoreIsReal ? cn('font-semibold', STATUS_COLOR[status]) : 'text-muted-foreground')}>
+              {status === 'starting' ? `${s.attempts} answered` : STATUS_TEXT[status]}
+            </span>
+          </span>
         </span>
-        <span className="mt-1.5 block font-heading text-sm leading-tight font-bold">
-          {s.code} <span className="font-sans text-xs font-normal text-muted-foreground max-lg:hidden">{organ.name}</span>
-        </span>
-        <span className="block text-[11px] leading-snug text-muted-foreground">
-          Score: <span className="font-semibold text-foreground">{s.accuracy === null ? '—' : formatPercent(s.accuracy)}</span>
-        </span>
-        <span className={cn('block truncate text-[11px] leading-snug font-semibold', STATUS_COLOR[status])}>{STATUS_TEXT[status]}</span>
       </button>
     )
   }
 
   // Width of each card column on laptops; the 3D view sits between them.
-  const column = 'lg:absolute lg:top-0 lg:bottom-11 lg:flex lg:w-32 lg:flex-col lg:justify-evenly xl:w-36'
+  // The 3D box (below) is wider than the gap between these columns, so the cards sit over its empty sides.
+  // If the box were only the gap, a narrow box would make the camera back up and the body shrink.
+  const column = 'lg:absolute lg:top-0 lg:bottom-11 lg:flex lg:w-36 lg:flex-col lg:justify-evenly xl:w-40'
 
   return (
     <section aria-labelledby="body-heading" className="flex flex-col gap-3 md:min-h-0 md:flex-1">
@@ -117,11 +129,12 @@ export function BodyStage({
 
         <div
           ref={canvasBoxRef}
-          className="relative order-1 mx-auto h-[24rem] w-full max-w-[22rem] md:h-auto md:min-h-48 md:max-w-none md:flex-1 lg:absolute lg:w-auto lg:inset-x-32 lg:top-0 lg:bottom-11 xl:inset-x-36"
+          className="relative order-1 mx-auto h-[24rem] w-full max-w-[22rem] md:h-auto md:min-h-48 md:max-w-none md:flex-1 lg:absolute lg:w-auto lg:inset-x-28 lg:top-0 lg:bottom-11 xl:inset-x-32"
         >
           <Suspense fallback={<div className="grid h-full place-items-center text-sm text-muted-foreground">Loading 3D body…</div>}>
             <Body3D
               selectedCode={selected?.code}
+              looks={looks}
               onPick={(code) => {
                 const subject = mapped.find((s) => s.code === code)
                 if (subject) onSelect(subject.subjectId)
@@ -144,11 +157,12 @@ export function BodyStage({
               }}
               className="transition-opacity duration-300"
             >
+              {/* The chosen subject's line is solid and thicker, so card and organ clearly point at each other. */}
               <polyline
                 fill="none"
                 stroke={s.subjectId === selected?.subjectId ? 'var(--primary)' : 'var(--muted-foreground)'}
-                strokeWidth="1.2"
-                strokeDasharray="4 4"
+                strokeWidth={s.subjectId === selected?.subjectId ? 2 : 1.5}
+                strokeDasharray={s.subjectId === selected?.subjectId ? undefined : '4 3'}
               />
               <circle r="3.5" fill={s.subjectId === selected?.subjectId ? 'var(--primary)' : 'var(--muted-foreground)'} />
             </g>
@@ -170,6 +184,10 @@ export function BodyStage({
               <button type="button" aria-label="Turn the body left" onClick={() => controls.current?.rotateBy(-Math.PI / 4)} className="flex size-8 items-center justify-center rounded-full outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white">
                 <ChevronLeft className="size-4" aria-hidden />
               </button>
+              {/* Says what the arrows do (they turn the body, they don't change page). */}
+              <span aria-hidden className="px-1 text-xs font-bold whitespace-nowrap">
+                Turn
+              </span>
               <button type="button" aria-label="Turn the body right" onClick={() => controls.current?.rotateBy(Math.PI / 4)} className="flex size-8 items-center justify-center rounded-full outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white">
                 <ChevronRight className="size-4" aria-hidden />
               </button>
@@ -180,6 +198,47 @@ export function BodyStage({
       </div>
 
     </section>
+  )
+}
+
+/** Ring color by how she's doing, matching the status line under the score. */
+const RING_COLOR: Record<SubjectStatus, string> = {
+  new: 'var(--secondary)',
+  starting: 'var(--primary)',
+  low: '#B97A12', // amber, dark enough to see on white (3:1)
+  passing: 'var(--correct)',
+}
+
+/**
+ * The organ's icon inside a ring that fills with the score, colored by status (not by organ:
+ * red would read as "bad" for the heart and the blood drop). The tick marks 60% (passing).
+ */
+function ScoreRing({ rate, status, code }: { rate: number | null; status: SubjectStatus; code: string }) {
+  const color = RING_COLOR[status]
+  const r = 15
+  const length = 2 * Math.PI * r
+  const tick = (PASSING_RATE * 360 - 90) * (Math.PI / 180) // 60% of the way round, starting at the top
+  return (
+    <span className="relative grid size-10 shrink-0 place-items-center lg:size-11 tall:size-12">
+      <svg viewBox="0 0 36 36" className="absolute inset-0 size-full -rotate-90" aria-hidden>
+        <circle cx="18" cy="18" r={r} fill="none" stroke="var(--secondary)" strokeWidth="3.5" />
+        {rate !== null && rate > 0 && (
+          <circle cx="18" cy="18" r={r} fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" strokeDasharray={`${rate * length} ${length}`} />
+        )}
+      </svg>
+      <svg viewBox="0 0 36 36" className="absolute inset-0 size-full" aria-hidden>
+        <line
+          x1={18 + 12 * Math.cos(tick)}
+          y1={18 + 12 * Math.sin(tick)}
+          x2={18 + 19 * Math.cos(tick)}
+          y2={18 + 19 * Math.sin(tick)}
+          stroke="var(--foreground)"
+          strokeOpacity="0.4"
+          strokeWidth="1.5"
+        />
+      </svg>
+      <OrganIcon code={code} className="size-4 lg:size-5" />
+    </span>
   )
 }
 
@@ -217,19 +276,18 @@ export function SubjectInfoCard({ subject, subjectTopicIds }: { subject: Subject
             <h2 id="subject-info-heading" title={subject.name} className="line-clamp-2 font-heading text-lg leading-tight font-bold">
               {subject.name}
             </h2>
-            <p className="mt-0.5 truncate text-sm text-muted-foreground tabular-nums">
-              {subject.attempts === 0 ? 'Nothing answered yet' : `${subject.attempts} answered`}
-              {weakest && (
-                <>
-                  {' · Weakest: '}
-                  <span className="font-semibold text-foreground">{weakest.name}</span>{' '}
-                  <span className={cn('font-semibold', weakest.belowPassing ? 'text-wrong' : 'text-foreground')}>{formatPercent(weakest.accuracy)}</span>
-                </>
-              )}
-            </p>
+            {/* What next, in numbers: "7 of 21 correct · 6 right in a row to pass" (the Home cards only show the score). */}
+            <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">{subject.attempts === 0 ? 'Nothing answered yet' : statusDetail(subject)}</p>
+            {weakest && (
+              <p className="truncate text-sm text-muted-foreground">
+                {'Weakest: '}
+                <span className="font-semibold text-foreground">{weakest.name}</span>{' '}
+                <span className={cn('font-semibold', weakest.belowPassing ? 'text-wrong' : 'text-foreground')}>{formatPercent(weakest.accuracy)}</span>
+              </p>
+            )}
           </div>
           <div className="shrink-0 text-right">
-            <p className={cn('font-heading text-3xl leading-none font-bold tabular-nums tall:text-4xl', status === 'low' && 'text-wrong')}>
+            <p className={cn('font-heading text-3xl leading-none font-bold tabular-nums tall:text-4xl', status === 'low' && STATUS_COLOR.low)}>
               {subject.accuracy === null ? '—' : formatPercent(subject.accuracy)}
             </p>
             <p className={cn('mt-1 flex items-center justify-end gap-1.5 text-xs font-semibold whitespace-nowrap', STATUS_COLOR[status])}>
