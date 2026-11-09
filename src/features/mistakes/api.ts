@@ -35,7 +35,7 @@ export function useMistakes() {
       if (wrong.length === 0) return []
 
       const { data: questions, error: qError } = await supabase
-        .from('questions')
+        .from('my_questions') // with her own fixes to built-in questions (migration 0009)
         // Everything a quiz needs, so "Review again" can start without loading the questions a second time.
         .select('id, topic_id, source, stem, choices, correct_index, explanation, choice_notes')
         .in(

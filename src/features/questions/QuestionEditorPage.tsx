@@ -252,7 +252,7 @@ function EditorForm({
     setSaveError(null)
     try {
       if (existing) {
-        await updateQuestion(existing.id, draft)
+        await updateQuestion(existing.id, draft, { builtin: isBuiltin })
       } else {
         const newId = await addQuestion(draft, inSubject)
         // The question is already saved here. If putting it in the book fails, don't report a failed save
@@ -350,7 +350,7 @@ function EditorForm({
         {isBuiltin && (
           <p className="flex items-start gap-2 rounded-md border border-highlight/50 bg-highlight-soft p-3 text-sm">
             <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
-            This is a built-in question. Your changes replace the original.
+            This is a built-in question. Your changes are saved for your account only.
           </p>
         )}
         {addedCount > 0 && (

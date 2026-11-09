@@ -635,13 +635,13 @@ function QuestionRow({
           <div className="flex flex-wrap gap-2 pt-1">
             {verified ? (
               // Quiet: most questions are fine; this is only for when she spots a problem here.
-              <Button variant="outline" className="h-10 rounded-lg" disabled={busy} onClick={() => run(() => setQuestionStatus(q.id, 'unverified'))}>
+              <Button variant="outline" className="h-10 rounded-lg" disabled={busy} onClick={() => run(() => setQuestionStatus(q.id, 'unverified', !isMine))}>
                 <Flag className="size-4" aria-hidden />
                 Report a problem
               </Button>
             ) : (
               // After fixing it (Edit) or checking it, one tap clears the flag.
-              <Button className="h-10 rounded-lg" disabled={busy} onClick={() => run(() => setQuestionStatus(q.id, 'verified'))}>
+              <Button className="h-10 rounded-lg" disabled={busy} onClick={() => run(() => setQuestionStatus(q.id, 'verified', !isMine))}>
                 <BadgeCheck className="size-4" aria-hidden />
                 Looks right now
               </Button>

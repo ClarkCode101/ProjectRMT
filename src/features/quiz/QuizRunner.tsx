@@ -68,7 +68,9 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
   /** Marks the question as "needs a look" (shown as Reported on the Questions page), to fix later. */
   function report(id: string) {
     setReported((r) => ({ ...r, [id]: 'saving' }))
-    setQuestionStatus(id, 'unverified')
+    // On a built-in question the flag is saved for her account only (migration 0009).
+    const builtin = questions.find((q) => q.id === id)?.source === 'builtin'
+    setQuestionStatus(id, 'unverified', builtin)
       .then(() => {
         setReported((r) => ({ ...r, [id]: 'done' }))
         refreshBank() // so the Questions page shows it as Reported

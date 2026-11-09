@@ -59,6 +59,7 @@ const ID_BATCH = 100
 
 /**
  * Loads candidate questions. RLS already limits this to built-in + her own questions.
+ * Reads the my_questions view (migration 0009), so built-in questions come with her own fixes and status.
  * `subjectTopicIds` = ids of the topics in the chosen subject (needed because
  * questions only store topic_id, not subject_id).
  */
@@ -85,7 +86,7 @@ export async function fetchQuestions(filters: QuizFilters, subjectTopicIds: numb
   const all: QuizQuestion[] = []
   for (let from = 0; ; from += PAGE_SIZE) {
     let query = supabase
-      .from('questions')
+      .from('my_questions')
       .select(QUESTION_COLUMNS)
       .order('id') // a fixed order so pages don't overlap
       .range(from, from + PAGE_SIZE - 1)
@@ -115,7 +116,7 @@ export async function fetchQuestions(filters: QuizFilters, subjectTopicIds: numb
 async function fetchByIds(ids: readonly string[], verifiedOnly: boolean): Promise<QuizQuestion[]> {
   const all: QuizQuestion[] = []
   for (let i = 0; i < ids.length; i += ID_BATCH) {
-    let query = supabase.from('questions').select(QUESTION_COLUMNS).in('id', ids.slice(i, i + ID_BATCH))
+    let query = supabase.from('my_questions').select(QUESTION_COLUMNS).in('id', ids.slice(i, i + ID_BATCH))
     if (verifiedOnly) query = query.eq('status', 'verified')
     const { data, error } = await query
     if (error) throw error

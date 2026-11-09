@@ -1,7 +1,7 @@
 import { draftToRow, type QuestionDraft } from '@/lib/questions'
 import { supabase } from '@/lib/supabase'
 import type { Match } from '@/lib/uploadReview'
-import { findSimilar } from './api'
+import { findSimilar, saveOverride } from './api'
 import { addToBook } from './booksApi'
 
 /**
@@ -64,12 +64,22 @@ export async function saveUpload(
   }
 
   let replaced = 0
+  const partlySaved = () => new Error(`Added ${writes.inserts.length} questions, but only ${replaced} of ${writes.replacements.length} replacements were saved.`)
   for (const { id, draft } of writes.replacements) {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('questions')
       .update({ ...draftToRow(draft), status: 'unverified' })
       .eq('id', id)
-    if (error) throw new Error(`Added ${writes.inserts.length} questions, but only ${replaced} of ${writes.replacements.length} replacements were saved.`)
+      .select('id')
+    if (error) throw partlySaved()
+    // Nothing changed = it's a built-in question (read-only since migration 0009): save it as her own version instead.
+    if (data.length === 0) {
+      try {
+        await saveOverride({ question_id: id, ...draftToRow(draft), status: 'unverified' })
+      } catch {
+        throw partlySaved()
+      }
+    }
     replaced++
   }
 

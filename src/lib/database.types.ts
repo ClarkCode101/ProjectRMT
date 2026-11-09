@@ -115,8 +115,50 @@ export type Database = {
       libraries: Table<{ owner_id: string; slot: number; name: string }, 'slot' | 'name'>
       // chapter: migration 0005 (her own name for a group of questions inside the book; null = none)
       book_questions: Table<{ book_id: string; question_id: string; added_at: string; chapter: string | null }, 'book_id' | 'question_id'>
+      // migration 0009: her own changes to a built-in question (other accounts don't see them)
+      question_overrides: Table<
+        {
+          user_id: string
+          question_id: string
+          /** topic_id, stem, choices and correct_index are all null when she only changed the status */
+          topic_id: number | null
+          stem: string | null
+          choices: Json | null
+          correct_index: number | null
+          explanation: string | null
+          choice_notes: Json | null
+          difficulty: number | null
+          /** null = same status as the built-in question */
+          status: VerifyStatus | null
+          updated_at: string
+        },
+        'question_id'
+      >
     }
     Views: {
+      /** migration 0009: every question she can see, with her own changes to built-in ones on top. Read from this. */
+      my_questions: {
+        Row: {
+          id: string
+          owner_id: string | null
+          source: QuestionSource
+          upload_id: string | null
+          image_path: string | null
+          in_subject: boolean
+          created_at: string | null
+          topic_id: number
+          stem: string
+          choices: Json
+          correct_index: number
+          explanation: string | null
+          choice_notes: Json | null
+          difficulty: number | null
+          status: VerifyStatus
+          /** true = she edited this built-in question */
+          edited: boolean
+        }
+        Relationships: []
+      }
       topic_performance: {
         Row: { user_id: string; subject_id: number; topic_id: number; attempts: number; accuracy: number }
         Relationships: []

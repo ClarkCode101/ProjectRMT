@@ -26,6 +26,8 @@ and seed questions.
    3. Every `supabase/seed/02_questions_*.sql` file (built-in questions, one file per subject, any order)
    4. `supabase/migrations/0002_edit_builtin_questions.sql` (lets her verify and fix built-in questions)
    5. `supabase/migrations/0003_upload_file_optional.sql` (uploads are read in the browser; files are not stored)
+   6. Every later file in `supabase/migrations/`, in number order (`0009_per_user_builtin_edits.sql`
+      makes fixes to built-in questions per account, so one account's edits don't change them for others)
 3. **Authentication → Sign In / Providers**: keep Email enabled and turn **off**
    "Allow new users to sign up" (the app is private).
 4. **Authentication → Users → Add user**: create her account (email + password,

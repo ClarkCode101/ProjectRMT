@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { QuestionSource, VerifyStatus } from '@/lib/database.types'
+import type { Database, QuestionSource, VerifyStatus } from '@/lib/database.types'
 import { parseChoiceNotes, parseChoices } from '@/lib/quiz'
 import { draftToRow, type QuestionDraft } from '@/lib/questions'
 import { supabase } from '@/lib/supabase'
@@ -26,7 +26,10 @@ const COLUMNS = 'id, owner_id, source, topic_id, stem, choices, correct_index, e
 // Supabase returns at most 1000 rows per request, so load the bank in pages.
 const PAGE_SIZE = 1000
 
-/** Every question she can see (built-in + her own), newest first. RLS does the "her own" part. */
+/**
+ * Every question she can see (built-in + her own), newest first. RLS does the "her own" part.
+ * Read from the my_questions view (migration 0009) so built-in questions show her own fixes.
+ */
 export function useQuestionBank() {
   return useQuery({
     queryKey: ['question-bank'],
@@ -34,7 +37,7 @@ export function useQuestionBank() {
       const all: BankQuestion[] = []
       for (let from = 0; ; from += PAGE_SIZE) {
         const { data, error } = await supabase
-          .from('questions')
+          .from('my_questions')
           .select(COLUMNS)
           .order('created_at', { ascending: false })
           .order('id')
@@ -80,8 +83,25 @@ export async function addQuestion(draft: QuestionDraft, inSubject = true): Promi
   return data.id
 }
 
-/** Saves changes to a question (hers, or a built-in one she is fixing). `inSubject` only for her own questions. */
-export async function updateQuestion(id: string, draft: QuestionDraft, inSubject?: boolean) {
+/**
+ * Built-in questions are shared by every account, so her changes to one are saved in question_overrides
+ * under her own id (migration 0009). Other accounts keep seeing the original.
+ * "upsert" = add her row the first time, change it after that.
+ */
+export async function saveOverride(changes: Omit<Database['public']['Tables']['question_overrides']['Insert'], 'user_id'>) {
+  const { error } = await supabase
+    .from('question_overrides')
+    .upsert({ ...changes, updated_at: new Date().toISOString() }, { onConflict: 'user_id,question_id' })
+  if (error) throw error
+}
+
+/**
+ * Saves changes to a question: one of hers (changed in place), or a built-in one she is fixing
+ * (`builtin` true: saved for her only). `inSubject` only for her own questions.
+ */
+export async function updateQuestion(id: string, draft: QuestionDraft, options: { builtin?: boolean; inSubject?: boolean } = {}) {
+  if (options.builtin) return saveOverride({ question_id: id, ...draftToRow(draft) })
+  const { inSubject } = options
   const { error } = await supabase
     .from('questions')
     .update({ ...draftToRow(draft), ...(inSubject !== undefined && { in_subject: inSubject }) })
@@ -98,7 +118,9 @@ export async function setQuestionPlace(id: string, topicId: number, inSubject: b
   if (error) throw error
 }
 
-export async function setQuestionStatus(id: string, status: VerifyStatus) {
+/** Verified / reported. On a built-in question (`builtin` true) it is saved for her only. */
+export async function setQuestionStatus(id: string, status: VerifyStatus, builtin: boolean) {
+  if (builtin) return saveOverride({ question_id: id, status })
   const { error } = await supabase.from('questions').update({ status }).eq('id', id)
   if (error) throw error
 }
