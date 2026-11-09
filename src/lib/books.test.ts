@@ -14,6 +14,8 @@ import {
   libraryNames,
   MAX_STARS,
   roomLeft,
+  mergeTopicName,
+  questionsOnlyIn,
   starsFor,
 } from './books'
 
@@ -153,5 +155,53 @@ describe('booksContaining', () => {
 
   it('is empty for a question in no book', () => {
     expect(booksContaining(books, 'q9')).toEqual([])
+  })
+})
+
+describe('mergeTopicName', () => {
+  it('uses the book name as it is when it fits', () => {
+    expect(mergeTopicName('Ewan')).toBe('Ewan')
+  })
+
+  it('squeezes extra spaces', () => {
+    expect(mergeTopicName('  Hema   week 3 ')).toBe('Hema week 3')
+  })
+
+  it('cuts a long name to fit a topic, with no space left at the end', () => {
+    const long = 'A'.repeat(CHAPTER_MAX - 1) + ' and more words after it'
+    const result = mergeTopicName(long)
+    expect(result.length).toBeLessThanOrEqual(CHAPTER_MAX)
+    expect(result).toBe('A'.repeat(CHAPTER_MAX - 1))
+  })
+
+  it('always gives a name cleanChapter accepts', () => {
+    const name = mergeTopicName('x'.repeat(60))
+    expect(cleanChapter(name)).toEqual({ chapter: name })
+  })
+})
+
+describe('questionsOnlyIn', () => {
+  const books = [
+    { id: 'b1', questionIds: new Set(['mine-only', 'mine-shared', 'mine-subject', 'builtin']) },
+    { id: 'b2', questionIds: new Set(['mine-shared']) },
+  ]
+  const questions = [
+    { id: 'mine-only', owner_id: 'me', in_subject: false }, // only in b1: deleted with it
+    { id: 'mine-shared', owner_id: 'me', in_subject: false }, // also in b2: stays
+    { id: 'mine-subject', owner_id: 'me', in_subject: true }, // in a subject: stays
+    { id: 'builtin', owner_id: null, in_subject: true }, // built-in: never deleted
+    { id: 'elsewhere', owner_id: 'me', in_subject: false }, // not in b1 at all
+  ]
+
+  it('counts only her book-only questions that are in no other book', () => {
+    expect(questionsOnlyIn('b1', books, questions)).toBe(1)
+  })
+
+  it('is 0 when every question also lives somewhere else', () => {
+    expect(questionsOnlyIn('b2', books, questions)).toBe(0)
+  })
+
+  it('is 0 for a book that does not exist', () => {
+    expect(questionsOnlyIn('nope', books, questions)).toBe(0)
   })
 })

@@ -129,6 +129,30 @@ export function chapterList(chapters: ReadonlyMap<string, string | null>): { cha
   return { chapters: list, unfiled }
 }
 
+/**
+ * The topic a merged book's questions get in the other book (migration 0012): the book's name, cut to fit a
+ * topic (book names can be 60 letters, topics only 40). She can still change it before merging.
+ */
+export function mergeTopicName(bookTitle: string): string {
+  return bookTitle.replace(/\s+/g, ' ').trim().slice(0, CHAPTER_MAX).trim()
+}
+
+/**
+ * How many questions would be deleted with a book: hers (not built-in), not in a subject, and in no other book.
+ * The same rule as delete_book (migration 0013), so the Delete dialog can say how many.
+ */
+export function questionsOnlyIn(
+  bookId: string,
+  books: readonly { id: string; questionIds: ReadonlySet<string> }[],
+  questions: readonly { id: string; owner_id: string | null; in_subject: boolean }[],
+): number {
+  const book = books.find((b) => b.id === bookId)
+  if (!book) return 0
+  return questions.filter(
+    (q) => book.questionIds.has(q.id) && q.owner_id !== null && !q.in_subject && !books.some((b) => b.id !== bookId && b.questionIds.has(q.id)),
+  ).length
+}
+
 /** Which books a question is in, from the list of every book and its questions. */
 export function booksContaining<T extends { id: string; questionIds: ReadonlySet<string> }>(books: readonly T[], questionId: string): T[] {
   return books.filter((b) => b.questionIds.has(questionId))
