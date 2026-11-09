@@ -1,4 +1,4 @@
-import { BookOpen, Check, CircleCheck, Search, Users, X } from 'lucide-react'
+import { BookOpen, Check, CircleCheck, Search, TriangleAlert, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { PageHeader } from '@/components/dashboard'
@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { BOOK_SPINE, libraryNames as defaultLibraryNames, roomLeft } from '@/lib/books'
 import { communityErrorMessage, filterCommunityBooks, sortCommunityBooks, subjectsInUse, timesAddedLabel, type CommunityBook, type CommunitySort } from '@/lib/community'
-import { BOOK_SUBJECT_CODE, useSubjects } from '@/lib/referenceData'
+import { findMergeDuplicates, makePlaceOf, type MergeDuplicate } from '@/lib/mergeDuplicates'
+import { BOOK_SUBJECT_CODE, useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
+import { useQuestionBank } from '@/features/questions/api'
 import { ChipRadio } from '@/features/questions/QuestionFormParts'
 import { useBooks, useLibraryNames } from '@/features/questions/booksApi'
-import { addCommunityBook, useCommunityBooks, useCommunityPreview, useRefreshCommunity } from './api'
+import { addCommunityBook, useCommunityBooks, useCommunityPreview, useCommunityStems, useRefreshCommunity } from './api'
 
 // The Community shelf (migration 0010): books that classmates shared. Tap one to peek inside, then
 // "Add to my library" makes her own copy. The copy is hers to keep, even if the author deletes theirs.
@@ -205,6 +207,9 @@ function BookCard({ book, onOpen }: { book: CommunityBook; onOpen: () => void })
 /** One shared book, up close: what's in it, then "Add to my library" at the bottom (the thumb's reach on an iPad). */
 function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityBook; libraryNames: string[]; roomLeft: number[]; onClose: () => void }) {
   const preview = useCommunityPreview(book.id)
+  // The duplicate check only matters while she can still add it (not her own book, not added yet).
+  const canAdd = !book.isMine && !book.myCopyId
+  const duplicates = useAddDuplicates(canAdd ? book.id : null)
   const refreshCommunity = useRefreshCommunity()
   const firstWithRoom = roomLeft.findIndex((n) => n > 0) + 1 // 0 = every library is full
   const [library, setLibrary] = useState(firstWithRoom || 1)
@@ -296,7 +301,7 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
       {book.isMine ? (
         <div className="space-y-3">
           <p className="rounded-md bg-secondary px-3 py-2 text-sm">
-            This is your book. To stop sharing it, open it and tap the pencil next to its name.
+            This is your book. To stop sharing it, open it and tap the Share to Community button at the top.
           </p>
           <OpenBookLink id={book.id} label="Open your book" />
         </div>
@@ -315,6 +320,8 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
         </div>
       ) : (
         <div className="space-y-3">
+          {duplicates && <DuplicateWarning check={duplicates} total={book.questionCount} />}
+
           {/* Which library the copy goes in. A full one can't be picked. */}
           <fieldset>
             <legend className="mb-1.5 font-bold">Put it in</legend>
@@ -363,6 +370,70 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
         </div>
       )}
     </div>
+  )
+}
+
+type DuplicateCheck = { status: 'checking' } | { status: 'done'; found: MergeDuplicate[] }
+
+/**
+ * The questions in a shared book that look like ones she already has (same check as merge and upload: every
+ * question she has, 60% alike or more). null = no check (nothing to check, or migration 0020 isn't run yet).
+ */
+function useAddDuplicates(bookId: string | null): DuplicateCheck | null {
+  const stems = useCommunityStems(bookId)
+  const bank = useQuestionBank()
+  const topics = useTopics()
+  const subjects = useSubjects()
+  const books = useBooks()
+  if (bookId === null || stems.isError || bank.isError) return null
+  if (stems.isPending || bank.isPending || topics.isPending || subjects.isPending || books.isPending) return { status: 'checking' }
+  const placeOf = makePlaceOf(topics.data ?? [], subjects.data ?? [], books.data ?? [])
+  const mine = bank.data.map((q) => ({ id: q.id, stem: q.stem, place: placeOf(q) }))
+  return { status: 'done', found: findMergeDuplicates(stems.data, mine) }
+}
+
+/** Above "Add to my library": a heads-up, not a stop. Adding still copies every question (she decides). */
+function DuplicateWarning({ check, total }: { check: DuplicateCheck; total: number }) {
+  if (check.status === 'checking') {
+    return <p className="text-sm text-muted-foreground">Checking for questions you already have…</p>
+  }
+  const found = check.found
+  if (found.length === 0) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <CircleCheck className="size-4 shrink-0 text-correct" aria-hidden />
+        None of these look like questions you already have.
+      </p>
+    )
+  }
+  return (
+    <section aria-labelledby="community-dupes-heading" className="min-w-0 rounded-lg border border-highlight/50 bg-highlight-soft/50 p-3">
+      <h3 id="community-dupes-heading" className="flex items-center gap-1.5 font-bold">
+        <TriangleAlert className="size-4 shrink-0" aria-hidden />
+        <span className="tabular-nums">
+          {found.length} of {plural(total, 'question')}
+        </span>{' '}
+        {found.length === 1 ? 'looks' : 'look'} like {found.length === 1 ? 'one' : 'ones'} you already have
+      </h3>
+      <p className="mt-0.5 text-xs text-muted-foreground">They’ll still be added with the book. Tap a question to compare.</p>
+      <ul className="binder-scroll mt-2 max-h-[24dvh] space-y-1.5 overflow-y-auto pr-1">
+        {found.map((d) => (
+          <li key={d.incomingId} className="rounded-md bg-card px-2.5 py-2">
+            <details className="group min-w-0">
+              <summary className="cursor-pointer list-none rounded outline-none focus-visible:ring-3 focus-visible:ring-ring/40 [&::-webkit-details-marker]:hidden">
+                <span className={cn('mr-1.5 inline-block rounded-full px-1.5 text-[11px] font-bold', d.exact ? 'bg-wrong-soft text-wrong' : 'bg-secondary text-foreground')}>
+                  {d.exact ? 'Same' : `${Math.round(d.score * 100)}% alike`}
+                </span>
+                <span className="text-sm font-semibold group-open:font-bold">{d.incomingStem}</span>
+              </summary>
+              <p className="mt-1.5 border-l-2 border-primary/30 pl-2 text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">Already in {d.existingPlace}:</span> {d.existingStem}
+              </p>
+            </details>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 

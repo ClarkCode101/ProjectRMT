@@ -16,6 +16,7 @@ import { useTopicPerformance } from '@/features/dashboard/api'
 import { attemptHistoryOptions } from '@/features/quiz/api'
 import { reviewStatesOptions } from '@/features/flashcards/api'
 import { countDue } from '@/lib/fsrs'
+import { makePlaceOf } from '@/lib/mergeDuplicates'
 import { useQuery } from '@tanstack/react-query'
 import { deleteQuestion, setQuestionStatus, useQuestionBank, useRefreshBank, type BankQuestion } from './api'
 import { AddToBookDialog, BookDialog, ChapterDialog, LibraryDialog, MergeBookDialog, MergeIntoSubjectDialog, RenameTopicDialog, ShareDialog, SplitTopicDialog, TopicMenuDialog } from './BookDialogs'
@@ -276,17 +277,7 @@ function QuestionBankView({
   }
 
   // ---------- Where a question lives, for the merge duplicate check ("CC · Ewan", "book “Test”") ----------
-  const placeOf = useMemo(() => {
-    const topicById = new Map(topics.map((t) => [t.id, t]))
-    const codeById = new Map(subjects.map((s) => [s.id, s.code]))
-    return (q: { id: string; topic_id: number; in_subject: boolean; subject_topic?: string | null }) => {
-      const t = topicById.get(q.topic_id)
-      const code = t ? codeById.get(t.subject_id) : undefined
-      if (q.in_subject && code) return `${code} · ${q.subject_topic ?? t?.name ?? ''}`
-      const inBook = books.find((b) => b.questionIds.has(q.id))
-      return inBook ? `book “${inBook.title}”` : 'your questions'
-    }
-  }, [topics, subjects, books])
+  const placeOf = useMemo(() => makePlaceOf(topics, subjects, books), [topics, subjects, books])
 
   // ---------- Her topics' ⋯ menu: the same Rename / Move to its own book, for a topic in her book or in a subject ----------
   const topicActions = book && contents

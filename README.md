@@ -37,7 +37,8 @@ and seed questions.
       `0016_split_topic.sql` turns a topic in her book back into its own book;
       `0017_merge_skip_duplicates.sql` lets a merge skip the duplicates she ticks;
       `0018_rename_topic.sql` renames a topic in her book, for every question under it;
-      `0019_merge_into_subject.sql` merges one of her books into a subject book, under her own topic there)
+      `0019_merge_into_subject.sql` merges one of her books into a subject book, under her own topic there;
+      `0020_community_book_stems.sql` lets Community warn about questions she already has before adding a book)
 3. **Authentication → Sign In / Providers**: keep Email enabled and turn **off**
    "Allow new users to sign up" (the app is private).
 4. **Authentication → Users → Add user**: create her account (email + password,

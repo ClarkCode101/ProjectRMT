@@ -1,5 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { findMergeDuplicates, SIMILAR_AT, similarity } from './mergeDuplicates'
+import { findMergeDuplicates, makePlaceOf, SIMILAR_AT, similarity } from './mergeDuplicates'
+
+describe('makePlaceOf', () => {
+  const placeOf = makePlaceOf(
+    [{ id: 7, subject_id: 1, name: 'Enzymes' }],
+    [{ id: 1, code: 'CC' }],
+    [{ title: 'Test', questionIds: new Set(['q-book']) }],
+  )
+
+  it('names the subject and her topic, or the board topic when she has none', () => {
+    expect(placeOf({ id: 'q1', topic_id: 7, in_subject: true, subject_topic: 'Ewan' })).toBe('CC · Ewan')
+    expect(placeOf({ id: 'q2', topic_id: 7, in_subject: true, subject_topic: null })).toBe('CC · Enzymes')
+  })
+
+  it('names her book for a question that lives only in a book', () => {
+    expect(placeOf({ id: 'q-book', topic_id: 7, in_subject: false })).toBe('book “Test”')
+  })
+
+  it('falls back to "your questions" when it is in neither', () => {
+    expect(placeOf({ id: 'q-lost', topic_id: 99, in_subject: false })).toBe('your questions')
+  })
+})
 
 describe('similarity', () => {
   it('is 1 for the same text, ignoring capitals, punctuation and spaces', () => {

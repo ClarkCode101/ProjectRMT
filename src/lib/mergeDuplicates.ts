@@ -32,6 +32,27 @@ export function similarity(a: string, b: string): number {
   return overlap(trigrams(normalizeStem(a)), trigrams(normalizeStem(b)))
 }
 
+/**
+ * Makes the "where does this question live" label for a duplicate: "CC · Ewan" (in a subject, under her topic or
+ * the board topic), "book “Test”" (only in one of her books), or "your questions".
+ * Used by the merge dialogs and by Community's check before adding a book.
+ */
+export function makePlaceOf(
+  topics: readonly { id: number; subject_id: number; name: string }[],
+  subjects: readonly { id: number; code: string }[],
+  books: readonly { title: string; questionIds: ReadonlySet<string> }[],
+) {
+  const topicById = new Map(topics.map((t) => [t.id, t]))
+  const codeById = new Map(subjects.map((s) => [s.id, s.code]))
+  return (q: { id: string; topic_id: number; in_subject: boolean; subject_topic?: string | null }) => {
+    const t = topicById.get(q.topic_id)
+    const code = t ? codeById.get(t.subject_id) : undefined
+    if (q.in_subject && code) return `${code} · ${q.subject_topic ?? t?.name ?? ''}`
+    const inBook = books.find((b) => b.questionIds.has(q.id))
+    return inBook ? `book “${inBook.title}”` : 'your questions'
+  }
+}
+
 export type MergeDuplicate = {
   /** the question coming in from the book being merged */
   incomingId: string

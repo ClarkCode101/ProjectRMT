@@ -43,6 +43,23 @@ export function useCommunityPreview(bookId: string | null) {
   })
 }
 
+/**
+ * Every question's text in a shared book (migration 0020), for the duplicate check before adding it.
+ * Fails quietly if 0020 hasn't been run yet (the sheet then just skips the check).
+ */
+export function useCommunityStems(bookId: string | null) {
+  return useQuery({
+    queryKey: ['community', 'stems', bookId],
+    enabled: bookId !== null,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('community_book_stems', { p_book_id: bookId! })
+      if (error) throw error
+      return data.map((q) => ({ id: q.question_id, stem: q.stem }))
+    },
+  })
+}
+
 /** After sharing, unsharing or adding: load the Community list, her books and her questions again. */
 export function useRefreshCommunity() {
   const queryClient = useQueryClient()

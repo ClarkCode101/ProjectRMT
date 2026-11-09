@@ -219,6 +219,11 @@ export type Database = {
         Args: { p_book_id: string; p_limit?: number }
         Returns: { question_id: string; stem: string; subject_code: string; chapter: string | null }[]
       }
+      // migration 0020: every question's text in a shared book, for the duplicate check before adding it
+      community_book_stems: {
+        Args: { p_book_id: string }
+        Returns: { question_id: string; stem: string }[]
+      }
       add_community_book: {
         Args: { p_book_id: string; p_library: number }
         Returns: string
