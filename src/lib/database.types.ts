@@ -55,6 +55,9 @@ export type Database = {
           status: VerifyStatus
           /** false = lives only in her book (migration 0006): not in its subject's lists, scores or quizzes */
           in_subject: boolean
+          /** copied from Community and not edited since: who wrote it, and from which shared book (migration 0016) */
+          copied_author: string | null
+          copied_from_book: string | null
           normalized_stem: string | null
           stem_hash: string | null
           created_at: string | null
@@ -218,8 +221,14 @@ export type Database = {
       }
       // migration 0012: move every question of one book into another under one topic, then delete the first
       merge_books: {
-        Args: { p_source: string; p_target: string; p_chapter: string }
+        // p_skip: migration 0017, the incoming duplicates she chose to skip
+        Args: { p_source: string; p_target: string; p_chapter: string; p_skip?: string[] }
         Returns: number
+      }
+      // migration 0016: a topic in one of her books becomes its own book; returns the new book's id
+      split_topic: {
+        Args: { p_book_id: string; p_chapter: string; p_library: number }
+        Returns: string
       }
       // migration 0015: the author's first name for each of her books copied from Community (read live)
       my_book_authors: {
