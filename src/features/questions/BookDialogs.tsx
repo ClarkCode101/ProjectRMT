@@ -1,4 +1,4 @@
-import { Check, Combine, Plus, TriangleAlert, Users, X } from 'lucide-react'
+import { BookPlus, Check, Combine, Pencil, Plus, TriangleAlert, Users, X } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { Button } from '@/components/ui/button'
@@ -12,7 +12,7 @@ import { useBookTopicId, useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import { setQuestionPlace, useRefreshBank, type BankQuestion } from './api'
 import { ChipRadio } from './QuestionFormParts'
-import { addToBook, createBook, deleteBook, mergeBooks, removeFromBook, renameLibrary, setChapter, splitTopic, updateBook, useRefreshBooks, type Book } from './booksApi'
+import { addToBook, createBook, deleteBook, mergeBooks, mergeIntoSubject, removeFromBook, renameLibrary, setChapter, updateBook, useRefreshBooks, type Book } from './booksApi'
 
 const focusRing = 'outline-none focus-visible:ring-3 focus-visible:ring-ring/40'
 const SAVE_ERROR = 'Couldn’t save. Check your internet connection and try again.'
@@ -320,7 +320,10 @@ export function MergeBookDialog({
   target,
   books,
   questions,
+  placeOf,
   onMerged,
+  subjects,
+  onPickSubject,
 }: {
   open: boolean
   onClose: () => void
@@ -329,35 +332,46 @@ export function MergeBookDialog({
   target: Book | null
   /** all her books (the ones it can go into are picked from these) */
   books: Book[]
-  /** every question she can see, for the duplicate check between the two books */
+  /** every question she can see, for the duplicate check */
   questions: readonly MergeQuestion[]
+  /** where a question lives, e.g. "CC · Ewan" or "book “Test”" (shown next to a duplicate) */
+  placeOf: (q: MergeQuestion) => string
   onMerged: (targetId: string) => void
+  /** From Edit book: the subjects it can go into too (picking one opens the subject merge instead) */
+  subjects?: readonly { id: number; code: string; name: string }[]
+  onPickSubject?: (subjectId: number) => void
 }) {
   return (
     <Dialog open={open} onClose={onClose} labelledBy="merge-dialog-heading" variant="sheet" closeOnBackdrop={false}>
       {/* key: every merge starts fresh (the topic name comes from the book being merged) */}
-      {open && source && <MergeForm key={`${source.id}-${target?.id ?? ''}`} source={source} target={target} books={books} questions={questions} onClose={onClose} onMerged={onMerged} />}
+      {open && source && <MergeForm key={`${source.id}-${target?.id ?? ''}`} source={source} target={target} books={books} questions={questions} placeOf={placeOf} onClose={onClose} onMerged={onMerged} subjects={subjects} onPickSubject={onPickSubject} />}
     </Dialog>
   )
 }
 
 /** What the merge's duplicate check needs to know about a question. */
-type MergeQuestion = { id: string; stem: string; owner_id: string | null }
+type MergeQuestion = { id: string; stem: string; owner_id: string | null; topic_id: number; in_subject: boolean; subject_topic?: string | null }
 
 function MergeForm({
   source,
   target,
   books,
   questions,
+  placeOf,
   onClose,
   onMerged,
+  subjects,
+  onPickSubject,
 }: {
   source: Book
   target: Book | null
   books: Book[]
   questions: readonly MergeQuestion[]
+  placeOf: (q: MergeQuestion) => string
   onClose: () => void
   onMerged: (targetId: string) => void
+  subjects?: readonly { id: number; code: string; name: string }[]
+  onPickSubject?: (subjectId: number) => void
 }) {
   const refreshBooks = useRefreshBooks()
   const refreshCommunity = useRefreshCommunity()
@@ -371,9 +385,10 @@ function MergeForm({
 
   // ---------- Duplicates: questions coming in that look like ones already in the other book ----------
   // Only her own questions move (built-in ones stay in their subjects), so only those are checked.
+  // Checked against EVERY question she has (all subjects, built-in ones too, and all her books), like the upload
+  // check. (The React Compiler keeps the result between renders, so typing in the topic box doesn't redo it.)
   const incoming = questions.filter((q) => q.owner_id !== null && source.questionIds.has(q.id))
-  const existing = chosen ? questions.filter((q) => chosen.questionIds.has(q.id)) : []
-  const duplicates = chosen ? findMergeDuplicates(incoming, existing) : []
+  const duplicates = chosen ? findMergeDuplicates(incoming, questions.map((q) => ({ id: q.id, stem: q.stem, place: placeOf(q) }))) : []
   // Which ones she's skipping. The same ones start ticked, alike ones don't; picking another book starts over.
   const [skipChoice, setSkipChoice] = useState<{ targetId: string; ids: Set<string> } | null>(null)
   const skipped = chosen && skipChoice?.targetId === chosen.id ? skipChoice.ids : new Set(duplicates.filter((d) => d.exact).map((d) => d.incomingId))
@@ -445,6 +460,26 @@ function MergeForm({
               ))}
             </ul>
           )}
+          {/* or one of the subject books: its own sheet, since her questions then join the subjects */}
+          {subjects && onPickSubject && (
+            <div className="mt-3">
+              <p className="mb-1.5 text-sm font-bold">Or into a subject</p>
+              <div className="flex flex-wrap gap-2">
+                {subjects.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => onPickSubject(s.id)}
+                    title={s.name}
+                    className={cn('inline-flex min-h-10 items-center rounded-full border bg-card px-3.5 text-sm font-semibold hover:border-primary/50', focusRing)}
+                  >
+                    {s.code}
+                    <span className="sr-only">{s.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </fieldset>
       )}
 
@@ -472,7 +507,7 @@ function MergeForm({
           <legend className="sr-only">Possible duplicates</legend>
           <p aria-hidden className="flex items-center gap-1.5 font-bold">
             <TriangleAlert className="size-4 shrink-0" />
-            {duplicates.length} question{duplicates.length === 1 ? ' looks' : 's look'} like {duplicates.length === 1 ? 'one' : 'ones'} already in {chosen.title}
+            {duplicates.length} question{duplicates.length === 1 ? ' looks' : 's look'} like {duplicates.length === 1 ? 'one' : 'ones'} you already have
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">Ticked ones are skipped. Tap a question to compare.</p>
           <ul className="binder-scroll mt-2 max-h-[28dvh] space-y-1.5 overflow-y-auto pr-1">
@@ -494,7 +529,7 @@ function MergeForm({
                     <span className="text-sm font-semibold group-open:font-bold">{d.incomingStem}</span>
                   </summary>
                   <p className="mt-1.5 border-l-2 border-primary/30 pl-2 text-sm text-muted-foreground">
-                    <span className="font-semibold text-foreground">Already in {chosen.title}:</span> {d.existingStem}
+                    <span className="font-semibold text-foreground">Already in {d.existingPlace}:</span> {d.existingStem}
                   </p>
                 </details>
               </li>
@@ -545,7 +580,443 @@ function MergeForm({
   )
 }
 
-/** Messages split_topic raises on purpose (migration 0016): written for her, so they're shown as they are. */
+/**
+ * The ⋯ next to a topic in her book: what she can do with that topic. A small sheet of big buttons (easy to hit
+ * with a thumb), so the Contents stays clean until she needs it.
+ */
+export function TopicMenuDialog({
+  open,
+  onClose,
+  chapter,
+  count,
+  onRename,
+  onSplit,
+}: {
+  open: boolean
+  onClose: () => void
+  chapter: string | null
+  count: number
+  onRename: () => void
+  /** "Move to its own book"; not given when the topic is the whole book */
+  onSplit?: () => void
+}) {
+  const item = cn('flex min-h-12 w-full items-center gap-3 rounded-lg border bg-card px-4 text-left font-semibold hover:border-primary/50 hover:bg-primary/5', focusRing)
+  return (
+    <Dialog open={open} onClose={onClose} labelledBy="topic-menu-heading" variant="sheet">
+      <div className="space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 id="topic-menu-heading" className="truncate font-heading text-lg font-bold">
+              {chapter}
+            </h2>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {count} question{count === 1 ? '' : 's'}
+            </p>
+          </div>
+          <CloseButton onClick={onClose} />
+        </div>
+        <button type="button" className={item} onClick={onRename}>
+          <Pencil className="size-5 shrink-0 text-primary" aria-hidden />
+          Rename topic
+        </button>
+        {onSplit && (
+          <button type="button" className={item} onClick={onSplit}>
+            <BookPlus className="size-5 shrink-0 text-primary" aria-hidden />
+            Move to its own book
+          </button>
+        )}
+      </div>
+    </Dialog>
+  )
+}
+
+/** Messages merge_into_subject raises on purpose (migration 0019): written for her, so they're shown as they are. */
+const SUBJECT_MERGE_MESSAGES = ['Book not found.', 'Subject not found.', 'Give the topic a name.', 'Keep the topic name to 40 letters or fewer.']
+
+/** What merging into a subject needs to know about a question. */
+type SubjectMergeQuestion = MergeQuestion & { topic_id: number; in_subject: boolean }
+
+/**
+ * Merge one of her books into a subject book (CC, HEMA, ...): the book is removed and its questions join the
+ * subjects under her topic (the book's name). Each question goes into its own subject; ones written in her book
+ * (no real subject) go into the subject she dropped it on. Duplicates of questions already in those subjects
+ * (built-in ones too) are listed first, the same ones ticked; ticked ones are skipped.
+ */
+export function MergeIntoSubjectDialog({
+  open,
+  onClose,
+  source,
+  subject,
+  subjects,
+  topics,
+  questions,
+  placeOf,
+  onMerged,
+}: {
+  open: boolean
+  onClose: () => void
+  source: Book | null
+  /** the subject book it was dropped on */
+  subject: { subjectId: number; code: string; name: string } | null
+  /** the six board subjects (code + id), to name where each question goes */
+  subjects: readonly { id: number; code: string }[]
+  topics: readonly { id: number; subject_id: number; name: string }[]
+  questions: readonly SubjectMergeQuestion[]
+  /** where a question lives, e.g. "CC · Ewan" or "book “Test”" (shown next to a duplicate) */
+  placeOf: (q: SubjectMergeQuestion) => string
+  onMerged: (subjectId: number, topic: string) => void
+}) {
+  return (
+    <Dialog open={open} onClose={onClose} labelledBy="subject-merge-heading" variant="sheet" closeOnBackdrop={false}>
+      {open && source && subject && (
+        <SubjectMergeForm
+          key={`${source.id}-${subject.subjectId}`}
+          source={source}
+          subject={subject}
+          subjects={subjects}
+          topics={topics}
+          questions={questions}
+          placeOf={placeOf}
+          onClose={onClose}
+          onMerged={onMerged}
+        />
+      )}
+    </Dialog>
+  )
+}
+
+function SubjectMergeForm({
+  source,
+  subject,
+  subjects,
+  topics,
+  questions,
+  placeOf,
+  onClose,
+  onMerged,
+}: {
+  source: Book
+  subject: { subjectId: number; code: string; name: string }
+  subjects: readonly { id: number; code: string }[]
+  topics: readonly { id: number; subject_id: number; name: string }[]
+  questions: readonly SubjectMergeQuestion[]
+  placeOf: (q: SubjectMergeQuestion) => string
+  onClose: () => void
+  onMerged: (subjectId: number, topic: string) => void
+}) {
+  const refreshBooks = useRefreshBooks()
+  const refreshBank = useRefreshBank()
+  const refreshCommunity = useRefreshCommunity()
+  const [topic, setTopic] = useState(() => mergeTopicName(source.title))
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const codeOf = new Map(subjects.map((s) => [s.id, s.code]))
+  const subjectOfTopic = new Map(topics.map((t) => [t.id, t.subject_id]))
+  // Where each of her questions goes: its own subject, or the dropped-on one if it has none (written in her book).
+  const destination = (q: SubjectMergeQuestion) => {
+    const own = subjectOfTopic.get(q.topic_id)
+    return own !== undefined && codeOf.has(own) ? own : subject.subjectId
+  }
+  const incoming = questions.filter((q) => q.owner_id !== null && source.questionIds.has(q.id))
+
+  // Duplicates: checked against EVERY question she has (all subjects, built-in ones too, and all her books), not just
+  // the subjects they're going to. Worked out once (not on every letter typed in the topic box).
+  const [duplicates] = useState(() =>
+    findMergeDuplicates(
+      incoming,
+      questions.map((q) => ({ id: q.id, stem: q.stem, place: placeOf(q) })),
+    ),
+  )
+  const [skipped, setSkipped] = useState(() => new Set(duplicates.filter((d) => d.exact).map((d) => d.incomingId)))
+  function toggleSkip(id: string) {
+    const next = new Set(skipped)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSkipped(next)
+  }
+
+  const going = incoming.filter((q) => !skipped.has(q.id))
+  // How many go into each subject, in the app's subject order: "CC 3 · HEMA 2"
+  const bySubject = subjects
+    .map((s) => ({ code: s.code, count: going.filter((q) => destination(q) === s.id).length }))
+    .filter((s) => s.count > 0)
+  const name = topic.replace(/\s+/g, ' ').trim()
+  const boardTopic = topics.find((t) => t.subject_id === subject.subjectId && t.name.toLowerCase() === name.toLowerCase())
+
+  async function handleMerge(event: FormEvent) {
+    event.preventDefault()
+    const cleaned = cleanChapter(topic)
+    if ('error' in cleaned) {
+      setError(cleaned.error)
+      return
+    }
+    if (cleaned.chapter === null) {
+      setError('Give the topic a name.')
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      await mergeIntoSubject(source.id, subject.subjectId, cleaned.chapter, [...skipped])
+      refreshBooks()
+      refreshBank()
+      if (source.publishedAt) refreshCommunity() // it left Community
+      onMerged(subject.subjectId, cleaned.chapter)
+      onClose()
+    } catch (e) {
+      const message = (e as { message?: string } | null)?.message ?? ''
+      setError(SUBJECT_MERGE_MESSAGES.includes(message) ? message : SAVE_ERROR)
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={(e) => void handleMerge(e)} noValidate className="space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <h2 id="subject-merge-heading" className="font-heading text-lg leading-snug font-bold">
+          Merge “{source.title}” into {subject.code}?
+        </h2>
+        <CloseButton onClick={onClose} />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="subject-merge-topic" className="font-bold">
+          Your topic name
+        </Label>
+        <input
+          id="subject-merge-topic"
+          value={topic}
+          maxLength={CHAPTER_MAX + 20}
+          onChange={(e) => {
+            setTopic(e.target.value)
+            setError(null)
+          }}
+          aria-describedby="subject-merge-summary"
+          className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        />
+        {boardTopic && <p className="text-sm text-muted-foreground">“{boardTopic.name}” is a board topic in {subject.code}: the questions go right into it.</p>}
+      </div>
+
+      {duplicates.length > 0 && (
+        <fieldset className="min-w-0 rounded-lg border border-highlight/50 bg-highlight-soft/50 p-3">
+          <legend className="sr-only">Possible duplicates</legend>
+          <p aria-hidden className="flex items-center gap-1.5 font-bold">
+            <TriangleAlert className="size-4 shrink-0" />
+            {duplicates.length} question{duplicates.length === 1 ? ' looks' : 's look'} like {duplicates.length === 1 ? 'one' : 'ones'} you already have
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Ticked ones are skipped. Tap a question to compare.</p>
+          <ul className="binder-scroll mt-2 max-h-[28dvh] space-y-1.5 overflow-y-auto pr-1">
+            {duplicates.map((d) => (
+              <li key={d.incomingId} className="flex items-start gap-2.5 rounded-md bg-card px-2.5 py-2">
+                <input
+                  type="checkbox"
+                  checked={skipped.has(d.incomingId)}
+                  onChange={() => toggleSkip(d.incomingId)}
+                  disabled={busy}
+                  aria-label={`Skip: ${d.incomingStem}`}
+                  className="mt-0.5 size-5 shrink-0 accent-primary"
+                />
+                <details className="group min-w-0 flex-1">
+                  <summary className="cursor-pointer list-none rounded outline-none focus-visible:ring-3 focus-visible:ring-ring/40 [&::-webkit-details-marker]:hidden">
+                    <span className={cn('mr-1.5 inline-block rounded-full px-1.5 text-[11px] font-bold', d.exact ? 'bg-wrong-soft text-wrong' : 'bg-secondary text-foreground')}>
+                      {d.exact ? 'Same' : `${Math.round(d.score * 100)}% alike`}
+                    </span>
+                    <span className="text-sm font-semibold group-open:font-bold">{d.incomingStem}</span>
+                  </summary>
+                  <p className="mt-1.5 border-l-2 border-primary/30 pl-2 text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">Already in {d.existingPlace}:</span> {d.existingStem}
+                  </p>
+                </details>
+              </li>
+            ))}
+          </ul>
+        </fieldset>
+      )}
+
+      <div id="subject-merge-summary" className="space-y-1.5 text-sm text-muted-foreground">
+        <p>
+          <span className="font-semibold text-foreground tabular-nums">
+            {going.length} question{going.length === 1 ? '' : 's'}
+          </span>{' '}
+          {going.length === 1 ? 'goes' : 'go'} into {bySubject.length > 1 ? 'their own subjects' : (bySubject[0]?.code ?? subject.code)}
+          {name && !boardTopic && <> under your topic “{name}”</>}
+          {bySubject.length > 1 && <>: {bySubject.map((s) => `${s.code} ${s.count}`).join(' · ')}</>}
+          {skipped.size > 0 && <> · {skipped.size} skipped</>}. They count in those subjects’ scores and quizzes.
+        </p>
+        <p>
+          “{source.title}” will be removed from your shelf.
+          {source.publishedAt && ' It also leaves Community; classmates who added it keep their copies.'}
+        </p>
+      </div>
+
+      {error && (
+        <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
+          {error}
+        </p>
+      )}
+
+      <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        <Button type="button" variant="outline" className="h-11 flex-1 rounded-lg" onClick={onClose}>
+          Cancel
+        </Button>
+        <button type="submit" disabled={busy} className={cn('h-11 flex-1 rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}>
+          {busy ? 'Merging…' : `Merge into ${subject.code}`}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+/** Messages the rename functions raise on purpose (migrations 0018, 0019): written for her, so shown as they are. */
+const RENAME_MESSAGES = ['Book not found.', 'Give the topic a name.', 'Keep the topic name to 40 letters or fewer.']
+
+/**
+ * Rename one of her topics (in her book, or her own topic inside a subject): every question under it gets the new
+ * name. The same name as another of her topics there = they join; the same as a board topic = they go into it.
+ */
+export function RenameTopicDialog({
+  open,
+  onClose,
+  name,
+  count,
+  otherNames,
+  boardNames = [],
+  save,
+  onRenamed,
+}: {
+  open: boolean
+  onClose: () => void
+  /** the topic being renamed; null when none is chosen */
+  name: string | null
+  count: number
+  /** her other topics in the same place (a new name equal to one of these joins it) */
+  otherNames: string[]
+  /** the board topics in the subject (a name equal to one of these goes into it); none in her own books */
+  boardNames?: string[]
+  save: (newName: string) => Promise<unknown>
+  onRenamed: (newName: string) => void
+}) {
+  return (
+    <Dialog open={open} onClose={onClose} labelledBy="rename-topic-heading" variant="sheet" closeOnBackdrop={false}>
+      {open && name !== null && (
+        <RenameTopicForm key={name} name={name} count={count} otherNames={otherNames} boardNames={boardNames} save={save} onClose={onClose} onRenamed={onRenamed} />
+      )}
+    </Dialog>
+  )
+}
+
+function RenameTopicForm({
+  name,
+  count,
+  otherNames,
+  boardNames,
+  save,
+  onClose,
+  onRenamed,
+}: {
+  name: string
+  count: number
+  otherNames: string[]
+  boardNames: string[]
+  save: (newName: string) => Promise<unknown>
+  onClose: () => void
+  onRenamed: (newName: string) => void
+}) {
+  const refreshBooks = useRefreshBooks()
+  const refreshBank = useRefreshBank()
+  const [value, setValue] = useState(name)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const cleaned = value.replace(/\s+/g, ' ').trim()
+  const board = cleaned !== name ? boardNames.find((b) => b.toLowerCase() === cleaned.toLowerCase()) : undefined
+  const joins = !board && cleaned !== name && otherNames.includes(cleaned)
+  const questions = `${count} question${count === 1 ? '' : 's'}`
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    const result = cleanChapter(value)
+    if ('error' in result) {
+      setError(result.error)
+      return
+    }
+    if (result.chapter === null) {
+      setError('Give the topic a name.')
+      return
+    }
+    if (result.chapter === name) {
+      onClose() // nothing changed
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      await save(result.chapter)
+      refreshBooks()
+      refreshBank()
+      onRenamed(result.chapter)
+      onClose()
+    } catch (e) {
+      const message = (e as { message?: string } | null)?.message ?? ''
+      setError(RENAME_MESSAGES.includes(message) ? message : SAVE_ERROR)
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={(e) => void handleSubmit(e)} noValidate className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="rename-topic-heading" className="font-heading text-lg font-bold">
+          Rename topic
+        </h2>
+        <CloseButton onClick={onClose} />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="rename-topic-input" className="font-bold">
+          Name
+        </Label>
+        <input
+          id="rename-topic-input"
+          autoFocus
+          value={value}
+          maxLength={CHAPTER_MAX + 20}
+          onChange={(e) => {
+            setValue(e.target.value)
+            setError(null)
+          }}
+          aria-invalid={Boolean(error)}
+          aria-describedby="rename-topic-hint"
+          className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-wrong"
+        />
+        <p id="rename-topic-hint" className="text-sm text-muted-foreground">
+          {board ? (
+            <>
+              <span className="font-semibold text-foreground">“{board}” is a board topic.</span> The {questions} from “{name}” will go into it.
+            </>
+          ) : joins ? (
+            <>
+              <span className="font-semibold text-foreground">“{cleaned}” is already a topic here.</span> The {questions} from “{name}” will join it.
+            </>
+          ) : (
+            <>
+              All {questions} under “{name}” get the new name.
+            </>
+          )}
+        </p>
+      </div>
+      {error && (
+        <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
+          {error}
+        </p>
+      )}
+      <button type="submit" disabled={busy} className={cn('h-11 w-full rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}>
+        {busy ? 'Saving…' : board || joins ? 'Join topics' : 'Save'}
+      </button>
+    </form>
+  )
+}
+
+/** Messages the split functions raise on purpose (migrations 0016, 0019): written for her, so shown as they are. */
 const SPLIT_MESSAGES = [
   'Book not found.',
   'Pick a topic first.',
@@ -556,52 +1027,99 @@ const SPLIT_MESSAGES = [
 ]
 
 /**
- * A topic in one of her books becomes its own book (the opposite of merging). Her questions under it leave this
- * book and go into a new book named after the topic, in the library she picks.
+ * One of her topics becomes its own book (the opposite of merging): from her book, or from inside a subject.
+ * Her questions under it leave `fromTitle` and go into a new book named after the topic, in the library she picks.
  */
 export function SplitTopicDialog({
   open,
   onClose,
-  book,
-  chapter,
+  name,
+  count,
+  fromTitle,
+  leftName = null,
+  fromSubject = false,
+  defaultLibrary = 1,
   libraries,
+  split,
   onDone,
 }: {
   open: boolean
   onClose: () => void
-  book: Book
-  /** the topic to move out; null when no topic is chosen */
-  chapter: string | null
+  /** the topic to move out; null when none is chosen */
+  name: string | null
+  count: number
+  /** the book or subject it leaves */
+  fromTitle: string
+  /** her book only: what's left there becomes this name (one topic left), or null */
+  leftName?: string | null
+  /** true = it leaves a subject (its questions stop counting in that subject's score and quizzes) */
+  fromSubject?: boolean
+  defaultLibrary?: number
   libraries: LibraryChoice
+  split: (library: number) => Promise<string>
   onDone: (newBookId: string) => void
 }) {
   return (
     <Dialog open={open} onClose={onClose} labelledBy="split-dialog-heading" variant="sheet" closeOnBackdrop={false}>
-      {open && chapter !== null && <SplitForm key={`${book.id}-${chapter}`} book={book} chapter={chapter} libraries={libraries} onClose={onClose} onDone={onDone} />}
+      {open && name !== null && (
+        <SplitForm
+          key={name}
+          name={name}
+          count={count}
+          fromTitle={fromTitle}
+          leftName={leftName}
+          fromSubject={fromSubject}
+          defaultLibrary={defaultLibrary}
+          libraries={libraries}
+          split={split}
+          onClose={onClose}
+          onDone={onDone}
+        />
+      )}
     </Dialog>
   )
 }
 
-function SplitForm({ book, chapter, libraries, onClose, onDone }: { book: Book; chapter: string; libraries: LibraryChoice; onClose: () => void; onDone: (newBookId: string) => void }) {
+function SplitForm({
+  name,
+  count,
+  fromTitle,
+  leftName,
+  fromSubject,
+  defaultLibrary,
+  libraries,
+  split,
+  onClose,
+  onDone,
+}: {
+  name: string
+  count: number
+  fromTitle: string
+  leftName: string | null
+  fromSubject: boolean
+  defaultLibrary: number
+  libraries: LibraryChoice
+  split: (library: number) => Promise<string>
+  onClose: () => void
+  onDone: (newBookId: string) => void
+}) {
   const refreshBooks = useRefreshBooks()
+  const refreshBank = useRefreshBank()
   const refreshCommunity = useRefreshCommunity()
   const fits = (slot: number) => (libraries.roomLeft[slot - 1] ?? 0) > 0
   const firstWithRoom = libraries.names.map((_, i) => i + 1).find(fits) ?? 0 // 0 = all full
-  const [library, setLibrary] = useState(fits(book.library) ? book.library : firstWithRoom || book.library)
+  const [library, setLibrary] = useState(fits(defaultLibrary) ? defaultLibrary : firstWithRoom || defaultLibrary)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const count = [...book.chapters.values()].filter((c) => c === chapter).length
-  // What's left in this book: if it's just one topic, this book takes that topic's name (like split_topic does).
-  const left = chapterList(new Map([...book.chapters].filter(([, c]) => c !== chapter)))
-  const leftName = left.chapters.length === 1 && left.unfiled === 0 ? left.chapters[0].name : null
 
   async function handleSplit(event: FormEvent) {
     event.preventDefault()
     setBusy(true)
     setError(null)
     try {
-      const id = await splitTopic(book.id, chapter, library)
+      const id = await split(library)
       refreshBooks()
+      refreshBank()
       refreshCommunity() // it may be linked to its Community original again ("Already in your library")
       onDone(id)
       onClose()
@@ -616,7 +1134,7 @@ function SplitForm({ book, chapter, libraries, onClose, onDone }: { book: Book; 
     <form onSubmit={(e) => void handleSplit(e)} noValidate className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <h2 id="split-dialog-heading" className="font-heading text-lg leading-snug font-bold">
-          Move “{chapter}” to its own book?
+          Move “{name}” to its own book?
         </h2>
         <CloseButton onClick={onClose} />
       </div>
@@ -626,22 +1144,23 @@ function SplitForm({ book, chapter, libraries, onClose, onDone }: { book: Book; 
           <span className="font-semibold text-foreground tabular-nums">
             {count} question{count === 1 ? '' : 's'}
           </span>{' '}
-          leave <span className="font-semibold text-foreground">{book.title}</span> and become a new book named{' '}
-          <span className="font-semibold text-foreground">“{chapter}”</span>.
-          {leftName && leftName !== book.title && (
+          leave <span className="font-semibold text-foreground">{fromTitle}</span> and become a new book named{' '}
+          <span className="font-semibold text-foreground">“{name}”</span>.
+          {leftName && leftName !== fromTitle && (
             <>
               {' '}
               What’s left here becomes <span className="font-semibold text-foreground">“{leftName}”</span>.
             </>
           )}
         </p>
+        {fromSubject && <p>They stop counting in {fromTitle}’s score and quizzes, and live only in the new book.</p>}
         <p>If a book’s questions all came from one classmate and none were edited, it shows their name again.</p>
       </div>
 
       <fieldset>
         <legend className="mb-1.5 font-bold">Put it in</legend>
         <div className="grid gap-1.5 sm:grid-cols-3">
-          {libraries.names.map((name, i) => {
+          {libraries.names.map((libraryName, i) => {
             const slot = i + 1
             const ok = fits(slot)
             return (
@@ -654,7 +1173,7 @@ function SplitForm({ book, chapter, libraries, onClose, onDone }: { book: Book; 
               >
                 <input type="radio" name="split-library" checked={library === slot} disabled={!ok || busy} onChange={() => setLibrary(slot)} className="sr-only" />
                 {library === slot && ok && <Check className="size-4 shrink-0" aria-hidden />}
-                <span className="min-w-0 flex-1 truncate font-semibold">{name}</span>
+                <span className="min-w-0 flex-1 truncate font-semibold">{libraryName}</span>
                 {!ok && <span className="shrink-0 text-xs">Full</span>}
               </label>
             )

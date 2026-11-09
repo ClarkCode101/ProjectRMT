@@ -74,6 +74,8 @@ type ShelfBook = {
   footer?: ReactNode
   /** her own book's id: only these can be dragged and merged (subject books can't) */
   bookId?: string
+  /** where a dragged book can be dropped: "book:<id>" (her books) or "subject:<id>" (subject books, migration 0019) */
+  dropKey?: string
 }
 
 /** The cover's size: the same for every book, so the shelves line up. */
@@ -156,6 +158,7 @@ function Cover({
       onClick={handleClick}
       // her books can be held and dragged: no browser link drag, link preview or right-click menu getting in the way
       data-book-id={book.bookId}
+      data-drop={book.dropKey}
       draggable={false}
       onContextMenu={book.bookId ? (e) => e.preventDefault() : undefined}
       aria-label={`${book.label}${stars === null ? '' : `, ${stars} of ${MAX_STARS} stars`}`}
@@ -249,12 +252,12 @@ function OpeningBook({ book, rect }: { book: ShelfBook; rect: DOMRect }) {
 }
 
 /** A book being dragged to merge: which one, where the finger is, and which of her books it's over. */
-type DragState = { bookId: string; x: number; y: number; overId: string | null }
+type DragState = { bookId: string; x: number; y: number; overId: string | null } // overId: the drop key under the finger
 
 /** Which of her books is under the finger (not the lifted one), or null. */
 function bookUnder(x: number, y: number, except: string) {
-  const id = document.elementFromPoint(x, y)?.closest('[data-book-id]')?.getAttribute('data-book-id') ?? null
-  return id === except ? null : id
+  const key = document.elementFromPoint(x, y)?.closest('[data-drop]')?.getAttribute('data-drop') ?? null
+  return key === `book:${except}` ? null : key
 }
 
 export function Bookshelf({
@@ -287,7 +290,8 @@ export function Bookshelf({
   arrivingId: string | null
   onNewBook: () => void
   /** she dropped one of her books on another: ask before merging */
-  onMerge: (sourceId: string, targetId: string) => void
+  /** targetKey: "book:<id>" (another of her books) or "subject:<id>" (a subject book) */
+  onMerge: (sourceId: string, targetKey: string) => void
 }) {
   const perShelf = usePerShelf()
   const navigate = useNavigate()
@@ -304,6 +308,7 @@ export function Bookshelf({
       const few = s.topics.filter((t) => t.level === 'few').length
       shelfBooks.push({
         key: `s${s.subjectId}`,
+        dropKey: `subject:${s.subjectId}`, // her books can be dropped on it (not other subject books)
         to: `/questions?subject=${s.subjectId}`,
         title: s.code,
         count: s.total,
@@ -338,6 +343,7 @@ export function Bookshelf({
       accuracy: bookAccuracy ? (bookAccuracy.get(b.id) ?? null) : undefined,
       label: `${b.title}: ${plural(b.questionIds.size, 'question')}`,
       bookId: b.id,
+      dropKey: `book:${b.id}`,
       art: (
         // her book's emblem: its first letter in a ring
         <span
@@ -382,7 +388,7 @@ export function Bookshelf({
   }, [])
 
   const draggedBook = dragging ? shelfBooks.find((b) => b.bookId === dragging.bookId) : undefined
-  const overBook = dragging?.overId ? shelfBooks.find((b) => b.bookId === dragging.overId) : undefined
+  const overBook = dragging?.overId ? shelfBooks.find((b) => b.dropKey === dragging.overId) : undefined
 
   // The library's progress: stars earned out of all it could have.
   const earned = shelfBooks.reduce((sum, b) => sum + (b.accuracy === undefined ? 0 : starsFor(b.accuracy)), 0)
@@ -396,7 +402,7 @@ export function Bookshelf({
       <Cover
         book={b}
         arriving={b.key === arrivingId}
-        drag={!dragging || !b.bookId ? null : b.bookId === dragging.bookId ? 'source' : b.bookId === dragging.overId ? 'target' : null}
+        drag={!dragging ? null : b.bookId === dragging.bookId ? 'source' : b.dropKey !== undefined && b.dropKey === dragging.overId ? 'target' : null}
         onOpen={openBook}
       />
     ),

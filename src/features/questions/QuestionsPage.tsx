@@ -1,5 +1,5 @@
 import { BadgeCheck, Bookmark, BookMinus, BookPlus, Check, ChevronDown, CircleCheck, Flag, Info, Pencil, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import { PageHeader } from '@/components/dashboard'
 import { Dialog } from '@/components/Dialog'
@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { filterQuestions, summarizeCoverage, type BankFilters } from '@/lib/questions'
 import { BOOK_SUBJECT_CODE, useSubjectOfTopic, useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
-import { BOOK_SPINE, bookAccuracy, booksContaining, chapterList, LIBRARY_COUNT, libraryNames, NO_CHAPTER, questionsOnlyIn, roomLeft, SUBJECT_COLOR } from '@/lib/books'
+import { BOOK_SPINE, bookAccuracy, booksContaining, chapterList, LIBRARY_COUNT, libraryNames, NO_CHAPTER, questionsOnlyIn, roomLeft, SUBJECT_COLOR, subjectTopicList } from '@/lib/books'
 import { summarizePerformance, type SubjectInfo } from '@/lib/quiz'
 import { useTopicPerformance } from '@/features/dashboard/api'
 import { attemptHistoryOptions } from '@/features/quiz/api'
@@ -18,9 +18,20 @@ import { reviewStatesOptions } from '@/features/flashcards/api'
 import { countDue } from '@/lib/fsrs'
 import { useQuery } from '@tanstack/react-query'
 import { deleteQuestion, setQuestionStatus, useQuestionBank, useRefreshBank, type BankQuestion } from './api'
-import { AddToBookDialog, BookDialog, ChapterDialog, LibraryDialog, MergeBookDialog, SplitTopicDialog } from './BookDialogs'
+import { AddToBookDialog, BookDialog, ChapterDialog, LibraryDialog, MergeBookDialog, MergeIntoSubjectDialog, RenameTopicDialog, SplitTopicDialog, TopicMenuDialog } from './BookDialogs'
 import { Bookshelf } from './Bookshelf'
-import { addToBook, removeFromBook, useBooks, useLibraryNames, useRefreshBooks, type Book } from './booksApi'
+import {
+  addToBook,
+  removeFromBook,
+  renameSubjectTopic,
+  renameTopic,
+  splitSubjectTopic,
+  splitTopic,
+  useBooks,
+  useLibraryNames,
+  useRefreshBooks,
+  type Book,
+} from './booksApi'
 import { ChapterContents, Contents, OpenBinder, TitlePage } from './BinderPage'
 import { DrawerBar } from './DrawerBar'
 
@@ -108,9 +119,13 @@ function QuestionBankView({
   // The book she just made, so it slides onto the shelf.
   const [arrivingId, setArrivingId] = useState<string | null>(null)
   // Merging one of her books into another: dropped on the shelf (target picked), or from Edit book (targetId null).
-  const [merging, setMerging] = useState<{ sourceId: string; targetId: string | null } | null>(null)
+  // subjectId: into a subject book instead (migration 0019).
+  const [merging, setMerging] = useState<{ sourceId: string; targetId: string | null; subjectId?: number } | null>(null)
   // A topic in the open book that's becoming its own book (null = not now).
   const [splitting, setSplitting] = useState<string | null>(null)
+  // The ⋯ menu of a topic in the open book, and the topic being renamed (null = not now).
+  const [topicMenu, setTopicMenu] = useState<string | null>(null)
+  const [renamingTopic, setRenamingTopic] = useState<string | null>(null)
 
   // ---------- Flashcards due in the open book (the count on Study → Flashcards) ----------
   const reviewStates = useQuery({ ...reviewStatesOptions, enabled: !atShelf })
@@ -158,8 +173,20 @@ function QuestionBankView({
 
   // A subject's book holds only the questions that are in it: not the ones that live only in one of her books.
   const inSubjects = questions.filter((q) => q.in_subject)
-  const coverage = summarizeCoverage(inSubjects, subjects, topics)
+  const subjectOfTopicId = new Map(topics.map((t) => [t.id, t.subject_id]))
+  // The board topics count only the questions that aren't under one of her own topics (migration 0019): those
+  // show under her topic instead. A subject's total still counts all of them.
+  const coverage = summarizeCoverage(
+    inSubjects.filter((q) => q.subject_topic === null),
+    subjects,
+    topics,
+  ).map((s) => ({ ...s, total: inSubjects.filter((q) => subjectOfTopicId.get(q.topic_id) === s.subjectId).length }))
   const subject = coverage.find((s) => s.subjectId === subjectId)
+
+  // Her own topics in the open subject ("Ewan" after merging that book in), A–Z, and the chosen one (?mine=NAME).
+  const myTopics = subject ? subjectTopicList(inSubjects.filter((q) => subjectOfTopicId.get(q.topic_id) === subject.subjectId)) : []
+  const mineParam = subject && !topic ? searchParams.get('mine') : null
+  const myTopic = mineParam !== null && myTopics.some((t) => t.name === mineParam) ? mineParam : null
 
   // Questions are ready to use by default (the built-in set is fact-checked; ones she types are hers).
   // Only two kinds "need a look": ones she reported from a quiz, and uploads saved before uploads started as ready to use.
@@ -183,8 +210,18 @@ function QuestionBankView({
 
   // Inside a book: only its questions (in the chosen chapter). Otherwise: everything, narrowed by subject/topic below.
   // (A subject's book leaves out the questions that live only in her books; "All questions" shows everything.)
-  const pool = book ? questions.filter((q) => book.questionIds.has(q.id) && inChapter(q.id)) : subject ? inSubjects : questions
-  const subjectTopicIds = topic ? [topic.id] : subject ? subject.topics.map((t) => t.topicId) : null
+  // In a subject: one of her topics, one board topic (without the ones under her topics), or the whole subject.
+  const inThisSubject = (q: BankQuestion) => subjectOfTopicId.get(q.topic_id) === subject?.subjectId
+  const pool = book
+    ? questions.filter((q) => book.questionIds.has(q.id) && inChapter(q.id))
+    : subject
+      ? myTopic !== null
+        ? inSubjects.filter((q) => inThisSubject(q) && q.subject_topic === myTopic)
+        : topic
+          ? inSubjects.filter((q) => q.subject_topic === null)
+          : inSubjects.filter(inThisSubject)
+      : questions
+  const subjectTopicIds = topic ? [topic.id] : null
   const filters: BankFilters = { search, subjectTopicIds, status: 'all', source }
   const needsLookInScope = filterQuestions(pool, { ...filters, status: 'unverified' })
   const shown = onlyNeedsLook ? needsLookInScope : filterQuestions(pool, filters)
@@ -196,7 +233,7 @@ function QuestionBankView({
     : topic
       ? { topic: String(topic.id) }
       : subject
-        ? { subject: String(subject.subjectId) }
+        ? { subject: String(subject.subjectId), ...(myTopic !== null && { mine: myTopic }) }
         : { view: 'all' }
   // From a chapter of her book, a new question starts in that chapter.
   const addTo = book
@@ -230,6 +267,61 @@ function QuestionBankView({
     setSearchParams(listParams(id === null ? { subject: String(subjectId) } : { topic: String(id) }), { replace: true })
     window.scrollTo({ top: 0 })
   }
+
+  /** One of her own topics in the open subject. */
+  function selectMine(name: string) {
+    setSearchParams(listParams({ subject: String(subjectId), mine: name }), { replace: true })
+    window.scrollTo({ top: 0 })
+  }
+
+  // ---------- Where a question lives, for the merge duplicate check ("CC · Ewan", "book “Test”") ----------
+  const placeOf = useMemo(() => {
+    const topicById = new Map(topics.map((t) => [t.id, t]))
+    const codeById = new Map(subjects.map((s) => [s.id, s.code]))
+    return (q: { id: string; topic_id: number; in_subject: boolean; subject_topic?: string | null }) => {
+      const t = topicById.get(q.topic_id)
+      const code = t ? codeById.get(t.subject_id) : undefined
+      if (q.in_subject && code) return `${code} · ${q.subject_topic ?? t?.name ?? ''}`
+      const inBook = books.find((b) => b.questionIds.has(q.id))
+      return inBook ? `book “${inBook.title}”` : 'your questions'
+    }
+  }, [topics, subjects, books])
+
+  // ---------- Her topics' ⋯ menu: the same Rename / Move to its own book, for a topic in her book or in a subject ----------
+  const topicActions = book && contents
+    ? {
+        names: contents.chapters.map((c) => c.name),
+        boardNames: [] as string[],
+        count: (name: string | null) => contents.chapters.find((c) => c.name === name)?.count ?? 0,
+        // a topic that's the whole book has nothing to split from
+        canSplit: contents.chapters.length > 1 || contents.unfiled > 0,
+        fromTitle: book.title,
+        fromSubject: false,
+        // what's left in the book: if it's just one topic, the book takes that topic's name (like split_topic)
+        leftName: (name: string | null) => {
+          const left = chapterList(new Map([...book.chapters].filter(([, c]) => c !== name)))
+          return left.chapters.length === 1 && left.unfiled === 0 ? left.chapters[0].name : null
+        },
+        rename: (oldName: string, newName: string) => renameTopic(book.id, oldName, newName),
+        split: (name: string, slot: number) => splitTopic(book.id, name, slot),
+        onRenamed: (name: string) => selectChapter(name),
+      }
+    : subject
+      ? {
+          names: myTopics.map((t) => t.name),
+          boardNames: subject.topics.map((t) => t.name),
+          count: (name: string | null) => myTopics.find((t) => t.name === name)?.count ?? 0,
+          canSplit: true,
+          fromTitle: subject.code,
+          fromSubject: true,
+          leftName: () => null,
+          rename: (oldName: string, newName: string) => renameSubjectTopic(subject.subjectId, oldName, newName),
+          split: (name: string, slot: number) => splitSubjectTopic(subject.subjectId, name, slot),
+          // a board topic's name: it went into that topic (no topic of hers anymore), so show the whole subject
+          onRenamed: (name: string) =>
+            subject.topics.some((t) => t.name.toLowerCase() === name.toLowerCase()) ? selectTopic(null) : selectMine(name),
+        }
+      : null
 
   const placeholder = atShelf ? 'Search all questions' : `Search in ${book?.title ?? topic?.name ?? subject?.code ?? 'all questions'}`
 
@@ -267,7 +359,12 @@ function QuestionBankView({
             bookAccuracy={bookScores}
             arrivingId={arrivingId}
             onNewBook={() => setNewBook({ forQuestion: null })}
-            onMerge={(sourceId, targetId) => setMerging({ sourceId, targetId })}
+            // dropped on another of her books ("book:<id>") or on a subject book ("subject:<id>")
+            onMerge={(sourceId, targetKey) => {
+              const [kind, id] = targetKey.split(':')
+              if (kind === 'subject') setMerging({ sourceId, targetId: null, subjectId: Number(id) })
+              else setMerging({ sourceId, targetId: id })
+            }}
           />
           {/* Nothing else on this screen: the shelves are the way in. Add, Upload and search live inside each book. */}
         </>
@@ -337,7 +434,17 @@ function QuestionBankView({
                 ) : (
                   <TitlePage title="All questions" count={questions.length} />
                 )}
-                {subject && <Contents subject={subject} topicId={topic?.id ?? null} onSelect={selectTopic} />}
+                {subject && (
+                  <Contents
+                    subject={subject}
+                    topicId={topic?.id ?? null}
+                    onSelect={selectTopic}
+                    myTopics={myTopics}
+                    myTopic={myTopic}
+                    onSelectMine={selectMine}
+                    onTopicMenu={(name) => setTopicMenu(name)}
+                  />
+                )}
                 {book && contents && (
                   <ChapterContents
                     chapters={contents.chapters}
@@ -345,8 +452,7 @@ function QuestionBankView({
                     total={book.questionIds.size}
                     chapter={chapter}
                     onSelect={selectChapter}
-                    // a topic that's the whole book has nothing to split from
-                    onSplit={contents.chapters.length > 1 || contents.unfiled > 0 ? (c) => setSplitting(c) : undefined}
+                    onTopicMenu={(c) => setTopicMenu(c)}
                   />
                 )}
               </>
@@ -457,39 +563,91 @@ function QuestionBankView({
           libraries={{ names, roomLeft: roomByLibrary }}
           onDeleted={() => setSearchParams({ lib: String(book.library) })}
           deletesQuestions={questionsOnlyIn(book.id, books, questions)}
-          onMergeRequest={
-            books.length > 1
-              ? () => {
-                  setEditingBook(false)
-                  setMerging({ sourceId: book.id, targetId: null })
-                }
-              : undefined
-          }
+          // into another of her books, or into a subject
+          onMergeRequest={() => {
+            setEditingBook(false)
+            setMerging({ sourceId: book.id, targetId: null })
+          }}
         />
       )}
-      {/* A topic of the open book becomes its own book; then open the new one */}
-      {book && (
-        <SplitTopicDialog
-          open={splitting !== null}
-          onClose={() => setSplitting(null)}
-          book={book}
-          chapter={splitting}
-          libraries={{ names, roomLeft: roomByLibrary }}
-          onDone={(id) => setSearchParams({ book: id }, { replace: true })}
-        />
+      {/* The ⋯ menu of one of her topics (in her book, or her own topic in a subject): Rename, Move to its own book */}
+      {topicActions && (
+        <>
+          <TopicMenuDialog
+            open={topicMenu !== null}
+            onClose={() => setTopicMenu(null)}
+            chapter={topicMenu}
+            count={topicActions.count(topicMenu)}
+            onRename={() => {
+              setRenamingTopic(topicMenu)
+              setTopicMenu(null)
+            }}
+            onSplit={
+              topicActions.canSplit
+                ? () => {
+                    setSplitting(topicMenu)
+                    setTopicMenu(null)
+                  }
+                : undefined
+            }
+          />
+          <RenameTopicDialog
+            open={renamingTopic !== null}
+            onClose={() => setRenamingTopic(null)}
+            name={renamingTopic}
+            count={topicActions.count(renamingTopic)}
+            otherNames={topicActions.names.filter((n) => n !== renamingTopic)}
+            boardNames={topicActions.boardNames}
+            save={(newName) => topicActions.rename(renamingTopic ?? '', newName)}
+            // stay on the same topic, under its new name
+            onRenamed={topicActions.onRenamed}
+          />
+          <SplitTopicDialog
+            open={splitting !== null}
+            onClose={() => setSplitting(null)}
+            name={splitting}
+            count={topicActions.count(splitting)}
+            fromTitle={topicActions.fromTitle}
+            leftName={topicActions.leftName(splitting)}
+            fromSubject={topicActions.fromSubject}
+            defaultLibrary={book?.library ?? library}
+            libraries={{ names, roomLeft: roomByLibrary }}
+            split={(slot) => topicActions.split(splitting ?? '', slot)}
+            // open the new book
+            onDone={(id) => setSearchParams({ book: id }, { replace: true })}
+          />
+        </>
       )}
       {/* Merge one of her books into another (it's then removed; its questions go into the other one) */}
       <MergeBookDialog
-        open={merging !== null}
+        open={merging !== null && merging.subjectId === undefined}
         onClose={() => setMerging(null)}
         source={books.find((b) => b.id === merging?.sourceId) ?? null}
         target={books.find((b) => b.id === merging?.targetId) ?? null}
         books={books}
         questions={questions}
+        placeOf={placeOf}
+        subjects={subjects.map((s) => ({ id: s.id, code: s.code, name: s.name }))}
+        onPickSubject={(subjectId) => setMerging((m) => (m ? { ...m, subjectId } : m))}
         onMerged={(targetId) => {
           setArrivingId(targetId) // the book that took it in does a little hop on the shelf
           // Merged from inside the book (Edit book): that book is gone, so open the one it went into.
           if (book) setSearchParams({ book: targetId }, { replace: true })
+        }}
+      />
+      {/* Merge one of her books into a subject (dropped on a subject book, or picked in Merge into…) */}
+      <MergeIntoSubjectDialog
+        open={merging?.subjectId !== undefined}
+        onClose={() => setMerging(null)}
+        source={books.find((b) => b.id === merging?.sourceId) ?? null}
+        subject={coverage.find((s) => s.subjectId === merging?.subjectId) ?? null}
+        subjects={subjects}
+        topics={topics}
+        questions={questions}
+        placeOf={placeOf}
+        onMerged={(subjectId, topicName) => {
+          // From inside the book (Edit book): that book is gone, so open the subject on her new topic.
+          if (book) setSearchParams({ subject: String(subjectId), mine: topicName }, { replace: true })
         }}
       />
       <LibraryDialog open={renamingLibrary} onClose={() => setRenamingLibrary(false)} slot={library} name={names[library - 1]} />

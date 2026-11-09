@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { Database, QuestionSource, VerifyStatus } from '@/lib/database.types'
+import type { Database, Json, QuestionSource, VerifyStatus } from '@/lib/database.types'
 import { markBankStale } from '@/lib/offline/bank'
 import { parseChoiceNotes, parseChoices } from '@/lib/quiz'
 import { draftToRow, type QuestionDraft } from '@/lib/questions'
@@ -21,9 +21,13 @@ export type BankQuestion = {
   status: VerifyStatus
   /** false = lives only in her book (migration 0006) */
   in_subject: boolean
+  /** her own topic for it inside its subject, e.g. "Ewan" after merging that book into a subject (migration 0019) */
+  subject_topic: string | null
 }
 
 const COLUMNS = 'id, owner_id, source, topic_id, stem, choices, correct_index, explanation, choice_notes, difficulty, status, in_subject'
+/** Postgres's "this column doesn't exist" error: migration 0019 (subject_topic) hasn't been run yet. */
+const UNDEFINED_COLUMN = '42703'
 // Supabase returns at most 1000 rows per request, so load the bank in pages.
 const PAGE_SIZE = 1000
 
@@ -35,25 +39,41 @@ export function useQuestionBank() {
   return useQuery({
     queryKey: ['question-bank'],
     queryFn: async (): Promise<BankQuestion[]> => {
-      const all: BankQuestion[] = []
-      for (let from = 0; ; from += PAGE_SIZE) {
-        const { data, error } = await supabase
-          .from('my_questions')
-          .select(COLUMNS)
-          .order('created_at', { ascending: false })
-          .order('id')
-          .range(from, from + PAGE_SIZE - 1)
-        if (error) throw error
-        all.push(
-          ...data.map((row) => {
-            const choices = parseChoices(row.choices)
-            return { ...row, choices, choice_notes: parseChoiceNotes(row.choice_notes, choices.length) }
-          }),
-        )
-        if (data.length < PAGE_SIZE) return all
+      try {
+        return await loadBank(true)
+      } catch (error) {
+        // Her topics in subjects not set up yet (migration 0019): still load everything, just without them.
+        if ((error as { code?: string }).code !== UNDEFINED_COLUMN) throw error
+        return loadBank(false)
       }
     },
   })
+}
+
+/** The question bank in pages. `withSubjectTopic` = false before migration 0019 (every subject_topic is then null). */
+async function loadBank(withSubjectTopic: boolean): Promise<BankQuestion[]> {
+  const all: BankQuestion[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('my_questions')
+      .select(withSubjectTopic ? `${COLUMNS}, subject_topic` : COLUMNS)
+      .order('created_at', { ascending: false })
+      .order('id')
+      .range(from, from + PAGE_SIZE - 1)
+    if (error) throw error
+    const rows = data as unknown as (Omit<BankQuestion, 'choices' | 'choice_notes' | 'subject_topic'> & {
+      choices: Json
+      choice_notes: Json | null
+      subject_topic?: string | null
+    })[]
+    all.push(
+      ...rows.map((row) => {
+        const choices = parseChoices(row.choices)
+        return { ...row, choices, choice_notes: parseChoiceNotes(row.choice_notes, choices.length), subject_topic: row.subject_topic ?? null }
+      }),
+    )
+    if (rows.length < PAGE_SIZE) return all
+  }
 }
 
 /** After any change, refresh the bank (and anything that shows question text). */
@@ -116,8 +136,12 @@ export async function updateQuestion(id: string, draft: QuestionDraft, options: 
  * Where one of her questions lives: in a subject's book under `topicId` (inSubject true), or only in her books
  * (inSubject false, under the hidden "Your books" topic, migration 0007).
  */
-export async function setQuestionPlace(id: string, topicId: number, inSubject: boolean) {
-  const { error } = await supabase.from('questions').update({ topic_id: topicId, in_subject: inSubject }).eq('id', id)
+export async function setQuestionPlace(id: string, topicId: number, inSubject: boolean, withSubjectTopic = true): Promise<void> {
+  // Picking a board topic (or "Book only") takes it out of her own topic in the subject (migration 0019).
+  const changes = { topic_id: topicId, in_subject: inSubject, ...(withSubjectTopic && { subject_topic: null }) }
+  const { error } = await supabase.from('questions').update(changes).eq('id', id)
+  // Before migration 0019 there's no subject_topic: save the rest without it.
+  if (error?.code === UNDEFINED_COLUMN && withSubjectTopic) return setQuestionPlace(id, topicId, inSubject, false)
   if (error) throw error
 }
 

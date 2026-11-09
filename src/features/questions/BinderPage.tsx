@@ -1,4 +1,4 @@
-import { ChevronDown, Ellipsis, Microscope, Pencil, Play, Star, Timer } from 'lucide-react'
+import { Bookmark, ChevronDown, Ellipsis, Microscope, Pencil, Play, Star, Timer } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { MAX_STARS, NO_CHAPTER, starsFor } from '@/lib/books'
@@ -230,12 +230,31 @@ const LEVEL_DOT: Record<CoverageLevel, { className: string; label: string }> = {
  * Phones: one row to swipe through, so the questions stay high up.
  * Each line is a real radio button, so arrow keys and screen readers work like any other choice.
  */
-export function Contents({ subject, topicId, onSelect }: { subject: SubjectCoverage; topicId: number | null; onSelect: (topicId: number | null) => void }) {
+export function Contents({
+  subject,
+  topicId,
+  onSelect,
+  myTopics = [],
+  myTopic = null,
+  onSelectMine,
+  onTopicMenu,
+}: {
+  subject: SubjectCoverage
+  topicId: number | null
+  onSelect: (topicId: number | null) => void
+  /** her own topics in this subject (migration 0019), e.g. a book she merged in */
+  myTopics?: { name: string; count: number }[]
+  /** the chosen one of hers, or null */
+  myTopic?: string | null
+  onSelectMine?: (name: string) => void
+  /** the ⋯ next to her chosen topic (Rename, Move to its own book); board topics never get one */
+  onTopicMenu?: (name: string) => void
+}) {
   // A topic chosen from elsewhere (coming back from the editor) may be out of view: bring it in.
   const list = useRef<HTMLDivElement>(null)
   useEffect(() => {
     list.current?.querySelector('input:checked')?.closest('label')?.scrollIntoView({ block: 'nearest', inline: 'center' })
-  }, [topicId])
+  }, [topicId, myTopic])
 
   return (
     <fieldset className="min-w-0 border-t border-primary/10 pt-3">
@@ -245,9 +264,34 @@ export function Contents({ subject, topicId, onSelect }: { subject: SubjectCover
       </p>
       {/* The scrolling is on this div because a fieldset doesn't keep its contents inside it. */}
       <div ref={list} className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:flex-col md:gap-0.5 md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden">
-        <Line checked={topicId === null} onChange={() => onSelect(null)} count={subject.total}>
+        <Line checked={topicId === null && myTopic === null} onChange={() => onSelect(null)} count={subject.total}>
           All topics
         </Line>
+        {/* Her own topics first (a bookmark marks them as hers), each with a ⋯ when chosen */}
+        {myTopics.map((t) =>
+          onTopicMenu && myTopic === t.name ? (
+            <div key={`mine-${t.name}`} className="flex shrink-0 items-center gap-1">
+              <div className="min-w-0 flex-1">
+                <Line checked onChange={() => onSelectMine?.(t.name)} count={t.count} mine>
+                  {t.name}
+                </Line>
+              </div>
+              <button
+                type="button"
+                onClick={() => onTopicMenu(t.name)}
+                aria-label={`Options for ${t.name}`}
+                title="Topic options"
+                className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground', focusRing)}
+              >
+                <Ellipsis className="size-5" aria-hidden />
+              </button>
+            </div>
+          ) : (
+            <Line key={`mine-${t.name}`} checked={myTopic === t.name} onChange={() => onSelectMine?.(t.name)} count={t.count} mine>
+              {t.name}
+            </Line>
+          ),
+        )}
         {/* fewest questions first (summarizeCoverage), so the gaps are easy to spot */}
         {subject.topics.map((t) => (
           <Line key={t.topicId} checked={topicId === t.topicId} onChange={() => onSelect(t.topicId)} level={t.level} count={t.count}>
@@ -269,7 +313,7 @@ export function ChapterContents({
   total,
   chapter,
   onSelect,
-  onSplit,
+  onTopicMenu,
 }: {
   chapters: { name: string; count: number }[]
   /** questions with no chapter */
@@ -278,8 +322,8 @@ export function ChapterContents({
   /** the chosen chapter, NO_CHAPTER, or null for all */
   chapter: string | null
   onSelect: (chapter: string | null) => void
-  /** "Move to its own book" for the chosen topic (migration 0016) */
-  onSplit?: (chapter: string) => void
+  /** the ⋯ next to the chosen topic: its menu (Rename topic, Move to its own book) */
+  onTopicMenu?: (chapter: string) => void
 }) {
   const list = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -297,8 +341,8 @@ export function ChapterContents({
           All topics
         </Line>
         {chapters.map((c) =>
-          // The chosen topic gets a small ⋯ next to it: tucked away, since moving a topic out is rarely needed.
-          onSplit && chapter === c.name ? (
+          // The chosen topic gets a small ⋯ next to it (its menu): tucked away until she needs it.
+          onTopicMenu && chapter === c.name ? (
             <div key={c.name} className="flex shrink-0 items-center gap-1">
               <div className="min-w-0 flex-1">
                 <Line checked onChange={() => onSelect(c.name)} count={c.count}>
@@ -307,9 +351,9 @@ export function ChapterContents({
               </div>
               <button
                 type="button"
-                onClick={() => onSplit(c.name)}
-                aria-label={`More for ${c.name}: move it to its own book`}
-                title="Move to its own book"
+                onClick={() => onTopicMenu(c.name)}
+                aria-label={`Options for ${c.name}`}
+                title="Topic options"
                 className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground', focusRing)}
               >
                 <Ellipsis className="size-5" aria-hidden />
@@ -335,7 +379,22 @@ export function ChapterContents({
   )
 }
 
-function Line({ checked, onChange, level, count, children }: { checked: boolean; onChange: () => void; level?: CoverageLevel; count: number; children: ReactNode }) {
+function Line({
+  checked,
+  onChange,
+  level,
+  count,
+  mine = false,
+  children,
+}: {
+  checked: boolean
+  onChange: () => void
+  level?: CoverageLevel
+  count: number
+  /** her own topic in a subject: a small bookmark instead of the dot */
+  mine?: boolean
+  children: ReactNode
+}) {
   const dot = level ? LEVEL_DOT[level] : null
   return (
     <label
@@ -346,7 +405,9 @@ function Line({ checked, onChange, level, count, children }: { checked: boolean;
       )}
     >
       <input type="radio" name="binder-topic" checked={checked} onChange={onChange} className="sr-only" />
-      {dot ? (
+      {mine ? (
+        <Bookmark role="img" aria-label="Your topic" className={cn('size-3.5 shrink-0', checked ? 'text-white' : 'text-primary')} />
+      ) : dot ? (
         <span role="img" aria-label={dot.label} className={cn('size-2 shrink-0 rounded-full', dot.className, checked && dot.className.startsWith('border') && 'border-white')} />
       ) : (
         <span aria-hidden className={cn('size-2 shrink-0 rounded-full', checked ? 'bg-white' : 'bg-primary/40')} />

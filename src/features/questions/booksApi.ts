@@ -156,6 +156,37 @@ export async function splitTopic(bookId: string, chapter: string, library: numbe
   return data
 }
 
+/**
+ * Merges one of her books into a subject (migration 0019): the book is removed, its questions join their own
+ * subjects under her topic `topic` (written-in-book ones go into `subjectId`). Returns how many joined.
+ */
+export async function mergeIntoSubject(sourceId: string, subjectId: number, topic: string, skipIds: string[] = []): Promise<number> {
+  const { data, error } = await supabase.rpc('merge_into_subject', { p_source: sourceId, p_subject_id: subjectId, p_topic: topic, p_skip: skipIds })
+  if (error) throw error
+  return data
+}
+
+/** Renames her topic inside a subject (migration 0019). */
+export async function renameSubjectTopic(subjectId: number, oldName: string, newName: string): Promise<number> {
+  const { data, error } = await supabase.rpc('rename_subject_topic', { p_subject_id: subjectId, p_old: oldName, p_new: newName })
+  if (error) throw error
+  return data
+}
+
+/** Her topic inside a subject becomes a book again (migration 0019). Returns the new book's id. */
+export async function splitSubjectTopic(subjectId: number, topic: string, library: number): Promise<string> {
+  const { data, error } = await supabase.rpc('split_subject_topic', { p_subject_id: subjectId, p_topic: topic, p_library: library })
+  if (error) throw error
+  return data
+}
+
+/** Renames a topic in one of her books: every question under it gets the new name (migration 0018). */
+export async function renameTopic(bookId: string, oldName: string, newName: string): Promise<number> {
+  const { data, error } = await supabase.rpc('rename_topic', { p_book_id: bookId, p_old: oldName, p_new: newName })
+  if (error) throw error
+  return data
+}
+
 /** Puts questions in a book (optionally in a chapter). Ones already in it are skipped, so this is safe to repeat. */
 export async function addToBook(bookId: string, questionIds: string[], chapter: string | null = null) {
   if (questionIds.length === 0) return
