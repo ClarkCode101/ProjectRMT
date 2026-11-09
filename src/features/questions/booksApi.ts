@@ -12,6 +12,10 @@ export type Book = {
   /** which library it stands in (1–3) */
   library: number
   createdAt: string
+  /** when she shared it to Community (migration 0010); null = private */
+  publishedAt: string | null
+  /** the shared book this is her copy of; null = she made it herself (or the original was deleted) */
+  copiedFrom: string | null
   /** the questions in it, for quick "is this question in that book?" checks */
   questionIds: ReadonlySet<string>
   /** each question's chapter in this book (null = no chapter) */
@@ -31,7 +35,11 @@ export function useBooks({ enabled = true }: { enabled?: boolean } = {}) {
     queryKey: ['books'],
     enabled,
     queryFn: async (): Promise<Book[]> => {
-      const { data: books, error } = await supabase.from('books').select('id, title, color, library, created_at').order('created_at').order('id')
+      const { data: books, error } = await supabase
+        .from('books')
+        .select('id, title, color, library, created_at, published_at, copied_from')
+        .order('created_at')
+        .order('id')
       if (error) throw error
 
       // Which question is in which book (and its chapter), loaded in pages (Supabase returns at most 1000 rows per request).
@@ -52,7 +60,17 @@ export function useBooks({ enabled = true }: { enabled?: boolean } = {}) {
       }
       return books.map((b) => {
         const chapters = chaptersByBook.get(b.id) ?? new Map<string, string | null>()
-        return { id: b.id, title: b.title, color: b.color, library: b.library, createdAt: b.created_at, questionIds: new Set(chapters.keys()), chapters }
+        return {
+          id: b.id,
+          title: b.title,
+          color: b.color,
+          library: b.library,
+          createdAt: b.created_at,
+          publishedAt: b.published_at,
+          copiedFrom: b.copied_from,
+          questionIds: new Set(chapters.keys()),
+          chapters,
+        }
       })
     },
   })

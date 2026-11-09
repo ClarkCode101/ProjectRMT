@@ -1,4 +1,4 @@
-import { BadgeCheck, Bookmark, BookMinus, BookPlus, Check, ChevronDown, CircleCheck, Flag, Info, Pencil, Search, SlidersHorizontal, Trash2, X } from 'lucide-react'
+import { BadgeCheck, Bookmark, BookMinus, BookPlus, Check, ChevronDown, CircleCheck, Flag, Info, Pencil, Search, SlidersHorizontal, Trash2, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import { PageHeader } from '@/components/dashboard'
@@ -293,6 +293,19 @@ function QuestionBankView({
                         : undefined
                     }
                     onEdit={() => setEditingBook(true)}
+                    tag={
+                      book.publishedAt ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/[0.08] px-2 py-px text-xs font-semibold text-primary">
+                          <Users className="size-3" aria-hidden />
+                          Shared to Community
+                        </span>
+                      ) : book.copiedFrom ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-px text-xs font-semibold text-foreground">
+                          <Users className="size-3" aria-hidden />
+                          From Community
+                        </span>
+                      ) : undefined
+                    }
                     note={
                       <>
                         Fill it with <span className="font-semibold text-foreground">{addLabel}</span>, or open any subject and tap{' '}

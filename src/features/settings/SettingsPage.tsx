@@ -53,7 +53,11 @@ function SettingsForm({ initial }: { initial: StudySettings }) {
     if (!dateOk) return
     setStatus('saving')
     try {
-      if (nameChanged) await saveFirstName(name)
+      if (nameChanged) {
+        await saveFirstName(name)
+        // her shared books on Community show this name (read live, migration 0011)
+        void queryClient.invalidateQueries({ queryKey: ['community'] })
+      }
       if (planChanged) {
         await saveStudySettings({ examDate: examDate || null, dailyTarget })
         await queryClient.invalidateQueries({ queryKey: ['study-settings'] })

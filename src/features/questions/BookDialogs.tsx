@@ -1,9 +1,11 @@
-import { Check, Plus, X } from 'lucide-react'
+import { Check, Plus, Users, X } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { BOOK_COLORS, BOOK_SPINE, BOOK_TITLE_MAX, CHAPTER_MAX, chapterList, cleanBookTitle, cleanChapter, cleanLibraryName, LIBRARY_NAME_MAX } from '@/lib/books'
+import { communityErrorMessage } from '@/lib/community'
+import { setBookShared, useRefreshCommunity } from '@/features/community/api'
 import type { BookColor } from '@/lib/database.types'
 import { useBookTopicId, useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
@@ -134,7 +136,10 @@ function BookForm({
           <h2 id="book-dialog-heading" className="text-xl font-bold">
             Delete “{book.title}”?
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">The book is removed from your shelf. Its questions stay in their subjects, so nothing else is lost.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The book is removed from your shelf. Its questions stay in their subjects, so nothing else is lost.
+            {book.publishedAt && ' It also leaves Community; classmates who already added it keep their copies.'}
+          </p>
         </div>
         {saveError && (
           <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
@@ -243,6 +248,8 @@ function BookForm({
         </div>
       </fieldset>
 
+      {book && <ShareSwitch book={book} />}
+
       {noRoomAnywhere && (
         <p role="alert" className="rounded-md bg-highlight-soft px-3 py-2 text-sm font-semibold">
           All three libraries are full. Delete a book you don’t need anymore to make room.
@@ -266,6 +273,77 @@ function BookForm({
         )}
       </div>
     </form>
+  )
+}
+
+/**
+ * "Share to Community" in Edit book. It saves right away (not with Save), like a phone's settings switch,
+ * so she can turn it on or off without touching the rest of the form.
+ */
+function ShareSwitch({ book }: { book: Book }) {
+  const refreshCommunity = useRefreshCommunity()
+  const [shared, setShared] = useState(book.publishedAt !== null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const empty = book.questionIds.size === 0
+  // An empty book can't be shared, but if it somehow is, she can still turn it off.
+  const disabled = busy || (empty && !shared)
+
+  async function toggle() {
+    const next = !shared
+    setBusy(true)
+    setError(null)
+    try {
+      await setBookShared(book.id, next)
+      setShared(next)
+      refreshCommunity()
+    } catch (e) {
+      setError(communityErrorMessage(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border bg-card p-3">
+      <div className="flex items-start gap-3">
+        <Users className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <p id={`share-${book.id}`} className="font-bold">
+            Share to Community
+          </p>
+          <p id={`share-hint-${book.id}`} className="text-sm text-muted-foreground">
+            {empty && !shared
+              ? 'Add at least one question first.'
+              : shared
+                ? 'Everyone with a ProjectRMT account can see it and add their own copy.'
+                : 'Only you can see this book.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={shared}
+          aria-labelledby={`share-${book.id}`}
+          aria-describedby={`share-hint-${book.id}`}
+          disabled={disabled}
+          onClick={() => void toggle()}
+          className={cn(
+            'relative mt-0.5 h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50',
+            focusRing,
+            shared ? 'bg-primary' : 'bg-muted-foreground/40',
+          )}
+        >
+          <span className={cn('absolute top-1 left-1 size-5 rounded-full bg-white shadow transition-transform', shared && 'translate-x-5')} />
+        </button>
+      </div>
+      {shared && <p className="text-xs text-muted-foreground">If you stop sharing later, classmates who already added it keep their copies.</p>}
+      {error && (
+        <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
+          {error}
+        </p>
+      )}
+    </div>
   )
 }
 

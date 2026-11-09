@@ -100,6 +100,7 @@ export function TitlePage({
   study,
   onEdit,
   note,
+  tag,
 }: {
   title: string
   /** the full subject name (subjects only) */
@@ -113,6 +114,8 @@ export function TitlePage({
   onEdit?: () => void
   /** a short line under the title (e.g. how to fill her book) */
   note?: ReactNode
+  /** a small label after the question count (e.g. "Shared to Community") */
+  tag?: ReactNode
 }) {
   const stars = accuracy === undefined ? null : starsFor(accuracy)
   return (
@@ -132,11 +135,14 @@ export function TitlePage({
             </button>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">
-          {subtitle && <>{subtitle} · </>}
-          <span className="tabular-nums">
-            {count} question{count === 1 ? '' : 's'}
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+          <span>
+            {subtitle && <>{subtitle} · </>}
+            <span className="tabular-nums">
+              {count} question{count === 1 ? '' : 's'}
+            </span>
           </span>
+          {tag}
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
