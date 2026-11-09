@@ -214,6 +214,16 @@ export type Database = {
         Args: { p_book_id: string; p_library: number }
         Returns: string
       }
+      // migration 0012: move every question of one book into another under one topic, then delete the first
+      merge_books: {
+        Args: { p_source: string; p_target: string; p_chapter: string }
+        Returns: number
+      }
+      // migration 0013: delete a book and her questions that lived only in it
+      delete_book: {
+        Args: { p_book_id: string }
+        Returns: number
+      }
     }
     Enums: {
       question_source: QuestionSource
