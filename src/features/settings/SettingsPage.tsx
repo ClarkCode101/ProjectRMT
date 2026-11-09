@@ -1,10 +1,12 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { CalendarClock, Check, RotateCcw, Target } from 'lucide-react'
+import { CalendarClock, Check, RotateCcw, Target, UserRound } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/features/auth/authContext'
 import { countdownLabel, daysUntil, isValidDate } from '@/lib/planner'
+import { firstName, saveFirstName } from '@/lib/profile'
 import { cn } from '@/lib/utils'
 import { DAILY_TARGET_CHOICES, resetProgress, saveStudySettings, useStudySettings, type StudySettings } from './api'
 
@@ -28,21 +30,29 @@ function Section({ icon, title, hint, children }: { icon: ReactNode; title: stri
 function SettingsForm({ initial }: { initial: StudySettings }) {
   const queryClient = useQueryClient()
   const [now] = useState(() => new Date())
+  // Her name is saved on her login account, not with the study settings (see lib/profile.ts).
+  const savedName = firstName(useAuth().session?.user) ?? ''
+  const [name, setName] = useState(savedName)
   const [examDate, setExamDate] = useState(initial.examDate ?? '')
   const [dailyTarget, setDailyTarget] = useState(initial.dailyTarget)
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   const dateOk = examDate === '' || isValidDate(examDate)
   const preview = examDate && dateOk ? countdownLabel(daysUntil(examDate, now)) : null
-  const changed = examDate !== (initial.examDate ?? '') || dailyTarget !== initial.dailyTarget
+  const nameChanged = name.trim() !== savedName
+  const planChanged = examDate !== (initial.examDate ?? '') || dailyTarget !== initial.dailyTarget
+  const changed = nameChanged || planChanged
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!dateOk) return
     setStatus('saving')
     try {
-      await saveStudySettings({ examDate: examDate || null, dailyTarget })
-      await queryClient.invalidateQueries({ queryKey: ['study-settings'] })
+      if (nameChanged) await saveFirstName(name)
+      if (planChanged) {
+        await saveStudySettings({ examDate: examDate || null, dailyTarget })
+        await queryClient.invalidateQueries({ queryKey: ['study-settings'] })
+      }
       setStatus('saved')
     } catch {
       setStatus('error')
@@ -51,6 +61,24 @@ function SettingsForm({ initial }: { initial: StudySettings }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <Section icon={<UserRound className="size-5" aria-hidden />} title="Your name" hint="Home greets you with it.">
+        <label htmlFor="first-name" className="sr-only">
+          Your name
+        </label>
+        <input
+          id="first-name"
+          value={name}
+          maxLength={40}
+          autoComplete="given-name"
+          placeholder="First name or nickname"
+          onChange={(e) => {
+            setName(e.target.value)
+            setStatus('idle')
+          }}
+          className="h-12 w-full rounded-lg border border-input bg-background px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        />
+      </Section>
+
       <Section icon={<CalendarClock className="size-5" aria-hidden />} title="Board exam date" hint="Home counts down the days to it.">
         <label htmlFor="exam-date" className="sr-only">
           Board exam date
@@ -230,7 +258,7 @@ export default function SettingsPage() {
   if (settings.isError) return <FullPageMessage>Couldn’t load your settings. Check your internet connection, then refresh.</FullPageMessage>
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader title="Settings" subtitle="Your study plan." />
+      <PageHeader title="Settings" subtitle="You and your study plan." />
       <SettingsForm initial={settings.data} />
       <ResetProgress />
     </div>
