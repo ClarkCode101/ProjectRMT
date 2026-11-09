@@ -111,7 +111,23 @@ export type Database = {
         'title' | 'value'
       >
       // migration 0004: her own books (named collections of questions, like playlists)
-      books: Table<{ id: string; owner_id: string; title: string; color: BookColor; library: number; created_at: string }, 'title'>
+      // published_at, copied_from: migration 0010 (Community). The app can't write these two directly;
+      // publish_book and add_community_book set them. (0010's author_name was removed in 0011: the name is read live.)
+      books: Table<
+        {
+          id: string
+          owner_id: string
+          title: string
+          color: BookColor
+          library: number
+          created_at: string
+          /** when it was shared to Community; null = private */
+          published_at: string | null
+          /** the shared book this is a copy of; null = her own book (or the original was deleted) */
+          copied_from: string | null
+        },
+        'title'
+      >
       libraries: Table<{ owner_id: string; slot: number; name: string }, 'slot' | 'name'>
       // chapter: migration 0005 (her own name for a group of questions inside the book; null = none)
       book_questions: Table<{ book_id: string; question_id: string; added_at: string; chapter: string | null }, 'book_id' | 'question_id'>
@@ -168,6 +184,35 @@ export type Database = {
       find_similar_questions: {
         Args: { p_stem: string; p_threshold?: number }
         Returns: { id: string; stem: string; score: number; exact: boolean }[]
+      }
+      // migration 0010: the Community shelf
+      publish_book: {
+        Args: { p_book_id: string; p_publish: boolean }
+        Returns: undefined
+      }
+      community_books: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          title: string
+          color: BookColor
+          /** the author's first name from their account right now (migration 0011); "A classmate" if none */
+          author_name: string
+          published_at: string
+          question_count: number
+          subject_codes: string[]
+          times_added: number
+          is_mine: boolean
+          my_copy_id: string | null
+        }[]
+      }
+      community_book_preview: {
+        Args: { p_book_id: string; p_limit?: number }
+        Returns: { question_id: string; stem: string; subject_code: string; chapter: string | null }[]
+      }
+      add_community_book: {
+        Args: { p_book_id: string; p_library: number }
+        Returns: string
       }
     }
     Enums: {
