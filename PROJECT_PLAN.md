@@ -1,6 +1,6 @@
 # ProjectRMT (MTLE Reviewer) — Project Plan
 
-A private, mobile-first PWA to help one MedTech student review for the Philippine **Medical Technologist Licensure Examination (MTLE)**. It combines a built-in question bank with her own reviewer content, plus smart duplicate detection, practice quizzes, mock exams, flashcards with spaced repetition, and a weak-area dashboard.
+A private, mobile-first PWA (login required; a small group of about 15 classmates, not public) to help MedTech students review for the Philippine **Medical Technologist Licensure Examination (MTLE)**. It combines a built-in question bank with her own reviewer content, plus smart duplicate detection, practice quizzes, mock exams, flashcards with spaced repetition, and a weak-area dashboard.
 
 > **Goal:** zero-cost hosting, works on iPhone and Android, offline-capable, private (login required).
 
@@ -85,7 +85,15 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 2. **Open-licensed references**: e.g. OpenStax *Microbiology* and LibreTexts, used as the basis for questions.
 3. **User-fed content**: her own notes and reviewers (manual, or uploaded as PDF/DOCX/text).
 
-> 🔒 Uploaded reviewers may be copyrighted (review centers, books). Keep everything **private** behind RLS and never make it public.
+> 🔒 Uploaded reviewers may be copyrighted (review centers, books). Everything stays **private** behind RLS and the app is never made public.
+> The one exception is the **Community shelf** (migration 0010): a user can choose to share one of their books, uploads included, with the other logged-in accounts (a group of about 15, decided by the owner, 2026-11-09). If the app ever opens to the public, revisit this before then.
+
+### Community shelf (migration 0010)
+- **Share**: Edit book → "Share to Community" switch (saves right away). Only books with at least one question.
+- **Browse**: `/community` (its own icon in the main nav; it took Quick reference's spot, which is off the menus for now but `/reference` still works): search by book or classmate, subject chips, Newest / Most added, a peek at the first 5 questions.
+- **Add to library**: makes the user's **own copy** (book + questions + chapters) in a library they pick (12-slot limit applies). Built-in questions are linked, not copied. Copied questions are book-only (`in_subject = false`). The copy is kept even if the author edits, stops sharing or deletes the original.
+- RLS is unchanged; four `security definer` functions do the sharing (`publish_book`, `community_books`, `community_book_preview`, `add_community_book`). `published_at` and `copied_from` can only be set by them.
+- **Author name** is read live from the author's account (first name in Settings) every time, so a new name shows on all their shared books right away; no first name = "A classmate" (migration 0011).
 
 ### Seed JSON format
 ```json
@@ -456,6 +464,7 @@ mtle-reviewer/
 15. [ ] Image-based questions (blood smears, parasite ova, urine crystals, colonies) — moved up from Phase 4
 16. [ ] PWA + iOS polish — installable (manifest, icons, service worker caching the app shell), install tip + Settings "Install app" done; offline Practice, Mock exam and Flashcards done (lib/offline: saved question bank in IndexedDB + outbox for answers and card ratings); still online-only: books as a source, editing/uploading questions, Report a problem
 17. [x] Deploy to Vercel/Netlify — deployed on Cloudflare Pages instead
+18. [x] Community shelf: share a book, browse, add your own copy (migration 0010; online only)
 
 ---
 
