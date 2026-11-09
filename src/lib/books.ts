@@ -153,6 +153,16 @@ export function questionsOnlyIn(
   ).length
 }
 
+/**
+ * Her own topics inside a subject (migration 0019), from that subject's questions: each name with how many
+ * questions it has, A–Z (ignoring capitals). Questions with no topic of hers aren't counted.
+ */
+export function subjectTopicList(questions: readonly { subject_topic: string | null }[]): { name: string; count: number }[] {
+  const counts = new Map<string, number>()
+  for (const q of questions) if (q.subject_topic !== null) counts.set(q.subject_topic, (counts.get(q.subject_topic) ?? 0) + 1)
+  return [...counts].map(([name, count]) => ({ name, count })).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }))
+}
+
 /** Which books a question is in, from the list of every book and its questions. */
 export function booksContaining<T extends { id: string; questionIds: ReadonlySet<string> }>(books: readonly T[], questionId: string): T[] {
   return books.filter((b) => b.questionIds.has(questionId))

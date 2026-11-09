@@ -17,6 +17,7 @@ import {
   mergeTopicName,
   questionsOnlyIn,
   starsFor,
+  subjectTopicList,
 } from './books'
 
 describe('cleanBookTitle', () => {
@@ -203,5 +204,20 @@ describe('questionsOnlyIn', () => {
 
   it('is 0 for a book that does not exist', () => {
     expect(questionsOnlyIn('nope', books, questions)).toBe(0)
+  })
+})
+
+describe('subjectTopicList', () => {
+  it('counts her topics A to Z and leaves out questions without one', () => {
+    const questions = [{ subject_topic: 'ewan' }, { subject_topic: null }, { subject_topic: 'Abby' }, { subject_topic: 'ewan' }]
+    expect(subjectTopicList(questions)).toEqual([
+      { name: 'Abby', count: 1 },
+      { name: 'ewan', count: 2 },
+    ])
+  })
+
+  it('is empty when she has no topics in the subject', () => {
+    expect(subjectTopicList([{ subject_topic: null }])).toEqual([])
+    expect(subjectTopicList([])).toEqual([])
   })
 })

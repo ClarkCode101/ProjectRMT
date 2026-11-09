@@ -1,13 +1,14 @@
-// The duplicate check for merging two of her books (migration 0017), kept here so it can be tested.
+// The duplicate check for merging (migrations 0017, 0019), kept here so it can be tested.
 // It works like the upload's check (find_similar_questions in the database): the same cleanup of the question
-// text, and the same "60% alike" line, but it only compares the two books, so it runs right in the browser.
+// text, the same "60% alike" line, and it looks at EVERY question she has (all subjects, built-in ones too, and
+// all her books), not just where the questions are going. It runs right in the browser.
 
 import { normalizeStem } from './parsers/questionParser'
 
 /** How alike two questions must be to count as "possibly the same" (same as the upload check). */
 export const SIMILAR_AT = 0.6
 
-/** The 3-letter pieces of a text, the way Postgres's pg_trgm makes them (each word padded with spaces). */
+/** The 3-letter pieces of a cleaned-up text, the way Postgres's pg_trgm makes them (each word padded with spaces). */
 function trigrams(normalized: string): Set<string> {
   const pieces = new Set<string>()
   for (const word of normalized.split(' ')) {
@@ -18,47 +19,67 @@ function trigrams(normalized: string): Set<string> {
   return pieces
 }
 
+/** How alike two sets of pieces are, from 0 to 1 (shared ÷ all). */
+function overlap(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0
+  let shared = 0
+  for (const t of a) if (b.has(t)) shared++
+  return shared / (a.size + b.size - shared)
+}
+
 /** How alike two question texts are, from 0 (nothing alike) to 1 (the same), like pg_trgm's similarity(). */
 export function similarity(a: string, b: string): number {
-  const ta = trigrams(normalizeStem(a))
-  const tb = trigrams(normalizeStem(b))
-  if (ta.size === 0 || tb.size === 0) return 0
-  let shared = 0
-  for (const t of ta) if (tb.has(t)) shared++
-  return shared / (ta.size + tb.size - shared)
+  return overlap(trigrams(normalizeStem(a)), trigrams(normalizeStem(b)))
 }
 
 export type MergeDuplicate = {
   /** the question coming in from the book being merged */
   incomingId: string
   incomingStem: string
-  /** the question already in the other book that it looks like */
+  /** the question she already has that it looks like */
   existingId: string
   existingStem: string
+  /** where that one lives, e.g. "CC · Ewan" or "book “Test”" (empty when not given) */
+  existingPlace: string
   /** true = the same question (same text after cleanup); false = only alike */
   exact: boolean
   score: number
 }
 
 /**
- * The questions coming in from `incoming` that look like one already in `existing`: the best match for each
- * (the same text first, then the most alike), the same ones first. A question in both books isn't listed
- * (merging already skips it).
+ * The questions coming in that look like one she already has in `existing` (pass every question she has except
+ * the incoming ones): the best match for each (the same text first, then the most alike), the same ones first.
  */
-export function findMergeDuplicates(incoming: readonly { id: string; stem: string }[], existing: readonly { id: string; stem: string }[]): MergeDuplicate[] {
-  const existingIds = new Set(existing.map((q) => q.id))
-  const prepared = existing.map((q) => ({ ...q, normalized: normalizeStem(q.stem) }))
+export function findMergeDuplicates(
+  incoming: readonly { id: string; stem: string }[],
+  existing: readonly { id: string; stem: string; place?: string }[],
+): MergeDuplicate[] {
+  const incomingIds = new Set(incoming.map((q) => q.id))
+  // Each existing question's cleaned text and pieces, worked out once (not once per incoming question).
+  const prepared = existing
+    .filter((q) => !incomingIds.has(q.id))
+    .map((q) => {
+      const normalized = normalizeStem(q.stem)
+      return { ...q, normalized, pieces: trigrams(normalized) }
+    })
+  const byText = new Map<string, (typeof prepared)[number]>()
+  for (const e of prepared) if (e.normalized !== '' && !byText.has(e.normalized)) byText.set(e.normalized, e)
+
   const found: MergeDuplicate[] = []
   for (const q of incoming) {
-    if (existingIds.has(q.id)) continue
     const normalized = normalizeStem(q.stem)
+    const same = byText.get(normalized)
+    if (same) {
+      found.push({ incomingId: q.id, incomingStem: q.stem, existingId: same.id, existingStem: same.stem, existingPlace: same.place ?? '', exact: true, score: 1 })
+      continue
+    }
+    const pieces = trigrams(normalized)
     let best: MergeDuplicate | null = null
     for (const e of prepared) {
-      const exact = normalized !== '' && normalized === e.normalized
-      const score = exact ? 1 : similarity(q.stem, e.stem)
-      if (!exact && score < SIMILAR_AT) continue
-      if (!best || score > best.score) best = { incomingId: q.id, incomingStem: q.stem, existingId: e.id, existingStem: e.stem, exact, score }
-      if (exact) break
+      const score = overlap(pieces, e.pieces)
+      if (score >= SIMILAR_AT && (!best || score > best.score)) {
+        best = { incomingId: q.id, incomingStem: q.stem, existingId: e.id, existingStem: e.stem, existingPlace: e.place ?? '', exact: false, score }
+      }
     }
     if (best) found.push(best)
   }

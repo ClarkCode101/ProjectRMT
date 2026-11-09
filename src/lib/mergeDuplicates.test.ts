@@ -36,8 +36,26 @@ describe('findMergeDuplicates', () => {
     ])
   })
 
-  it('does not list a question that is already in both books', () => {
+  it('never matches a question with itself (when the incoming ones are in the list too)', () => {
     expect(findMergeDuplicates([{ id: 'e2', stem: existing[1].stem }], existing)).toEqual([])
+  })
+
+  it('says where the matching question lives, looking everywhere it is given', () => {
+    const everywhere = [
+      { id: 'cc1', stem: 'Which enzyme is most specific for acute pancreatitis?', place: 'CC · Ewan' },
+      { id: 'b1', stem: 'Which blood type is the universal donor for red blood cells?', place: 'book “Test”' },
+    ]
+    const found = findMergeDuplicates(
+      [
+        { id: 'i1', stem: 'Which enzyme is most specific for acute pancreatitis?' },
+        { id: 'i2', stem: 'which blood type is the universal donor for red blood cells' },
+      ],
+      everywhere,
+    )
+    expect(found.map((d) => [d.incomingId, d.existingPlace])).toEqual([
+      ['i1', 'CC · Ewan'],
+      ['i2', 'book “Test”'],
+    ])
   })
 
   it('is empty when nothing matches, or a book is empty', () => {
