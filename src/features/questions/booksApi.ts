@@ -138,8 +138,20 @@ export async function deleteBook(id: string): Promise<number> {
  * Moves every question of `sourceId` into `targetId` under one topic (null = no topic), then deletes the source
  * book, all in one step on the database (migration 0012). Returns how many questions were added.
  */
-export async function mergeBooks(sourceId: string, targetId: string, chapter: string | null): Promise<number> {
-  const { data, error } = await supabase.rpc('merge_books', { p_source: sourceId, p_target: targetId, p_chapter: chapter ?? '' })
+export async function mergeBooks(sourceId: string, targetId: string, chapter: string | null, skipIds: string[] = []): Promise<number> {
+  // skipIds: duplicates she chose not to bring in (migration 0017); they're deleted if they lived only in the source
+  const { data, error } = await supabase.rpc('merge_books', { p_source: sourceId, p_target: targetId, p_chapter: chapter ?? '', p_skip: skipIds })
+  if (error) throw error
+  return data
+}
+
+/**
+ * Moves her questions under one topic of a book into a new book named after the topic, in one step on the
+ * database (migration 0016). Returns the new book's id. If they're all unedited copies from one classmate, the
+ * new book shows that classmate as its author again.
+ */
+export async function splitTopic(bookId: string, chapter: string, library: number): Promise<string> {
+  const { data, error } = await supabase.rpc('split_topic', { p_book_id: bookId, p_chapter: chapter, p_library: library })
   if (error) throw error
   return data
 }

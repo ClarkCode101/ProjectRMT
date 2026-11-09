@@ -1,4 +1,4 @@
-import { ChevronDown, Microscope, Pencil, Play, Star, Timer } from 'lucide-react'
+import { ChevronDown, Ellipsis, Microscope, Pencil, Play, Star, Timer } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { MAX_STARS, NO_CHAPTER, starsFor } from '@/lib/books'
@@ -269,6 +269,7 @@ export function ChapterContents({
   total,
   chapter,
   onSelect,
+  onSplit,
 }: {
   chapters: { name: string; count: number }[]
   /** questions with no chapter */
@@ -277,6 +278,8 @@ export function ChapterContents({
   /** the chosen chapter, NO_CHAPTER, or null for all */
   chapter: string | null
   onSelect: (chapter: string | null) => void
+  /** "Move to its own book" for the chosen topic (migration 0016) */
+  onSplit?: (chapter: string) => void
 }) {
   const list = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -293,11 +296,31 @@ export function ChapterContents({
         <Line checked={chapter === null} onChange={() => onSelect(null)} count={total}>
           All topics
         </Line>
-        {chapters.map((c) => (
-          <Line key={c.name} checked={chapter === c.name} onChange={() => onSelect(c.name)} count={c.count}>
-            {c.name}
-          </Line>
-        ))}
+        {chapters.map((c) =>
+          // The chosen topic gets a small ⋯ next to it: tucked away, since moving a topic out is rarely needed.
+          onSplit && chapter === c.name ? (
+            <div key={c.name} className="flex shrink-0 items-center gap-1">
+              <div className="min-w-0 flex-1">
+                <Line checked onChange={() => onSelect(c.name)} count={c.count}>
+                  {c.name}
+                </Line>
+              </div>
+              <button
+                type="button"
+                onClick={() => onSplit(c.name)}
+                aria-label={`More for ${c.name}: move it to its own book`}
+                title="Move to its own book"
+                className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground', focusRing)}
+              >
+                <Ellipsis className="size-5" aria-hidden />
+              </button>
+            </div>
+          ) : (
+            <Line key={c.name} checked={chapter === c.name} onChange={() => onSelect(c.name)} count={c.count}>
+              {c.name}
+            </Line>
+          ),
+        )}
         {/* only when it helps: some questions have a chapter and some don't */}
         {unfiled > 0 && chapters.length > 0 && (
           <Line checked={chapter === NO_CHAPTER} onChange={() => onSelect(NO_CHAPTER)} count={unfiled}>

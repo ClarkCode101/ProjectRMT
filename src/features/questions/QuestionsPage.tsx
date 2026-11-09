@@ -18,7 +18,7 @@ import { reviewStatesOptions } from '@/features/flashcards/api'
 import { countDue } from '@/lib/fsrs'
 import { useQuery } from '@tanstack/react-query'
 import { deleteQuestion, setQuestionStatus, useQuestionBank, useRefreshBank, type BankQuestion } from './api'
-import { AddToBookDialog, BookDialog, ChapterDialog, LibraryDialog, MergeBookDialog } from './BookDialogs'
+import { AddToBookDialog, BookDialog, ChapterDialog, LibraryDialog, MergeBookDialog, SplitTopicDialog } from './BookDialogs'
 import { Bookshelf } from './Bookshelf'
 import { addToBook, removeFromBook, useBooks, useLibraryNames, useRefreshBooks, type Book } from './booksApi'
 import { ChapterContents, Contents, OpenBinder, TitlePage } from './BinderPage'
@@ -109,6 +109,8 @@ function QuestionBankView({
   const [arrivingId, setArrivingId] = useState<string | null>(null)
   // Merging one of her books into another: dropped on the shelf (target picked), or from Edit book (targetId null).
   const [merging, setMerging] = useState<{ sourceId: string; targetId: string | null } | null>(null)
+  // A topic in the open book that's becoming its own book (null = not now).
+  const [splitting, setSplitting] = useState<string | null>(null)
 
   // ---------- Flashcards due in the open book (the count on Study → Flashcards) ----------
   const reviewStates = useQuery({ ...reviewStatesOptions, enabled: !atShelf })
@@ -312,8 +314,9 @@ function QuestionBankView({
                     }
                     note={
                       <>
-                        Fill it with <span className="font-semibold text-foreground">{addLabel}</span>, or open any subject and tap{' '}
-                        <span className="font-semibold text-foreground">Add to book</span> on a question you already have.
+                        {/* Built-in questions can't go into her books (migration 0014), so only her own ways in are named. */}
+                        Fill it with <span className="font-semibold text-foreground">{addLabel}</span> or{' '}
+                        <span className="font-semibold text-foreground">Upload</span> (the button next to it).
                       </>
                     }
                   />
@@ -336,7 +339,15 @@ function QuestionBankView({
                 )}
                 {subject && <Contents subject={subject} topicId={topic?.id ?? null} onSelect={selectTopic} />}
                 {book && contents && (
-                  <ChapterContents chapters={contents.chapters} unfiled={contents.unfiled} total={book.questionIds.size} chapter={chapter} onSelect={selectChapter} />
+                  <ChapterContents
+                    chapters={contents.chapters}
+                    unfiled={contents.unfiled}
+                    total={book.questionIds.size}
+                    chapter={chapter}
+                    onSelect={selectChapter}
+                    // a topic that's the whole book has nothing to split from
+                    onSplit={contents.chapters.length > 1 || contents.unfiled > 0 ? (c) => setSplitting(c) : undefined}
+                  />
                 )}
               </>
             }
@@ -456,6 +467,17 @@ function QuestionBankView({
           }
         />
       )}
+      {/* A topic of the open book becomes its own book; then open the new one */}
+      {book && (
+        <SplitTopicDialog
+          open={splitting !== null}
+          onClose={() => setSplitting(null)}
+          book={book}
+          chapter={splitting}
+          libraries={{ names, roomLeft: roomByLibrary }}
+          onDone={(id) => setSearchParams({ book: id }, { replace: true })}
+        />
+      )}
       {/* Merge one of her books into another (it's then removed; its questions go into the other one) */}
       <MergeBookDialog
         open={merging !== null}
@@ -463,6 +485,7 @@ function QuestionBankView({
         source={books.find((b) => b.id === merging?.sourceId) ?? null}
         target={books.find((b) => b.id === merging?.targetId) ?? null}
         books={books}
+        questions={questions}
         onMerged={(targetId) => {
           setArrivingId(targetId) // the book that took it in does a little hop on the shelf
           // Merged from inside the book (Edit book): that book is gone, so open the one it went into.
