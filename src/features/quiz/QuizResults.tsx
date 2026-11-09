@@ -2,6 +2,7 @@ import { RotateCcw } from 'lucide-react'
 import { Link } from 'react-router'
 import { MistakeItem } from '@/components/MistakeItem'
 import { NoteCard } from '@/components/NoteCard'
+import { VerseCard } from '@/components/VerseCard'
 import { NOTES } from '@/data/encouragements'
 import { pickNote, shouldShowRandomNote } from '@/lib/planner'
 import { HeroPanel, heroButtonClass, RangeBar, REFERENCE_RANGE, SampleRun } from '@/components/report'
@@ -80,6 +81,7 @@ export function QuizResults({ answers, onRestart }: Props) {
       </HeroPanel>
 
       {note && <NoteCard message={note} />}
+      <VerseCard />
 
       {bySubject.size > 1 && (
         <section aria-labelledby="by-subject-heading" className="space-y-3">

@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { AnswerReview } from '@/components/AnswerReview'
 import { NoteCard } from '@/components/NoteCard'
+import { VerseCard } from '@/components/VerseCard'
 import { HeroPanel, heroButtonClass, LowFlag, RangeBar } from '@/components/report'
 import type { QuizQuestion } from '@/features/quiz/api'
 import { formatClock, type MockScore } from '@/lib/mockExam'
@@ -300,6 +301,7 @@ export function MockResults({ label, questions, answers, flags, score, durationS
       </div>
 
       {note && <NoteCard message={note} />}
+      <VerseCard />
 
       {onRetrySave && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-wrong/40 bg-wrong-soft px-4 py-3 text-sm">
