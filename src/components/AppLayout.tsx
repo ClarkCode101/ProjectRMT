@@ -1,6 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  BookMarked,
   Ellipsis,
   House,
   Layers,
@@ -10,6 +9,7 @@ import {
   Play,
   Settings,
   Timer,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 import { Suspense, useState } from 'react'
@@ -31,7 +31,8 @@ const PRACTICE: NavItem = { to: '/practice', label: 'Practice', icon: NotebookPe
 const MOCK: NavItem = { to: '/mock', label: 'Mock exam', icon: Timer }
 const FLASHCARDS: NavItem = { to: '/flashcards', label: 'Flashcards', icon: Layers }
 const QUESTIONS: NavItem = { to: '/questions', label: 'Questions', icon: Library }
-const REFERENCE: NavItem = { to: '/reference', label: 'Quick reference', icon: BookMarked }
+const COMMUNITY: NavItem = { to: '/community', label: 'Community', icon: Users }
+// Quick reference (/reference) is off the menus for now; the page and its address still work.
 
 const focusRing = 'outline-none focus-visible:ring-3 focus-visible:ring-ring/40'
 const floating = 'bg-card shadow-[0_12px_32px_-16px_rgb(7_71_94/0.35)]'
@@ -149,7 +150,7 @@ export function AppLayout() {
               <RailLink item={MOCK} />
               <RailLink item={FLASHCARDS} />
               <RailLink item={QUESTIONS} />
-              <RailLink item={REFERENCE} />
+              <RailLink item={COMMUNITY} />
             </nav>
             {/* Your account, bottom-left (like most sidebar apps): tap the avatar to see your full name, email and Log out. */}
             <div className="fixed bottom-5 left-5 z-30">
@@ -280,12 +281,12 @@ export function AppLayout() {
             {email && <p className="text-sm text-muted-foreground">Logged in as {email}</p>}
           </div>
           <NavLink
-            to="/reference"
+            to="/community"
             onClick={() => setMoreOpen(false)}
             className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
           >
-            <BookMarked className="size-5" aria-hidden />
-            Quick reference
+            <Users className="size-5" aria-hidden />
+            Community
           </NavLink>
           <NavLink
             to="/settings"
