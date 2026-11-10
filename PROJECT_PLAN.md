@@ -471,10 +471,11 @@ mtle-reviewer/
 21. [x] Merge into a subject: drop one of her books (or a Community copy) on a subject book, or Edit book → Merge into… → a subject. The book is removed; each question joins ITS OWN subject (ones written in the book join the dropped-on subject) under her topic named after the book. Her topic is a label on her questions (`questions.subject_topic`), not a row in the shared `topics` list, so it's private and the seed files are untouched; each question keeps its board topic, so the scores per board topic stay right. Duplicates against every question she has (built-in too) are ticked and skipped. Her topics in a subject get the ⋯ (Rename, Move to its own book); board topics never do, and subject books can't be dragged or merged into each other (migration 0019)
 22. [x] Community duplicate check: before "Add to my library", the sheet warns how many of the book's questions look like ones she already has (same 60% check as merge/upload, run in the browser) and lists them to compare. Heads-up only; adding still copies every question. Needs `community_book_stems` (migration 0020). Later: "Skip the ones I have".
 23. [x] Skip the ones I have: in that warning, each question has a tick box (Same ones ticked, alike ones not, like Merge). Ticked ones aren't copied (`add_community_book` p_skip, migration 0021); "N questions will be added · M skipped". Add waits for the check; skipping every question can't add an empty book.
-24. [ ] Board Review, solo (see §14, step 1)
-25. [ ] Board Review, game rooms + invites (§14, step 2)
-26. [ ] Board Review, room chat that clears after 5 hours (§14, step 3)
-27. [ ] *(maybe)* Push notifications for invites (§14, step 4)
+24. [x] Board Review, solo (see §14, step 1): `/board`, three layouts, works offline (migration 0022)
+25. [x] Board Review, live team games (§14, step 2): lobby, invites, invite link, 90-second turns, watching + reveal (migration 0023, already run on Supabase 2026-11-11). **Still to do: a first live test with 2 accounts at once** (create → invite/link → join → start → roll, watch, reveal, let a clock run out, Exit), then fix what it finds.
+26. [ ] Board Review, Lifeline (§14, step 2b): on a snake, a teammate answers the rescue question for you
+27. [ ] Board Review, room chat that clears after 5 hours (§14, step 3)
+28. [ ] *(maybe)* Push notifications for invites (§14, step 4)
 
 ---
 
