@@ -470,6 +470,72 @@ mtle-reviewer/
 21. [x] Merge into a subject: drop one of her books (or a Community copy) on a subject book, or Edit book → Merge into… → a subject. The book is removed; each question joins ITS OWN subject (ones written in the book join the dropped-on subject) under her topic named after the book. Her topic is a label on her questions (`questions.subject_topic`), not a row in the shared `topics` list, so it's private and the seed files are untouched; each question keeps its board topic, so the scores per board topic stay right. Duplicates against every question she has (built-in too) are ticked and skipped. Her topics in a subject get the ⋯ (Rename, Move to its own book); board topics never do, and subject books can't be dragged or merged into each other (migration 0019)
 22. [x] Community duplicate check: before "Add to my library", the sheet warns how many of the book's questions look like ones she already has (same 60% check as merge/upload, run in the browser) and lists them to compare. Heads-up only; adding still copies every question. Needs `community_book_stems` (migration 0020). Later: "Skip the ones I have".
 23. [x] Skip the ones I have: in that warning, each question has a tick box (Same ones ticked, alike ones not, like Merge). Ticked ones aren't copied (`add_community_book` p_skip, migration 0021); "N questions will be added · M skipped". Add waits for the check; skipping every question can't add an empty book.
+24. [ ] Board Review, solo (see §14, step 1)
+25. [ ] Board Review, game rooms + invites (§14, step 2)
+26. [ ] Board Review, room chat that clears after 5 hours (§14, step 3)
+27. [ ] *(maybe)* Push notifications for invites (§14, step 4)
+
+---
+
+## 14. Board Review (snakes and ladders game) — planned 2026-11-11
+
+A snakes-and-ladders board where **you only move if you answer right**. Co-op, never a ranking of classmates. Built in small steps; step 1 must be fun on its own before any multiplayer work.
+
+### Step 1 — Solo board (works offline)
+
+**Board**
+- 60 squares in a 10 × 6 zigzag grid, start at square 1, finish at 60.
+- **Six zones of 10 squares**, one per subject in exam order, each in its subject color: 1–10 CC, 11–20 MICRO, 21–30 HEMA, 31–40 BBIS, 41–50 CM, 51–60 HTMLE. Questions come from the zone she's standing in, so the board is a visible journey through every subject (decided 2026-11-11, chosen over random subjects for the sense of progress).
+- One hand-made layout first: 5 ladders and 5 snakes (data file, not random). Rules for the layout: nothing on squares 1 or 60, a ladder never ends on a snake head, ladders and snakes spread across the zones.
+- Later idea, **Mixed mode**: instead of zones, each question's subject is drawn from a bag of 10 slips weighted like the exam (CC 2, MICRO 2, HEMA 2, BBIS 2, CM 1, HTMLE 1), refilled when empty. Not in step 1.
+- Overshooting 60 just finishes the game (no "exact roll" rule; it only frustrates).
+
+**A turn**
+1. **Roll the die** (1–6). The number shows before the question, so she knows what's at stake. (Decided 2026-11-11: a plain die, no Easy/Medium/Hard choice.)
+2. Answer one question from the current zone's subject (any difficulty, picked with anti-repeat); the subject shows as a chip (e.g. "Hematology").
+3. Correct → the token moves by the roll. Wrong → it stays, and the answer review shows the explanation and the note on every choice (same as Practice).
+4. Land on the foot of a **ladder** → **Challenge question** from the same zone: difficulty 3 if there is one, else one she got wrong before, else any. Correct → climb. Wrong → stay at the foot, no penalty.
+5. Land on a **snake** head → **Rescue question** from her **weakest topic** (lowest accuracy in `summarizePerformance`, at least a few attempts); no weak topic yet → one of her latest mistakes; none → any question from the zone. The rescue can be from any subject, so the snake mixes subjects (interleaving) right where her weak spots are. Correct → safe. Wrong → slide down.
+
+**Questions**
+- Source = All (built-in + hers), same as the Practice default. Anti-repeat with `pickQuestions` / `priorityScore`; never the same question twice in one game.
+- Every answer is saved as an attempt, so it counts toward the subject and topic scores and the Mistake notebook. Offline answers go through the same outbox as Practice. A new session mode `board` (small migration: add the enum value) keeps board answers apart from Practice in the stats.
+
+**Saving the game**
+- One game in progress, saved on the device (local storage) after every turn: position, turn count, questions used, snakes escaped, ladders climbed. "Continue game" / "New game". Losing it (iOS clearing storage) is acceptable; the answers are already in Supabase.
+
+**Finish screen (Lab report style)**
+- Questions answered, accuracy, ladders climbed, snakes escaped vs slid, accuracy per subject, and the topics to review next with a button into Practice for them.
+
+**Layout (iPad first)**
+- Board at the top, the Roll button and question sheet at the bottom (thumb zone). The token walks square by square; ladders and snakes drawn as SVG lines; honor reduced motion. No emoji; lucide icons only.
+
+**Files**
+- `src/lib/board.ts`: layout data, move, square effects, zone for a square, weakest-topic pick. Pure functions with tests in `board.test.ts`.
+- `src/lib/boardSave.ts`: read/write the saved game (try/catch, falls back to "no game").
+- `src/features/board/`: `BoardPage.tsx`, `BoardGrid.tsx`, `TurnSheet.tsx` (roll + question), `BoardResults.tsx`.
+- Route `/board`.
+
+**Notes**
+- Entry (decided 2026-11-11): a nav icon right after Flashcards on the tablet/computer rail; on phones, in the More sheet (the bottom bar is full). Added only once the page exists.
+- *(optional)* **Streak bonus**: 3 correct in a row → she may re-roll once. Try the game without it first.
+- Few difficulty 3 questions (checked 2026-11-11, built-in): CC 45, HEMA 62, BBIS 7, CM 3, HTMLE 2, MICRO 0; her own and uploaded ones are all 2. That's why the ladder Challenge falls back to past mistakes. Long term: write more difficulty 3 questions for MICRO, HTMLE, CM and BBIS.
+
+### Step 2 — Game rooms + invites (online)
+- A team of 2–4 shares **one token**; they take turns, async (no need to be online together). Goal: reach 60 within a week. Opponent = the board.
+- **Lifeline**: on a snake, ask a teammate; they have 24 hours to answer the rescue question for you.
+- **Challenge invite** with Accept / Decline, plus **"Send invite link"** through the iPad share sheet (to Messenger) since the app has no push. Red badge in the nav when an invite or turn is waiting.
+- Anti-spam: at most 3 pending invites per user, one pending invite per person, invites expire after 24 hours.
+- Tables (all with RLS, members only): game rooms, room members, invites. Game state is written by `security definer` functions so nobody can move the token without answering.
+
+### Step 3 — Room chat that clears after 5 hours
+- Chat lives inside a game room only (no separate messenger; the class already has a Messenger group).
+- Quick replies ("Your turn!", "Help me with this one", "Nice save!", "Let's play again") plus free text, max 200 characters, text only.
+- Messages show only while under 5 hours old, and an hourly `pg_cron` job deletes them (also when the game ends). Sender can delete their own message. The UI says "Messages clear after 5 hours", never "private".
+- Supabase Realtime for live updates.
+
+### Step 4 — *(maybe)* Push notifications
+- Web Push (installed PWA on iPad, iOS 16.4+) through a Supabase Edge Function. Only if invites get missed without it.
 
 ---
 
