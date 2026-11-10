@@ -424,6 +424,7 @@ mtle-reviewer/
 | `/practice` | Source selector → practice quiz; also the per-subject / per-topic scores (the old `/dashboard` redirects here) |
 | `/mock` | Mock exam setup → exam → results review |
 | `/flashcards` | Due cards (FSRS) |
+| `/board` | Board Review: snakes and ladders, answer right to move (§14) |
 | `/mistakes` | Redirects to `/practice?from=mistakes` (Review again is a quiz on Practice, not a list page) |
 | `/questions` | Browse, add, edit, verify; coverage map |
 | `/upload` | Upload → parse → duplicate review |
@@ -508,7 +509,9 @@ A snakes-and-ladders board where **you only move if you answer right**. Co-op, n
 - Questions answered, accuracy, ladders climbed, snakes escaped vs slid, accuracy per subject, and the topics to review next with a button into Practice for them.
 
 **Layout (iPad first)**
-- Board at the top, the Roll button and question sheet at the bottom (thumb zone). The token walks square by square; ladders and snakes drawn as SVG lines; honor reduced motion. No emoji; lucide icons only.
+- The board is the star: as big as the screen allows, centered. The Roll button is fixed at the bottom (thumb zone). The question pops up over the board as a bottom sheet (on iPad too) and can't be dismissed before answering; after Continue the popup closes and THEN the token walks, climbs or slides, so she sees it happen. Landing on a ladder or snake: the token arrives first, then its question pops up (changed 2026-11-11, after the first try had the question beside a small board).
+- **Three layouts** (A, B, C in `LAYOUTS`, lib/board.ts); a new game picks one at random, never the one she just played, and the saved game remembers it. Mixed lengths (1 to 3 rows) and angles on purpose: the first try with all of them one row straight up looked and played flat. Every layout has one big 3-row ladder and one big 3-row snake for the drama, at least one ladder and no snake head in CC for a gentle start, and no two ladders/snakes crossing or even coming close (all checked in board.test.ts for each layout).
+- The board is light blue glass (frosted tiles, deep blue numbers for contrast); snakes are drawn friendly (eyes, tongue), not scary. The token walks square by square; ladders and snakes drawn as SVG lines; honor reduced motion. No emoji; lucide icons only.
 
 **Files**
 - `src/lib/board.ts`: layout data, move, square effects, zone for a square, weakest-topic pick. Pure functions with tests in `board.test.ts`.

@@ -1,5 +1,7 @@
-import { Check, CloudOff, Flag, Flame, X } from 'lucide-react'
+import { Check, CloudOff, Flag, Flame } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { ChoiceList } from '@/components/ChoiceList'
+import { keyToPosition } from '@/lib/choiceKeys'
 import { Dialog } from '@/components/Dialog'
 import { SampleRun, type SampleState } from '@/components/report'
 import { Button } from '@/components/ui/button'
@@ -21,8 +23,6 @@ type Props = {
   onExit: (answers: AnswerResult[]) => void
 }
 
-const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
-
 // Rotated so a correct answer doesn't always get the same words.
 const PRAISE = ['Correct! Nice work.', 'Correct! Keep it up.', 'Correct! You got this.', 'Correct! Spot on.', 'Correct! Future RMT right there.']
 const ENCOURAGE = ['Not quite, and that’s okay.', 'Not quite. Now you know.', 'Not quite. We’ll come back to this one.']
@@ -32,14 +32,6 @@ function currentStreak(answers: AnswerResult[]) {
   let streak = 0
   for (let i = answers.length - 1; i >= 0 && answers[i].isCorrect; i--) streak++
   return streak
-}
-
-/** Which display position a key picks: A–F or 1–6. Returns -1 for any other key. */
-function keyToPosition(key: string) {
-  const letter = LETTERS.indexOf(key.toUpperCase())
-  if (letter !== -1) return letter
-  const digit = Number(key)
-  return Number.isInteger(digit) && digit >= 1 && digit <= LETTERS.length ? digit - 1 : -1
 }
 
 export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
@@ -170,68 +162,16 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
         <p className="text-xl leading-snug font-bold sm:text-2xl">{question.stem}</p>
       </article>
 
-      <div className="space-y-2" role="group" aria-label="Choices">
-        {order.map((originalIndex, displayPos) => {
-          const isCorrectChoice = originalIndex === question.correct_index
-          const isSelected = answer?.selectedIndex === originalIndex
-          const showCorrect = answer && isCorrectChoice
-          const showWrong = answer && isSelected && !isCorrectChoice
-          // The other two choices: quieter, but their text stays readable (it may carry a note to learn from).
-          const isOther = answer && !isSelected && !isCorrectChoice
-          // Shown only after she answers, right under its own choice (so the "why" sits next to the "what").
-          const note = answer ? question.choice_notes?.[originalIndex] : undefined
-          return (
-            <button
-              key={`${current}-${originalIndex}`}
-              type="button"
-              disabled={Boolean(answer)}
-              onClick={() => choose(originalIndex)}
-              aria-keyshortcuts={LETTERS[displayPos]}
-              className={cn(
-                'group flex min-h-14 w-full items-center gap-3 rounded-xl border bg-card px-3 py-3 text-left text-base transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
-                note && 'items-start',
-                !answer && 'hover:border-primary active:bg-secondary',
-                showCorrect && 'border-correct bg-correct-soft ring-1 ring-correct',
-                showWrong && 'border-wrong bg-wrong-soft ring-1 ring-wrong',
-                isOther && 'border-border/60 bg-muted/40',
-              )}
-            >
-              <span
-                className={cn(
-                  'flex size-8 shrink-0 items-center justify-center rounded-lg font-heading text-sm font-bold transition-colors',
-                  showCorrect
-                    ? 'bg-correct text-white'
-                    : showWrong
-                      ? 'bg-wrong text-white'
-                      : isOther
-                        ? 'bg-secondary text-muted-foreground'
-                        : 'bg-secondary text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-disabled:group-hover:bg-secondary group-disabled:group-hover:text-foreground',
-                )}
-              >
-                {showCorrect ? <Check className="size-4" aria-label="Correct answer" /> : showWrong ? <X className="size-4" aria-label="Your answer, incorrect" /> : LETTERS[displayPos]}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className={cn('block', note && 'pt-1', isOther && 'text-muted-foreground')}>{question.choices[originalIndex]}</span>
-                {note && (
-                  <span className={cn('mt-1 block text-sm leading-snug', isOther ? 'text-muted-foreground' : 'text-foreground/85')}>{note}</span>
-                )}
-              </span>
-              {(showCorrect || showWrong) && (
-                <span
-                  aria-hidden // the icon's label already says this to screen readers
-                  className={cn(
-                    'shrink-0',
-                    note && 'pt-1.5',
-                    'font-heading text-[11px] font-bold tracking-wide uppercase',
-                    showCorrect ? 'text-correct' : 'text-wrong',
-                  )}
-                >
-                  {showCorrect ? (isSelected ? 'Your answer' : 'Correct') : 'Your answer'}
-                </span>
-              )}
-            </button>
-          )
-        })}
+      <div className="space-y-2">
+        <ChoiceList
+          choices={question.choices}
+          correctIndex={question.correct_index}
+          choiceNotes={question.choice_notes}
+          order={order}
+          selectedIndex={answer?.selectedIndex}
+          onChoose={choose}
+          keyPrefix={current}
+        />
         {!answer && (
           <p className="hidden pt-1 text-center text-xs text-muted-foreground md:block">Press A–D to answer, then Enter for the next item.</p>
         )}

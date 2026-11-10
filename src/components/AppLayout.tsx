@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import {
+  Dices,
   Ellipsis,
   House,
   Layers,
@@ -30,6 +31,7 @@ const HOME: NavItem = { to: '/', label: 'Home', icon: House }
 const PRACTICE: NavItem = { to: '/practice', label: 'Practice', icon: NotebookPen }
 const MOCK: NavItem = { to: '/mock', label: 'Mock exam', icon: Timer }
 const FLASHCARDS: NavItem = { to: '/flashcards', label: 'Flashcards', icon: Layers }
+const BOARD: NavItem = { to: '/board', label: 'Board Review', icon: Dices }
 const QUESTIONS: NavItem = { to: '/questions', label: 'Questions', icon: Library }
 const COMMUNITY: NavItem = { to: '/community', label: 'Community', icon: Users }
 // Quick reference (/reference) is off the menus for now; the page and its address still work.
@@ -149,6 +151,7 @@ export function AppLayout() {
               <RailLink item={PRACTICE} />
               <RailLink item={MOCK} />
               <RailLink item={FLASHCARDS} />
+              <RailLink item={BOARD} />
               <RailLink item={QUESTIONS} />
               <RailLink item={COMMUNITY} />
             </nav>
@@ -280,6 +283,15 @@ export function AppLayout() {
             </h2>
             {email && <p className="text-sm text-muted-foreground">Logged in as {email}</p>}
           </div>
+          {/* Board Review lives here on phones: the bottom bar is full. */}
+          <NavLink
+            to="/board"
+            onClick={() => setMoreOpen(false)}
+            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
+          >
+            <Dices className="size-5" aria-hidden />
+            Board Review
+          </NavLink>
           <NavLink
             to="/community"
             onClick={() => setMoreOpen(false)}

@@ -3,13 +3,15 @@ import {
   answerQuestion,
   BOARD_SIZE,
   challengePool,
-  LADDERS,
+  LAYOUTS,
+  layoutOf,
   moveBy,
   newGame,
+  pickLayoutId,
   questionSubject,
   rescuePool,
   rollDie,
-  SNAKES,
+  squareCell,
   squareEffect,
   startTurn,
   tallyAccuracy,
@@ -25,10 +27,32 @@ const at = (position: number): BoardGame => ({ ...start, position })
 const right = (questionId = 'q1', subjectCode = 'CC') => ({ questionId, subjectCode, isCorrect: true })
 const wrong = (questionId = 'q1', subjectCode = 'CC') => ({ questionId, subjectCode, isCorrect: false })
 
-describe('layout', () => {
-  const jumps = [...LADDERS, ...SNAKES]
+type Point = { x: number; y: number }
+const point = (square: number): Point => {
+  const { column, row } = squareCell(square)
+  return { x: column, y: row }
+}
+/** Shortest distance from point p to the line segment a–b. */
+function distanceToSegment(p: Point, a: Point, b: Point) {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)))
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
+}
+/** Shortest distance between two segments (0 when they cross), sampled finely along each. */
+function segmentGap(a: Point, b: Point, c: Point, d: Point) {
+  const side = (p: Point, q: Point, r: Point) => Math.sign((q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x))
+  if (side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0) return 0
+  return Math.min(distanceToSegment(a, c, d), distanceToSegment(b, c, d), distanceToSegment(c, a, b), distanceToSegment(d, a, b))
+}
 
-  it('never puts a ladder or snake on 1 or 60', () => {
+describe.each(LAYOUTS.map((layout) => [layout.name, layout] as const))('layout %s', (_name, layout) => {
+  const jumps = [...layout.ladders, ...layout.snakes]
+  const rows = (j: { from: number; to: number }) => Math.abs(squareCell(j.from).row - squareCell(j.to).row)
+
+  it('has 5 ladders and 5 snakes, none on 1 or 60', () => {
+    expect(layout.ladders).toHaveLength(5)
+    expect(layout.snakes).toHaveLength(5)
     for (const j of jumps) {
       expect([j.from, j.to]).not.toContain(1)
       expect([j.from, j.to]).not.toContain(BOARD_SIZE)
@@ -41,8 +65,56 @@ describe('layout', () => {
   })
 
   it('has ladders going up and snakes going down', () => {
-    for (const l of LADDERS) expect(l.to).toBeGreaterThan(l.from)
-    for (const s of SNAKES) expect(s.to).toBeLessThan(s.from)
+    for (const l of layout.ladders) expect(l.to).toBeGreaterThan(l.from)
+    for (const s of layout.snakes) expect(s.to).toBeLessThan(s.from)
+  })
+
+  it('spans 1 to 3 rows, with one big 3-row ladder and one big 3-row snake', () => {
+    for (const j of jumps) {
+      expect(rows(j)).toBeGreaterThanOrEqual(1)
+      expect(rows(j)).toBeLessThanOrEqual(3)
+    }
+    expect(Math.max(...layout.ladders.map(rows))).toBe(3)
+    expect(Math.max(...layout.snakes.map(rows))).toBe(3)
+  })
+
+  it('keeps every ladder and snake apart: none cross, none even come close', () => {
+    for (let i = 0; i < jumps.length; i++) {
+      for (let k = i + 1; k < jumps.length; k++) {
+        const gap = segmentGap(point(jumps[i].from), point(jumps[i].to), point(jumps[k].from), point(jumps[k].to))
+        expect(gap, `${jumps[i].from}→${jumps[i].to} and ${jumps[k].from}→${jumps[k].to}`).toBeGreaterThanOrEqual(0.45)
+      }
+    }
+  })
+
+  it('starts gently: no snake head in CC, at least one ladder there', () => {
+    for (const s of layout.snakes) expect(zoneOf(s.from)).not.toBe('CC')
+    expect(layout.ladders.some((l) => zoneOf(l.from) === 'CC')).toBe(true)
+  })
+})
+
+describe('layouts', () => {
+  it('are all different boards', () => {
+    const shapes = LAYOUTS.map((l) => JSON.stringify([l.ladders, l.snakes]))
+    expect(new Set(shapes).size).toBe(LAYOUTS.length)
+    expect(new Set(LAYOUTS.map((l) => l.id)).size).toBe(LAYOUTS.length)
+  })
+
+  it('a new game never repeats the layout she just played', () => {
+    for (const previous of LAYOUTS) {
+      for (const r of [0, 0.4, 0.99, 1]) expect(pickLayoutId(previous.id, () => r)).not.toBe(previous.id)
+    }
+    expect(LAYOUTS.map((l) => l.id)).toContain(pickLayoutId(null, () => 0.5))
+  })
+
+  it('an unknown id falls back to the first layout', () => {
+    expect(layoutOf(99)).toBe(LAYOUTS[0])
+  })
+
+  it('uses the game’s own layout for ladders and snakes', () => {
+    const layoutC = LAYOUTS[2]
+    const game = answerQuestion(startTurn({ ...newGame(new Date(), layoutC.id), position: 1 }, 3), right()) // 1 + 3 = 4
+    expect(game.pending).toEqual({ kind: 'ladder', from: 4, to: 39 })
   })
 })
 
@@ -63,6 +135,16 @@ describe('zoneOf', () => {
   })
 })
 
+describe('squareCell', () => {
+  it('starts bottom-left and zigzags up', () => {
+    expect(squareCell(1)).toEqual({ column: 0, row: 5 })
+    expect(squareCell(10)).toEqual({ column: 9, row: 5 })
+    expect(squareCell(11)).toEqual({ column: 9, row: 4 }) // right above 10
+    expect(squareCell(20)).toEqual({ column: 0, row: 4 })
+    expect(squareCell(60)).toEqual({ column: 0, row: 0 })
+  })
+})
+
 describe('rollDie', () => {
   it('stays between 1 and 6', () => {
     expect(rollDie(() => 0)).toBe(1)
@@ -79,8 +161,8 @@ describe('moveBy and squareEffect', () => {
   })
 
   it('finds ladders, snakes and the finish', () => {
-    expect(squareEffect(4)).toEqual({ kind: 'ladder', to: 14 })
-    expect(squareEffect(25)).toEqual({ kind: 'snake', to: 12 })
+    expect(squareEffect(3)).toEqual({ kind: 'ladder', to: 17 })
+    expect(squareEffect(29)).toEqual({ kind: 'snake', to: 11 })
     expect(squareEffect(60)).toEqual({ kind: 'finish' })
     expect(squareEffect(2)).toEqual({ kind: 'none' })
   })
@@ -94,8 +176,8 @@ describe('a turn', () => {
   })
 
   it('walks the roll when the answer is right', () => {
-    const game = answerQuestion(startTurn(at(1), 2), right())
-    expect(game.position).toBe(3)
+    const game = answerQuestion(startTurn(at(1), 3), right())
+    expect(game.position).toBe(4)
     expect(game.pending).toBeNull()
     expect(game.turns).toBe(1)
     expect(game.correct).toBe(1)
@@ -120,45 +202,45 @@ describe('a turn', () => {
 })
 
 describe('ladders', () => {
-  const onFoot = answerQuestion(startTurn(at(1), 3), right()) // 1 + 3 = 4, the foot of 4 → 14
+  const onFoot = answerQuestion(startTurn(at(1), 2), right()) // 1 + 2 = 3, the foot of 3 → 17
 
   it('asks a Challenge question at the foot', () => {
-    expect(onFoot.position).toBe(4)
-    expect(onFoot.pending).toEqual({ kind: 'ladder', from: 4, to: 14 })
+    expect(onFoot.position).toBe(3)
+    expect(onFoot.pending).toEqual({ kind: 'ladder', from: 3, to: 17 })
   })
 
   it('climbs when the Challenge is right', () => {
     const game = answerQuestion(onFoot, right('q2'))
-    expect(game.position).toBe(14)
+    expect(game.position).toBe(17)
     expect(game.laddersClimbed).toBe(1)
     expect(game.pending).toBeNull()
   })
 
   it('stays at the foot with no penalty when it is wrong', () => {
     const game = answerQuestion(onFoot, wrong('q2'))
-    expect(game.position).toBe(4)
+    expect(game.position).toBe(3)
     expect(game.laddersClimbed).toBe(0)
     expect(game.pending).toBeNull()
   })
 })
 
 describe('snakes', () => {
-  const onHead = answerQuestion(startTurn(at(22), 3), right()) // 22 + 3 = 25, the head of 25 → 12
+  const onHead = answerQuestion(startTurn(at(26), 3), right()) // 26 + 3 = 29, the head of 29 → 11
 
   it('asks a Rescue question on the head', () => {
-    expect(onHead.position).toBe(25)
-    expect(onHead.pending).toEqual({ kind: 'snake', from: 25, to: 12 })
+    expect(onHead.position).toBe(29)
+    expect(onHead.pending).toEqual({ kind: 'snake', from: 29, to: 11 })
   })
 
   it('stays safe when the Rescue is right', () => {
     const game = answerQuestion(onHead, right('q2', 'BBIS'))
-    expect(game.position).toBe(25)
+    expect(game.position).toBe(29)
     expect(game.snakesEscaped).toBe(1)
   })
 
   it('slides down when it is wrong', () => {
     const game = answerQuestion(onHead, wrong('q2', 'BBIS'))
-    expect(game.position).toBe(12)
+    expect(game.position).toBe(11)
     expect(game.snakesSlid).toBe(1)
     expect(game.pending).toBeNull()
   })

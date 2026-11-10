@@ -10,6 +10,7 @@ const HomePage = lazy(() => import('@/features/home/HomePage'))
 const PracticePage = lazy(() => import('@/features/quiz/PracticePage'))
 const MockPage = lazy(() => import('@/features/mock/MockPage'))
 const FlashcardsPage = lazy(() => import('@/features/flashcards/FlashcardsPage'))
+const BoardPage = lazy(() => import('@/features/board/BoardPage'))
 const ReferencePage = lazy(() => import('@/features/reference/ReferencePage'))
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'))
 const QuestionsPage = lazy(() => import('@/features/questions/QuestionsPage'))
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
       { path: '/practice', element: <PracticePage /> },
       { path: '/mock', element: <MockPage /> },
       { path: '/flashcards', element: <FlashcardsPage /> },
+      { path: '/board', element: <BoardPage /> },
       { path: '/reference', element: <ReferencePage /> },
       { path: '/settings', element: <SettingsPage /> },
       // The old Review Again list; reviewing mistakes is now a quiz (answer first, then see why).

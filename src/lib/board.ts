@@ -11,30 +11,108 @@ export type ZoneSubject = (typeof ZONE_SUBJECTS)[number]
 
 export type Jump = { from: number; to: number }
 
+export type BoardLayout = { id: number; name: string; ladders: readonly Jump[]; snakes: readonly Jump[] }
+
 /**
- * The one hand-made layout. Rules (checked in the tests):
- * nothing on 1 or 60, no square used twice, ladders go up, snakes go down.
- * CC (the first zone) has no snake, so the game starts gently.
+ * Three hand-made layouts, so a new game isn't always the same board. Rules for every one (checked in the tests):
+ * nothing on 1 or 60, no square used twice, ladders go up, snakes go down, each spans 1 to 3 rows,
+ * no two of them cross, no snake head in CC (the first zone) and at least one ladder there, so the game starts gently.
+ *
+ * Mixed lengths on purpose (all the same length looked flat and played flat): each layout has one big 3-row ladder
+ * and one big 3-row snake for the drama.
  */
-export const LADDERS: readonly Jump[] = [
-  { from: 4, to: 14 },
-  { from: 17, to: 27 },
-  { from: 29, to: 38 },
-  { from: 33, to: 45 },
-  { from: 42, to: 53 },
+export const LAYOUTS: readonly BoardLayout[] = [
+  {
+    id: 0,
+    name: 'A',
+    // Big early ladder 8 → 35; the heartbreak snake 58 → 21 near the end.
+    ladders: [
+      { from: 3, to: 17 },
+      { from: 8, to: 35 },
+      { from: 22, to: 43 },
+      { from: 32, to: 50 },
+      { from: 46, to: 54 },
+    ],
+    snakes: [
+      { from: 16, to: 5 },
+      { from: 29, to: 11 },
+      { from: 37, to: 24 },
+      { from: 48, to: 28 },
+      { from: 58, to: 21 },
+    ],
+  },
+  {
+    id: 1,
+    name: 'B',
+    // Big ladder 19 → 44 from MICRO; big snake 54 → 26; a last-row ladder 41 → 59 right next to the snake at 57.
+    ladders: [
+      { from: 6, to: 14 },
+      { from: 19, to: 44 },
+      { from: 28, to: 49 },
+      { from: 36, to: 46 },
+      { from: 41, to: 59 },
+    ],
+    snakes: [
+      { from: 17, to: 3 },
+      { from: 24, to: 15 },
+      { from: 31, to: 11 },
+      { from: 54, to: 26 },
+      { from: 57, to: 43 },
+    ],
+  },
+  {
+    id: 2,
+    name: 'C',
+    // The biggest ladder 4 → 39 right at the start; big snake 53 → 30; the snake at 59 is one square from the finish.
+    ladders: [
+      { from: 4, to: 39 },
+      { from: 7, to: 28 },
+      { from: 15, to: 27 },
+      { from: 25, to: 45 },
+      { from: 38, to: 57 },
+    ],
+    snakes: [
+      { from: 17, to: 5 },
+      { from: 34, to: 26 },
+      { from: 47, to: 33 },
+      { from: 53, to: 30 },
+      { from: 59, to: 41 },
+    ],
+  },
 ]
-export const SNAKES: readonly Jump[] = [
-  { from: 25, to: 12 },
-  { from: 36, to: 23 },
-  { from: 47, to: 34 },
-  { from: 56, to: 43 },
-  { from: 59, to: 48 },
-]
+
+/** The layout with this id (an unknown id, e.g. from an old saved game, gives the first one). */
+export function layoutOf(id: number): BoardLayout {
+  return LAYOUTS.find((l) => l.id === id) ?? LAYOUTS[0]
+}
+
+/** A layout for a new game: random, but never the same as the one she just played. */
+export function pickLayoutId(previousId: number | null, random: RandomFn = Math.random): number {
+  const choices = LAYOUTS.filter((l) => l.id !== previousId)
+  return choices[Math.min(choices.length - 1, Math.floor(random() * choices.length))].id
+}
 
 /** The subject of the zone a square is in (squares below 1 count as 1, above 60 as 60). */
 export function zoneOf(square: number): ZoneSubject {
   const clamped = Math.min(BOARD_SIZE, Math.max(1, Math.floor(square)))
   return ZONE_SUBJECTS[Math.floor((clamped - 1) / ZONE_SIZE)]
+}
+
+export const BOARD_COLUMNS = 10
+export const BOARD_ROWS = BOARD_SIZE / BOARD_COLUMNS
+
+/**
+ * Where a square sits on screen, counted from the top-left cell (0, 0).
+ * Square 1 is bottom-left; rows zigzag, so the path never jumps across the board.
+ */
+export function squareCell(square: number): { column: number; row: number } {
+  const i = square - 1
+  const rowFromBottom = Math.floor(i / BOARD_COLUMNS)
+  const along = i % BOARD_COLUMNS
+  return {
+    column: rowFromBottom % 2 === 0 ? along : BOARD_COLUMNS - 1 - along,
+    row: BOARD_ROWS - 1 - rowFromBottom,
+  }
 }
 
 /** A number from 1 to 6. */
@@ -49,12 +127,12 @@ export function moveBy(position: number, steps: number): number {
 
 export type SquareEffect = { kind: 'ladder'; to: number } | { kind: 'snake'; to: number } | { kind: 'finish' } | { kind: 'none' }
 
-/** What happens when she lands on a square. */
-export function squareEffect(square: number): SquareEffect {
+/** What happens when she lands on a square of this layout. */
+export function squareEffect(square: number, layout: BoardLayout = LAYOUTS[0]): SquareEffect {
   if (square >= BOARD_SIZE) return { kind: 'finish' }
-  const ladder = LADDERS.find((l) => l.from === square)
+  const ladder = layout.ladders.find((l) => l.from === square)
   if (ladder) return { kind: 'ladder', to: ladder.to }
-  const snake = SNAKES.find((s) => s.from === square)
+  const snake = layout.snakes.find((s) => s.from === square)
   if (snake) return { kind: 'snake', to: snake.to }
   return { kind: 'none' }
 }
@@ -75,6 +153,8 @@ export type Pending =
 export type SubjectTally = { answered: number; correct: number }
 
 export type BoardGame = {
+  /** which of the three layouts this game is on (LAYOUTS) */
+  layoutId: number
   position: number
   /** how many times she rolled */
   turns: number
@@ -93,8 +173,9 @@ export type BoardGame = {
   startedAt: string
 }
 
-export function newGame(now: Date = new Date()): BoardGame {
+export function newGame(now: Date = new Date(), layoutId = LAYOUTS[0].id): BoardGame {
   return {
+    layoutId,
     position: 1,
     turns: 0,
     answered: 0,
@@ -118,7 +199,7 @@ export function startTurn(game: BoardGame, roll: number): BoardGame {
 
 /** After she walks (or climbs) to a square, what's next there: a ladder or snake question, the finish, or the next roll. */
 function arriveAt(game: BoardGame, square: number): BoardGame {
-  const effect = squareEffect(square)
+  const effect = squareEffect(square, layoutOf(game.layoutId))
   if (effect.kind === 'finish') return { ...game, position: square, pending: null, finished: true }
   if (effect.kind === 'ladder' || effect.kind === 'snake') {
     return { ...game, position: square, pending: { kind: effect.kind, from: square, to: effect.to } }
