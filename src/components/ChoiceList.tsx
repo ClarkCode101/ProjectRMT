@@ -14,10 +14,12 @@ type Props = {
   onChoose: (originalIndex: number) => void
   /** changes per question, so React gives each question fresh buttons */
   keyPrefix: string | number
+  /** can't be tapped yet (e.g. watching a teammate answer in Board Review) */
+  disabled?: boolean
 }
 
 /** The answer buttons of a multiple-choice question (Practice and Board Review). */
-export function ChoiceList({ choices, correctIndex, choiceNotes, order, selectedIndex, onChoose, keyPrefix }: Props) {
+export function ChoiceList({ choices, correctIndex, choiceNotes, order, selectedIndex, onChoose, keyPrefix, disabled = false }: Props) {
   const answered = selectedIndex !== undefined
   return (
     <div className="space-y-2" role="group" aria-label="Choices">
@@ -34,13 +36,13 @@ export function ChoiceList({ choices, correctIndex, choiceNotes, order, selected
           <button
             key={`${keyPrefix}-${originalIndex}`}
             type="button"
-            disabled={answered}
+            disabled={answered || disabled}
             onClick={() => onChoose(originalIndex)}
             aria-keyshortcuts={CHOICE_LETTERS[displayPos]}
             className={cn(
               'group flex min-h-14 w-full items-center gap-3 rounded-xl border bg-card px-3 py-3 text-left text-base transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
               note && 'items-start',
-              !answered && 'hover:border-primary active:bg-secondary',
+              !answered && !disabled && 'hover:border-primary active:bg-secondary',
               showCorrect && 'border-correct bg-correct-soft ring-1 ring-correct',
               showWrong && 'border-wrong bg-wrong-soft ring-1 ring-wrong',
               isOther && 'border-border/60 bg-muted/40',

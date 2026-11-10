@@ -524,12 +524,18 @@ A snakes-and-ladders board where **you only move if you answer right**. Co-op, n
 - *(optional)* **Streak bonus**: 3 correct in a row → she may re-roll once. Try the game without it first.
 - Few difficulty 3 questions (checked 2026-11-11, built-in): CC 45, HEMA 62, BBIS 7, CM 3, HTMLE 2, MICRO 0; her own and uploaded ones are all 2. That's why the ladder Challenge falls back to past mistakes. Long term: write more difficulty 3 questions for MICRO, HTMLE, CM and BBIS.
 
-### Step 2 — Game rooms + invites (online)
-- A team of 2–4 shares **one token**; they take turns, async (no need to be online together). Goal: reach 60 within a week. Opponent = the board.
-- **Lifeline**: on a snake, ask a teammate; they have 24 hours to answer the rescue question for you.
-- **Challenge invite** with Accept / Decline, plus **"Send invite link"** through the iPad share sheet (to Messenger) since the app has no push. Red badge in the nav when an invite or turn is waiting.
-- Anti-spam: at most 3 pending invites per user, one pending invite per person, invites expire after 24 hours.
-- Tables (all with RLS, members only): game rooms, room members, invites. Game state is written by `security definer` functions so nobody can move the token without answering.
+### Step 2 — Team games with classmates (live, online) — decided 2026-11-11
+Changed from the first idea (one shared token, async over a week): the owner wants it **live, in one sitting**.
+- **2–4 players, each with their own token, racing to 60.** First to 60 wins. The finish screen lists everyone.
+- **Lobby first:** the host creates a game, invites classmates, and taps Start (needs at least 2). At the start **everyone rolls once for the turn order** (highest goes first; ties broken at random), shown to all.
+- **Turns in that order.** Each turn has a **90-second clock** (roll + answer; a new clock for a ladder or snake question). Time runs out → the turn passes. **2 missed turns in a row → removed**, same as Exit. Whoever **exits is out of the turns**; the game goes on with the rest.
+- **Everyone watches each question live**, and sees the answer reveal, so waiting is review time too.
+- **Built-in questions only** in team games (everyone's own questions differ). The **database rolls the die, picks the question and checks the answer** (`security definer` functions), so nobody can move without answering. Each answer is saved as the answering player's attempt (counts in their scores, session mode `board`).
+- **Invites:** pick a classmate from the list (accounts with a first name in Settings), or **"Send invite link"** through the iPad share sheet (to Messenger). The link opens straight into the lobby. At most 3 pending invites per person, one per classmate, invites expire after 24 hours. One active team game per person at a time.
+- **Red dot on the Board Review nav icon** when an invite or your turn is waiting. No push notifications yet.
+- Online only. Live updates with Supabase Realtime (plus a slow refresh as a fallback).
+- Tables (RLS: members only, no direct writes): `board_rooms`, `board_room_players`, `board_invites`, `board_layout_jumps` (the three layouts, kept in step with `LAYOUTS` by a test). Migration 0023.
+- **Step 2b (later): Lifeline** — on a snake, ask a teammate to answer the rescue question for you.
 
 ### Step 3 — Room chat that clears after 5 hours
 - Chat lives inside a game room only (no separate messenger; the class already has a Messenger group).

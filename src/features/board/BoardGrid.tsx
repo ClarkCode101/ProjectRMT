@@ -110,9 +110,22 @@ function SnakeShape({ jump }: { jump: Jump }) {
   )
 }
 
+/** One player's token in a team game. */
+export type BoardToken = { id: string; square: number; color: string; /** e.g. "Ana" */ label: string; isMe?: boolean }
+
+/** Where tokens sharing a square sit, so none hides another (offsets from the square's middle). */
+const SHARED_SPOTS: Record<number, { x: number; y: number }[]> = {
+  1: [{ x: 0, y: 0 }],
+  2: [{ x: -0.17, y: 0 }, { x: 0.17, y: 0 }],
+  3: [{ x: -0.17, y: -0.12 }, { x: 0.17, y: -0.12 }, { x: 0, y: 0.16 }],
+  4: [{ x: -0.17, y: -0.15 }, { x: 0.17, y: -0.15 }, { x: -0.17, y: 0.15 }, { x: 0.17, y: 0.15 }],
+}
+
 type Props = {
-  /** where the token is drawn (it walks one square at a time toward her real position) */
-  tokenSquare: number
+  /** solo: where her token is drawn (it walks one square at a time toward her real position) */
+  tokenSquare?: number
+  /** team games: every player's token, instead of tokenSquare */
+  tokens?: BoardToken[]
   /** which of the three boards (where the ladders and snakes are) */
   layout: BoardLayout
   className?: string
@@ -120,15 +133,26 @@ type Props = {
   style?: CSSProperties
 }
 
-/** The 60-square board: six subject zones (one per row), ladders, snakes and her token. */
-export function BoardGrid({ tokenSquare, layout, className, style }: Props) {
+/** The 60-square board: six subject zones (one per row), ladders, snakes and the token(s). */
+export function BoardGrid({ tokenSquare = 1, tokens, layout, className, style }: Props) {
   const squares = Array.from({ length: BOARD_SIZE }, (_, i) => i + 1)
-  const zone = zoneOf(tokenSquare)
-  const token = center(tokenSquare)
+  const solo = !tokens
+  const drawn: BoardToken[] = tokens ?? [{ id: 'me', square: tokenSquare, color: GOLD, label: 'You', isMe: true }]
+  // Tokens on the same square sit side by side, smaller, so all of them show.
+  const placed = drawn.map((t) => {
+    const sharing = drawn.filter((o) => o.square === t.square)
+    const spots = SHARED_SPOTS[Math.min(4, sharing.length)]
+    const spot = spots[sharing.indexOf(t)] ?? { x: 0, y: 0 }
+    const c = center(t.square)
+    return { ...t, x: c.x + spot.x, y: c.y + spot.y, r: sharing.length > 1 ? 0.17 : 0.27 }
+  })
+  const label = solo
+    ? `Board: you are on square ${tokenSquare} of ${BOARD_SIZE}, in the ${zoneOf(tokenSquare)} zone.`
+    : `Board: ${drawn.map((t) => `${t.label} on square ${t.square}`).join(', ')}.`
   return (
     <div
       role="img"
-      aria-label={`Board: you are on square ${tokenSquare} of ${BOARD_SIZE}, in the ${zone} zone.`}
+      aria-label={label}
       // The same white card and soft shadow as the nav rail and the other floating cards.
       className={cn('rounded-xl border bg-card p-1.5 shadow-[0_12px_32px_-16px_rgb(7_71_94/0.35)] sm:p-2', className)}
       style={style}
@@ -180,12 +204,19 @@ export function BoardGrid({ tokenSquare, layout, className, style }: Props) {
           {layout.snakes.map((jump) => (
             <SnakeShape key={`s${jump.from}`} jump={jump} />
           ))}
-          {/* Her token: gold (the app's color for wins) with a deep blue edge, so it's the first thing she spots. */}
-          <g className="transition-transform duration-200 ease-out motion-reduce:transition-none" style={{ transform: `translate(${token.x}px, ${token.y}px)` }}>
-            <circle r={0.3} cy={0.05} fill={BLUE_DEEP} opacity={0.2} />
-            <circle r={0.27} fill="url(#board-token)" stroke={BLUE_DEEP} strokeWidth={0.06} />
-            <circle r={0.07} cx={-0.09} cy={-0.1} fill="#FFFFFF" opacity={0.7} />
-          </g>
+          {/* The token(s). Solo: gold (the app's color for wins) with a deep blue edge, the first thing she spots.
+              Team: one color per player; hers gets a thicker edge. Hers is drawn last, so it's on top. */}
+          {[...placed].sort((a, b) => Number(Boolean(a.isMe)) - Number(Boolean(b.isMe))).map((t) => (
+            <g
+              key={t.id}
+              className="transition-transform duration-300 ease-out motion-reduce:transition-none"
+              style={{ transform: `translate(${t.x}px, ${t.y}px)` }}
+            >
+              <circle r={t.r + 0.03} cy={0.05} fill={BLUE_DEEP} opacity={0.2} />
+              <circle r={t.r} fill={solo ? 'url(#board-token)' : t.color} stroke={t.isMe ? BLUE_DEEP : '#FFFFFF'} strokeWidth={t.isMe ? 0.07 : 0.05} />
+              <circle r={t.r * 0.26} cx={-t.r * 0.33} cy={-t.r * 0.37} fill="#FFFFFF" opacity={0.6} />
+            </g>
+          ))}
         </svg>
       </div>
     </div>

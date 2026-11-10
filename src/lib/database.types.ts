@@ -269,6 +269,23 @@ export type Database = {
         Args: { p_book_id: string }
         Returns: number
       }
+      // migration 0023: Board Review team games (lib/boardTeam.ts reads board_room_state)
+      board_classmates: { Args: Record<string, never>; Returns: { user_id: string; name: string }[] }
+      board_create_room: { Args: Record<string, never>; Returns: string }
+      board_invite: { Args: { p_room: string; p_to: string }; Returns: undefined }
+      board_my_invites: {
+        Args: Record<string, never>
+        Returns: { invite_id: string; room_id: string; from_name: string; players: number; created_at: string }[]
+      }
+      board_respond_invite: { Args: { p_invite: string; p_accept: boolean }; Returns: string | null }
+      board_join: { Args: { p_code: string }; Returns: string }
+      board_my_room: { Args: Record<string, never>; Returns: { room_id: string; status: string; my_turn: boolean; players: number }[] }
+      board_leave: { Args: { p_room: string }; Returns: undefined }
+      board_start: { Args: { p_room: string }; Returns: undefined }
+      board_roll: { Args: { p_room: string }; Returns: number }
+      board_answer: { Args: { p_room: string; p_selected: number }; Returns: boolean }
+      board_skip: { Args: { p_room: string }; Returns: undefined }
+      board_room_state: { Args: { p_room: string }; Returns: Json }
     }
     Enums: {
       question_source: QuestionSource

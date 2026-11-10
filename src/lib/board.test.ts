@@ -21,6 +21,7 @@ import {
   type BoardGame,
 } from './board'
 import type { SubjectSummary } from './quiz'
+import teamGamesSql from '../../supabase/migrations/0023_board_team_games.sql?raw'
 
 const start = newGame(new Date('2026-11-11T08:00:00Z'))
 const at = (position: number): BoardGame => ({ ...start, position })
@@ -105,6 +106,16 @@ describe('layouts', () => {
       for (const r of [0, 0.4, 0.99, 1]) expect(pickLayoutId(previous.id, () => r)).not.toBe(previous.id)
     }
     expect(LAYOUTS.map((l) => l.id)).toContain(pickLayoutId(null, () => 0.5))
+  })
+
+  it('match the copy in the database that team games use (migration 0023)', () => {
+    // Every "(layout, 'kind', from, to)" row of the insert into board_layout_jumps.
+    const rows = [...teamGamesSql.matchAll(/\((\d), '(ladder|snake)', (\d+), (\d+)\)/g)].map((m) => `${m[1]} ${m[2]} ${m[3]}→${m[4]}`)
+    const expected = LAYOUTS.flatMap((l) => [
+      ...l.ladders.map((j) => `${l.id} ladder ${j.from}→${j.to}`),
+      ...l.snakes.map((j) => `${l.id} snake ${j.from}→${j.to}`),
+    ])
+    expect(rows.sort()).toEqual(expected.sort())
   })
 
   it('an unknown id falls back to the first layout', () => {

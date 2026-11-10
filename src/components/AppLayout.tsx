@@ -16,6 +16,7 @@ import {
 import { Suspense, useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '@/features/auth/authContext'
+import { useBoardAlert } from '@/features/board/teamApi'
 import { useOfflineSync } from '@/lib/offline/useOfflineSync'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -72,14 +73,19 @@ function Tooltip({ children }: { children: string }) {
   )
 }
 
-/** One round icon in the floating rail. */
-function RailLink({ item }: { item: NavItem }) {
+/** A small red dot on a nav icon: something is waiting there (e.g. a Board Review invite or turn). */
+function AlertDot() {
+  return <span className="absolute top-1 right-1 size-2.5 rounded-full bg-wrong ring-2 ring-card" aria-hidden />
+}
+
+/** One round icon in the floating rail. `alert` = show the red dot. */
+function RailLink({ item, alert = false }: { item: NavItem; alert?: boolean }) {
   const Icon = item.icon
   return (
     <NavLink
       to={item.to}
       end={item.to === '/'}
-      aria-label={item.label}
+      aria-label={alert ? `${item.label} (something is waiting)` : item.label}
       className={({ isActive }) =>
         cn(
           'group relative flex size-11 items-center justify-center rounded-full transition-colors',
@@ -91,6 +97,7 @@ function RailLink({ item }: { item: NavItem }) {
       {({ isActive }) => (
         <>
           <Icon className="size-5" strokeWidth={isActive ? 2.4 : 1.8} aria-hidden />
+          {alert && <AlertDot />}
           <Tooltip>{item.label}</Tooltip>
         </>
       )}
@@ -107,6 +114,8 @@ export function AppLayout() {
 
   // Sends answers waiting on the device and keeps the offline question bank fresh.
   useOfflineSync(session?.user.id ?? null)
+  // A Board Review team invite or turn is waiting: red dot on its nav icon (and on "More" on phones).
+  const boardAlert = useBoardAlert()
 
   const email = session?.user.email ?? ''
   const displayName = email.split('@')[0] || 'Reviewer'
@@ -151,7 +160,7 @@ export function AppLayout() {
               <RailLink item={PRACTICE} />
               <RailLink item={MOCK} />
               <RailLink item={FLASHCARDS} />
-              <RailLink item={BOARD} />
+              <RailLink item={BOARD} alert={boardAlert} />
               <RailLink item={QUESTIONS} />
               <RailLink item={COMMUNITY} />
             </nav>
@@ -267,7 +276,10 @@ export function AppLayout() {
                 aria-haspopup="dialog"
                 className={cn('flex h-16 w-full flex-col items-center justify-center gap-1 text-xs text-muted-foreground', focusRing)}
               >
-                <Ellipsis className="size-5" strokeWidth={1.8} aria-hidden />
+                <span className="relative">
+                  <Ellipsis className="size-5" strokeWidth={1.8} aria-hidden />
+                  {boardAlert && <span className="absolute -top-1 -right-1.5 size-2.5 rounded-full bg-wrong ring-2 ring-card" aria-hidden />}
+                </span>
                 More
               </button>
             </li>
@@ -291,6 +303,7 @@ export function AppLayout() {
           >
             <Dices className="size-5" aria-hidden />
             Board Review
+            {boardAlert && <span className="ml-auto rounded-full bg-wrong px-2 text-xs font-bold text-white">Waiting</span>}
           </NavLink>
           <NavLink
             to="/community"

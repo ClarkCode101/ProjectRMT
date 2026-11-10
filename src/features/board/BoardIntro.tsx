@@ -4,6 +4,7 @@ import { heroButtonClass } from '@/components/report'
 import { BOARD_SIZE, layoutOf, zoneOf, type BoardGame } from '@/lib/board'
 import { cn } from '@/lib/utils'
 import { BoardGrid } from './BoardGrid'
+import { TeamEntry } from './TeamEntry'
 import { useFittedBoardWidth } from './useFittedBoardWidth'
 
 // Board Review's start screen, laid out like Mock exam and Practice (one screen, read top to bottom):
@@ -79,6 +80,8 @@ export function BoardIntro({ inProgress, previewLayoutId, onContinue, onNewGame 
           </button>
         )}
         <p className="text-xs text-muted-foreground">Your game is saved on this device.</p>
+        {/* Team games with classmates (live, online). */}
+        <TeamEntry />
       </div>
 
       {/* ---------- The rules: one quiet line under it all (plain text, not things to tap) ---------- */}
