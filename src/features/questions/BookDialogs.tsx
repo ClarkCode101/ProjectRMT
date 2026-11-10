@@ -1,5 +1,5 @@
-import { BookPlus, Check, Combine, Pencil, Plus, TriangleAlert, Users, X } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { ArrowRight, Ban, BookPlus, Check, CircleCheck, Combine, Pencil, Plus, Trash2, TriangleAlert, Users, X } from 'lucide-react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -303,6 +303,66 @@ function BookForm({
   )
 }
 
+function questionsLabel(n: number) {
+  return `${n} question${n === 1 ? '' : 's'}`
+}
+
+/**
+ * What a merge will do, one short line each (instead of paragraphs): what moves, what's skipped, what's removed.
+ * `moving` 0 = she already has all of them, so the merge only removes the book.
+ */
+function MergeOutcome({ id, moving, where, skipped, source }: { id: string; moving: number; where: ReactNode; skipped: number; source: Book }) {
+  return (
+    <ul id={id} className="space-y-1.5 text-sm">
+      {moving > 0 ? (
+        <li className="flex items-start gap-2.5">
+          <ArrowRight className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+          <span>
+            <span className="font-semibold tabular-nums">{questionsLabel(moving)}</span> {moving === 1 ? 'moves' : 'move'} to {where}
+          </span>
+        </li>
+      ) : (
+        <li className="flex items-start gap-2.5">
+          <CircleCheck className="mt-0.5 size-4 shrink-0 text-correct" aria-hidden />
+          <span className="font-semibold">You already have every question in “{source.title}”</span>
+        </li>
+      )}
+      {moving > 0 && skipped > 0 && (
+        <li className="flex items-start gap-2.5 text-muted-foreground">
+          <Ban className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            <span className="tabular-nums">{skipped}</span> skipped (you already have {skipped === 1 ? 'it' : 'them'})
+          </span>
+        </li>
+      )}
+      <li className="flex items-start gap-2.5 text-muted-foreground">
+        <Trash2 className="mt-0.5 size-4 shrink-0" aria-hidden />
+        <span>
+          “{source.title}” leaves your shelf{source.publishedAt && ' and Community (classmates keep their copies)'}
+        </span>
+      </li>
+    </ul>
+  )
+}
+
+/** The merge button says what it will really do: "Merge 5 questions", or "Remove “Ewan”" (red) when nothing moves. */
+function MergeButton({ moving, source, busy, describedBy }: { moving: number; source: Book; busy: boolean; describedBy: string }) {
+  return (
+    <button
+      type="submit"
+      disabled={busy}
+      aria-describedby={describedBy}
+      className={cn(
+        'h-11 min-w-0 flex-1 truncate rounded-lg px-3 font-heading font-bold disabled:opacity-60',
+        focusRing,
+        moving > 0 ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'bg-wrong text-white hover:bg-wrong/90',
+      )}
+    >
+      {busy ? (moving > 0 ? 'Merging…' : 'Removing…') : moving > 0 ? `Merge ${questionsLabel(moving)}` : `Remove “${source.title}”`}
+    </button>
+  )
+}
+
 /** Messages merge_books raises on purpose (migration 0012): written for her, so they're shown as they are. */
 const MERGE_MESSAGES = ['Pick a different book to merge into.', 'Book not found.', 'Keep the topic name to 40 letters or fewer.']
 
@@ -403,7 +463,8 @@ function MergeForm({
   async function handleMerge(event: FormEvent) {
     event.preventDefault()
     if (!chosen) return
-    const cleaned = cleanChapter(topic)
+    // Nothing moves: the topic box is hidden, so its name doesn't matter (use the book's own).
+    const cleaned = cleanChapter(count > 0 ? topic : mergeTopicName(source.title))
     if ('error' in cleaned) {
       setError(cleaned.error)
       return
@@ -481,23 +542,31 @@ function MergeForm({
         </fieldset>
       )}
 
-      <div className="space-y-1.5">
-        <Label htmlFor="merge-topic" className="font-bold">
-          {chosen ? `Topic in ${chosen.title}` : 'Topic name'}
-        </Label>
-        <input
-          id="merge-topic"
-          value={topic}
-          maxLength={CHAPTER_MAX + 20}
-          placeholder="Empty = no topic"
-          onChange={(e) => {
-            setTopic(e.target.value)
-            setError(null)
-          }}
-          aria-describedby="merge-summary"
-          className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        />
-      </div>
+      {/* Only when something moves: with nothing to move, the topic name does nothing */}
+      {(count > 0 || !chosen) && (
+        <div className="space-y-1.5">
+          <Label htmlFor="merge-topic" className="font-bold">
+            {chosen ? `Topic in ${chosen.title}` : 'Topic name'}
+          </Label>
+          <input
+            id="merge-topic"
+            value={topic}
+            maxLength={CHAPTER_MAX + 20}
+            placeholder="Empty = no topic"
+            onChange={(e) => {
+              setTopic(e.target.value)
+              setError(null)
+            }}
+            className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+          {/* merge_books gives the target's untopiced questions the target's name, so both sides can be split again */}
+          {chosen && [...chosen.chapters.values()].some((c) => c === null) && (
+            <p className="text-xs text-muted-foreground">
+              {chosen.title}’s questions without a topic go under “{mergeTopicName(chosen.title)}”.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* ---------- Possible duplicates: the same ones ticked (skipped), alike ones for her to decide ---------- */}
       {chosen && duplicates.length > 0 && (
@@ -536,28 +605,20 @@ function MergeForm({
         </fieldset>
       )}
 
-      <div id="merge-summary" className="space-y-1.5 text-sm text-muted-foreground">
-        <p>
-          <span className="font-semibold text-foreground tabular-nums">
-            {count} question{count === 1 ? '' : 's'}
-          </span>{' '}
-          go into {chosen ? <span className="font-semibold text-foreground">{chosen.title}</span> : 'the book you pick'}
-          {topic.trim() ? <> under the topic “{topic.trim()}”</> : ' with no topic'}
-          {skipped.size > 0 && <> · {skipped.size} skipped</>}. Ones already in it stay where they are.
-          {/* merge_books gives the target's untopiced questions the target's name, so both sides can be split again */}
-          {chosen && [...chosen.chapters.values()].some((c) => c === null) && (
-            <>
-              {' '}
-              {chosen.title}’s questions without a topic go under “{mergeTopicName(chosen.title)}”.
-            </>
-          )}
-        </p>
-        <p>
-          “{source.title}” will be removed from your shelf. Its questions are kept
-          {skipped.size > 0 ? ', except skipped duplicates that are only in it.' : '.'}
-          {source.publishedAt && ' It also leaves Community; classmates who added it keep their copies.'}
-        </p>
-      </div>
+      {chosen && (
+        <MergeOutcome
+          id="merge-summary"
+          moving={count}
+          where={
+            <span className="font-semibold">
+              {chosen.title}
+              {topic.trim() && ` · ${topic.trim()}`}
+            </span>
+          }
+          skipped={skipped.size}
+          source={source}
+        />
+      )}
 
       {error && (
         <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
@@ -570,9 +631,13 @@ function MergeForm({
         <Button type="button" variant="outline" className="h-11 flex-1 rounded-lg" onClick={onClose}>
           Cancel
         </Button>
-        <button type="submit" disabled={busy || !chosen} className={cn('h-11 flex-1 rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}>
-          {busy ? 'Merging…' : 'Merge books'}
-        </button>
+        {chosen ? (
+          <MergeButton moving={count} source={source} busy={busy} describedBy="merge-summary" />
+        ) : (
+          <button type="submit" disabled className={cn('h-11 flex-1 rounded-lg bg-primary font-heading font-bold text-primary-foreground disabled:opacity-60', focusRing)}>
+            Merge books
+          </button>
+        )}
       </div>
     </form>
   )
@@ -744,7 +809,8 @@ function SubjectMergeForm({
 
   async function handleMerge(event: FormEvent) {
     event.preventDefault()
-    const cleaned = cleanChapter(topic)
+    // Nothing moves: the topic box is hidden, so its name doesn't matter (use the book's own).
+    const cleaned = cleanChapter(going.length > 0 ? topic : mergeTopicName(source.title))
     if ('error' in cleaned) {
       setError(cleaned.error)
       return
@@ -778,23 +844,25 @@ function SubjectMergeForm({
         <CloseButton onClick={onClose} />
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="subject-merge-topic" className="font-bold">
-          Your topic name
-        </Label>
-        <input
-          id="subject-merge-topic"
-          value={topic}
-          maxLength={CHAPTER_MAX + 20}
-          onChange={(e) => {
-            setTopic(e.target.value)
-            setError(null)
-          }}
-          aria-describedby="subject-merge-summary"
-          className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        />
-        {boardTopic && <p className="text-sm text-muted-foreground">“{boardTopic.name}” is a board topic in {subject.code}: the questions go right into it.</p>}
-      </div>
+      {/* Only when something moves: with nothing to move, the topic name does nothing */}
+      {going.length > 0 && (
+        <div className="space-y-1.5">
+          <Label htmlFor="subject-merge-topic" className="font-bold">
+            Your topic name
+          </Label>
+          <input
+            id="subject-merge-topic"
+            value={topic}
+            maxLength={CHAPTER_MAX + 20}
+            onChange={(e) => {
+              setTopic(e.target.value)
+              setError(null)
+            }}
+            className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+          {boardTopic && <p className="text-xs text-muted-foreground">“{boardTopic.name}” is a board topic in {subject.code}: the questions go right into it.</p>}
+        </div>
+      )}
 
       {duplicates.length > 0 && (
         <fieldset className="min-w-0 rounded-lg border border-highlight/50 bg-highlight-soft/50 p-3">
@@ -832,21 +900,25 @@ function SubjectMergeForm({
         </fieldset>
       )}
 
-      <div id="subject-merge-summary" className="space-y-1.5 text-sm text-muted-foreground">
-        <p>
-          <span className="font-semibold text-foreground tabular-nums">
-            {going.length} question{going.length === 1 ? '' : 's'}
-          </span>{' '}
-          {going.length === 1 ? 'goes' : 'go'} into {bySubject.length > 1 ? 'their own subjects' : (bySubject[0]?.code ?? subject.code)}
-          {name && !boardTopic && <> under your topic “{name}”</>}
-          {bySubject.length > 1 && <>: {bySubject.map((s) => `${s.code} ${s.count}`).join(' · ')}</>}
-          {skipped.size > 0 && <> · {skipped.size} skipped</>}. They count in those subjects’ scores and quizzes.
-        </p>
-        <p>
-          “{source.title}” will be removed from your shelf.
-          {source.publishedAt && ' It also leaves Community; classmates who added it keep their copies.'}
-        </p>
-      </div>
+      <MergeOutcome
+        id="subject-merge-summary"
+        moving={going.length}
+        where={
+          bySubject.length > 1 ? (
+            // each into its own subject: "CC 3 · HEMA 2, under Ewan"
+            <>
+              <span className="font-semibold">{bySubject.map((s) => `${s.code} ${s.count}`).join(' · ')}</span>
+              {name && !boardTopic && <>, under “{name}”</>}
+            </>
+          ) : (
+            <span className="font-semibold">
+              {bySubject[0]?.code ?? subject.code} · {boardTopic?.name ?? name}
+            </span>
+          )
+        }
+        skipped={skipped.size}
+        source={source}
+      />
 
       {error && (
         <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
@@ -858,9 +930,7 @@ function SubjectMergeForm({
         <Button type="button" variant="outline" className="h-11 flex-1 rounded-lg" onClick={onClose}>
           Cancel
         </Button>
-        <button type="submit" disabled={busy} className={cn('h-11 flex-1 rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}>
-          {busy ? 'Merging…' : `Merge into ${subject.code}`}
-        </button>
+        <MergeButton moving={going.length} source={source} busy={busy} describedBy="subject-merge-summary" />
       </div>
     </form>
   )
