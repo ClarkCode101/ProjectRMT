@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Questions from reviewer PDFs (copyrighted books): they go into the database only, never into git.
+# Name them pdf_<name>.json; npm run seed:sql then writes 02_questions_pdf_<name>.sql, also ignored.
+supabase/seed/questions/pdf_*.json
+supabase/seed/02_questions_pdf_*.sql
