@@ -3,8 +3,18 @@ import { BOARD_COLUMNS, BOARD_ROWS, BOARD_SIZE, squareCell, ZONE_SIZE, zoneOf, t
 import { SUBJECT_COLOR } from '@/lib/books'
 import { cn } from '@/lib/utils'
 
-// The board is light blue glass: frosted tiles on a soft blue gradient.
-// Numbers are deep blue (not white) so they stay easy to read on the light glass.
+// The board uses the app's "lab report" colors (index.css), so it looks like the rest of the app:
+// a white card with gray rules, squares alternating white and light gray like table rows, gray-ink numbers.
+// Analyzer blue is the one accent (the ladders). Red is for flags (the snakes: the board's "L flag").
+// Gold is for wins (her token: the one thing to spot right away).
+
+const INK = '#5A6875' // --muted-foreground
+const RULE = '#D6DEE5' // --border
+const BLUE = '#0B6382' // --primary
+const BLUE_DEEP = '#07475E' // --primary-deep
+const RED = '#C2283A' // --wrong
+const RED_DEEP = '#8E1C2A'
+const GOLD = '#E9A23B' // --highlight
 
 /** The middle of a square, in board units (one cell = 1 × 1). */
 function center(square: number) {
@@ -20,7 +30,7 @@ function axis(a: { x: number; y: number }, b: { x: number; y: number }) {
   return { ux, uy, nx: -uy, ny: ux, length }
 }
 
-/** A glassy light-blue ladder at any angle: two rails and rungs, with a white shine. */
+/** An analyzer-blue ladder at any angle: two rails and rungs, with a light line down the middle of each. */
 function LadderShape({ jump }: { jump: Jump }) {
   const foot = center(jump.from)
   const top = center(jump.to)
@@ -38,17 +48,12 @@ function LadderShape({ jump }: { jump: Jump }) {
         const t = (i + 0.5) / rungs
         const x = ax + (bx - ax) * t
         const y = ay + (by - ay) * t
-        return (
-          <g key={i}>
-            <line x1={x - nx * half} y1={y - ny * half} x2={x + nx * half} y2={y + ny * half} stroke="#2C6E99" strokeWidth={0.075} />
-            <line x1={x - nx * half} y1={y - ny * half} x2={x + nx * half} y2={y + ny * half} stroke="#BFE3F7" strokeWidth={0.04} />
-          </g>
-        )
+        return <line key={i} x1={x - nx * half} y1={y - ny * half} x2={x + nx * half} y2={y + ny * half} stroke={BLUE} strokeWidth={0.06} />
       })}
       {[-half, half].map((side) => (
         <g key={side}>
-          <line x1={ax + nx * side} y1={ay + ny * side} x2={bx + nx * side} y2={by + ny * side} stroke="#2C6E99" strokeWidth={0.1} />
-          <line x1={ax + nx * side} y1={ay + ny * side} x2={bx + nx * side} y2={by + ny * side} stroke="url(#board-rail)" strokeWidth={0.06} />
+          <line x1={ax + nx * side} y1={ay + ny * side} x2={bx + nx * side} y2={by + ny * side} stroke={BLUE_DEEP} strokeWidth={0.1} />
+          <line x1={ax + nx * side} y1={ay + ny * side} x2={bx + nx * side} y2={by + ny * side} stroke="#5FA3BE" strokeWidth={0.035} />
         </g>
       ))}
     </g>
@@ -56,7 +61,7 @@ function LadderShape({ jump }: { jump: Jump }) {
 }
 
 /**
- * A friendly blue snake at any angle: a wavy body (more bends the longer it is) with a shine,
+ * A friendly red snake at any angle: a wavy body (more bends the longer it is) with a light stripe,
  * a head with eyes, and a little tongue.
  */
 function SnakeShape({ jump }: { jump: Jump }) {
@@ -86,21 +91,21 @@ function SnakeShape({ jump }: { jump: Jump }) {
   const tongueY = hy - uy * 0.14
   return (
     <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-      <path d={body} stroke="#1D5E8C" strokeWidth={0.19} />
-      <path d={body} stroke="url(#board-snake)" strokeWidth={0.13} />
-      <path d={body} stroke="#FFFFFF" strokeOpacity={0.55} strokeWidth={0.035} transform="translate(-0.025 -0.02)" />
+      <path d={body} stroke={RED_DEEP} strokeWidth={0.19} />
+      <path d={body} stroke={RED} strokeWidth={0.13} />
+      <path d={body} stroke="#FFFFFF" strokeOpacity={0.45} strokeWidth={0.03} transform="translate(-0.025 -0.02)" />
       {/* tongue: a short line, then a fork */}
       <path
         d={`M ${tongueX} ${tongueY} l ${-ux * 0.08} ${-uy * 0.08} l ${-ux * 0.04 + nx * 0.04} ${-uy * 0.04 + ny * 0.04} m ${ux * 0.04 - nx * 0.04} ${uy * 0.04 - ny * 0.04} l ${-ux * 0.04 - nx * 0.04} ${-uy * 0.04 - ny * 0.04}`}
-        stroke="#D6456A"
+        stroke={RED_DEEP}
         strokeWidth={0.025}
       />
       {/* head */}
-      <ellipse cx={hx} cy={hy} rx={0.17} ry={0.14} fill="url(#board-snake)" stroke="#1D5E8C" strokeWidth={0.03} />
+      <ellipse cx={hx} cy={hy} rx={0.17} ry={0.14} fill={RED} stroke={RED_DEEP} strokeWidth={0.03} />
       <circle cx={hx - 0.065} cy={hy - 0.03} r={0.035} fill="#FFFFFF" />
       <circle cx={hx + 0.065} cy={hy - 0.03} r={0.035} fill="#FFFFFF" />
-      <circle cx={hx - 0.06} cy={hy - 0.025} r={0.018} fill="#0B2F4A" />
-      <circle cx={hx + 0.07} cy={hy - 0.025} r={0.018} fill="#0B2F4A" />
+      <circle cx={hx - 0.06} cy={hy - 0.025} r={0.018} fill="#17222C" />
+      <circle cx={hx + 0.07} cy={hy - 0.025} r={0.018} fill="#17222C" />
     </g>
   )
 }
@@ -124,11 +129,9 @@ export function BoardGrid({ tokenSquare, layout, className, style }: Props) {
     <div
       role="img"
       aria-label={`Board: you are on square ${tokenSquare} of ${BOARD_SIZE}, in the ${zone} zone.`}
-      className={cn(
-        'rounded-2xl border border-white/80 p-1.5 shadow-[0_18px_40px_-20px_rgb(20_80_130/0.55),inset_0_1px_0_rgb(255_255_255/0.9)] sm:p-2',
-        className,
-      )}
-      style={{ background: 'linear-gradient(160deg, #DDF0FB 0%, #B9DDF3 55%, #A4D0EE 100%)', ...style }}
+      // The same white card and soft shadow as the nav rail and the other floating cards.
+      className={cn('rounded-xl border bg-card p-1.5 shadow-[0_12px_32px_-16px_rgb(7_71_94/0.35)] sm:p-2', className)}
+      style={style}
     >
       <div className="relative w-full" style={{ aspectRatio: `${BOARD_COLUMNS} / ${BOARD_ROWS}` }}>
         <div aria-hidden className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${BOARD_COLUMNS}, 1fr)`, gridTemplateRows: `repeat(${BOARD_ROWS}, 1fr)` }}>
@@ -139,44 +142,36 @@ export function BoardGrid({ tokenSquare, layout, className, style }: Props) {
             const light = (column + row) % 2 === 0
             const finish = square === BOARD_SIZE
             return (
-              // The outer cell has no gap, so the ladders and snakes line up with the squares; the tile inside is the glass.
-              <div key={square} className="p-[2px] sm:p-[3px]" style={{ gridColumn: column + 1, gridRow: row + 1 }}>
+              // The outer cell has no gap, so the ladders and snakes line up with the squares; the tile sits inside it.
+              <div key={square} className="p-[2px]" style={{ gridColumn: column + 1, gridRow: row + 1 }}>
                 <div
-                  className={cn(
-                    'relative size-full rounded-md border shadow-[inset_0_1px_0_rgb(255_255_255/0.85),0_1px_2px_rgb(20_80_130/0.12)] sm:rounded-lg',
-                    finish ? 'border-highlight bg-highlight-soft/80' : light ? 'border-white/80 bg-white/55' : 'border-white/60 bg-white/30',
-                  )}
+                  className={cn('relative size-full rounded-md border', finish ? 'border-highlight bg-highlight-soft' : light ? 'bg-card' : 'bg-background')}
+                  style={finish ? undefined : { borderColor: RULE }}
                 >
-                  <span className="absolute top-0.5 left-1 font-heading text-[11px] font-bold text-[#1E5578] tabular-nums sm:top-1 sm:left-1.5 sm:text-sm">{square}</span>
+                  <span className="absolute top-0.5 left-1 font-heading text-[11px] font-bold tabular-nums sm:top-1 sm:left-1.5 sm:text-sm" style={{ color: INK }}>
+                    {square}
+                  </span>
                   {firstOfZone && (
                     <span
-                      className="absolute right-0.5 bottom-0.5 rounded-full px-1.5 font-heading text-[9px] leading-4 font-bold text-white shadow-sm sm:right-1 sm:bottom-1 sm:text-[11px]"
+                      className="absolute right-0.5 bottom-0.5 rounded-[4px] px-1.5 font-heading text-[9px] leading-4 font-bold text-white sm:right-1 sm:bottom-1 sm:text-[11px]"
                       style={{ backgroundColor: SUBJECT_COLOR[subject] }}
                     >
                       {subject}
                     </span>
                   )}
-                  {finish && <span className="absolute inset-x-0 bottom-0.5 text-center font-heading text-[9px] font-bold text-foreground sm:bottom-1 sm:text-xs">FINISH</span>}
+                  {finish && <span className="absolute inset-x-0 bottom-0.5 text-center font-heading text-[9px] font-bold tracking-wide text-[#9A5B00] sm:bottom-1 sm:text-xs">FINISH</span>}
                 </div>
               </div>
             )
           })}
         </div>
 
-        {/* Ladders, snakes and the token on top of the tiles (not interactive). */}
+        {/* Ladders, snakes and the token on top of the squares (not interactive). */}
         <svg aria-hidden viewBox={`0 0 ${BOARD_COLUMNS} ${BOARD_ROWS}`} className="pointer-events-none absolute inset-0 size-full overflow-visible">
           <defs>
-            <linearGradient id="board-rail" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0" stopColor="#FFFFFF" />
-              <stop offset="1" stopColor="#8CC6EA" />
-            </linearGradient>
-            <linearGradient id="board-snake" x1="0" x2="1" y1="0" y2="1">
-              <stop offset="0" stopColor="#7CC3EE" />
-              <stop offset="1" stopColor="#3A8BC6" />
-            </linearGradient>
             <radialGradient id="board-token" cx="0.35" cy="0.3" r="0.8">
-              <stop offset="0" stopColor="#2E7FA8" />
-              <stop offset="1" stopColor="#07364A" />
+              <stop offset="0" stopColor="#F7C978" />
+              <stop offset="1" stopColor={GOLD} />
             </radialGradient>
           </defs>
           {layout.ladders.map((jump) => (
@@ -185,11 +180,11 @@ export function BoardGrid({ tokenSquare, layout, className, style }: Props) {
           {layout.snakes.map((jump) => (
             <SnakeShape key={`s${jump.from}`} jump={jump} />
           ))}
-          {/* Her token: a glossy deep-blue counter with a white ring, so it stands out on the light glass. */}
+          {/* Her token: gold (the app's color for wins) with a deep blue edge, so it's the first thing she spots. */}
           <g className="transition-transform duration-200 ease-out motion-reduce:transition-none" style={{ transform: `translate(${token.x}px, ${token.y}px)` }}>
-            <circle r={0.3} cy={0.04} fill="#0B2F4A" opacity={0.25} />
-            <circle r={0.28} fill="url(#board-token)" stroke="#FFFFFF" strokeWidth={0.07} />
-            <circle r={0.08} cx={-0.09} cy={-0.1} fill="#FFFFFF" opacity={0.6} />
+            <circle r={0.3} cy={0.05} fill={BLUE_DEEP} opacity={0.2} />
+            <circle r={0.27} fill="url(#board-token)" stroke={BLUE_DEEP} strokeWidth={0.06} />
+            <circle r={0.07} cx={-0.09} cy={-0.1} fill="#FFFFFF" opacity={0.7} />
           </g>
         </svg>
       </div>

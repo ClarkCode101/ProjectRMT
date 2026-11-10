@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, CloudOff, Dices, Play } from 'lucide-react'
+import { CloudOff, Dices } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { ExitButton } from '@/components/ExitButton'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { useFocusMode } from '@/components/layoutContext'
-import { HeroPanel, heroButtonClass } from '@/components/report'
+import { heroButtonClass } from '@/components/report'
 import { useAuth } from '@/features/auth/authContext'
 import { useTopicPerformance } from '@/features/dashboard/api'
 import { attemptHistoryOptions, queueAnswer, queueSessionFinish, questionPoolOptions, type QuizQuestion } from '@/features/quiz/api'
@@ -21,7 +21,6 @@ import {
   startTurn,
   unusedFirst,
   weakestTopic,
-  ZONE_SUBJECTS,
   zoneOf,
   type BoardGame,
   type Pending,
@@ -35,8 +34,10 @@ import { buildHistory, pickQuestions } from '@/lib/selection'
 import { cn } from '@/lib/utils'
 import { queueBoardSession, useHardQuestionIds } from './api'
 import { BoardGrid } from './BoardGrid'
+import { BoardIntro } from './BoardIntro'
 import { BoardResults } from './BoardResults'
 import { DieFace, TurnSheet } from './TurnSheet'
+import { useFittedBoardWidth } from './useFittedBoardWidth'
 
 /** The question on screen right now, and what it's for. */
 type Turn = {
@@ -59,30 +60,6 @@ const ALL_QUESTIONS = questionPoolOptions({ source: 'all', subjectId: null, topi
 /** How long the die tumbles in the middle of the screen, then how long the number stays up. Short on purpose: it happens every turn. */
 const SPIN_MS = 700
 const SHOW_MS = 850
-
-/** The board's frame (padding around the squares), in pixels on both sides together. */
-const BOARD_FRAME_PX = 18 // 8px padding + 1px border, on each side (BoardGrid)
-
-/**
- * The board's width so it fits the space it's given, both across and down (no scrolling):
- * the squares are 10 wide by 6 tall, plus the frame.
- */
-function useFittedBoardWidth() {
-  // A callback ref (not useRef): the box only appears once the game screen shows, so the effect must rerun then.
-  const [box, ref] = useState<HTMLDivElement | null>(null)
-  const [width, setWidth] = useState<number | null>(null)
-  useEffect(() => {
-    if (!box) return
-    const observer = new ResizeObserver(([entry]) => {
-      const { width: w, height: h } = entry.contentRect
-      const inner = Math.min(w - BOARD_FRAME_PX, ((h - BOARD_FRAME_PX) * 10) / 6)
-      setWidth(Math.max(0, Math.floor(inner + BOARD_FRAME_PX)))
-    })
-    observer.observe(box)
-    return () => observer.disconnect()
-  }, [box])
-  return { ref, width }
-}
 
 function prefersReducedMotion() {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -122,7 +99,7 @@ export default function BoardPage() {
   const [turn, setTurn] = useState<Turn | null>(null)
   /** The die in the middle of the screen while she rolls: tumbling, then landed on her number. */
   const [dice, setDice] = useState<{ face: number; landed: boolean } | null>(null)
-  const board = useFittedBoardWidth()
+  const { measure: measureBoardBox, width: boardWidth } = useFittedBoardWidth()
   const [message, setMessage] = useState<string | null>(null)
   /** bumped to re-open the question popup if the browser closes it early */
   const [dialogKey, setDialogKey] = useState(0)
@@ -283,67 +260,12 @@ export default function BoardPage() {
   if (!playing) {
     const inProgress = game && !game.finished ? game : null
     return (
-      <div className="mx-auto max-w-2xl space-y-6">
-        <HeroPanel labelledBy="board-heading" className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Dices className="size-8 text-highlight" aria-hidden />
-            <h1 id="board-heading" className="font-heading text-3xl font-bold">
-              Board Review
-            </h1>
-          </div>
-          <p className="text-white/90">Roll the die, then answer right to move. Travel through all six subjects to square {BOARD_SIZE}.</p>
-          {inProgress && (
-            <p className="text-sm text-white/80 tabular-nums">
-              Game in progress: square {inProgress.position} of {BOARD_SIZE} ({zoneOf(inProgress.position)}), {inProgress.correct} of {inProgress.answered} correct.
-            </p>
-          )}
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
-            {inProgress ? (
-              <>
-                <button type="button" className={heroButtonClass} onClick={() => setPlaying(true)}>
-                  <Play className="size-5 fill-current" aria-hidden />
-                  Continue game
-                </button>
-                <button
-                  type="button"
-                  onClick={startNewGame}
-                  className="rounded-md px-2 py-2.5 text-center text-sm font-semibold text-white/85 underline-offset-4 outline-none hover:text-white hover:underline focus-visible:ring-3 focus-visible:ring-white/60"
-                >
-                  Start a new game
-                </button>
-              </>
-            ) : (
-              <button type="button" className={heroButtonClass} onClick={startNewGame}>
-                <Play className="size-5 fill-current" aria-hidden />
-                Start game
-              </button>
-            )}
-          </div>
-        </HeroPanel>
-
-        <section aria-labelledby="board-rules-heading" className="space-y-3">
-          <h2 id="board-rules-heading" className="text-lg font-bold">
-            How it works
-          </h2>
-          <ul className="divide-y rounded-xl border bg-card">
-            <li className="flex gap-3 px-4 py-3">
-              <DieFace value={4} className="size-6 shrink-0 text-primary-deep" />
-              <span>Roll, then answer a question from the zone you’re on. Right moves you; wrong keeps you in place and shows why.</span>
-            </li>
-            <li className="flex gap-3 px-4 py-3">
-              <ArrowUp className="size-6 shrink-0 text-correct" aria-hidden />
-              <span>Land on a ladder: answer a Challenge question to climb. Wrong just keeps you at the foot.</span>
-            </li>
-            <li className="flex gap-3 px-4 py-3">
-              <ArrowDown className="size-6 shrink-0 text-wrong" aria-hidden />
-              <span>Land on a snake: answer a Rescue question from your weakest topic to stay safe, or slide down.</span>
-            </li>
-          </ul>
-          <p className="text-sm text-muted-foreground">
-            Zones, in order: {ZONE_SUBJECTS.join(', ')}. Every answer counts toward your scores, like Practice. Your game is saved on this device.
-          </p>
-        </section>
-      </div>
+      <BoardIntro
+        inProgress={inProgress}
+        previewLayoutId={game?.layoutId ?? 0}
+        onContinue={() => setPlaying(true)}
+        onNewGame={startNewGame}
+      />
     )
   }
 
@@ -382,8 +304,8 @@ export default function BoardPage() {
       )}
 
       {/* The board is the star: it takes all the space left, as big as fits both across and down, centered. */}
-      <div ref={board.ref} className="flex min-h-0 flex-1 items-center justify-center">
-        {board.width !== null && <BoardGrid tokenSquare={token} layout={layoutOf(game.layoutId)} className="shrink-0" style={{ width: board.width }} />}
+      <div ref={measureBoardBox} className="flex min-h-0 flex-1 items-center justify-center">
+        {boardWidth !== null && <BoardGrid tokenSquare={token} layout={layoutOf(game.layoutId)} className="shrink-0" style={{ width: boardWidth }} />}
       </div>
 
       {!online && (
