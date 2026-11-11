@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { ChoiceList } from '@/components/ChoiceList'
 import { Button } from '@/components/ui/button'
 import type { Pending } from '@/lib/board'
@@ -100,6 +101,8 @@ type Props = {
   clockSeconds?: number
   /** team games: waiting for the database to check the answer */
   checking?: boolean
+  /** team games: after the answer, Continue taps itself after this many seconds */
+  autoContinueSeconds?: number
 }
 
 /** The question popup's content: what's at stake, the question, then what happens. */
@@ -117,6 +120,7 @@ export function TurnSheet({
   watching,
   clockSeconds,
   checking = false,
+  autoContinueSeconds,
 }: Props) {
   // In a team game the answer is only known once the database has checked it (correct_index -1 until then).
   const answered = selectedIndex !== undefined && question.correct_index >= 0
@@ -161,11 +165,55 @@ export function TurnSheet({
         </div>
       )}
 
-      {answered && (
-        <Button className="h-13 w-full rounded-xl font-heading text-lg font-bold" onClick={onContinue} autoFocus>
-          Continue
-        </Button>
-      )}
+      {answered &&
+        (autoContinueSeconds ? (
+          <AutoContinueButton key={question.id} seconds={autoContinueSeconds} onContinue={onContinue} />
+        ) : (
+          <Button className="h-13 w-full rounded-xl font-heading text-lg font-bold" onClick={onContinue} autoFocus>
+            Continue
+          </Button>
+        ))}
     </div>
+  )
+}
+
+/**
+ * Team games: Continue that taps itself after `seconds`, so every screen moves on together
+ * (and before the next player's clock really starts). The bar inside empties as the time runs out;
+ * tapping earlier is fine.
+ */
+function AutoContinueButton({ seconds, onContinue }: { seconds: number; onContinue: () => void }) {
+  const [left, setLeft] = useState(seconds)
+  // false on the first paint (bar full), then true so the bar slides smoothly to empty over `seconds`
+  const [running, setRunning] = useState(false)
+  const continueRef = useRef(onContinue)
+  useEffect(() => {
+    continueRef.current = onContinue
+  })
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setRunning(true))
+    const timer = window.setInterval(() => setLeft((s) => Math.max(0, s - 1)), 1000)
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.clearInterval(timer)
+    }
+  }, [])
+  useEffect(() => {
+    if (left === 0) continueRef.current()
+  }, [left])
+
+  return (
+    <Button className="relative h-13 w-full overflow-hidden rounded-xl font-heading text-lg font-bold" onClick={onContinue} autoFocus>
+      {/* the time left, emptying from right to left */}
+      <span
+        className="absolute inset-y-0 left-0 bg-white/20 transition-[width] ease-linear motion-reduce:hidden"
+        style={{ width: running ? '0%' : '100%', transitionDuration: `${seconds}s` }}
+        aria-hidden
+      />
+      <span className="relative">
+        Continue <span className="font-normal tabular-nums opacity-80">· {left}</span>
+      </span>
+    </Button>
   )
 }

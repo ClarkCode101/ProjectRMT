@@ -14,6 +14,12 @@ import { cn } from '@/lib/utils'
 import type { QuizQuestion } from '@/features/quiz/api'
 import { BoardGrid, type BoardToken } from './BoardGrid'
 import { DevAnswerHint } from './DevAnswerHint'
+
+/**
+ * The answer reveal closes by itself after this many seconds, so every screen moves on together.
+ * Kept under the 10 extra seconds the database adds before the next player's clock (board__next_turn).
+ */
+const REVEAL_SECONDS = 8
 import { teamActions } from './teamApi'
 import { DieFace, TurnSheet } from './TurnSheet'
 import { useFittedBoardWidth } from './useFittedBoardWidth'
@@ -365,6 +371,7 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft }: Props) {
             onChoose={() => {}}
             onContinue={() => setShownReveal(null)}
             watching={reveal.userId === room.me ? undefined : reveal.name}
+            autoContinueSeconds={REVEAL_SECONDS}
           />
         ) : current && room.pending ? (
           <TurnSheet
