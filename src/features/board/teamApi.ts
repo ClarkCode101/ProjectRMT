@@ -131,6 +131,10 @@ export const teamActions = {
     }
   },
   leave: (roomId: string) => call(supabase.rpc('board_leave', { p_room: roomId })),
+  /** Play again from the finish screen: makes the next lobby, or joins it if someone already did. */
+  rematch: (finishedRoomId: string) => call(supabase.rpc('board_rematch', { p_room: finishedRoomId })),
+  /** Back to Board Review from the finish screen: "I'm done", so a later Play again won't invite her. */
+  rematchDone: (finishedRoomId: string) => call(supabase.rpc('board_rematch_done', { p_room: finishedRoomId })),
   start: (roomId: string) => call(supabase.rpc('board_start', { p_room: roomId })),
   roll: (roomId: string) => call(supabase.rpc('board_roll', { p_room: roomId })),
   answer: (roomId: string, selectedIndex: number) => call(supabase.rpc('board_answer', { p_room: roomId, p_selected: selectedIndex })),

@@ -286,6 +286,10 @@ export type Database = {
       board_answer: { Args: { p_room: string; p_selected: number }; Returns: boolean }
       board_skip: { Args: { p_room: string }; Returns: undefined }
       board_room_state: { Args: { p_room: string }; Returns: Json }
+      // migration 0024: Play again from the finish screen
+      board_rematch: { Args: { p_room: string }; Returns: string }
+      // migration 0025: Back to Board Review on the finish screen = not playing again
+      board_rematch_done: { Args: { p_room: string }; Returns: undefined }
     }
     Enums: {
       question_source: QuestionSource

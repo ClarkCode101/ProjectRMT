@@ -7,12 +7,16 @@ import {
   inviteLink,
   parseEvent,
   parseTeamRoom,
+  playAgainLine,
   playerColor,
+  playingAgainIds,
+  rematchChoice,
   TOKEN_COLORS,
   turnExpired,
   turnOrder,
   turnSecondsLeft,
   type TeamPlayer,
+  type TeamRematch,
 } from './boardTeam'
 
 const player = (userId: string, extra: Partial<TeamPlayer> = {}): TeamPlayer => ({
@@ -24,6 +28,7 @@ const player = (userId: string, extra: Partial<TeamPlayer> = {}): TeamPlayer => 
   status: 'joined',
   answered: 0,
   correct: 0,
+  rematchDone: false,
   ...extra,
 })
 
@@ -69,6 +74,20 @@ describe('parseTeamRoom', () => {
     expect(odd.phase).toBeNull()
     expect(odd.question).toBeNull() // fewer than 2 choices
     expect(odd.players[0]).toMatchObject({ position: 60, status: 'left', name: 'A classmate' })
+  })
+
+  it('reads the next game made with Play again (and none when missing or odd)', () => {
+    expect(parseTeamRoom(raw)!.rematch).toBeNull()
+    expect(parseTeamRoom(raw)!.players.every((p) => !p.rematchDone)).toBe(true) // missing = not done
+    const done = parseTeamRoom({ ...raw, players: [{ user_id: 'a', rematch_done: true }] })!
+    expect(done.players[0].rematchDone).toBe(true)
+    const finished = parseTeamRoom({
+      ...raw,
+      status: 'finished',
+      rematch: { id: 'n', host_id: 'b', host_name: 'Ben', status: 'lobby', players: [{ user_id: 'b', name: 'Ben' }, { bad: 1 }] },
+    })!
+    expect(finished.rematch).toEqual({ roomId: 'n', hostId: 'b', hostName: 'Ben', status: 'lobby', players: [{ userId: 'b', name: 'Ben' }] })
+    expect(parseTeamRoom({ ...raw, rematch: { status: 'lobby' } })!.rematch).toBeNull()
   })
 
   it('reads the answer reveal', () => {
@@ -152,6 +171,47 @@ describe('eventLine', () => {
 describe('inviteLink', () => {
   it('points to the join page', () => {
     expect(inviteLink('https://projectrmt.pages.dev/', 'ABC234')).toBe('https://projectrmt.pages.dev/board/join/ABC234')
+  })
+})
+
+describe('rematch (Play again)', () => {
+  const ana = { userId: 'host', name: 'Ana' }
+  const ben = { userId: 'ben', name: 'Ben' }
+  const cy = { userId: 'cy', name: 'Cy' }
+  const lobby: TeamRematch = { roomId: 'next', hostId: 'host', hostName: 'Ana', status: 'lobby', players: [ana] }
+
+  it('offers Play again when nobody has made the next game', () => {
+    expect(rematchChoice(null, 'me')).toEqual({ kind: 'start' })
+  })
+  it('offers Play again when the next lobby was cancelled or is over', () => {
+    expect(rematchChoice({ ...lobby, status: 'cancelled' }, 'me')).toEqual({ kind: 'start' })
+    expect(rematchChoice({ ...lobby, status: 'finished' }, 'me')).toEqual({ kind: 'start' })
+  })
+  it('offers to join someone else’s next lobby', () => {
+    expect(rematchChoice(lobby, 'me')).toEqual({ kind: 'join', roomId: 'next', hostName: 'Ana' })
+  })
+  it('takes whoever is in the next game back to it', () => {
+    expect(rematchChoice(lobby, 'host')).toEqual({ kind: 'back', roomId: 'next' })
+    expect(rematchChoice({ ...lobby, status: 'playing', players: [ana, ben] }, 'ben')).toEqual({ kind: 'back', roomId: 'next' })
+  })
+  it('says so when the next game started without her', () => {
+    expect(rematchChoice({ ...lobby, status: 'playing' }, 'me')).toEqual({ kind: 'started', hostName: 'Ana' })
+  })
+
+  it('lists who wants to play again, without me', () => {
+    expect(playAgainLine(null, 'me')).toBeNull()
+    expect(playAgainLine(lobby, 'me')).toBe('Ana wants to play again')
+    expect(playAgainLine({ ...lobby, players: [ana, ben] }, 'me')).toBe('Ana and Ben want to play again')
+    expect(playAgainLine({ ...lobby, players: [ana, ben, cy] }, 'me')).toBe('Ana, Ben and Cy want to play again')
+    expect(playAgainLine({ ...lobby, players: [ana, ben] }, 'ben')).toBe('Ana wants to play again')
+    expect(playAgainLine(lobby, 'host')).toBeNull() // only me
+    expect(playAgainLine({ ...lobby, status: 'playing' }, 'me')).toBeNull()
+  })
+
+  it('marks who is playing again, until the next game is over or cancelled', () => {
+    expect([...playingAgainIds({ ...lobby, players: [ana, ben] })]).toEqual(['host', 'ben'])
+    expect(playingAgainIds({ ...lobby, status: 'cancelled' }).size).toBe(0)
+    expect(playingAgainIds(null).size).toBe(0)
   })
 })
 

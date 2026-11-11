@@ -17,6 +17,8 @@ export type TeamPlayer = {
   status: TeamPlayerStatus
   answered: number
   correct: number
+  /** finished games: tapped Back to Board Review, so not playing again (migration 0025) */
+  rematchDone: boolean
 }
 
 export type TeamQuestion = { id: string; topicId: number; stem: string; choices: string[] }
@@ -66,6 +68,17 @@ export type TeamRoom = {
   players: TeamPlayer[]
   /** classmates invited who haven't answered yet */
   invited: { userId: string; name: string }[]
+  /** finished games: the next game someone made with "Play again" (migration 0024) */
+  rematch: TeamRematch | null
+}
+
+export type TeamRematch = {
+  roomId: string
+  hostId: string
+  hostName: string
+  status: TeamRoomStatus
+  /** who's in the next lobby (they tapped Play again) */
+  players: { userId: string; name: string }[]
 }
 
 // ---------- Reading the database's answer (anything odd gives a safe default, never a crash) ----------
@@ -188,6 +201,7 @@ export function parseTeamRoom(v: unknown): TeamRoom | null {
           status: PLAYER_STATUSES.includes(o.status as TeamPlayerStatus) ? (o.status as TeamPlayerStatus) : 'left',
           answered: num(o.answered),
           correct: num(o.correct),
+          rematchDone: o.rematch_done === true,
         },
       ]
     }),
@@ -195,7 +209,57 @@ export function parseTeamRoom(v: unknown): TeamRoom | null {
       const o = obj(i)
       return o && typeof o.user_id === 'string' ? [{ userId: o.user_id, name: str(o.name, 'A classmate') }] : []
     }),
+    rematch: parseRematch(r.rematch),
   }
+}
+
+function parseRematch(v: unknown): TeamRematch | null {
+  const m = obj(v)
+  if (!m || typeof m.id !== 'string') return null
+  return {
+    roomId: m.id,
+    hostId: str(m.host_id),
+    hostName: str(m.host_name, 'A classmate'),
+    status: STATUSES.includes(m.status as TeamRoomStatus) ? (m.status as TeamRoomStatus) : 'cancelled',
+    players: (Array.isArray(m.players) ? m.players : []).flatMap((p) => {
+      const o = obj(p)
+      return o && typeof o.user_id === 'string' ? [{ userId: o.user_id, name: str(o.name, 'A classmate') }] : []
+    }),
+  }
+}
+
+/** What the finish screen offers for playing again. */
+export type RematchChoice =
+  /** nobody has tapped Play again yet (or their lobby was cancelled or is over) */
+  | { kind: 'start' }
+  /** someone made the next lobby: join it in one tap */
+  | { kind: 'join'; roomId: string; hostName: string }
+  /** she's already in the next lobby (made it, or joined it) */
+  | { kind: 'back'; roomId: string }
+  /** the next game started without her */
+  | { kind: 'started'; hostName: string }
+
+export function rematchChoice(rematch: TeamRematch | null, me: string): RematchChoice {
+  if (!rematch || rematch.status === 'cancelled' || rematch.status === 'finished') return { kind: 'start' }
+  const inIt = rematch.players.some((p) => p.userId === me)
+  if (inIt) return { kind: 'back', roomId: rematch.roomId }
+  if (rematch.status === 'playing') return { kind: 'started', hostName: rematch.hostName }
+  return { kind: 'join', roomId: rematch.roomId, hostName: rematch.hostName }
+}
+
+/** Who tapped Play again (they're in the next lobby): their badge in the standings. Empty once it's over or cancelled. */
+export function playingAgainIds(rematch: TeamRematch | null): Set<string> {
+  if (!rematch || (rematch.status !== 'lobby' && rematch.status !== 'playing')) return new Set()
+  return new Set(rematch.players.map((p) => p.userId))
+}
+
+/** "Ana wants to play again", "Ana and Ben want to…", "Ana, Ben and Cy want to…" (others only; null if nobody). */
+export function playAgainLine(rematch: TeamRematch | null, me: string): string | null {
+  if (!rematch || rematch.status !== 'lobby') return null
+  const names = rematch.players.filter((p) => p.userId !== me).map((p) => p.name)
+  if (names.length === 0) return null
+  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+  return `${list} ${names.length === 1 ? 'wants' : 'want'} to play again`
 }
 
 // ---------- The turn clock ----------
