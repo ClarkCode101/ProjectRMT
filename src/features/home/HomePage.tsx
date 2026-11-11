@@ -10,7 +10,7 @@ import { useTopicPerformance } from '@/features/dashboard/api'
 import { useAuth } from '@/features/auth/authContext'
 import { DEFAULT_DAILY_TARGET, useStudySettings } from '@/features/settings/api'
 import { currentStreak, dailyActivity, type DayActivity } from '@/lib/activity'
-import { firstName } from '@/lib/profile'
+import { firstName, needsWelcome } from '@/lib/profile'
 import { countdownLabel, daysUntil, milestoneKey, milestoneReached, pickNote } from '@/lib/planner'
 import { overallStats, PASSING_RATE, summarizePerformance, type SubjectSummary } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
@@ -18,6 +18,7 @@ import { useCountUp } from '@/lib/useCountUp'
 import { cn } from '@/lib/utils'
 import { useAttemptHistory } from './api'
 import { BodyStage, NextUpBar } from './BodyExplorer'
+import { WelcomeDialog } from './WelcomeDialog'
 import { readinessGoal, STATUS_COLOR } from './organs'
 import { changedSince, makeSnapshot, readSnapshot, writeSnapshot } from './snapshot'
 
@@ -82,7 +83,11 @@ export default function HomePage() {
   const [now] = useState(() => new Date())
   const attempts = useAttemptHistory()
   const settings = useStudySettings()
-  const name = firstName(useAuth().session?.user)
+  const user = useAuth().session?.user
+  const name = firstName(user)
+  // Welcome popup: once, for a new member with no name and no exam date yet (closed = hidden right away).
+  const [welcomeClosed, setWelcomeClosed] = useState(false)
+  const showWelcome = settings.isSuccess && !welcomeClosed && needsWelcome(user, settings.data.examDate)
   // The subject she tapped (card or organ); null = nothing tapped yet, so Next up shows the "Start here" one.
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [seenMilestones, setSeenMilestones] = useState(readSeen)
@@ -133,7 +138,8 @@ export default function HomePage() {
   const streak = currentStreak(attempts.data ?? [], now)
   const milestone = milestoneReached(streak, (days.at(-1)?.answered ?? 0) > 0)
   const milestoneSeenKey = milestone === null ? null : milestoneKey(milestone, now)
-  const showMilestone = milestoneSeenKey !== null && !seenMilestones.includes(milestoneSeenKey)
+  // Never two popups at once: the welcome goes first.
+  const showMilestone = !showWelcome && milestoneSeenKey !== null && !seenMilestones.includes(milestoneSeenKey)
   const milestoneNote = milestoneSeenKey ? pickNote(NOTES, 'streak', milestoneSeenKey) : null
 
   function closeMilestone() {
@@ -214,6 +220,8 @@ export default function HomePage() {
       {/* Practice is always one tap away; tapping a card or organ above changes which subject it's for.
           At the bottom: most use an iPad, held in both hands, and the bottom edge is where the thumbs reach. */}
       {selected && <NextUpBar subject={selected} subjectTopicIds={selectedTopicIds} />}
+
+      {settings.isSuccess && <WelcomeDialog open={showWelcome} settings={settings.data} onDone={() => setWelcomeClosed(true)} />}
 
       {/* Streak milestone: a celebration with her note (once per milestone, on this device). */}
       <Dialog open={showMilestone} onClose={closeMilestone} labelledBy="milestone-heading">

@@ -18,6 +18,37 @@ export async function saveFirstName(name: string) {
   if (error) throw error
 }
 
+/**
+ * A name to fill in for her on the welcome popup: what Google sent at sign-in (its first word),
+ * or '' for email sign-ups. She can still change it before saving.
+ */
+export function suggestedFirstName(user: Pick<User, 'user_metadata'> | null | undefined): string {
+  const meta = user?.user_metadata ?? {}
+  for (const key of ['given_name', 'full_name', 'name']) {
+    const value: unknown = meta[key]
+    if (typeof value === 'string' && value.trim() !== '') return value.trim().split(/\s+/)[0].slice(0, 40)
+  }
+  return ''
+}
+
+/**
+ * The welcome popup (name + board exam date) shows once, to a new member who has neither yet.
+ * "Seen" is saved on her account, so it doesn't show again on her other devices.
+ */
+export function needsWelcome(user: Pick<User, 'user_metadata'> | null | undefined, examDate: string | null): boolean {
+  if (!user || user.user_metadata?.welcome_done === true) return false
+  return firstName(user) === null && examDate === null
+}
+
+/** Remembers that she saw the welcome popup (saved or skipped), plus her name if she typed one. */
+export async function finishWelcome(name: string) {
+  const trimmed = name.trim().slice(0, 40)
+  const data: Record<string, unknown> = { welcome_done: true }
+  if (trimmed !== '') data.first_name = trimmed
+  const { error } = await supabase.auth.updateUser({ data })
+  if (error) throw error
+}
+
 export const MIN_PASSWORD_LENGTH = 8
 
 /** What's wrong with the change-password form, or null when it's ready to send. */

@@ -3,7 +3,38 @@ import { describe, expect, it, vi } from 'vitest'
 // profile.ts imports the Supabase client; the tests here don't need it.
 vi.mock('./supabase', () => ({ supabase: {} }))
 
-const { firstName, passwordProblem } = await import('./profile')
+const { firstName, needsWelcome, passwordProblem, suggestedFirstName } = await import('./profile')
+
+describe('needsWelcome', () => {
+  it('shows for a new member with no name and no exam date', () => {
+    expect(needsWelcome({ user_metadata: {} }, null)).toBe(true)
+  })
+
+  it('does not show once she saved or skipped it', () => {
+    expect(needsWelcome({ user_metadata: { welcome_done: true } }, null)).toBe(false)
+  })
+
+  it('does not show when she already set a name or an exam date', () => {
+    expect(needsWelcome({ user_metadata: { first_name: 'Bea' } }, null)).toBe(false)
+    expect(needsWelcome({ user_metadata: {} }, '2027-03-15')).toBe(false)
+  })
+
+  it('does not show without a user', () => {
+    expect(needsWelcome(null, null)).toBe(false)
+  })
+})
+
+describe('suggestedFirstName', () => {
+  it('takes the first word of the name Google sent', () => {
+    expect(suggestedFirstName({ user_metadata: { full_name: 'Maria Bea Santos' } })).toBe('Maria')
+    expect(suggestedFirstName({ user_metadata: { given_name: ' Bea ', full_name: 'Maria Bea Santos' } })).toBe('Bea')
+  })
+
+  it('is empty for email sign-ups', () => {
+    expect(suggestedFirstName({ user_metadata: {} })).toBe('')
+    expect(suggestedFirstName(null)).toBe('')
+  })
+})
 
 describe('passwordProblem', () => {
   it('is null when everything is filled in right', () => {
