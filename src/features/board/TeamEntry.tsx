@@ -1,7 +1,8 @@
 import { Users, X } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { Dialog } from '@/components/Dialog'
+import { cleanGameCode, GAME_CODE_LENGTH } from '@/lib/boardTeam'
 import { cn } from '@/lib/utils'
 import { teamActions, useMyInvites, useMyTeamRoom, useRefreshTeam } from './teamApi'
 
@@ -17,6 +18,7 @@ export function TeamEntry() {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [code, setCode] = useState('')
 
   const waiting = invites.data ?? []
   const room = myRoom.data ?? null
@@ -33,6 +35,24 @@ export function TeamEntry() {
     } finally {
       setBusy(false)
     }
+  }
+
+  function joinWithCode(value: string) {
+    if (busy || value.length < GAME_CODE_LENGTH) return
+    run(() => teamActions.joinByCode(value))
+  }
+
+  /** Clean what she types; once all 6 characters are in, join right away (no need to find the button). */
+  function onCodeChange(typed: string) {
+    const next = cleanGameCode(typed)
+    setCode(next)
+    setError(null)
+    if (next.length === GAME_CODE_LENGTH && code.length < GAME_CODE_LENGTH) joinWithCode(next)
+  }
+
+  function submitCode(e: FormEvent) {
+    e.preventDefault()
+    joinWithCode(code)
   }
 
   if (room) {
@@ -129,6 +149,41 @@ export function TeamEntry() {
                 ))}
               </ul>
             )}
+          </section>
+
+          <section aria-labelledby="team-code-heading" className="space-y-2">
+            <h3 id="team-code-heading" className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
+              Have a game code?
+            </h3>
+            <form onSubmit={submitCode} className="flex gap-2">
+              <label htmlFor="team-code-input" className="sr-only">
+                Game code
+              </label>
+              <input
+                id="team-code-input"
+                value={code}
+                onChange={(e) => onCodeChange(e.target.value)}
+                placeholder="ABC234"
+                inputMode="text"
+                autoCapitalize="characters"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                maxLength={GAME_CODE_LENGTH + 2}
+                aria-describedby="team-code-help"
+                className="h-12 min-w-0 flex-1 rounded-lg border bg-card px-4 text-center font-mono text-xl font-bold tracking-[0.3em] uppercase outline-none placeholder:font-normal placeholder:text-muted-foreground/50 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring/40"
+              />
+              <button
+                type="submit"
+                disabled={busy || code.length < GAME_CODE_LENGTH}
+                className="h-12 shrink-0 rounded-lg bg-primary px-5 font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50"
+              >
+                Join
+              </button>
+            </form>
+            <p id="team-code-help" className="text-xs text-muted-foreground">
+              The host sees the 6-letter code in their lobby.
+            </p>
           </section>
 
           <button

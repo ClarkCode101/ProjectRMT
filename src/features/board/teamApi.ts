@@ -119,6 +119,17 @@ export const teamActions = {
   invite: (roomId: string, userId: string) => call(supabase.rpc('board_invite', { p_room: roomId, p_to: userId })),
   respondInvite: (inviteId: string, accept: boolean) => call(supabase.rpc('board_respond_invite', { p_invite: inviteId, p_accept: accept })),
   join: (code: string) => call(supabase.rpc('board_join', { p_code: code })),
+  /** Same as join, from the code box: the database's "invite link isn't valid" becomes words about a typed code. */
+  joinByCode: async (code: string) => {
+    try {
+      return await call(supabase.rpc('board_join', { p_code: code }))
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('invite link')) {
+        throw new Error('No game with that code. Check the letters, or ask the host for the code again.')
+      }
+      throw e
+    }
+  },
   leave: (roomId: string) => call(supabase.rpc('board_leave', { p_room: roomId })),
   start: (roomId: string) => call(supabase.rpc('board_start', { p_room: roomId })),
   roll: (roomId: string) => call(supabase.rpc('board_roll', { p_room: roomId })),

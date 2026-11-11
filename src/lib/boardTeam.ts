@@ -279,3 +279,14 @@ export function eventLine(event: TeamEvent | null, me: string): string | null {
 export function inviteLink(origin: string, code: string): string {
   return `${origin.replace(/\/$/, '')}/board/join/${encodeURIComponent(code)}`
 }
+
+/** Game codes are 6 letters/digits (made in board_create_room). */
+export const GAME_CODE_LENGTH = 6
+
+/** What she typed in the code box, as a code: capitals, no spaces or dashes, at most 6 characters. */
+export function cleanGameCode(typed: string): string {
+  return typed
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, GAME_CODE_LENGTH)
+}

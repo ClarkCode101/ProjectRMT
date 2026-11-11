@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  cleanGameCode,
   eventLine,
   finishOrder,
   formatTurnClock,
@@ -151,5 +152,19 @@ describe('eventLine', () => {
 describe('inviteLink', () => {
   it('points to the join page', () => {
     expect(inviteLink('https://projectrmt.pages.dev/', 'ABC234')).toBe('https://projectrmt.pages.dev/board/join/ABC234')
+  })
+})
+
+describe('cleanGameCode', () => {
+  it('makes capitals and drops spaces and dashes', () => {
+    expect(cleanGameCode('abc 234')).toBe('ABC234')
+    expect(cleanGameCode(' ab-c2-34 ')).toBe('ABC234')
+  })
+  it('keeps at most 6 characters', () => {
+    expect(cleanGameCode('ABC2345678')).toBe('ABC234')
+  })
+  it('returns empty for nothing typed', () => {
+    expect(cleanGameCode('')).toBe('')
+    expect(cleanGameCode('  - ')).toBe('')
   })
 })
