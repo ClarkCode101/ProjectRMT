@@ -95,8 +95,10 @@ export const heroButtonClass =
 
 /**
  * The ProjectRMT mark: a results sheet with a gold "passed" check, on the deep blue tile.
- * Same drawing as public/favicon.svg and public/icons/app-icon.svg (the app icon PNGs come from that one);
- * keep them in sync.
+ * Same drawing as public/favicon.svg and the three SVGs in public/icons/ that the app icon PNGs are made from:
+ * app-icon.svg (icon-192 / icon-512), app-icon-maskable.svg (Android cuts its own shape, so it's drawn smaller,
+ * inside the safe zone) and app-icon-apple.svg (apple-touch-icon: a full square, iOS rounds the corners itself).
+ * Keep them in sync, and re-export the PNGs when the drawing changes.
  */
 export function Logo({ className }: { className?: string }) {
   return (
