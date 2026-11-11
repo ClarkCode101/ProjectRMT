@@ -3,7 +3,30 @@ import { describe, expect, it, vi } from 'vitest'
 // profile.ts imports the Supabase client; the tests here don't need it.
 vi.mock('./supabase', () => ({ supabase: {} }))
 
-const { firstName } = await import('./profile')
+const { firstName, passwordProblem } = await import('./profile')
+
+describe('passwordProblem', () => {
+  it('is null when everything is filled in right', () => {
+    expect(passwordProblem('oldpass1', 'newpass12', 'newpass12')).toBeNull()
+  })
+
+  it('asks for the current password first', () => {
+    expect(passwordProblem('', 'newpass12', 'newpass12')).toMatch(/current password/)
+  })
+
+  it('needs at least 8 characters', () => {
+    expect(passwordProblem('oldpass1', 'short', 'short')).toMatch(/at least 8/)
+    expect(passwordProblem('oldpass1', '12345678', '12345678')).toBeNull()
+  })
+
+  it('rejects the same password', () => {
+    expect(passwordProblem('samepass1', 'samepass1', 'samepass1')).toMatch(/different/)
+  })
+
+  it('catches a typo in the confirm box', () => {
+    expect(passwordProblem('oldpass1', 'newpass12', 'newpass13')).toMatch(/don’t match/)
+  })
+})
 
 describe('firstName', () => {
   it('reads the trimmed name from the account', () => {
