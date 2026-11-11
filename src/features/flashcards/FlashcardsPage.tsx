@@ -29,6 +29,11 @@ type Lens = { key: string; code: string; name: string; picture: string; due: num
 const SETTINGS_KEY = 'projectrmt:flashcards'
 const NEW_PER_DAY_CHOICES = [10, 20, 50]
 
+/**
+ * newPerDay: how many NEW cards each time she looks (10 / 20 / 50), on top of every due card. Per sitting, not per
+ * day: she studies whenever she likes and always gets a full batch (the stored name stays, so saved choices still work).
+ * newDoneToday: only shown ("12 new done today"), so she knows how much will come back; it never limits her.
+ */
 type DeviceSettings = { newPerDay: number; date: string; newDoneToday: number }
 
 function readSettings(today: string): DeviceSettings {
@@ -99,10 +104,10 @@ export default function FlashcardsPage() {
   const states = useMemo(() => new Map((reviewStates.data ?? []).map((r) => [r.question_id, r])), [reviewStates.data])
   const subjectOfTopic = useMemo(() => new Map((topics.data ?? []).map((t) => [t.id, t.subject_id])), [topics.data])
 
-  const newLeftToday = Math.max(0, settings.newPerDay - settings.newDoneToday)
   // Her book: only its questions. Otherwise: one subject, or all.
   const inSubject = (q: QuizQuestion, id: number | null) => (book ? book.questionIds.has(q.id) : id === null || subjectOfTopic.get(q.topic_id) === id)
-  const deckFor = (id: number | null) => buildDeck((pool.data ?? []).filter((q) => inSubject(q, id)), states, now, newLeftToday)
+  // Every look: all due cards + a full batch of new ones (the NEW key), however many she did earlier today.
+  const deckFor = (id: number | null) => buildDeck((pool.data ?? []).filter((q) => inSubject(q, id)), states, now, settings.newPerDay)
   const deck = deckFor(subjectId)
   const total = deck.due.length + deck.fresh.length
   const optionsChanged = sourceChoice.source !== 'all' || sourceChoice.verifiedOnly
@@ -263,7 +268,7 @@ export default function FlashcardsPage() {
       />
       )}
 
-      {/* ---------- Start: ⚙, new cards a day, and the gold Look button, centered under the lenses ---------- */}
+      {/* ---------- Start: ⚙, new cards each time, and the gold Look button, centered under the lenses ---------- */}
       <section aria-label="Start" className="flex shrink-0 flex-col items-center gap-1.5">
         <div className="flex flex-wrap items-center justify-center gap-2">
           <button
@@ -275,11 +280,11 @@ export default function FlashcardsPage() {
             <SlidersHorizontal className="size-5" aria-hidden />
             {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
           </button>
-          {/* How many NEW cards a day (due ones always come): physical-looking keys like Items on Mock exam; the chosen one is pressed in. */}
+          {/* How many NEW cards each time she looks (due ones always come): physical-looking keys like Items on Mock exam; the chosen one is pressed in. */}
           <fieldset disabled={looking} className="flex items-center gap-2">
-            <legend className="sr-only">New cards a day</legend>
+            <legend className="sr-only">New cards each time</legend>
             {/* One word, like "Items" on Mock exam. Not "Items": it's only the NEW cards; due ones are added on top. */}
-            <span aria-hidden title="New cards a day" className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
+            <span aria-hidden title="New cards each time" className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
               New
             </span>
             <div className="flex gap-1.5">
@@ -311,11 +316,8 @@ export default function FlashcardsPage() {
         </div>
         {/* always one line (h-4), so the lenses above don't change size */}
         <p className="h-4 text-xs text-muted-foreground" aria-live="polite">
-          {total === 0
-            ? settings.newDoneToday >= settings.newPerDay
-              ? 'All caught up. Come back tomorrow.'
-              : 'Nothing due here. Try another slide.'
-            : `About ${plural(minutes, 'minute')}`}
+          {/* nothing due and no new cards left means every card on this slide is studied */}
+          {total === 0 ? 'Every card here is studied. Nothing due yet.' : `About ${plural(minutes, 'minute')}`}
           {settings.newDoneToday > 0 && ` · ${settings.newDoneToday} new done today`}
         </p>
       </section>
