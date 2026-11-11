@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Navigate, useLocation } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
 import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -195,6 +195,12 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           New here? Continue with Google, then wait for your admin to accept you.
+        </p>
+
+        <p className="text-center text-sm">
+          <Link to="/privacy" className="font-semibold text-primary hover:underline">
+            Privacy policy
+          </Link>
         </p>
       </form>
     </AuthShell>

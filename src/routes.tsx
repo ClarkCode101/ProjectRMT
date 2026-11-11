@@ -6,6 +6,7 @@ import { RequireAuth } from '@/features/auth/RequireAuth'
 
 // Each page is its own download (lazy), so the first load stays small on mobile data.
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'))
+const PrivacyPage = lazy(() => import('@/features/auth/PrivacyPage'))
 const HomePage = lazy(() => import('@/features/home/HomePage'))
 const PracticePage = lazy(() => import('@/features/quiz/PracticePage'))
 const MockPage = lazy(() => import('@/features/mock/MockPage'))
@@ -26,6 +27,15 @@ export const router = createBrowserRouter([
     element: (
       <Suspense fallback={<FullPageMessage>Loading…</FullPageMessage>}>
         <LoginPage />
+      </Suspense>
+    ),
+  },
+  {
+    // Public, no login: Google needs a privacy policy link for "Continue with Google".
+    path: '/privacy',
+    element: (
+      <Suspense fallback={<FullPageMessage>Loading…</FullPageMessage>}>
+        <PrivacyPage />
       </Suspense>
     ),
   },
