@@ -84,7 +84,7 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
   return (
     // Tablets and computers: one screen, no page scroll (like Mock exam's start screen); the chat takes the space left.
     // Very short windows (under 36rem) scroll the page instead of squeezing the chat.
-    <div className="mx-auto flex max-w-3xl flex-col gap-5 md:h-[calc(100dvh-2.5rem)] md:min-h-[36rem]">
+    <div className="mx-auto flex max-w-3xl flex-col gap-5 md:h-[calc(100dvh-2.5rem)] md:min-h-144">
       {/* ---------- Title on the left; invite with code in the space beside it (top right), so the chat gets the room ----------
           The code is the main way, the link the backup; the seats below open the classmate list. The box stands out
           while she still needs players and quiets down once 2 are in, so Start takes the focus. Hidden when full. */}

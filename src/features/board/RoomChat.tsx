@@ -111,8 +111,8 @@ export function RoomChat({ chat, me, moment, colorOf, headingId, className, list
           className={cn(
             'flex flex-col gap-2',
             compactLimit === undefined
-              ? ['overflow-y-auto overscroll-contain pr-1 [scrollbar-width:thin]', listClassName]
-              : 'md:min-h-0 md:flex-1 md:overflow-y-auto md:overscroll-contain md:pr-1 md:[scrollbar-width:thin]',
+              ? ['overflow-y-auto overscroll-contain pr-1 scrollbar-thin', listClassName]
+              : 'md:min-h-0 md:flex-1 md:overflow-y-auto md:overscroll-contain md:pr-1 md:scrollbar-thin',
           )}
         >
           {phoneFirst > 0 && onSeeAll && (

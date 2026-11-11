@@ -33,7 +33,7 @@ export function BoardIntro({ inProgress, previewLayoutId, onContinue, onNewGame 
   return (
     // One screen tall, no scrolling (same as Mock exam): the board takes whatever height is left.
     // Phone: minus the top bar, main's padding and the bottom nav. Tablet/computer: minus main's padding (2.5rem).
-    <div className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[30rem] max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-[34rem]">
+    <div className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-120 max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-136">
       <PageHeader title="Board Review" subtitle="Snakes and ladders through the six subjects. Answer right to move." />
 
       {/* ---------- The board ---------- */}

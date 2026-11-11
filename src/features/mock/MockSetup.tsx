@@ -126,7 +126,7 @@ export function MockSetup({ onStart, starting, saved, onResume, onDiscard, initi
     // Tablet/computer: minus main's padding (pt-5 + pb-5 = 2.5rem). min-h: on a very short screen it scrolls instead of squashing.
     <form
       onSubmit={handleSubmit}
-      className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[34rem] max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-[36rem]"
+      className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-136 max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-144"
     >
       {/* Tight gaps (gap-3) and one-line subtitle: every px saved goes to the rotor. */}
       <PageHeader title="Mock exam" subtitle="Turn the rotor or tap ALL. Timed like the real exam." />

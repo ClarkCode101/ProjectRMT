@@ -31,7 +31,7 @@ Explanation: Factor VII is stable in stored plasma.`
 
 /** The small tinted buttons, same as on the shelf screen. */
 const smallButtonClass =
-  'flex h-10 items-center justify-center gap-2 rounded-lg bg-primary/[0.08] px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
+  'flex h-10 items-center justify-center gap-2 rounded-lg bg-primary/8 px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
 
 // /questions/upload: pick a file (or paste text) → review what was found → save.
 // ?subject=ID (from a subject's book): the subject is set, only the topic is asked.

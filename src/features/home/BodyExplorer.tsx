@@ -116,7 +116,7 @@ export function BodyStage({
           // @container: the card shows more (the correct count) when it has the room.
           '@container relative flex w-full min-w-0 flex-col gap-2 rounded-2xl border bg-card px-3 py-2.5 text-left shadow-[0_6px_18px_-12px_rgb(7_71_94/0.45)] outline-none transition-[box-shadow,border-color] focus-visible:ring-3 focus-visible:ring-ring/40 lg:max-w-80 lg:px-3.5',
           isSelected
-            ? 'border-primary bg-primary/[0.04] shadow-[0_10px_28px_-16px_rgb(7_71_94/0.6)] ring-1 ring-primary'
+            ? 'border-primary bg-primary/4 shadow-[0_10px_28px_-16px_rgb(7_71_94/0.6)] ring-1 ring-primary'
             : 'hover:border-primary/40 hover:shadow-[0_12px_28px_-14px_rgb(7_71_94/0.5)]',
           // Just practiced this one: a soft gold flash while its number counts up.
           before && 'score-bump',
@@ -179,11 +179,11 @@ export function BodyStage({
           Laptops: one stage with the body in the middle and a column of cards on each side. */}
       <div ref={stageRef} className="relative flex flex-col md:min-h-0 md:flex-1 lg:block">
         {/* Soft spotlight behind the body */}
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[6%] mx-auto aspect-square w-[70%] max-w-[26rem] rounded-full bg-[radial-gradient(circle,rgb(11_99_130/0.12),transparent_65%)]" />
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[6%] mx-auto aspect-square w-[70%] max-w-104 rounded-full bg-[radial-gradient(circle,rgb(11_99_130/0.12),transparent_65%)]" />
 
         <div
           ref={canvasBoxRef}
-          className="relative order-1 mx-auto h-[24rem] w-full max-w-[22rem] md:h-auto md:min-h-48 md:max-w-none md:flex-1 lg:absolute lg:w-auto lg:inset-x-28 lg:top-0 lg:bottom-11 xl:inset-x-32"
+          className="relative order-1 mx-auto h-96 w-full max-w-88 md:h-auto md:min-h-48 md:max-w-none md:flex-1 lg:absolute lg:w-auto lg:inset-x-28 lg:top-0 lg:bottom-11 xl:inset-x-32"
         >
           <Suspense fallback={<div className="grid h-full place-items-center text-sm text-muted-foreground">Loading 3D body…</div>}>
             <Body3D
@@ -242,7 +242,7 @@ export function BodyStage({
         {/* Turn handle under the feet, like a turntable */}
         <div className="relative order-2 mt-1 flex shrink-0 justify-center lg:absolute lg:inset-x-0 lg:bottom-0 lg:mt-0">
           <div className="flex w-full max-w-64 items-center">
-            <span aria-hidden className="h-px flex-1 bg-gradient-to-r from-transparent to-foreground/30" />
+            <span aria-hidden className="h-px flex-1 bg-linear-to-r from-transparent to-foreground/30" />
             <span className="flex items-center rounded-full bg-primary p-0.5 text-primary-foreground shadow-sm">
               <button type="button" aria-label="Turn the body left" onClick={() => controls.current?.rotateBy(-Math.PI / 4)} className="flex size-8 items-center justify-center rounded-full outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white">
                 <ChevronLeft className="size-4" aria-hidden />
@@ -255,7 +255,7 @@ export function BodyStage({
                 <ChevronRight className="size-4" aria-hidden />
               </button>
             </span>
-            <span aria-hidden className="h-px flex-1 bg-gradient-to-l from-transparent to-foreground/30" />
+            <span aria-hidden className="h-px flex-1 bg-linear-to-l from-transparent to-foreground/30" />
           </div>
         </div>
 
@@ -367,7 +367,7 @@ export function NextUpBar({ subject, subjectTopicIds }: { subject: SubjectSummar
             type="button"
             onClick={() => setWarmupOpen(true)}
             aria-haspopup="dialog"
-            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-primary/[0.08] px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px"
+            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-primary/8 px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px"
           >
             <Dices className="size-4 shrink-0" aria-hidden />
             Warm-up

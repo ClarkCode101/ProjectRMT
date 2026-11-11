@@ -327,7 +327,7 @@ function QuestionBankView({
           : // Inside a book: one screen tall (no page scroll), like Practice. Only the questions scroll, inside the binder.
             // Phone: minus the top bar, main's padding and the bottom nav (11rem). Computer: minus main's padding (2.5rem).
             // Wider too: the open binder has two pages side by side.
-            'flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[30rem] max-w-6xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)]',
+            'flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-120 max-w-6xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)]',
       )}
     >
       {atShelf ? (
@@ -391,7 +391,7 @@ function QuestionBankView({
                     onEdit={() => setEditingBook(true)}
                     tag={
                       book.publishedAt ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/[0.08] px-2 py-px text-xs font-semibold text-primary">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/8 px-2 py-px text-xs font-semibold text-primary">
                           <Users className="size-3" aria-hidden />
                           Shared to Community
                         </span>
@@ -803,7 +803,7 @@ function QuestionRow({
               {!q.in_subject && <span className="rounded-full border border-dashed border-primary/30 px-2 py-px font-semibold text-muted-foreground">Book only</span>}
               {/* inside her book: the question's chapter in it */}
               {openBook?.chapters.get(q.id) && (
-                <span className="inline-flex max-w-48 items-center gap-1 rounded-full bg-primary/[0.08] px-2 py-px font-semibold text-primary">
+                <span className="inline-flex max-w-48 items-center gap-1 rounded-full bg-primary/8 px-2 py-px font-semibold text-primary">
                   <Bookmark className="size-3 shrink-0" aria-hidden />
                   <span className="truncate">{openBook.chapters.get(q.id)}</span>
                 </span>

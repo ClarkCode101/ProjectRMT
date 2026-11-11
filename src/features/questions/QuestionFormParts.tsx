@@ -123,7 +123,7 @@ export function TopicPicker({
           type="button"
           onClick={openPicker}
           aria-label={showSubjects ? 'Change the subject or topic' : 'Change the topic'}
-          className="h-10 shrink-0 rounded-md bg-primary/[0.08] px-3.5 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40"
+          className="h-10 shrink-0 rounded-md bg-primary/8 px-3.5 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40"
         >
           Change
         </button>

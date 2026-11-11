@@ -199,7 +199,7 @@ function StudyMenu({ links }: { links: StudyLinks }) {
           {options.map(({ to, icon: Icon, title, hint, badge }) => (
             <li key={title} className="border-b border-primary/10 last:border-b-0">
               <Link to={to} className={cn('flex items-center gap-3 px-3 py-2.5 hover:bg-secondary/60', focusRing, 'focus-visible:ring-inset')}>
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/[0.08] text-primary">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary">
                   <Icon className="size-4" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">

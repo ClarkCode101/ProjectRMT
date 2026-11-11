@@ -206,7 +206,7 @@ export default function FlashcardsPage() {
     // One screen tall, no scrolling (same as Practice and Mock exam): the lenses take whatever height is left.
     // Phone: minus the top bar (3.5rem), main's padding (0.5 + 1.5rem) and the bottom nav (5.5rem).
     // Tablet/computer: minus main's padding (pt-5 + pb-5 = 2.5rem). min-h: on a very short screen it scrolls instead of squashing.
-    <div className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[30rem] max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-[32rem]">
+    <div className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-120 max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-128">
       <PageHeader title="Flashcards" subtitle={book ? 'The cards in your book.' : 'Swipe the lens to choose a slide.'} />
 
       {book ? (
@@ -252,7 +252,7 @@ export default function FlashcardsPage() {
         disabled={looking}
         renderFigure={(l, { centered }) => (
           // Side lenses carry their due count (the middle one has it in the name plate). Nothing due = dimmer.
-          <div className={cn('w-60 md:w-80', !centered && l.due === 0 && 'opacity-60 grayscale-[35%]')}>
+          <div className={cn('w-60 md:w-80', !centered && l.due === 0 && 'opacity-60 grayscale-35')}>
             <FieldOfView code={l.picture} label={centered ? undefined : l.due === 0 ? 'Caught up' : `${l.due} due`} looking={centered && looking} />
           </div>
         )}

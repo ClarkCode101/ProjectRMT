@@ -150,7 +150,7 @@ export default function HomePage() {
     // and the Next up bar with the Practice button at the bottom.
     // Tablet and up: at least one screen tall; laptops: exactly one screen (2.5rem = AppLayout's top + bottom padding),
     // stopping at min-h on a very short window so it scrolls instead of squeezing. Phones: scrolls as usual.
-    <div className="flex flex-col gap-3 md:min-h-[calc(100dvh-2.5rem)] lg:h-[calc(100dvh-2.5rem)] lg:min-h-[36rem]">
+    <div className="flex flex-col gap-3 md:min-h-[calc(100dvh-2.5rem)] lg:h-[calc(100dvh-2.5rem)] lg:min-h-144">
       {/* The body is the star, so the top is ONE light line: the greeting, and the small stats on the same line.
           The overall score sits with the body (its "scan readout", bottom right of the stage).
           The next step lives in ONE place only, the Next up bar at the bottom. */}

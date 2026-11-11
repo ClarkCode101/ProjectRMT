@@ -34,7 +34,7 @@ type Props = {
 
 /** The small secondary button under Start (tinted, not gold; same as the ones on Home's subject card). */
 const smallButtonClass =
-  'flex h-10 items-center justify-center gap-2 rounded-lg bg-primary/[0.08] px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
+  'flex h-10 items-center justify-center gap-2 rounded-lg bg-primary/8 px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
 
 /**
  * Practice: swipe the tubes to a subject (or the mix), then Start, right on the page, the same way as Mock exam
@@ -136,7 +136,7 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
     // One screen tall, no scrolling (like Home): the carousel takes whatever height is left.
     // Phone: minus the top bar (3.5rem), main's padding (0.5 + 1.5rem) and the bottom nav (5.5rem).
     // Tablet/computer: minus main's padding (pt-5 + pb-5 = 2.5rem). min-h: on a very short screen it scrolls instead of squashing.
-    <div className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-[30rem] max-w-5xl flex-col gap-4 md:h-[calc(100dvh-2.5rem)] md:min-h-[32rem] md:gap-5">
+    <div className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-120 max-w-5xl flex-col gap-4 md:h-[calc(100dvh-2.5rem)] md:min-h-128 md:gap-5">
       <PageHeader
         title="Practice"
         subtitle={
@@ -168,7 +168,7 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
         <SubjectCarousel items={items} index={focusIndex} onIndexChange={(i) => setFocusKey(items[i].key)} onOpen={start} />
       ) : (
         // Takes the carousel's place (same flexible height) while the scores load.
-        <div aria-hidden className="min-h-0 flex-1 animate-pulse rounded-3xl bg-primary/[0.04]" />
+        <div aria-hidden className="min-h-0 flex-1 animate-pulse rounded-3xl bg-primary/4" />
       )}
 
       {/* ---------- Items + Start, right on the page (like Mock exam), then how many are new ---------- */}

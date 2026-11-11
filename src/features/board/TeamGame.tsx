@@ -364,7 +364,7 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props)
             <div
               key={dice.landed ? 'landed' : 'tumbling'}
               className={cn(
-                'flex size-36 items-center justify-center rounded-[2rem] border border-white/80 bg-white shadow-[0_24px_60px_-20px_rgb(7_54_74/0.6)] sm:size-44',
+                'flex size-36 items-center justify-center rounded-4xl border border-white/80 bg-white shadow-[0_24px_60px_-20px_rgb(7_54_74/0.6)] sm:size-44',
                 dice.landed ? 'die-land' : 'die-tumble',
               )}
             >
