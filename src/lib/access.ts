@@ -103,6 +103,15 @@ export async function setMemberAccess(userId: string, status: 'approved' | 'decl
   if (error) throw error
 }
 
+/**
+ * Deletes a declined account and everything in it, for good (migration 0035). Admin only; the database also
+ * refuses unless the account was declined first.
+ */
+export async function deleteMember(userId: string) {
+  const { error } = await supabase.rpc('delete_member', { p_user: userId })
+  if (error) throw error
+}
+
 /** Two letters for the round badge next to a name: "Sample Student" → "SS", no name → from the email. */
 export function initials(name: string | null, email: string): string {
   const words = (name ?? '').trim().split(/\s+/).filter(Boolean)

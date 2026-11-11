@@ -1,12 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, CloudUpload, Eye, EyeOff } from 'lucide-react'
 import { useId, useState, type ComponentProps, type FormEvent, type ReactNode } from 'react'
+import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { ShareKey } from '@/components/InstallHint'
 import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/authContext'
-import { initials, listMembers, setMemberAccess, signInMethod, type Member } from '@/lib/access'
+import { deleteMember, initials, listMembers, setMemberAccess, signInMethod, type Member } from '@/lib/access'
 import { useInstall } from '@/lib/install'
 import { downloadBank, useBankStatus } from '@/lib/offline/bank'
 import { clearOutbox, usePendingAnswerCount } from '@/lib/offline/outbox'
@@ -743,29 +744,52 @@ function MemberRow({ member, note, children }: { member: Member; note: string; c
 }
 
 /**
- * The admin's list (migration 0033): people who signed in with Google and are waiting, with Accept / Decline,
- * then everyone who already has access. Nothing here is final: a declined or removed person can be accepted again.
+ * The admin's list (migrations 0033–0035), three parts:
+ * - people waiting, with Accept / Decline (always shown)
+ * - Members: who can use the app, with Remove (folded until View)
+ * - Declined: removed or turned-down accounts, with Accept (let back in) and Delete (gone for good) (folded until View)
+ * Keeping Declined apart stops the Members list from filling up with people who aren't members.
  */
 function AccessGroup() {
   const queryClient = useQueryClient()
   const online = useOnline()
   const members = useQuery({ queryKey: ['members'], queryFn: listMembers, refetchInterval: 60_000 })
   const [showMembers, setShowMembers] = useState(false)
+  const [showDeclined, setShowDeclined] = useState(false)
   const [busy, setBusy] = useState<string | null>(null) // the account being saved right now
-  const [failed, setFailed] = useState(false)
+  const [failed, setFailed] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<Member | null>(null) // the account in the "Delete for good?" box
+  const [deleted, setDeleted] = useState<string | null>(null) // email of the account just deleted
   const id = useId()
+  const dialogHeadingId = useId()
   const [now] = useState(() => Date.now())
 
-  async function decide(member: Member, status: 'approved' | 'declined') {
+  /** Runs one change, then reloads the list. */
+  async function run(member: Member, action: () => Promise<void>, failText: string) {
     setBusy(member.userId)
-    setFailed(false)
+    setFailed(null)
+    setDeleted(null)
     try {
-      await setMemberAccess(member.userId, status)
+      await action()
       await queryClient.invalidateQueries({ queryKey: ['members'] })
+      return true
     } catch {
-      setFailed(true)
+      setFailed(failText)
+      return false
+    } finally {
+      setBusy(null)
     }
-    setBusy(null)
+  }
+
+  const decide = (member: Member, status: 'approved' | 'declined') =>
+    void run(member, () => setMemberAccess(member.userId, status), SAVE_FAILED)
+
+  async function confirmDelete() {
+    if (!deleting) return
+    const member = deleting
+    setDeleting(null)
+    const ok = await run(member, () => deleteMember(member.userId), 'Couldn’t delete the account. Check your internet connection and try again.')
+    if (ok) setDeleted(member.email)
   }
 
   const all = members.data ?? []
@@ -774,6 +798,7 @@ function AccessGroup() {
   const declined = all.filter((member) => member.status === 'declined')
   const asked = (member: Member) => `asked ${timeAgo(new Date(member.requestedAt).getTime(), now)}`
   const locked = (member: Member) => busy !== null || !online || member.isAdmin
+  const dangerButton = 'text-wrong hover:bg-wrong/5'
 
   return (
     <section aria-labelledby={id}>
@@ -794,14 +819,14 @@ function AccessGroup() {
 
         {pending.map((member) => (
           <MemberRow key={member.userId} member={member} note={asked(member)}>
-            <RowButton className="text-wrong hover:bg-wrong/5" disabled={locked(member)} onClick={() => void decide(member, 'declined')}>
+            <RowButton className={dangerButton} disabled={locked(member)} onClick={() => decide(member, 'declined')}>
               Decline
             </RowButton>
             <Button
               type="button"
               className="h-11 rounded-md px-5 font-heading text-base font-bold"
               disabled={locked(member)}
-              onClick={() => void decide(member, 'approved')}
+              onClick={() => decide(member, 'approved')}
             >
               {busy === member.userId ? 'Saving…' : 'Accept'}
             </Button>
@@ -810,7 +835,13 @@ function AccessGroup() {
 
         {failed && (
           <p role="alert" className="px-5 py-3 text-sm text-destructive">
-            {SAVE_FAILED}
+            {failed}
+          </p>
+        )}
+        {deleted && (
+          <p role="status" className="flex items-center gap-1.5 px-5 py-3 text-sm font-semibold text-correct">
+            <Check className="size-4 shrink-0" aria-hidden />
+            <span className="min-w-0 break-all">Deleted {deleted}.</span>
           </p>
         )}
 
@@ -826,26 +857,64 @@ function AccessGroup() {
             }
           />
         )}
-
         {showMembers &&
           approved.map((member) => (
             <MemberRow key={member.userId} member={member} note={member.isAdmin ? 'Admin' : 'Member'}>
               {!member.isAdmin && (
-                <RowButton className="text-wrong hover:bg-wrong/5" disabled={locked(member)} onClick={() => void decide(member, 'declined')}>
+                <RowButton className={dangerButton} disabled={locked(member)} onClick={() => decide(member, 'declined')}>
                   Remove
                 </RowButton>
               )}
             </MemberRow>
           ))}
-        {showMembers &&
+
+        {/* Only shown when there is someone in it. */}
+        {members.isSuccess && declined.length > 0 && (
+          <Row
+            label="Declined"
+            hint="Can’t use the app"
+            value={<Strong>{declined.length}</Strong>}
+            action={
+              <RowButton aria-expanded={showDeclined} onClick={() => setShowDeclined((shown) => !shown)}>
+                {showDeclined ? 'Hide' : 'View'}
+              </RowButton>
+            }
+          />
+        )}
+        {showDeclined &&
           declined.map((member) => (
-            <MemberRow key={member.userId} member={member} note="Declined · can’t use the app">
-              <RowButton disabled={locked(member)} onClick={() => void decide(member, 'approved')}>
-                Accept
+            <MemberRow key={member.userId} member={member} note={asked(member)}>
+              <RowButton className={dangerButton} disabled={locked(member)} onClick={() => setDeleting(member)}>
+                Delete
+              </RowButton>
+              <RowButton disabled={locked(member)} onClick={() => decide(member, 'approved')}>
+                {busy === member.userId ? 'Saving…' : 'Accept'}
               </RowButton>
             </MemberRow>
           ))}
       </div>
+
+      {/* Delete can't be undone, so it always asks first. Cancel is the safe default (it gets the focus). */}
+      <Dialog open={deleting !== null} onClose={() => setDeleting(null)} labelledBy={dialogHeadingId}>
+        <div className="space-y-4 p-5">
+          <h3 id={dialogHeadingId} className="text-xl font-bold">
+            Delete this account?
+          </h3>
+          <p className="font-semibold break-all">{deleting?.email}</p>
+          <p className="text-sm text-muted-foreground">
+            Their account and everything in it are deleted for good: progress, questions, books and game history. This
+            can’t be undone. If they sign in again, it shows up here as a new request.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" autoFocus className="h-11 px-4 font-bold" onClick={() => setDeleting(null)}>
+              Cancel
+            </Button>
+            <Button type="button" className="h-11 bg-wrong px-4 font-bold text-white hover:bg-wrong/90" onClick={() => void confirmDelete()}>
+              Delete account
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </section>
   )
 }

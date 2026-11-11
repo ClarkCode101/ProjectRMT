@@ -212,6 +212,11 @@ export type Database = {
           requested_at: string
         }[]
       }
+      // migration 0035: delete a declined account for good
+      delete_member: {
+        Args: { p_user: string }
+        Returns: undefined
+      }
       set_member_access: {
         Args: { p_user: string; p_status: 'approved' | 'declined' }
         Returns: undefined
