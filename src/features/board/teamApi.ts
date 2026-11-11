@@ -107,6 +107,19 @@ function useLiveBoardAlerts(userId: string | null) {
   }, [userId, queryClient])
 }
 
+/** Her answers in one finished team game, per subject code (migration 0030). Empty if she answered none. */
+export function useMyGameAnswers(roomId: string) {
+  return useQuery({
+    queryKey: ['board-my-answers', roomId],
+    staleTime: Infinity, // a finished game doesn't change
+    retry: false,
+    queryFn: async (): Promise<Record<string, { answered: number; correct: number }>> => {
+      const rows = (await call(supabase.rpc('board_my_game_answers', { p_room: roomId }))) ?? []
+      return Object.fromEntries(rows.map((r) => [r.subject_code, { answered: r.answered, correct: r.correct }]))
+    },
+  })
+}
+
 export type TeamRoomState = { room: TeamRoom; fetchedAt: number }
 
 /**

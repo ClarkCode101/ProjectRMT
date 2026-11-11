@@ -299,6 +299,11 @@ export type Database = {
       }
       board_send_message: { Args: { p_room: string; p_body: string }; Returns: string }
       board_delete_message: { Args: { p_message: string }; Returns: undefined }
+      // migration 0030: her answers in one team game, per subject (finish screen)
+      board_my_game_answers: {
+        Args: { p_room: string }
+        Returns: { subject_code: string; answered: number; correct: number }[]
+      }
     }
     Enums: {
       question_source: QuestionSource
