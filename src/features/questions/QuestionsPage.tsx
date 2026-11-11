@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/dashboard'
 import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { NativeSelect } from '@/components/NativeSelect'
+import { NoticeBoard, NoticeButton } from '@/components/NoticeBoard'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { filterQuestions, summarizeCoverage, type BankFilters } from '@/lib/questions'
@@ -332,7 +333,9 @@ function QuestionBankView({
     >
       {atShelf ? (
         <>
-          <PageHeader title="Questions" subtitle={`${questions.length} questions on your shelves${needsLook.length > 0 ? ` · ${needsLook.length} need a look` : ''}.`} />
+          <PageHeader title="Questions" subtitle={`${questions.length} questions on your shelves${needsLook.length > 0 ? ` · ${needsLook.length} need a look` : ''}.`} actions={<NoticeButton place="questions" />} />
+          {/* The admin's message to everyone (e.g. "more questions coming"), right above the shelves. */}
+          <NoticeBoard place="questions" />
           {booksUnavailable && (
             <p role="status" className="flex items-start gap-2 rounded-md border border-highlight/50 bg-highlight-soft p-3 text-sm">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden />

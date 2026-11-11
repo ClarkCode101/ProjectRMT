@@ -26,6 +26,8 @@ export type Database = {
         'code' | 'name' | 'weight'
       >
       topics: Table<{ id: number; subject_id: number; name: string }, 'subject_id' | 'name'>
+      // migration 0036: the admin's notice at the top of a page (read-only here; the admin writes through set_notice)
+      notices: Table<{ place: 'questions' | 'home'; body: string; posted_at: string }, 'place' | 'body'>
       uploads: Table<
         {
           id: string
@@ -211,6 +213,15 @@ export type Database = {
           is_admin: boolean
           requested_at: string
         }[]
+      }
+      // migration 0036: the admin's notices
+      set_notice: {
+        Args: { p_place: 'questions' | 'home'; p_body: string }
+        Returns: undefined
+      }
+      clear_notice: {
+        Args: { p_place: 'questions' | 'home' }
+        Returns: undefined
       }
       // migration 0035: delete a declined account for good
       delete_member: {
