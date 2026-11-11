@@ -193,6 +193,27 @@ export type Database = {
       }
     }
     Functions: {
+      // migration 0033: access requests (Google sign-in, then the admin accepts)
+      my_access: {
+        Args: Record<string, never>
+        /** { status, is_admin, requested_at }; read it with parseAccess (lib/access.ts) */
+        Returns: unknown
+      }
+      list_members: {
+        Args: Record<string, never>
+        Returns: {
+          user_id: string
+          email: string
+          name: string | null
+          status: 'pending' | 'approved' | 'declined'
+          is_admin: boolean
+          requested_at: string
+        }[]
+      }
+      set_member_access: {
+        Args: { p_user: string; p_status: 'approved' | 'declined' }
+        Returns: undefined
+      }
       find_similar_questions: {
         Args: { p_stem: string; p_threshold?: number }
         Returns: { id: string; stem: string; score: number; exact: boolean }[]

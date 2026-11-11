@@ -1,17 +1,19 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation } from 'react-router'
 import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
-import { Logo } from '@/components/report'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { signInWithGoogle, takeOAuthError } from '@/lib/access'
 import { supabase } from '@/lib/supabase'
+import { AuthShell, PhoneStrip, ReportSlip, Stamp } from './AuthShell'
 import { useAuth } from './authContext'
 
-// Email + password (not magic link): on iPhone, a magic link opens in Safari
-// instead of the installed home-screen app, which is confusing.
-// There is no sign-up form on purpose. The app is private; create her account in
-// Supabase Dashboard → Authentication → Users (see README).
+// Two ways in:
+// - Email + password, for accounts the admin made by hand (not magic link: on iPhone, a magic link opens
+//   in Safari instead of the installed home-screen app, which is confusing).
+// - Continue with Google, for everyone new. There is still no sign-up form: a new Google account lands on
+//   the "waiting for approval" page until the admin accepts it in Settings (migration 0033).
 
 /** "Good morning / afternoon / evening", based on the device's clock. */
 function greeting(hour = new Date().getHours()) {
@@ -27,58 +29,42 @@ const SAMPLE_RESULTS = [
   { subject: 'Microbiology', result: 88 },
 ]
 
-/** Faint graph-paper lines, like the grid on a lab chart. Pure CSS, no image file. */
-const GRAPH_PAPER = {
-  backgroundImage:
-    'linear-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.06) 1px, transparent 1px)',
-  backgroundSize: '28px 28px',
-}
+/** The decorative report slip on the brand side (sample numbers, not her real scores). */
+const SAMPLE_SLIP = (
+  <ReportSlip
+    title="MTLE readiness report"
+    head={['Subject', 'Result']}
+    rows={SAMPLE_RESULTS.map((row) => ({ label: row.subject, value: row.result, big: true }))}
+    footLabel="Ref range 60–100"
+    stamp={
+      <Stamp tone="passed" className="text-xl">
+        PASSED
+      </Stamp>
+    }
+  />
+)
 
-/** Same grid, in faint blue, for the light page behind the card. */
-const LIGHT_GRAPH_PAPER = {
-  backgroundImage:
-    'linear-gradient(rgb(7 71 94 / 0.05) 1px, transparent 1px), linear-gradient(90deg, rgb(7 71 94 / 0.05) 1px, transparent 1px)',
-  backgroundSize: '28px 28px',
-}
-
-/** The "PASSED" stamp, same look as on the real results screens. */
-function PassedStamp({ className = '' }: { className?: string }) {
-  return (
-    <span
-      className={`stamp inline-block rounded-md border-[3px] border-correct px-2.5 py-1 font-heading leading-none font-bold text-correct ${className}`}
-    >
-      PASSED
+const SAMPLE_STRIP = (
+  <PhoneStrip>
+    <span className="text-sm">
+      Result <b className="font-heading text-lg tabular-nums">84</b>
+      <span className="text-muted-foreground"> · Ref 60–100</span>
     </span>
-  )
-}
+    <Stamp tone="passed" className="text-sm">
+      PASSED
+    </Stamp>
+  </PhoneStrip>
+)
 
-/** A preview of a lab-report result card. Decoration only, so screen readers skip it. */
-function SpecimenCard() {
+/** Google's "G" mark (their sign-in button guidelines ask for the standard colors on a white button). */
+function GoogleMark() {
   return (
-    <div
-      aria-hidden
-      className="w-full -rotate-2 rounded-xl bg-card p-4 text-sm text-card-foreground shadow-[0_24px_48px_-18px_rgb(0_0_0/0.6)]"
-    >
-      <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase">MTLE readiness report</p>
-      <div className="my-3 border-t-2 border-dashed" />
-      <div className="flex justify-between text-xs font-bold tracking-wider text-muted-foreground uppercase">
-        <span>Subject</span>
-        <span>Result</span>
-      </div>
-      <ul className="mt-2 space-y-2">
-        {SAMPLE_RESULTS.map((row) => (
-          <li key={row.subject} className="flex items-baseline justify-between gap-4">
-            <span>{row.subject}</span>
-            <span className="font-heading text-xl font-bold tabular-nums">{row.result}</span>
-          </li>
-        ))}
-      </ul>
-      <div className="my-3 border-t-2 border-dashed" />
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">Ref range 60–100</span>
-        <PassedStamp className="text-xl" />
-      </div>
-    </div>
+    <svg aria-hidden viewBox="0 0 48 48" className="size-5">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
   )
 }
 
@@ -88,7 +74,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // A Google sign-in that failed on the way back shows its reason here once.
+  const [error, setError] = useState<string | null>(() => {
+    const reason = takeOAuthError()
+    return reason ? `Google sign-in didn’t work (${reason}). Please try again.` : null
+  })
+  const [openingGoogle, setOpeningGoogle] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const from = (location.state as { from?: string } | null)?.from ?? '/'
@@ -104,120 +95,108 @@ export default function LoginPage() {
     // On success, AuthProvider gets the new session and the <Navigate> above redirects.
   }
 
+  async function handleGoogle() {
+    setOpeningGoogle(true)
+    setError(null)
+    try {
+      await signInWithGoogle() // leaves this page for Google's account picker
+    } catch {
+      setOpeningGoogle(false)
+      setError('Couldn’t open Google. Check your internet connection and try again.')
+    }
+  }
+
   return (
-    // Light graph-paper page with ONE compact card floating in the middle
-    // (not a full-screen split), so the eye goes straight to the form.
-    <main
-      className="flex min-h-dvh items-center justify-center bg-background px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
-      style={LIGHT_GRAPH_PAPER}
-    >
-      <div className="grid w-full max-w-sm overflow-hidden rounded-2xl border bg-card shadow-[0_30px_60px_-30px_rgb(7_71_94/0.5)] md:max-w-[820px] md:grid-cols-[5fr_6fr]">
-        {/* Brand side: short band on top on phones, left half of the card on bigger screens. */}
-        <div className="relative overflow-hidden bg-primary-deep text-white">
-          <div aria-hidden className="absolute inset-0" style={GRAPH_PAPER} />
-          <div className="relative flex h-full flex-col gap-5 p-6 md:justify-between md:gap-8 md:p-8">
-            <div className="flex items-center gap-3">
-              <Logo className="size-10 rounded-xl ring-2 ring-white/25" />
-              <h1 className="font-heading text-2xl font-bold tracking-tight">
-                Project<span className="text-highlight">RMT</span>
-              </h1>
-            </div>
+    <AuthShell slip={SAMPLE_SLIP} strip={SAMPLE_STRIP}>
+      <form onSubmit={handleSubmit} className="space-y-5 p-6 md:p-9">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-bold">{greeting()}</h2>
+          <p className="text-muted-foreground">Log in to continue your review.</p>
+        </div>
 
-            {/* Bigger screens: the small report card. */}
-            <div className="hidden md:block">
-              <SpecimenCard />
-            </div>
-
-            {/* Phones: a short result strip, so the form stays near the top. */}
-            <div
+        <div className="space-y-2">
+          <Label htmlFor="email" className="font-semibold">
+            Email
+          </Label>
+          <div className="relative">
+            <Mail
               aria-hidden
-              className="flex w-fit items-center gap-4 rounded-lg bg-card px-4 py-2.5 text-card-foreground shadow-lg md:hidden"
-            >
-              <span className="text-sm">
-                Result <b className="font-heading text-lg tabular-nums">84</b>
-                <span className="text-muted-foreground"> · Ref 60–100</span>
-              </span>
-              <PassedStamp className="text-sm" />
-            </div>
-
-            <p className="font-heading text-lg leading-snug font-semibold text-white/90 md:text-xl">
-              Your MTLE review, <span className="text-highlight">one result at a time.</span>
-            </p>
+              className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@email.com"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="h-12 pl-10"
+            />
           </div>
         </div>
 
-        {/* Form side: the one task on this screen. */}
-        <form onSubmit={handleSubmit} className="space-y-5 p-6 md:p-9">
-          <div className="space-y-1">
-            <h2 className="text-3xl font-bold">{greeting()}</h2>
-            <p className="text-muted-foreground">Log in to continue your review.</p>
+        <div className="space-y-2">
+          <Label htmlFor="password" className="font-semibold">
+            Password
+          </Label>
+          <div className="relative">
+            <LockKeyhole
+              aria-hidden
+              className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="h-12 pr-12 pl-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((shown) => !shown)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+              className="absolute top-1/2 right-1 grid size-10 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
+              {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+            </button>
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email" className="font-semibold">
-              Email
-            </Label>
-            <div className="relative">
-              <Mail
-                aria-hidden
-                className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@email.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-12 pl-10"
-              />
-            </div>
-          </div>
+        {error && (
+          <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
+            {error}
+          </p>
+        )}
 
-          <div className="space-y-2">
-            <Label htmlFor="password" className="font-semibold">
-              Password
-            </Label>
-            <div className="relative">
-              <LockKeyhole
-                aria-hidden
-                className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted-foreground"
-              />
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-12 pr-12 pl-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((shown) => !shown)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                aria-pressed={showPassword}
-                className="absolute top-1/2 right-1 grid size-10 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-              >
-                {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
-              </button>
-            </div>
-          </div>
+        <Button type="submit" className="h-12 w-full rounded-md font-heading text-lg font-bold" disabled={submitting}>
+          {submitting ? 'Logging in…' : 'Log in'}
+        </Button>
 
-          {error && (
-            <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
-              {error}
-            </p>
-          )}
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <span aria-hidden className="h-px flex-1 bg-border" />
+          or
+          <span aria-hidden className="h-px flex-1 bg-border" />
+        </div>
 
-          <Button type="submit" className="h-12 w-full rounded-md font-heading text-lg font-bold" disabled={submitting}>
-            {submitting ? 'Logging in…' : 'Log in'}
-          </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleGoogle}
+          disabled={openingGoogle}
+          className="h-12 w-full gap-2.5 rounded-md border-input bg-card text-base font-semibold text-foreground"
+        >
+          <GoogleMark />
+          {openingGoogle ? 'Opening Google…' : 'Continue with Google'}
+        </Button>
 
-          <p className="text-center text-sm text-muted-foreground">Forgot your password? Ask your admin to reset it.</p>
-        </form>
-      </div>
-    </main>
+        <p className="text-center text-sm text-muted-foreground">
+          New here? Continue with Google, then wait for your admin to accept you.
+        </p>
+      </form>
+    </AuthShell>
   )
 }

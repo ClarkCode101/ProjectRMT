@@ -40,10 +40,23 @@ and seed questions.
       `0019_merge_into_subject.sql` merges one of her books into a subject book, under her own topic there;
       `0020_community_book_stems.sql` lets Community warn about questions she already has before adding a book;
       `0021_community_skip_duplicates.sql` lets her skip those questions when she adds the book)
-3. **Authentication → Sign In / Providers**: keep Email enabled and turn **off**
-   "Allow new users to sign up" (the app is private).
-4. **Authentication → Users → Add user**: create her account (email + password,
-   tick "Auto confirm user").
+3. **Accounts.** The app is private, but nobody is added by hand any more: a new person presses
+   **Continue with Google** on the login page, then waits until the admin accepts them in
+   **Settings → Access requests** (`0033_access_requests.sql`; the database refuses everything
+   to an account that is not accepted yet).
+   1. Run `0033_access_requests.sql` **first**. Only then, in **Authentication → Sign In / Providers**,
+      turn **on** "Allow new users to sign up" (Google can't create accounts without it).
+   2. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials →
+      Create credentials → **OAuth client ID** (Web application). Authorized redirect URI:
+      `https://<project-ref>.supabase.co/auth/v1/callback`.
+   3. Supabase **Authentication → Sign In / Providers → Google**: enable it and paste the Client ID
+      and Client secret.
+   4. Supabase **Authentication → URL Configuration → Redirect URLs**: add `http://localhost:5173`
+      and the deployed URL.
+4. **The admin.** Log in once with the admin's account, then run the one `update` at the top of
+   `0033_access_requests.sql` in the SQL Editor with that account's email.
+   (An email + password account can still be made in **Authentication → Users → Add user**;
+   it also waits for the admin's Accept.)
 5. **Project Settings → API Keys**: copy the Project URL and the publishable key
    (`sb_publishable_...`).
 6. Copy `.env.example` to `.env.local` and paste those two values in.

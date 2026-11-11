@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, CloudUpload, Eye, EyeOff } from 'lucide-react'
 import { useId, useState, type ComponentProps, type FormEvent, type ReactNode } from 'react'
 import { FullPageMessage } from '@/components/FullPageMessage'
@@ -6,6 +6,7 @@ import { ShareKey } from '@/components/InstallHint'
 import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/authContext'
+import { initials, listMembers, setMemberAccess, type Member } from '@/lib/access'
 import { useInstall } from '@/lib/install'
 import { downloadBank, useBankStatus } from '@/lib/offline/bank'
 import { clearOutbox, usePendingAnswerCount } from '@/lib/offline/outbox'
@@ -719,9 +720,138 @@ function ResetProgress() {
   )
 }
 
+/* ---------------------------------- Access requests (admin only) ---------------------------------- */
+
+/** One person: round badge, name and email, then what the admin can do with them. */
+function MemberRow({ member, note, children }: { member: Member; note: string; children?: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2 px-5 py-3 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto]">
+      <span aria-hidden className="grid size-11 place-items-center rounded-full bg-secondary font-heading font-bold text-primary-deep">
+        {initials(member.name, member.email)}
+      </span>
+      <div className="min-w-0">
+        <p className="truncate font-semibold">{member.name ?? member.email}</p>
+        <p className="truncate text-sm text-muted-foreground">{member.name ? `${member.email} · ${note}` : note}</p>
+      </div>
+      {children && <div className="col-span-2 flex items-center justify-end gap-1 sm:col-span-1">{children}</div>}
+    </div>
+  )
+}
+
+/**
+ * The admin's list (migration 0033): people who signed in with Google and are waiting, with Accept / Decline,
+ * then everyone who already has access. Nothing here is final: a declined or removed person can be accepted again.
+ */
+function AccessGroup() {
+  const queryClient = useQueryClient()
+  const online = useOnline()
+  const members = useQuery({ queryKey: ['members'], queryFn: listMembers, refetchInterval: 60_000 })
+  const [showMembers, setShowMembers] = useState(false)
+  const [busy, setBusy] = useState<string | null>(null) // the account being saved right now
+  const [failed, setFailed] = useState(false)
+  const id = useId()
+  const [now] = useState(() => Date.now())
+
+  async function decide(member: Member, status: 'approved' | 'declined') {
+    setBusy(member.userId)
+    setFailed(false)
+    try {
+      await setMemberAccess(member.userId, status)
+      await queryClient.invalidateQueries({ queryKey: ['members'] })
+    } catch {
+      setFailed(true)
+    }
+    setBusy(null)
+  }
+
+  const all = members.data ?? []
+  const pending = all.filter((member) => member.status === 'pending')
+  const approved = all.filter((member) => member.status === 'approved')
+  const declined = all.filter((member) => member.status === 'declined')
+  const asked = (member: Member) => `asked ${timeAgo(new Date(member.requestedAt).getTime(), now)}`
+  const locked = (member: Member) => busy !== null || !online || member.isAdmin
+
+  return (
+    <section aria-labelledby={id}>
+      <h2 id={id} className="mb-2 flex items-center gap-2 px-1 text-xs font-bold tracking-[0.14em] text-muted-foreground uppercase">
+        Access requests
+        {pending.length > 0 && (
+          <span className="rounded-full bg-highlight px-2 py-px tracking-normal text-[#3B2A06]">{pending.length}</span>
+        )}
+      </h2>
+      <div className="divide-y overflow-hidden rounded-2xl border bg-card">
+        {members.isPending && <p className="px-5 py-4 text-muted-foreground">Loading…</p>}
+        {members.isError && (
+          <p role="alert" className="px-5 py-4 text-sm text-destructive">
+            Couldn’t load the list. Check your internet connection, then refresh.
+          </p>
+        )}
+        {members.isSuccess && pending.length === 0 && <p className="px-5 py-4 text-muted-foreground">No one is waiting.</p>}
+
+        {pending.map((member) => (
+          <MemberRow key={member.userId} member={member} note={asked(member)}>
+            <RowButton className="text-wrong hover:bg-wrong/5" disabled={locked(member)} onClick={() => void decide(member, 'declined')}>
+              Decline
+            </RowButton>
+            <Button
+              type="button"
+              className="h-11 rounded-md px-5 font-heading text-base font-bold"
+              disabled={locked(member)}
+              onClick={() => void decide(member, 'approved')}
+            >
+              {busy === member.userId ? 'Saving…' : 'Accept'}
+            </Button>
+          </MemberRow>
+        ))}
+
+        {failed && (
+          <p role="alert" className="px-5 py-3 text-sm text-destructive">
+            {SAVE_FAILED}
+          </p>
+        )}
+
+        {members.isSuccess && (
+          <Row
+            label="Members"
+            hint="People who can use the app"
+            value={<Strong>{approved.length}</Strong>}
+            action={
+              <RowButton aria-expanded={showMembers} onClick={() => setShowMembers((shown) => !shown)}>
+                {showMembers ? 'Hide' : 'View'}
+              </RowButton>
+            }
+          />
+        )}
+
+        {showMembers &&
+          approved.map((member) => (
+            <MemberRow key={member.userId} member={member} note={member.isAdmin ? 'Admin' : 'Member'}>
+              {!member.isAdmin && (
+                <RowButton className="text-wrong hover:bg-wrong/5" disabled={locked(member)} onClick={() => void decide(member, 'declined')}>
+                  Remove
+                </RowButton>
+              )}
+            </MemberRow>
+          ))}
+        {showMembers &&
+          declined.map((member) => (
+            <MemberRow key={member.userId} member={member} note="Declined · can’t use the app">
+              <RowButton disabled={locked(member)} onClick={() => void decide(member, 'approved')}>
+                Accept
+              </RowButton>
+            </MemberRow>
+          ))}
+      </div>
+    </section>
+  )
+}
+
 export default function SettingsPage() {
   const settings = useStudySettings()
-  const email = useAuth().session?.user.email
+  const { session, access } = useAuth()
+  const email = session?.user.email
+  // Someone who only ever signed in with Google has no password here to change.
+  const hasPassword = session?.user.app_metadata.providers?.includes('email') ?? true
   const [editing, setEditing] = useState<Editing>(null)
 
   if (settings.isPending) return <FullPageMessage>Loading…</FullPageMessage>
@@ -734,10 +864,16 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-3xl space-y-8">
       <PageHeader title="Settings" subtitle="You and your study plan." />
 
+      {access?.isAdmin && <AccessGroup />}
+
       <Group title="Account">
         <NameRow open={editing === 'name'} onToggle={toggle('name')} />
         <Row label="Email" value={<span className="break-all">{email}</span>} />
-        <PasswordRow open={editing === 'password'} onToggle={toggle('password')} />
+        {hasPassword ? (
+          <PasswordRow open={editing === 'password'} onToggle={toggle('password')} />
+        ) : (
+          <Row label="Password" value="You sign in with Google, so there’s no password to change." />
+        )}
       </Group>
 
       <Group title="Study plan">

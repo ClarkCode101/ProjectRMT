@@ -1,9 +1,14 @@
 import { isAuthRetryableFetchError, type Session } from '@supabase/supabase-js'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { loadAccess, readSavedAccess, rememberOAuthError, type AccessInfo } from '@/lib/access'
 import { flushOutbox } from '@/lib/offline/outbox'
 import { setOfflineUserId } from '@/lib/offline/storage'
 import { AUTH_STORAGE_KEY, supabase } from '@/lib/supabase'
 import { AuthContext } from './authContext'
+
+// A failed Google sign-in comes back as "...#error=...". Keep the reason before the address is cleaned up,
+// so the login page can show it.
+rememberOAuthError()
 
 /**
  * The login saved on this device, read straight from storage.
@@ -32,6 +37,9 @@ async function loadSession(): Promise<Session | null> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  // The server's answer to "may this account use the app?", kept with the account it belongs to.
+  const [checked, setChecked] = useState<{ userId: string; info: AccessInfo } | null>(null)
+  const userId = session?.user.id ?? null
 
   useEffect(() => {
     function apply(next: Session | null) {
@@ -57,5 +65,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe()
   }, [])
 
-  return <AuthContext.Provider value={{ session, loading }}>{children}</AuthContext.Provider>
+  const recheckAccess = useCallback(async () => {
+    if (!userId) return
+    const info = await loadAccess(userId)
+    setChecked({ userId, info })
+  }, [userId])
+
+  // Ask once for each account that logs in.
+  useEffect(() => {
+    if (!userId) return
+    let stale = false
+    void loadAccess(userId).then((info) => {
+      if (!stale) setChecked({ userId, info })
+    })
+    return () => {
+      stale = true
+    }
+  }, [userId])
+
+  const access = useMemo(() => {
+    if (!userId) return null
+    if (checked?.userId === userId) return checked.info
+    // Not answered yet: a member who was approved last time goes straight in (and it's checked again
+    // in the background). Anyone else waits for the answer.
+    const saved = readSavedAccess(userId)
+    return saved?.status === 'approved' ? saved : null
+  }, [userId, checked])
+
+  return <AuthContext.Provider value={{ session, loading, access, recheckAccess }}>{children}</AuthContext.Provider>
 }
