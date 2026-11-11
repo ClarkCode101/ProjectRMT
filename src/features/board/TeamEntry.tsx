@@ -65,7 +65,7 @@ export function TeamEntry() {
       <button
         type="button"
         onClick={() => navigate(`/board/team/${room.roomId}`)}
-        className="relative flex h-11 items-center gap-2 rounded-lg border bg-card px-4 font-heading font-bold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="relative flex h-12 items-center gap-2 rounded-lg border bg-card px-4 font-heading font-bold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
       >
         <Users className="size-5 text-primary" aria-hidden />
         {room.status === 'lobby' ? 'Back to your team lobby' : room.myTurn ? 'Your turn in your team game' : 'Back to your team game'}
@@ -79,7 +79,7 @@ export function TeamEntry() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="relative flex h-11 items-center gap-2 rounded-lg border bg-card px-4 font-heading font-bold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="relative flex h-12 items-center gap-2 rounded-lg border bg-card px-4 font-heading font-bold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
       >
         <Users className="size-5 text-primary" aria-hidden />
         Play with classmates

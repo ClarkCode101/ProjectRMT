@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Dices, Play, Target } from 'lucide-react'
+import { ArrowDown, ArrowUp, Dices, Play, Save, Target } from 'lucide-react'
 import { PageHeader } from '@/components/dashboard'
 import { heroButtonClass } from '@/components/report'
 import { BOARD_SIZE, layoutOf, zoneOf, type BoardGame } from '@/lib/board'
@@ -8,7 +8,7 @@ import { TeamEntry } from './TeamEntry'
 import { useFittedBoardWidth } from './useFittedBoardWidth'
 
 // Board Review's start screen, laid out like Mock exam and Practice (one screen, read top to bottom):
-// title → the board in the middle (like the rotor) → the name plate → Start (or Continue / New game) → the rules.
+// title → the board in the middle (like the rotor) → one status line → one row of buttons → the rules.
 
 type Props = {
   /** the game she can continue, or null */
@@ -25,6 +25,7 @@ const RULES = [
   { icon: ArrowUp, text: 'Ladder: a Challenge question' },
   { icon: ArrowDown, text: 'Snake: a Rescue question' },
   { icon: Target, text: 'Every answer counts in your scores' },
+  { icon: Save, text: 'Saved on this device' },
 ]
 
 export function BoardIntro({ inProgress, previewLayoutId, onContinue, onNewGame }: Props) {
@@ -40,48 +41,38 @@ export function BoardIntro({ inProgress, previewLayoutId, onContinue, onNewGame 
         {width !== null && <BoardGrid tokenSquare={inProgress?.position ?? 1} layout={layoutOf(previewLayoutId)} className="shrink-0" style={{ width }} />}
       </section>
 
-      {/* ---------- Name plate ---------- */}
-      <div className="shrink-0 text-center" aria-live="polite">
+      {/* ---------- Status: one line (the board already shows where the token is, so no big headline) ---------- */}
+      <p className="shrink-0 truncate px-4 text-center text-base text-muted-foreground tabular-nums" aria-live="polite">
         {inProgress ? (
           <>
-            <p className="font-heading text-4xl leading-none font-black tracking-wide tabular-nums md:text-5xl">SQUARE {inProgress.position}</p>
-            <p className="mt-2 truncate px-4 text-sm text-muted-foreground tabular-nums">
-              <span className="font-bold text-[#9A5B00]">Paused</span> · {zoneOf(inProgress.position)} zone · {inProgress.correct}/{inProgress.answered} correct · {BOARD_SIZE - inProgress.position} to go
-            </p>
+            <span className="font-bold text-[#9A5B00]">Paused</span> on <span className="font-bold text-foreground">square {inProgress.position}</span> ·{' '}
+            {zoneOf(inProgress.position)} zone · {inProgress.correct}/{inProgress.answered} correct · {BOARD_SIZE - inProgress.position} to go
           </>
         ) : (
           <>
-            <p className="font-heading text-4xl leading-none font-black tracking-wide md:text-5xl">NEW GAME</p>
-            <p className="mt-2 truncate px-4 text-sm text-muted-foreground">60 squares · one zone per subject · a different board each game</p>
+            <span className="font-bold text-foreground">New game</span> · 60 squares, one zone per subject
           </>
         )}
-      </div>
+      </p>
 
-      {/* ---------- Start (or Continue / New game) ---------- */}
-      <div className="flex shrink-0 flex-col items-center gap-1.5">
-        {inProgress ? (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onNewGame}
-              className="flex h-12 items-center rounded-lg border bg-card px-5 font-heading font-bold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
-            >
-              New game
-            </button>
-            <button type="button" onClick={onContinue} className={cn(heroButtonClass, 'w-auto px-7 focus-visible:ring-ring/50')}>
-              <Play className="size-5 fill-current" aria-hidden />
-              Continue
-            </button>
-          </div>
-        ) : (
-          <button type="button" onClick={onNewGame} className={cn(heroButtonClass, 'w-auto px-7 focus-visible:ring-ring/50')}>
-            <Play className="size-5 fill-current" aria-hidden />
-            Start game
-          </button>
-        )}
-        <p className="text-xs text-muted-foreground">Your game is saved on this device.</p>
+      {/* ---------- One row: team on the left | solo on the right (Continue / Start is the main action) ---------- */}
+      <div className="flex shrink-0 flex-wrap items-center justify-center gap-2">
         {/* Team games with classmates (live, online). */}
         <TeamEntry />
+        <span className="mx-1 hidden h-8 w-px bg-border sm:block" aria-hidden />
+        {inProgress && (
+          <button
+            type="button"
+            onClick={onNewGame}
+            className="flex h-12 items-center rounded-lg border bg-card px-5 font-heading font-bold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
+            New game
+          </button>
+        )}
+        <button type="button" onClick={inProgress ? onContinue : onNewGame} className={cn(heroButtonClass, 'w-auto px-7 focus-visible:ring-ring/50')}>
+          <Play className="size-5 fill-current" aria-hidden />
+          {inProgress ? 'Continue' : 'Start game'}
+        </button>
       </div>
 
       {/* ---------- The rules: one quiet line under it all (plain text, not things to tap) ---------- */}
