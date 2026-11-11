@@ -115,7 +115,7 @@ export function AppLayout() {
   // Sends answers waiting on the device and keeps the offline question bank fresh.
   useOfflineSync(session?.user.id ?? null)
   // A Board Review team invite or turn is waiting: red dot on its nav icon (and on "More" on phones).
-  const boardAlert = useBoardAlert()
+  const boardAlert = useBoardAlert(session?.user.id ?? null)
 
   const email = session?.user.email ?? ''
   const displayName = email.split('@')[0] || 'Reviewer'

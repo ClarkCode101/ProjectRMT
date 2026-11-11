@@ -71,11 +71,40 @@ export function useMyTeamRoom() {
   })
 }
 
-/** For the red dot on the Board Review nav icon: an invite or her turn is waiting. Quiet if anything fails. */
-export function useBoardAlert(): boolean {
+/**
+ * For the red dot on the Board Review nav icon: an invite or her turn is waiting. Quiet if anything fails.
+ * Used once, in the app layout (always on screen), so it also keeps the invites and "your turn" live.
+ */
+export function useBoardAlert(userId: string | null): boolean {
   const invites = useMyInvites()
   const room = useMyTeamRoom()
+  useLiveBoardAlerts(userId)
   return (invites.data?.length ?? 0) > 0 || room.data?.myTurn === true
+}
+
+/**
+ * Supabase Realtime: an invite sent to her, or a change in a game she's in (e.g. her turn), reads them again at once
+ * instead of waiting for the 20-second check (which stays as a fallback if the live connection drops).
+ * The database only sends rows she may read (RLS): her own invites, and rooms she's a player in.
+ */
+function useLiveBoardAlerts(userId: string | null) {
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    if (!userId) return
+    const channel = supabase
+      .channel(`board-alerts-${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'board_invites', filter: `to_id=eq.${userId}` }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['board-invites'] })
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'board_rooms' }, () => {
+        void queryClient.invalidateQueries({ queryKey: ['board-my-room'] })
+        void queryClient.invalidateQueries({ queryKey: ['board-invites'] }) // e.g. a lobby started: its invite is gone
+      })
+      .subscribe()
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [userId, queryClient])
 }
 
 export type TeamRoomState = { room: TeamRoom; fetchedAt: number }
