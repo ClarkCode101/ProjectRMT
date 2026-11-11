@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import type { QuizQuestion } from '@/features/quiz/api'
 import { BoardGrid, type BoardToken } from './BoardGrid'
 import { DevAnswerHint } from './DevAnswerHint'
+import { devFinishGame } from './devTools'
 
 /**
  * The answer reveal closes by itself after this many seconds, so every screen moves on together.
@@ -236,6 +237,16 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft }: Props) {
       {/* ---------- Top: Exit, and the players in turn order (whose turn it is, with the clock) ---------- */}
       <div className="mx-auto flex w-full max-w-5xl shrink-0 items-center gap-3">
         <ExitButton onClick={() => (out ? onLeft() : setConfirmLeave(true))} />
+        {/* npm run dev only: end the game now (the database allows test accounts only; migration 0026) */}
+        {import.meta.env.DEV && (
+          <button
+            type="button"
+            onClick={() => void act(() => devFinishGame(room.id))}
+            className="h-9 shrink-0 rounded-md border border-dashed border-wrong/60 bg-wrong-soft px-3 font-mono text-xs font-bold"
+          >
+            DEV · Finish game
+          </button>
+        )}
         <ol className="flex min-w-0 flex-1 flex-wrap justify-end gap-1.5" aria-label="Players in turn order">
           {order.map((p) => {
             const isTurn = p.userId === room.turnUser

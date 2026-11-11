@@ -290,6 +290,8 @@ export type Database = {
       board_rematch: { Args: { p_room: string }; Returns: string }
       // migration 0025: Back to Board Review on the finish screen = not playing again
       board_rematch_done: { Args: { p_room: string }; Returns: undefined }
+      // migrations 0026–0027: dev testing only (a dev key from .env.local, or test accounts in board_dev_testers)
+      board_dev_finish: { Args: { p_room: string; p_key?: string | null }; Returns: undefined }
     }
     Enums: {
       question_source: QuestionSource
