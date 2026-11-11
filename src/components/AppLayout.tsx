@@ -194,12 +194,9 @@ export function AppLayout() {
                       <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary-deep font-heading text-lg font-bold text-white uppercase">
                         {displayName.charAt(0)}
                       </span>
-                      <div className="min-w-0 leading-tight">
-                        {/* Full name and email, not cut off ("break-all" lets a long email wrap). */}
-                        <p className="font-heading font-bold break-all">{displayName}</p>
-                        <p className="mt-0.5 text-sm break-all text-muted-foreground">{email}</p>
-                        <p className="mt-1 text-xs font-semibold text-primary">MTLE reviewer</p>
-                      </div>
+                      {/* Just the email: the name was only the part before "@", so it said the same thing twice.
+                          Not cut off ("break-all" lets a long email wrap). */}
+                      <p className="min-w-0 font-heading leading-tight font-bold break-all">{email}</p>
                     </div>
                     <div className="space-y-0.5 border-t pt-2">
                       <NavLink
