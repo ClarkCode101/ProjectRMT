@@ -1,8 +1,9 @@
-import { CloudOff, Microscope } from 'lucide-react'
+import { Check, CloudOff, Microscope, X } from 'lucide-react'
 import { ExitButton } from '@/components/ExitButton'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { QuizQuestion } from '@/features/quiz/api'
 import { cardToRow, formatInterval, GRADES, LEARN_AHEAD_MS, makeScheduler, previewIntervals, Rating, review, rowToCard, State, type Card, type Grade, type ReviewRow } from '@/lib/fsrs'
+import { flashcardAnswer } from '@/lib/flashcardAnswer'
 import { useOnline } from '@/lib/offline/useOfflineSync'
 import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
@@ -104,6 +105,8 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
 
   const done = stats.reviewed
   const progress = done / (done + queue.length)
+  // "All of the above" spelled out as the choices it covers (flashcards don't show the choices)
+  const answer = flashcardAnswer(question.choices, question.correct_index)
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -151,7 +154,26 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
             >
               <div className="rounded-xl bg-correct-soft px-4 py-3">
                 <p className="text-xs font-bold tracking-wide text-correct uppercase">Answer</p>
-                <p className="font-heading text-xl font-bold text-correct sm:text-2xl">{question.choices[question.correct_index]}</p>
+                {answer.kind === 'plain' ? (
+                  <p className="font-heading text-xl font-bold text-correct sm:text-2xl">{answer.text}</p>
+                ) : (
+                  // "All of the above" means nothing without the choices, so the card lists them
+                  <>
+                    <p className="font-heading text-xl font-bold text-correct sm:text-2xl">{answer.kind === 'all' ? 'All of these:' : 'None of these:'}</p>
+                    <ul className="mt-2 space-y-1.5">
+                      {answer.items.map((item) => (
+                        <li key={item} className="flex items-start gap-2 text-lg leading-snug font-semibold">
+                          {answer.kind === 'all' ? (
+                            <Check className="mt-1 size-4.5 shrink-0 text-correct" aria-hidden />
+                          ) : (
+                            <X className="mt-1 size-4.5 shrink-0 text-wrong" aria-hidden />
+                          )}
+                          <span className={cn(answer.kind === 'none' && 'text-muted-foreground')}>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </div>
               {question.explanation && <p className="leading-relaxed text-foreground/90">{question.explanation}</p>}
             </div>
