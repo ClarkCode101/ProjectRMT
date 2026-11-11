@@ -32,9 +32,13 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
   const [codeCopied, setCodeCopied] = useState(false)
   const classmates = useClassmates(inviteOpen)
   const isHost = room.hostId === room.me
+  const hostName = room.players.find((p) => p.userId === room.hostId)?.name ?? 'the host'
   const joined = room.players.filter((p) => p.status === 'joined')
   const full = joined.length >= MAX_PLAYERS
-  const needPlayers = joined.length < 2 // a game needs 2; until then inviting is the focus, not Start  // invites waiting in this lobby (the database also counts her invites in other lobbies, and says so if over)
+  const needPlayers = joined.length < 2 // a game needs 2; until then inviting is the focus, not Start
+  // the host leaving closes the lobby only when nobody else is in (otherwise the host passes on)
+  const cancels = isHost && joined.length <= 1
+  // invites waiting in this lobby (the database also counts her invites in other lobbies, and says so if over)
   const invitesFull = room.invited.length >= MAX_WAITING_INVITES
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [chatSheetOpen, setChatSheetOpen] = useState(false)
@@ -234,8 +238,9 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
           onClick={onLeave}
           className="flex h-12 items-center justify-center gap-2 self-stretch rounded-lg border bg-card px-5 font-semibold text-muted-foreground outline-none hover:border-wrong/60 hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40 sm:self-start"
         >
-          {isHost ? <X className="size-5" aria-hidden /> : <LogOut className="size-5" aria-hidden />}
-          {isHost ? 'Cancel game' : 'Leave lobby'}
+          {/* The host alone cancels the lobby; with others in, the host passes to the next player (migration 0031). */}
+          {cancels ? <X className="size-5" aria-hidden /> : <LogOut className="size-5" aria-hidden />}
+          {cancels ? 'Cancel game' : 'Leave lobby'}
         </button>
         {isHost ? (
           <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
@@ -243,10 +248,15 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
               <Play className="size-5 fill-current" aria-hidden />
               {busy ? 'Starting…' : 'Start game'}
             </button>
-            {needPlayers && <p className="text-center text-xs text-muted-foreground sm:text-right">Need 1 more player to start.</p>}
+            {/* After Play again the host is whoever tapped first, so say it plainly */}
+            <p className="text-center text-xs text-muted-foreground sm:text-right" aria-live="polite">
+              {needPlayers ? 'Need 1 more player to start.' : 'You’re the host. Tap Start when everyone’s in.'}
+            </p>
           </div>
         ) : (
-          <p className="text-center font-heading text-lg font-bold text-muted-foreground sm:text-right">Waiting for the host to start…</p>
+          <p className="text-center font-heading text-lg font-bold text-muted-foreground sm:text-right" aria-live="polite">
+            Waiting for {hostName} to start…
+          </p>
         )}
       </div>
 

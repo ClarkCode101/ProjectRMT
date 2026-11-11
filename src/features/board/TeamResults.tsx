@@ -80,8 +80,11 @@ function PlayAgain({ room }: { room: TeamRoom }) {
           : wantsLine
             ? `${wantsLine}.`
             : choice.kind === 'start'
-              ? 'Same group, new game. Everyone here gets an invite.'
-              : null}
+              ? // the first to tap makes the next lobby, so say who'll be in charge of Start
+                'You’ll host the next game. Everyone here gets an invite.'
+              : choice.kind === 'join'
+                ? `${choice.hostName} is hosting the next game.`
+                : null}
       </p>
       {error && (
         <p role="alert" className="rounded-md bg-white/10 px-3 py-2 text-sm">
