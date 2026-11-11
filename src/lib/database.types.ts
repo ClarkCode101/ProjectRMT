@@ -205,6 +205,8 @@ export type Database = {
           user_id: string
           email: string
           name: string | null
+          /** how they sign in: 'google', 'email' (migration 0034) */
+          providers: string[]
           status: 'pending' | 'approved' | 'declined'
           is_admin: boolean
           requested_at: string

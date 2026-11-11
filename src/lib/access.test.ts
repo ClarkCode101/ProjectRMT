@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 // access.ts imports the Supabase client; the tests here don't need it.
 vi.mock('./supabase', () => ({ supabase: {} }))
 
-const { initials, oauthErrorFrom, parseAccess } = await import('./access')
+const { initials, oauthErrorFrom, parseAccess, signInMethod } = await import('./access')
 
 describe('parseAccess', () => {
   it('reads the server answer', () => {
@@ -44,6 +44,18 @@ describe('initials', () => {
   it('falls back to the email', () => {
     expect(initials(null, 'test.reviewer@example.com')).toBe('TE')
     expect(initials('   ', 'q@example.com')).toBe('Q@')
+  })
+})
+
+describe('signInMethod', () => {
+  it('names the sign-in methods', () => {
+    expect(signInMethod(['google'])).toBe('Google')
+    expect(signInMethod(['email'])).toBe('Email')
+    expect(signInMethod(['email', 'google'])).toBe('Email + Google')
+  })
+
+  it('says Unknown when there are none', () => {
+    expect(signInMethod([])).toBe('Unknown')
   })
 })
 

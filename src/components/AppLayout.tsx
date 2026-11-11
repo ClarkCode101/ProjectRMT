@@ -17,6 +17,7 @@ import { Suspense, useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '@/features/auth/authContext'
 import { useBoardAlert } from '@/features/board/teamApi'
+import { forgetBank } from '@/lib/offline/bank'
 import { useOfflineSync } from '@/lib/offline/useOfflineSync'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -125,6 +126,7 @@ export function AppLayout() {
     setProfileOpen(false)
     await supabase.auth.signOut()
     queryClient.clear() // forget cached quiz data from this account
+    await forgetBank() // and the offline copy on this device (shared iPads)
   }
 
   return (

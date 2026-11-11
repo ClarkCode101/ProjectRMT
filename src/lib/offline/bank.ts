@@ -12,7 +12,7 @@ import type { ReviewRow } from '@/lib/fsrs'
 import { parseChoiceNotes, parseChoices, type SubjectInfo, type TopicInfo, type TopicPerformanceRow } from '@/lib/quiz'
 import { supabase } from '@/lib/supabase'
 import { pendingAttempts, pendingReviews, type Synced } from './outbox'
-import { getOfflineUserId, idbGet, idbSet, isOnline } from './storage'
+import { getOfflineUserId, idbDelete, idbGet, idbSet, isOnline } from './storage'
 
 /** A question plus the extra details the source filters need (Built-in, Mine, one upload, verified only). */
 export type BankQuestion = QuizQuestion & {
@@ -101,6 +101,16 @@ const PAGE_SIZE = 1000 // Supabase returns at most 1000 rows per request
 /** The copy in memory, so it's read from IndexedDB only once. */
 let memory: OfflineBank | null = null
 let downloading: Promise<boolean> | null = null
+
+/**
+ * Logging out: delete the saved copy (questions and answers), so the next person on a shared iPad can't open it.
+ * Answers still waiting in the outbox stay, so nothing she did is lost: they're sent the next time she logs in.
+ */
+export async function forgetBank() {
+  memory = null
+  await idbDelete(BANK_KEY)
+  notify()
+}
 
 /** The saved copy for whoever is logged in, or null if there isn't one yet. */
 export async function getBank(): Promise<OfflineBank | null> {

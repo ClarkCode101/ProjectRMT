@@ -73,8 +73,10 @@ export async function loadAccess(userId: string): Promise<AccessInfo> {
 export type Member = {
   userId: string
   email: string
-  /** the name on their account, or null if they haven't set one */
+  /** the name on their account, or null if they haven't set one. Typed by the person themself: don't trust it. */
   name: string | null
+  /** how they sign in, e.g. ['google'] (the database knows this; they can't change it) */
+  providers: string[]
   status: AccessStatus
   isAdmin: boolean
   requestedAt: string
@@ -88,6 +90,7 @@ export async function listMembers(): Promise<Member[]> {
     userId: row.user_id,
     email: row.email,
     name: row.name,
+    providers: row.providers ?? [],
     status: row.status,
     isAdmin: row.is_admin,
     requestedAt: row.requested_at,
@@ -106,6 +109,12 @@ export function initials(name: string | null, email: string): string {
   if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase()
   const source = words[0] ?? email
   return source.slice(0, 2).toUpperCase()
+}
+
+/** "Google", "Email", or "Google + Email": how someone signs in, for the admin's list. */
+export function signInMethod(providers: readonly string[]): string {
+  const names = providers.map((provider) => (provider === 'google' ? 'Google' : provider === 'email' ? 'Email' : provider))
+  return names.length > 0 ? names.join(' + ') : 'Unknown'
 }
 
 /* ---------------------------------- Google sign-in ---------------------------------- */

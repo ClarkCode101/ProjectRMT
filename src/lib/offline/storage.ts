@@ -52,6 +52,22 @@ export async function idbSet(key: string, value: unknown): Promise<boolean> {
   }
 }
 
+/** Removes one value. Returns false if it couldn't be removed. Never throws. */
+export async function idbDelete(key: string): Promise<boolean> {
+  try {
+    const db = await openDb()
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite')
+      tx.objectStore(STORE).delete(key)
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
 // ---------- Who is logged in (set by AuthProvider) ----------
 
 let currentUserId: string | null = null

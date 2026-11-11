@@ -74,11 +74,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  // A Google sign-in that failed on the way back shows its reason here once.
-  const [error, setError] = useState<string | null>(() => {
-    const reason = takeOAuthError()
-    return reason ? `Google sign-in didn’t work (${reason}). Please try again.` : null
-  })
+  // A Google sign-in that failed on the way back shows a message here once. Always our own words, never the
+  // text from the address: anyone can send a link with "#error_description=<their message>" in it.
+  const [error, setError] = useState<string | null>(() =>
+    takeOAuthError() ? 'Google sign-in didn’t finish. Please try again.' : null,
+  )
   const [openingGoogle, setOpeningGoogle] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 

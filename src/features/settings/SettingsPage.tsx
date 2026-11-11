@@ -6,7 +6,7 @@ import { ShareKey } from '@/components/InstallHint'
 import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/authContext'
-import { initials, listMembers, setMemberAccess, type Member } from '@/lib/access'
+import { initials, listMembers, setMemberAccess, signInMethod, type Member } from '@/lib/access'
 import { useInstall } from '@/lib/install'
 import { downloadBank, useBankStatus } from '@/lib/offline/bank'
 import { clearOutbox, usePendingAnswerCount } from '@/lib/offline/outbox'
@@ -722,16 +722,20 @@ function ResetProgress() {
 
 /* ---------------------------------- Access requests (admin only) ---------------------------------- */
 
-/** One person: round badge, name and email, then what the admin can do with them. */
+/**
+ * One person: round badge, then their EMAIL first (the name is typed by the person themself, so a stranger
+ * could copy a real classmate's name), then that name, how they sign in, and the note. Then the buttons.
+ */
 function MemberRow({ member, note, children }: { member: Member; note: string; children?: ReactNode }) {
+  const details = [member.name && `Name: ${member.name}`, signInMethod(member.providers), note].filter(Boolean).join(' · ')
   return (
     <div className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2 px-5 py-3 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto]">
       <span aria-hidden className="grid size-11 place-items-center rounded-full bg-secondary font-heading font-bold text-primary-deep">
-        {initials(member.name, member.email)}
+        {initials(null, member.email)}
       </span>
       <div className="min-w-0">
-        <p className="truncate font-semibold">{member.name ?? member.email}</p>
-        <p className="truncate text-sm text-muted-foreground">{member.name ? `${member.email} · ${note}` : note}</p>
+        <p className="truncate font-semibold">{member.email}</p>
+        <p className="truncate text-sm text-muted-foreground">{details}</p>
       </div>
       {children && <div className="col-span-2 flex items-center justify-end gap-1 sm:col-span-1">{children}</div>}
     </div>

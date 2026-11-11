@@ -1,0 +1,12 @@
+# Security headers for every page (Cloudflare Pages reads this file; vercel.json has the same list).
+# - No other site may show the app inside a frame (stops "clickjacking": a hidden Accept button under a fake page).
+# - No plugins (<object>/<embed>), and the page's base address can't be changed by injected HTML.
+# - The app never uses the camera, microphone or location, so nothing may ask for them.
+# A full Content-Security-Policy (which scripts may run) is a later step: it needs testing with
+# Supabase, Google sign-in, the PDF reader and the offline service worker first.
+/*
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'; object-src 'none'; base-uri 'self'
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
