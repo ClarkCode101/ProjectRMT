@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils'
 import { teamActions, useClassmates } from './teamApi'
 
 const MAX_PLAYERS = 4
+/** invites waiting at a time per person (board_invite, migration 0023) */
+const MAX_WAITING_INVITES = 3
 
 type Props = {
   room: TeamRoom
@@ -27,6 +29,21 @@ export function TeamLobby({ room, act, busy, onLeave }: Props) {
   const joined = room.players.filter((p) => p.status === 'joined')
   const full = joined.length >= MAX_PLAYERS
   const needPlayers = joined.length < 2 // a game needs 2; until then inviting is the focus, not Start
+  // invites waiting in this lobby (the database also counts her invites in other lobbies, and says so if over)
+  const invitesFull = room.invited.length >= MAX_WAITING_INVITES
+  const [inviteError, setInviteError] = useState<string | null>(null)
+
+  /** Invite from the list; a failure (e.g. the 3-invite limit) shows inside the popup, where she's looking. */
+  function inviteClassmate(userId: string) {
+    setInviteError(null)
+    void act(async () => {
+      try {
+        await teamActions.invite(room.id, userId)
+      } catch (e) {
+        setInviteError(e instanceof Error ? e.message : 'Couldn’t send the invite.')
+      }
+    })
+  }
   const invitedIds = new Set(room.invited.map((i) => i.userId))
   const joinedIds = new Set(joined.map((p) => p.userId))
   const link = inviteLink(window.location.origin, room.inviteCode)
@@ -190,15 +207,13 @@ export function TeamLobby({ room, act, busy, onLeave }: Props) {
       </div>
 
       {/* ---------- The classmate list ---------- */}
-      <Dialog open={inviteOpen} onClose={() => setInviteOpen(false)} labelledBy="invite-heading" variant="sheet">
+      {/* Only the X (or Esc) closes it, like the Play with classmates sheet */}
+      <Dialog open={inviteOpen} onClose={() => setInviteOpen(false)} labelledBy="invite-heading" variant="sheet" closeOnBackdrop={false}>
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 id="invite-heading" className="font-heading text-xl font-bold">
-                Invite classmates
-              </h2>
-              <p className="text-sm text-muted-foreground">Up to 3 invites waiting at a time. They’ll see it in Board Review.</p>
-            </div>
+            <h2 id="invite-heading" className="font-heading text-xl font-bold">
+              Invite classmates
+            </h2>
             <button
               type="button"
               onClick={() => setInviteOpen(false)}
@@ -213,32 +228,80 @@ export function TeamLobby({ room, act, busy, onLeave }: Props) {
           ) : classmates.isError ? (
             <p className="text-sm text-wrong">{classmates.error.message}</p>
           ) : (classmates.data ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No classmates with a first name yet. Send the invite link instead.</p>
+            <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">No classmates with a first name yet. Share the code below instead.</p>
           ) : (
             <ul className="max-h-[50dvh] divide-y overflow-y-auto rounded-lg border bg-card">
               {(classmates.data ?? []).map((c) => {
                 const state = joinedIds.has(c.userId) ? 'in' : invitedIds.has(c.userId) ? 'invited' : 'none'
                 return (
-                  <li key={c.userId} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                    <span className="truncate font-semibold">{c.name}</span>
+                  <li key={c.userId} className="flex items-center gap-3 px-4 py-2.5">
+                    {/* the same initial circle as the seats; a player's own color once they're in */}
+                    <span
+                      className={cn(
+                        'flex size-9 shrink-0 items-center justify-center rounded-full font-heading font-bold uppercase',
+                        state === 'in' ? 'text-white' : 'bg-secondary text-muted-foreground',
+                      )}
+                      style={state === 'in' ? { backgroundColor: playerColor(joined, c.userId) } : undefined}
+                      aria-hidden
+                    >
+                      {c.name.charAt(0)}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate font-semibold">{c.name}</span>
                     {state === 'none' ? (
                       <button
                         type="button"
-                        disabled={busy || full}
-                        onClick={() => act(() => teamActions.invite(room.id, c.userId))}
-                        className="h-9 shrink-0 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-60"
+                        disabled={busy || full || invitesFull}
+                        onClick={() => inviteClassmate(c.userId)}
+                        className="h-9 shrink-0 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50"
                       >
                         Invite
                       </button>
+                    ) : state === 'invited' ? (
+                      <span className="flex shrink-0 items-center gap-1 rounded-full bg-correct-soft px-2.5 py-1 text-sm font-bold text-correct">
+                        <Check className="size-4" aria-hidden />
+                        Invited
+                      </span>
                     ) : (
-                      <span className="shrink-0 text-sm font-semibold text-muted-foreground">{state === 'in' ? 'In the game' : 'Invited'}</span>
+                      <span className="shrink-0 text-sm font-semibold text-muted-foreground">In the game</span>
                     )}
                   </li>
                 )
               })}
             </ul>
           )}
-          <p className="text-xs text-muted-foreground">Only classmates who set a first name in Settings are listed. Anyone can join with the invite link.</p>
+
+          {inviteError && (
+            <p role="alert" className="rounded-md border border-wrong/40 bg-wrong-soft p-3 text-sm">
+              {inviteError}
+            </p>
+          )}
+          {/* the 3-invite limit, only once it matters */}
+          {room.invited.length > 0 && (
+            <p className="text-right text-xs text-muted-foreground tabular-nums" aria-live="polite">
+              {invitesFull ? `${MAX_WAITING_INVITES} of ${MAX_WAITING_INVITES} invites used. Wait for an answer to invite more.` : `${room.invited.length} of ${MAX_WAITING_INVITES} invites used`}
+            </p>
+          )}
+
+          {/* for anyone not on the list (no first name yet): the code itself, ready to copy */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t pt-3 text-sm">
+            <span className="text-muted-foreground">Not on the list? Share the code</span>
+            <button
+              type="button"
+              onClick={copyCode}
+              aria-label={`${room.inviteCode.split('').join(' ')}. Tap to copy.`}
+              className="group flex items-center gap-1.5 rounded-md px-1.5 py-0.5 outline-none hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              <span className="font-mono font-bold tracking-widest">{room.inviteCode}</span>
+              {codeCopied ? (
+                <span className="flex items-center gap-1 text-xs font-semibold text-correct">
+                  <Check className="size-4" aria-hidden />
+                  Copied
+                </span>
+              ) : (
+                <Copy className="size-4 text-muted-foreground group-hover:text-primary" aria-hidden />
+              )}
+            </button>
+          </div>
         </div>
       </Dialog>
     </div>

@@ -347,9 +347,13 @@ export function inviteLink(origin: string, code: string): string {
 /** Game codes are 6 letters/digits (made in board_create_room). */
 export const GAME_CODE_LENGTH = 6
 
-/** What she typed in the code box, as a code: capitals, no spaces or dashes, at most 6 characters. */
+/**
+ * What she typed or pasted in the code box, as a code: capitals, no spaces or dashes, at most 6 characters.
+ * A pasted invite link (…/board/join/ABC234) gives the code at its end, not the start of "https".
+ */
 export function cleanGameCode(typed: string): string {
-  return typed
+  const fromLink = /\/board\/join\/([^/?#\s]+)/i.exec(typed)?.[1]
+  return (fromLink ? decodeURIComponent(fromLink) : typed)
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '')
     .slice(0, GAME_CODE_LENGTH)

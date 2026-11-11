@@ -1,14 +1,16 @@
-import { Users, X } from 'lucide-react'
+import { Plus, Users, X } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { Dialog } from '@/components/Dialog'
 import { cleanGameCode, GAME_CODE_LENGTH } from '@/lib/boardTeam'
+import { useOnline } from '@/lib/offline/useOfflineSync'
 import { cn } from '@/lib/utils'
 import { teamActions, useMyInvites, useMyTeamRoom, useRefreshTeam } from './teamApi'
 
 /**
- * "Play with classmates" on Board Review's start screen: opens a sheet with the invites waiting for her and
- * "New team game". If she's already in a team game, the button takes her back to it instead.
+ * "Play with classmates" on Board Review's start screen: opens a sheet with the invites waiting for her (only when
+ * there are some), "Join with a code", and "Host a new game". If she's already in a team game, the button takes her
+ * back to it instead.
  */
 export function TeamEntry() {
   const navigate = useNavigate()
@@ -19,6 +21,8 @@ export function TeamEntry() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [code, setCode] = useState('')
+  const codeReady = code.length === GAME_CODE_LENGTH
+  const online = useOnline()
 
   const waiting = invites.data ?? []
   const room = myRoom.data ?? null
@@ -42,12 +46,13 @@ export function TeamEntry() {
     run(() => teamActions.joinByCode(value))
   }
 
-  /** Clean what she types; once all 6 characters are in, join right away (no need to find the button). */
+  /**
+   * Clean what she types or pastes (a pasted invite link gives its code). It never joins by itself: she checks the
+   * code, then taps Join (or presses Enter), which turns solid once all 6 characters are in.
+   */
   function onCodeChange(typed: string) {
-    const next = cleanGameCode(typed)
-    setCode(next)
+    setCode(cleanGameCode(typed))
     setError(null)
-    if (next.length === GAME_CODE_LENGTH && code.length < GAME_CODE_LENGTH) joinWithCode(next)
   }
 
   function submitCode(e: FormEvent) {
@@ -86,14 +91,15 @@ export function TeamEntry() {
         )}
       </button>
 
-      <Dialog open={open} onClose={() => setOpen(false)} labelledBy="team-entry-heading" variant="sheet" size="lg">
+      {/* Only the X (or Esc) closes it: a stray tap outside shouldn't lose a half-typed code */}
+      <Dialog open={open} onClose={() => setOpen(false)} labelledBy="team-entry-heading" variant="sheet" size="lg" closeOnBackdrop={false}>
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 id="team-entry-heading" className="font-heading text-xl font-bold">
                 Play with classmates
               </h2>
-              <p className="text-sm text-muted-foreground">2 to 4 players, live. Everyone races their own token to 60.</p>
+              <p className="text-sm text-muted-foreground">2–4 players, live. Everyone gets the same questions.</p>
             </div>
             <button
               type="button"
@@ -111,14 +117,16 @@ export function TeamEntry() {
             </p>
           )}
 
-          <section aria-labelledby="team-invites-heading" className="space-y-2">
-            <h3 id="team-invites-heading" className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
-              Invites {waiting.length > 0 && `(${waiting.length})`}
-            </h3>
-            {waiting.length === 0 ? (
-              <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">No invites right now. Start a game and invite your classmates.</p>
-            ) : (
-              <ul className="divide-y rounded-lg border bg-card">
+          {!online && (
+            <p role="status" className="rounded-md border border-highlight/50 bg-highlight-soft p-3 text-sm">
+              You’re offline. Team games need the internet.
+            </p>
+          )}
+
+          {/* Invites: only when there are some (an empty "no invites" box would take the top spot for nothing) */}
+          {waiting.length > 0 && (
+            <section aria-label="Invites">
+              <ul className="divide-y rounded-lg border border-primary/40 bg-card shadow-sm">
                 {waiting.map((inv) => (
                   <li key={inv.inviteId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                     <div className="min-w-0">
@@ -148,12 +156,12 @@ export function TeamEntry() {
                   </li>
                 ))}
               </ul>
-            )}
-          </section>
+            </section>
+          )}
 
           <section aria-labelledby="team-code-heading" className="space-y-2">
             <h3 id="team-code-heading" className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
-              Have a game code?
+              Join with a code
             </h3>
             <form onSubmit={submitCode} className="flex gap-2">
               <label htmlFor="team-code-input" className="sr-only">
@@ -163,41 +171,45 @@ export function TeamEntry() {
                 id="team-code-input"
                 value={code}
                 onChange={(e) => onCodeChange(e.target.value)}
-                placeholder="ABC234"
+                // underscores read as "type here", not as a real code
+                placeholder="______"
                 inputMode="text"
                 autoCapitalize="characters"
                 autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
-                maxLength={GAME_CODE_LENGTH + 2}
-                aria-describedby="team-code-help"
-                className="h-12 min-w-0 flex-1 rounded-lg border bg-card px-4 text-center font-mono text-xl font-bold tracking-[0.3em] uppercase outline-none placeholder:font-normal placeholder:text-muted-foreground/50 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring/40"
+                className="h-12 min-w-0 flex-1 rounded-lg border bg-card px-4 text-center font-mono text-xl font-bold tracking-[0.3em] uppercase outline-none placeholder:font-normal placeholder:text-muted-foreground/40 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring/40"
               />
+              {/* outlined until all 6 characters are in, then solid: ready to tap */}
               <button
                 type="submit"
-                disabled={busy || code.length < GAME_CODE_LENGTH}
-                className="h-12 shrink-0 rounded-lg bg-primary px-5 font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50"
+                disabled={busy || !codeReady}
+                className={cn(
+                  'h-12 shrink-0 rounded-lg px-5 font-bold outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
+                  codeReady ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'border bg-card text-muted-foreground',
+                )}
               >
                 Join
               </button>
             </form>
-            <p id="team-code-help" className="text-xs text-muted-foreground">
-              The host sees the 6-letter code in their lobby.
-            </p>
           </section>
+
+          {/* the two choices: join someone's game (above) or host your own */}
+          <div className="flex items-center gap-3 text-xs font-semibold text-muted-foreground uppercase" aria-hidden>
+            <span className="h-px flex-1 bg-border" />
+            or
+            <span className="h-px flex-1 bg-border" />
+          </div>
 
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || !online}
             onClick={() => run(() => teamActions.createRoom())}
-            className={cn(
-              'flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-highlight font-heading text-lg font-bold text-foreground outline-none hover:brightness-105 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px disabled:opacity-60',
-            )}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-highlight font-heading text-lg font-bold text-foreground outline-none hover:brightness-105 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px disabled:opacity-60"
           >
-            <Users className="size-5" aria-hidden />
-            {busy ? 'One moment…' : 'New team game'}
+            <Plus className="size-5" aria-hidden />
+            {busy ? 'One moment…' : 'Host a new game'}
           </button>
-          <p className="text-center text-xs text-muted-foreground">Team games use the built-in questions, so everyone gets the same ones. Needs the internet.</p>
         </div>
       </Dialog>
     </>

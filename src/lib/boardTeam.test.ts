@@ -223,6 +223,11 @@ describe('cleanGameCode', () => {
   it('keeps at most 6 characters', () => {
     expect(cleanGameCode('ABC2345678')).toBe('ABC234')
   })
+  it('takes the code from a pasted invite link', () => {
+    expect(cleanGameCode('https://projectrmt.pages.dev/board/join/AXV2FZ')).toBe('AXV2FZ')
+    expect(cleanGameCode(' http://localhost:5173/board/join/axv2fz?x=1 ')).toBe('AXV2FZ')
+    expect(cleanGameCode('Join my game! https://projectrmt.pages.dev/board/join/AXV2FZ')).toBe('AXV2FZ')
+  })
   it('returns empty for nothing typed', () => {
     expect(cleanGameCode('')).toBe('')
     expect(cleanGameCode('  - ')).toBe('')
