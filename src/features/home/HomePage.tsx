@@ -9,7 +9,7 @@ import { NOTES } from '@/data/encouragements'
 import { useTopicPerformance } from '@/features/dashboard/api'
 import { useAuth } from '@/features/auth/authContext'
 import { DEFAULT_DAILY_TARGET, useStudySettings } from '@/features/settings/api'
-import { currentStreak, dailyActivity } from '@/lib/activity'
+import { currentStreak, dailyActivity, type DayActivity } from '@/lib/activity'
 import { firstName } from '@/lib/profile'
 import { countdownLabel, daysUntil, milestoneKey, milestoneReached, pickNote } from '@/lib/planner'
 import { overallStats, PASSING_RATE, summarizePerformance, type SubjectSummary } from '@/lib/quiz'
@@ -174,7 +174,8 @@ export default function HomePage() {
               )}
             </li>
             {/* Today's goal: turns green with a check once it's reached, so the day has a clear finish line. */}
-            <li className="flex items-center gap-1.5">
+            {/* Laptops show it bigger, with the week, beside the body (TodayLine), so it's left out of this line there. */}
+            <li className="flex items-center gap-1.5 lg:hidden">
               {done >= target ? <CircleCheck className="size-4 text-correct" aria-hidden /> : <Target className="size-4 text-primary" aria-hidden />}
               <span>
                 <span className={cn('font-bold tabular-nums', done >= target ? 'text-correct' : 'text-foreground')}>
@@ -207,6 +208,7 @@ export default function HomePage() {
         onSelect={setSelectedId}
         celebrate={celebrate}
         readout={<ReadinessLine rate={stats.accuracy} from={readinessFrom} countdown={countdown} />}
+        today={<TodayLine days={days} target={target} />}
       />
 
       {/* Practice is always one tap away; tapping a card or organ above changes which subject it's for.
@@ -232,6 +234,54 @@ export default function HomePage() {
         </div>
       </Dialog>
     </div>
+  )
+}
+
+/**
+ * Today's goal and the last 7 days, bottom left of the stage on laptops (it mirrors the overall score on the right):
+ * "12/25 today", how many are left, and one small bar per day, each filling toward the daily goal
+ * (green once that day reached it). Today is the last bar, with its letter in bold.
+ */
+function TodayLine({ days, target }: { days: DayActivity[]; target: number }) {
+  const done = days.at(-1)?.answered ?? 0
+  const reached = done >= target
+  const studiedDays = days.filter((d) => d.answered > 0).length
+
+  return (
+    <section aria-label="Today and this week" className="w-full pb-3">
+      <p className="flex items-baseline justify-between gap-3">
+        <span>
+          <span className={cn('font-heading text-2xl font-bold tabular-nums', reached ? 'text-correct' : 'text-foreground')}>
+            {done}/{target}
+          </span>{' '}
+          <span className="text-sm text-muted-foreground">today</span>
+        </span>
+        <span className={cn('text-right text-xs font-semibold', reached ? 'text-correct' : 'text-foreground')}>
+          {reached ? 'Daily goal reached' : `${target - done} more to reach today’s goal`}
+        </span>
+      </p>
+
+      {/* One bar per day, oldest first. The words for screen readers are in the line below. */}
+      <div aria-hidden className="mt-1.5 flex gap-1.5">
+        {days.map((d, i) => {
+          const isToday = i === days.length - 1
+          const fill = target > 0 ? Math.min(1, d.answered / target) : 0
+          return (
+            <span key={d.date} className="flex-1">
+              <span className="block h-2 overflow-hidden rounded-full bg-secondary">
+                <span className={cn('block h-full rounded-full', fill >= 1 ? 'bg-correct' : 'bg-primary')} style={{ width: `${fill * 100}%` }} />
+              </span>
+              <span className={cn('mt-1 block text-center text-[10px] leading-none font-semibold', isToday ? 'text-foreground' : 'text-muted-foreground')}>
+                {d.label.charAt(0)}
+              </span>
+            </span>
+          )
+        })}
+      </div>
+      <p className="sr-only">
+        Studied on {studiedDays} of the last {days.length} days.
+      </p>
+    </section>
   )
 }
 

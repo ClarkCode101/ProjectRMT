@@ -30,6 +30,7 @@ export function BodyStage({
   previous,
   onSelect,
   readout,
+  today,
   celebrate = false,
 }: {
   summary: SubjectSummary[]
@@ -40,6 +41,8 @@ export function BodyStage({
   onSelect: (subjectId: number) => void
   /** the overall score, shown with the body like a scan readout (bottom right on laptops, under Turn on smaller screens) */
   readout?: ReactNode
+  /** today's goal and the week so far (laptops only: bottom left, mirroring the readout) */
+  today?: ReactNode
   /** true = the body does a little dance (daily goal reached) */
   celebrate?: boolean
 }) {
@@ -109,7 +112,9 @@ export function BodyStage({
         className={cn(
           // A small "lab result" card: white, thin border, light shadow (the box says "you can tap me").
           // It never moves: hover and the chosen state only change the border and shadow, so tapping feels steady.
-          'relative flex w-full min-w-0 flex-col gap-2 rounded-2xl border bg-card px-3 py-2.5 text-left shadow-[0_6px_18px_-12px_rgb(7_71_94/0.45)] outline-none transition-[box-shadow,border-color] focus-visible:ring-3 focus-visible:ring-ring/40',
+          // Laptops: as wide as its column allows (up to 20rem), so the full subject name fits.
+          // @container: the card shows more (the correct count) when it has the room.
+          '@container relative flex w-full min-w-0 flex-col gap-2 rounded-2xl border bg-card px-3 py-2.5 text-left shadow-[0_6px_18px_-12px_rgb(7_71_94/0.45)] outline-none transition-[box-shadow,border-color] focus-visible:ring-3 focus-visible:ring-ring/40 lg:max-w-80 lg:px-3.5',
           isSelected
             ? 'border-primary bg-primary/[0.04] shadow-[0_10px_28px_-16px_rgb(7_71_94/0.6)] ring-1 ring-primary'
             : 'hover:border-primary/40 hover:shadow-[0_12px_28px_-14px_rgb(7_71_94/0.5)]',
@@ -122,9 +127,14 @@ export function BodyStage({
           <span className="grid size-8 shrink-0 place-items-center rounded-full lg:size-9" style={{ backgroundColor: `${organ.color}26` }}>
             <OrganIcon code={s.code} className="size-4.5 lg:size-5" />
           </span>
-          <span className="min-w-0 flex-1 truncate font-heading text-sm leading-tight font-bold">
-            {s.code}
-            <span className="sr-only"> ({organ.name})</span>
+          {/* Small screens: just the code (the cards are narrow). Laptops: the full name, with the code under it. */}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-heading text-sm leading-tight font-bold" title={s.name}>
+              <span className="lg:hidden">{s.code}</span>
+              <span className="hidden lg:inline">{s.name}</span>
+              <span className="sr-only"> ({organ.name})</span>
+            </span>
+            <span className="hidden truncate text-xs leading-tight font-semibold text-muted-foreground lg:block">{s.code}</span>
           </span>
           <ScoreNumber subject={s} before={before} />
         </span>
@@ -132,8 +142,15 @@ export function BodyStage({
         {/* The bar, in the same language as the readiness bar at the top */}
         <ProgressBar subject={s} status={status} />
 
-        {/* The next small win: what to do to reach the next step */}
-        <span className="block truncate text-xs leading-tight text-muted-foreground">{nextMilestone(s)}</span>
+        {/* The next small win (what to do to reach the next step) and, when the card is wide enough, how many she got right */}
+        <span className="flex items-baseline justify-between gap-2 text-xs leading-tight text-muted-foreground">
+          <span className="min-w-0 truncate">{nextMilestone(s)}</span>
+          {s.attempts > 0 && (
+            <span className="hidden shrink-0 tabular-nums @2xs:inline">
+              {correctCount(s)} of {s.attempts} correct
+            </span>
+          )}
+        </span>
       </button>
     )
   }
@@ -146,9 +163,11 @@ export function BodyStage({
   // the stage on narrower laptops.
   // The 3D box (below) is wider than the gap between the columns, so the cards sit over its empty sides
   // (a narrow box would make the camera back up and the body shrink).
-  const column = 'lg:absolute lg:top-0 lg:bottom-20 lg:flex lg:w-40 lg:flex-col lg:justify-evenly xl:w-44'
-  const leftOfBody = 'lg:right-[min(calc(50%+14dvh+5rem),calc(100%-11rem))]'
-  const rightOfBody = 'lg:left-[min(calc(50%+14dvh+5rem),calc(100%-11rem))]'
+  // Each column runs from there out to the stage's edge, and its cards fill it (up to 20rem wide, kept on the
+  // body's side), so the sides of the stage are used instead of left empty.
+  const column = 'lg:absolute lg:top-0 lg:bottom-20 lg:flex lg:flex-col lg:justify-evenly'
+  const leftOfBody = 'lg:left-0 lg:right-[min(calc(50%+14dvh+5rem),calc(100%-12rem))]'
+  const rightOfBody = 'lg:right-0 lg:left-[min(calc(50%+14dvh+5rem),calc(100%-12rem))]'
 
   return (
     <section aria-labelledby="body-heading" className="flex flex-col gap-3 md:min-h-0 md:flex-1">
@@ -216,8 +235,8 @@ export function BodyStage({
         {/* Subject cards. "contents" lets the same cards be one grid (small screens) or two side columns (laptops). */}
         <div role="group" aria-label="Choose a subject" className="order-3 mt-3 grid shrink-0 grid-cols-3 gap-2 lg:contents">
           {/* Left column sits a little lower and the right a little higher, like the picture. */}
-          <div className={cn('contents lg:pt-[8%]', leftOfBody, column)}>{left.map(card)}</div>
-          <div className={cn('contents lg:pb-[8%]', rightOfBody, column)}>{right.map(card)}</div>
+          <div className={cn('contents lg:items-end lg:pt-[8%]', leftOfBody, column)}>{left.map(card)}</div>
+          <div className={cn('contents lg:items-start lg:pb-[8%]', rightOfBody, column)}>{right.map(card)}</div>
         </div>
 
         {/* Turn handle under the feet, like a turntable */}
@@ -241,7 +260,19 @@ export function BodyStage({
         </div>
 
         {/* The overall score: the body's "scan readout". Laptops: under the right-hand cards (same distance from the body). */}
-        {readout && <div className={cn('order-2 mx-auto mt-3 w-full max-w-sm lg:absolute lg:bottom-0 lg:mx-0 lg:mt-0 lg:w-64 xl:w-72', rightOfBody)}>{readout}</div>}
+        {readout && (
+          <div className={cn('order-2 mt-3 flex justify-center lg:absolute lg:bottom-0 lg:mt-0 lg:justify-start', rightOfBody)}>
+            <div className="w-full max-w-sm lg:max-w-80">{readout}</div>
+          </div>
+        )}
+
+        {/* Today and this week: laptops only, under the left-hand cards, so it balances the overall score
+            on the right (smaller screens show today's count in the top line instead). */}
+        {today && (
+          <div className={cn('hidden lg:absolute lg:bottom-0 lg:flex lg:justify-end', leftOfBody)}>
+            <div className="w-full max-w-80">{today}</div>
+          </div>
+        )}
       </div>
     </section>
   )
