@@ -38,12 +38,14 @@ function PlayAgain({ room }: { room: TeamRoom }) {
   }
 
   /**
-   * Back to Board Review = "no" to Play again: saved first, so a later Play again doesn't invite her and the others
-   * see "Done". If she's already in the next game, there's nothing to say no to. A failure never keeps her here.
+   * Back to Board Review = "no" to Play again: saved first, so a later Play again doesn't invite her, an invite
+   * already sent is taken back, and the others see "Done". The invites are read again right away, so the red dot
+   * goes at once. If she's already in the next game, there's nothing to say no to. A failure never keeps her here.
    */
   async function imDone() {
     setBusy(true)
     if (choice.kind !== 'back') await teamActions.rematchDone(room.id).catch(() => undefined)
+    refresh()
     navigate('/board')
   }
 
