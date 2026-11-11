@@ -238,6 +238,8 @@ export function queueAnswer(answer: {
   isCorrect: boolean
   /** how long she took, or null when not timed per item (Mock exam) */
   timeMs: number | null
+  /** Board Review: a lifeline helped, so it's left out of her scores */
+  assisted?: boolean
 }) {
   queueAttempt({
     id: crypto.randomUUID(),
@@ -247,6 +249,7 @@ export function queueAnswer(answer: {
     is_correct: answer.isCorrect,
     time_ms: answer.timeMs,
     created_at: new Date().toISOString(),
+    ...(answer.assisted && { assisted: true }),
   })
 }
 

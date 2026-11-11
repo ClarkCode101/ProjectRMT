@@ -91,6 +91,8 @@ export type Database = {
           is_correct: boolean
           time_ms: number | null
           created_at: string | null
+          /** a Board Review lifeline helped: left out of the scores (migration 0032) */
+          assisted: boolean
         },
         'question_id' | 'is_correct'
       >
@@ -286,6 +288,8 @@ export type Database = {
       board_answer: { Args: { p_room: string; p_selected: number }; Returns: boolean }
       board_skip: { Args: { p_room: string }; Returns: undefined }
       board_room_state: { Args: { p_room: string }; Returns: Json }
+      // migration 0032: lifelines (Rule out 2, Second chance, Snake shield)
+      board_use_lifeline: { Args: { p_room: string; p_lifeline: string }; Returns: undefined }
       // migration 0024: Play again from the finish screen
       board_rematch: { Args: { p_room: string }; Returns: string }
       // migration 0025: Back to Board Review on the finish screen = not playing again

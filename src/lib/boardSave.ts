@@ -1,7 +1,7 @@
 // The Board Review game in progress, saved on the device after every turn (PROJECT_PLAN.md §14).
 // One game per account. If it gets lost (e.g. iOS clears storage), only the board position is gone:
 // her answers were already saved as attempts.
-import { BOARD_SIZE, LAYOUTS, type BoardGame, type Pending } from './board'
+import { BOARD_SIZE, LAYOUTS, LIFELINE_IDS, type BoardGame, type LifelineId, type Pending } from './board'
 
 export type SavedBoard = {
   version: 1
@@ -41,7 +41,9 @@ function isGame(value: unknown): value is BoardGame {
     isTallies(g.bySubject) &&
     isPending(g.pending) &&
     typeof g.finished === 'boolean' &&
-    typeof g.startedAt === 'string'
+    typeof g.startedAt === 'string' &&
+    Array.isArray(g.lifelinesUsed) &&
+    g.lifelinesUsed.every((id) => LIFELINE_IDS.includes(id as LifelineId))
   )
 }
 
@@ -54,7 +56,8 @@ export function parseSavedBoard(raw: string | null): SavedBoard | null {
     const saved = data as Record<string, unknown>
     if (saved.version !== 1 || typeof saved.sessionId !== 'string' || typeof saved.game !== 'object' || saved.game === null) return null
     // Games saved before there were three layouts have no layoutId: they were on the first one.
-    const game = { layoutId: LAYOUTS[0].id, ...saved.game }
+    // Games saved before lifelines (migration 0032) have spent none.
+    const game = { layoutId: LAYOUTS[0].id, lifelinesUsed: [], ...saved.game }
     if (!isGame(game)) return null
     return { version: 1, sessionId: saved.sessionId, game }
   } catch {

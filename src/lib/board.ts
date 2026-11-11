@@ -171,6 +171,81 @@ export type BoardGame = {
   pending: Pending | null
   finished: boolean
   startedAt: string
+  /** lifelines spent this game (each once per game) */
+  lifelinesUsed: LifelineId[]
+}
+
+// ---------- Lifelines (PROJECT_PLAN.md §14, Step 2b) ----------
+
+/** Same names as the database (migration 0032). */
+export type LifelineId = 'rule_out' | 'second_chance' | 'shield'
+export const LIFELINE_IDS: readonly LifelineId[] = ['rule_out', 'second_chance', 'shield']
+
+export const LIFELINE_NAMES: Record<LifelineId, string> = {
+  rule_out: 'Rule out 2',
+  second_chance: 'Second chance',
+  shield: 'Snake shield',
+}
+
+/** The lifelines on the question on screen. */
+export type QuestionLifelines = {
+  /** wrong choices (original indexes) taken away by Rule out 2 */
+  ruledOut: number[]
+  secondChance: boolean
+  /** the wrong first pick that Second chance crossed out; null until then */
+  firstWrong: number | null
+  shield: boolean
+}
+
+export const NO_LIFELINES: QuestionLifelines = { ruledOut: [], secondChance: false, firstWrong: null, shield: false }
+
+/** Why a lifeline can't be tapped right now, or null when it can. */
+export function lifelineBlock(
+  id: LifelineId,
+  { used, pendingKind, choiceCount, current }: { used: readonly LifelineId[]; pendingKind: Pending['kind']; choiceCount: number; current: QuestionLifelines },
+): 'used' | 'snakes-only' | 'too-few-choices' | 'after-pick' | null {
+  if (used.includes(id)) return 'used'
+  if (current.firstWrong !== null) return 'after-pick'
+  if (id === 'shield' && pendingKind !== 'snake') return 'snakes-only'
+  if (id === 'rule_out' && choiceCount < 3) return 'too-few-choices'
+  return null
+}
+
+/**
+ * Rule out 2: two wrong choices at random (one when there are only 3), always leaving the right one
+ * and at least one wrong one. Original indexes.
+ */
+export function ruleOutChoices(choiceCount: number, correctIndex: number, random: RandomFn = Math.random): number[] {
+  const wrong = Array.from({ length: choiceCount }, (_, i) => i).filter((i) => i !== correctIndex)
+  const take = Math.max(0, Math.min(2, choiceCount - 2))
+  for (let i = wrong.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    ;[wrong[i], wrong[j]] = [wrong[j], wrong[i]]
+  }
+  return wrong.slice(0, take).sort((a, b) => a - b)
+}
+
+/** The game after spending a lifeline (no change if it was already spent). */
+export function spendLifeline(game: BoardGame, id: LifelineId): BoardGame {
+  return game.lifelinesUsed.includes(id) ? game : { ...game, lifelinesUsed: [...game.lifelinesUsed, id] }
+}
+
+/** What a pick does, given the lifelines on the question: crossed out (ignored), a Second chance retry, or the final answer. */
+export function pickOutcome(selected: number, correctIndex: number, lifelines: QuestionLifelines): 'ignore' | 'retry' | 'final' {
+  if (lifelines.ruledOut.includes(selected) || lifelines.firstWrong === selected) return 'ignore'
+  if (selected !== correctIndex && lifelines.secondChance && lifelines.firstWrong === null) return 'retry'
+  return 'final'
+}
+
+/** "Lifelines used: Rule out 2, Snake shield" or "No lifelines used" (in the order they appear in the popup). */
+export function lifelinesLine(used: readonly LifelineId[]): string {
+  const names = LIFELINE_IDS.filter((id) => used.includes(id)).map((id) => LIFELINE_NAMES[id])
+  return names.length > 0 ? `Lifelines used: ${names.join(', ')}` : 'No lifelines used'
+}
+
+/** Rule out 2 or Second chance helped: the answer is saved but left out of the scores. */
+export function isAssisted(lifelines: QuestionLifelines): boolean {
+  return lifelines.ruledOut.length > 0 || lifelines.secondChance
 }
 
 export function newGame(now: Date = new Date(), layoutId = LAYOUTS[0].id): BoardGame {
@@ -188,6 +263,7 @@ export function newGame(now: Date = new Date(), layoutId = LAYOUTS[0].id): Board
     pending: null,
     finished: false,
     startedAt: now.toISOString(),
+    lifelinesUsed: [],
   }
 }
 
@@ -207,10 +283,16 @@ function arriveAt(game: BoardGame, square: number): BoardGame {
   return { ...game, position: square, pending: null }
 }
 
-export type AnswerInput = { questionId: string; subjectCode: string; isCorrect: boolean }
+export type AnswerInput = {
+  questionId: string
+  subjectCode: string
+  isCorrect: boolean
+  /** Snake shield was on: a wrong Rescue doesn't slide her down */
+  shielded?: boolean
+}
 
 /** She answered the waiting question. Ignored if nothing is waiting. */
-export function answerQuestion(game: BoardGame, { questionId, subjectCode, isCorrect }: AnswerInput): BoardGame {
+export function answerQuestion(game: BoardGame, { questionId, subjectCode, isCorrect, shielded = false }: AnswerInput): BoardGame {
   const pending = game.pending
   if (!pending || game.finished) return game
 
@@ -230,9 +312,10 @@ export function answerQuestion(game: BoardGame, { questionId, subjectCode, isCor
       // Wrong: she stays at the foot of the ladder, no penalty.
       return isCorrect ? arriveAt({ ...counted, laddersClimbed: counted.laddersClimbed + 1 }, pending.to) : { ...counted, pending: null }
     case 'snake':
-      return isCorrect
-        ? { ...counted, snakesEscaped: counted.snakesEscaped + 1, pending: null }
-        : { ...counted, snakesSlid: counted.snakesSlid + 1, position: pending.to, pending: null }
+      if (isCorrect) return { ...counted, snakesEscaped: counted.snakesEscaped + 1, pending: null }
+      // Wrong, but the Snake shield was on: she stays (neither escaped nor slid).
+      if (shielded) return { ...counted, pending: null }
+      return { ...counted, snakesSlid: counted.snakesSlid + 1, position: pending.to, pending: null }
   }
 }
 

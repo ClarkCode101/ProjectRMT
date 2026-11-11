@@ -2,10 +2,11 @@ import { ArrowDown, ArrowUp, Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from 'lu
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ChoiceList } from '@/components/ChoiceList'
 import { Button } from '@/components/ui/button'
-import type { Pending } from '@/lib/board'
+import { NO_LIFELINES, type LifelineId, type Pending, type QuestionLifelines } from '@/lib/board'
 import { formatTurnClock } from '@/lib/boardTeam'
 import { cn } from '@/lib/utils'
 import type { QuizQuestion } from '@/features/quiz/api'
+import { LifelineBar, LifelinePills } from './Lifelines'
 
 const DICE = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6]
 
@@ -58,8 +59,11 @@ function Stakes({ purpose, weakTopicName, headingId, who }: { purpose: Pending; 
 }
 
 /** The line after the answer: what happens on the board when the popup closes. */
-function outcomeText(purpose: Pending, isCorrect: boolean, position: number, who?: string): string {
+function outcomeText(purpose: Pending, isCorrect: boolean, position: number, who?: string, shielded = false): string {
   const squares = purpose.kind === 'move' ? `${purpose.roll} ${purpose.roll === 1 ? 'square' : 'squares'}` : ''
+  if (purpose.kind === 'snake' && !isCorrect && shielded) {
+    return who ? `Not quite, but ${who}’s Snake shield held. No slide!` : 'Not quite, but your Snake shield held. No slide!'
+  }
   if (who) {
     switch (purpose.kind) {
       case 'move':
@@ -105,6 +109,10 @@ type Props = {
   autoContinueSeconds?: number
   /** team games: the chat row at the bottom (newest message, quick replies for watchers) */
   footer?: ReactNode
+  /** the lifelines on this question (Rule out 2, Second chance, Snake shield) */
+  lifelines?: QuestionLifelines
+  /** her turn: spent lifelines this game, and what tapping one does (shows the lifeline row) */
+  lifelineBar?: { used: readonly LifelineId[]; onUse: (id: LifelineId) => void; busy?: boolean }
 }
 
 /** The question popup's content: what's at stake, the question, then what happens. */
@@ -124,10 +132,13 @@ export function TurnSheet({
   checking = false,
   autoContinueSeconds,
   footer,
+  lifelines = NO_LIFELINES,
+  lifelineBar,
 }: Props) {
   // In a team game the answer is only known once the database has checked it (correct_index -1 until then).
   const answered = selectedIndex !== undefined && question.correct_index >= 0
   const isCorrect = selectedIndex === question.correct_index
+  const retrying = !answered && lifelines.firstWrong !== null
   return (
     <div className="space-y-4">
       {clockSeconds !== undefined && !answered && (
@@ -141,11 +152,20 @@ export function TurnSheet({
         </p>
       )}
       <Stakes purpose={purpose} weakTopicName={watching ? null : weakTopicName} headingId={headingId} who={watching} />
+      {watching && !answered && <LifelinePills current={lifelines} who={watching} />}
 
       <article className="space-y-1.5">
         <p className="font-heading text-sm font-bold text-primary">{subjectLabel}</p>
         <p className="text-xl leading-snug font-bold">{question.stem}</p>
       </article>
+
+      {/* Second chance: her first pick was wrong; it stays crossed out and she picks once more. */}
+      {retrying && (
+        <p role="status" className="rounded-xl border border-highlight/60 bg-highlight-soft px-4 py-3">
+          <span className="font-heading text-lg font-bold">Not that one.</span>{' '}
+          {watching ? `${watching} gets a second chance.` : 'Second chance: pick once more.'}
+        </p>
+      )}
 
       <ChoiceList
         choices={question.choices}
@@ -156,14 +176,27 @@ export function TurnSheet({
         onChoose={onChoose}
         keyPrefix={question.id}
         disabled={Boolean(watching) || checking}
+        ruledOut={lifelines.ruledOut}
+        firstWrong={lifelines.firstWrong}
       />
 
       {checking && <p className="text-center text-sm text-muted-foreground">Checking your answer…</p>}
       {watching && !answered && <p className="text-center text-sm text-muted-foreground">{watching} is answering. Think of your own answer while you wait!</p>}
 
+      {lifelineBar && !watching && !answered && (
+        <LifelineBar
+          current={lifelines}
+          used={lifelineBar.used}
+          pendingKind={purpose.kind}
+          choiceCount={question.choices.length}
+          onUse={lifelineBar.onUse}
+          busy={lifelineBar.busy || checking}
+        />
+      )}
+
       {answered && (
         <div role="status" className={cn('animate-in fade-in rounded-xl px-4 py-3.5 duration-200', isCorrect ? 'bg-correct-soft' : 'bg-wrong-soft')}>
-          <p className={cn('font-heading text-lg font-bold', isCorrect ? 'text-correct' : 'text-wrong')}>{outcomeText(purpose, isCorrect, position, watching)}</p>
+          <p className={cn('font-heading text-lg font-bold', isCorrect ? 'text-correct' : 'text-wrong')}>{outcomeText(purpose, isCorrect, position, watching, lifelines.shield)}</p>
           {question.explanation && <p className="mt-2 leading-relaxed">{question.explanation}</p>}
         </div>
       )}

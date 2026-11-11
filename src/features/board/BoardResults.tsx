@@ -1,7 +1,7 @@
 import { RotateCcw } from 'lucide-react'
 import { Link } from 'react-router'
 import { HeroPanel, heroButtonClass, RangeBar, REFERENCE_RANGE } from '@/components/report'
-import { tallyAccuracy, ZONE_SUBJECTS, type BoardGame } from '@/lib/board'
+import { lifelinesLine, tallyAccuracy, ZONE_SUBJECTS, type BoardGame } from '@/lib/board'
 import { formatPercent, PASSING_RATE } from '@/lib/quiz'
 import { useSubjects } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
@@ -35,6 +35,7 @@ export function BoardResults({ game, onPlayAgain }: Props) {
           <p className="mt-1.5 text-white/85 tabular-nums">
             {game.correct} of {game.answered} correct
           </p>
+          <p className="mt-0.5 text-sm text-white/70">{lifelinesLine(game.lifelinesUsed)}</p>
         </div>
         <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {tiles.map((t) => (

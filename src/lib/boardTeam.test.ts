@@ -18,6 +18,7 @@ import {
   type TeamPlayer,
   type TeamRematch,
 } from './boardTeam'
+import { NO_LIFELINES } from './board'
 
 const player = (userId: string, extra: Partial<TeamPlayer> = {}): TeamPlayer => ({
   userId,
@@ -29,6 +30,7 @@ const player = (userId: string, extra: Partial<TeamPlayer> = {}): TeamPlayer => 
   answered: 0,
   correct: 0,
   rematchDone: false,
+  lifelinesUsed: [],
   ...extra,
 })
 
@@ -160,7 +162,7 @@ describe('eventLine', () => {
     expect(eventLine({ ...base, kind: 'roll', roll: 5 }, 'a')).toBe('Ben rolled 5.')
     expect(eventLine({ ...base, kind: 'roll', roll: 5 }, 'b')).toBe('You rolled 5.')
     expect(
-      eventLine({ ...base, kind: 'answer', purpose: { kind: 'ladder', from: 3, to: 17 }, questionId: 'q', selected: 1, correctIndex: 1, isCorrect: true, from: 3, to: 17 }, 'a'),
+      eventLine({ ...base, kind: 'answer', purpose: { kind: 'ladder', from: 3, to: 17 }, questionId: 'q', selected: 1, correctIndex: 1, isCorrect: true, from: 3, to: 17, lifelines: NO_LIFELINES }, 'a'),
     ).toBe('Ben climbed a ladder to 17!')
     expect(eventLine({ ...base, kind: 'timeout', removed: true }, 'a')).toBe('Ben missed 2 turns and is out of the game.')
     expect(eventLine({ kind: 'order', at: 't', order: [] }, 'a')).toBeNull()

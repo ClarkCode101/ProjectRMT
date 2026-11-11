@@ -2,11 +2,12 @@ import { Check, Play, Trophy } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { HeroPanel, heroButtonClass, RangeBar, REFERENCE_RANGE } from '@/components/report'
-import { ZONE_SUBJECTS } from '@/lib/board'
+import { lifelinesLine, ZONE_SUBJECTS } from '@/lib/board'
 import { finishOrder, playAgainLine, playerColor, playingAgainIds, rematchChoice, type TeamRoom } from '@/lib/boardTeam'
 import { formatPercent, PASSING_RATE } from '@/lib/quiz'
 import { useSubjects } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
+import { LifelineIcons } from './Lifelines'
 import { teamActions, useMyGameAnswers, useRefreshTeam } from './teamApi'
 
 const PLACES = ['1st', '2nd', '3rd', '4th']
@@ -146,6 +147,7 @@ function Race({ room }: { room: TeamRoom }) {
                 />
               </span>
               <span className="flex items-center gap-2 text-right text-sm tabular-nums">
+                <LifelineIcons used={p.lifelinesUsed} className="text-white/70" />
                 {won ? <Trophy className="size-4 text-highlight" aria-label="Winner" /> : null}
                 <span className="font-heading font-bold">{p.position}</span>
                 <span className="w-10 text-white/70">
@@ -253,6 +255,7 @@ export function TeamResults({ room }: { room: TeamRoom }) {
                   : 'You didn’t get a turn to answer this time. Next game!'}
               </p>
             )}
+            {me && me.answered > 0 && <p className="mt-0.5 text-sm text-white/70">{lifelinesLine(me.lifelinesUsed)}</p>}
           </div>
           {winner && <Trophy className="mt-1 size-12 shrink-0 text-highlight" aria-hidden />}
         </div>

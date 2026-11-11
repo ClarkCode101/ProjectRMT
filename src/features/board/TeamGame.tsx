@@ -4,7 +4,7 @@ import { Dialog } from '@/components/Dialog'
 import { ExitButton } from '@/components/ExitButton'
 import { heroButtonClass } from '@/components/report'
 import { Button } from '@/components/ui/button'
-import { layoutOf, rollDie, zoneOf } from '@/lib/board'
+import { layoutOf, pickOutcome, rollDie, zoneOf, type LifelineId } from '@/lib/board'
 import { eventLine, formatTurnClock, playerColor, turnExpired, turnOrder, turnSecondsLeft, type TeamRoom } from '@/lib/boardTeam'
 import { keyToPosition } from '@/lib/choiceKeys'
 import { useOnline } from '@/lib/offline/useOfflineSync'
@@ -183,8 +183,18 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props)
 
   async function choose(originalIndex: number) {
     if (!myTurn || !current || checking) return
+    // Crossed out by Rule out 2, or her first pick with Second chance: can't be picked (the database refuses it too).
+    if (pickOutcome(originalIndex, -1, room.lifelines) === 'ignore') return
     setChecking(true)
     await act(() => teamActions.answer(room.id, originalIndex))
+    setChecking(false)
+  }
+
+  // Lifelines: the database does them and the room refreshes with the result (crossed-out choices, gold "on").
+  async function spendLifelineNow(id: LifelineId) {
+    if (!myTurn || !current || checking) return
+    setChecking(true)
+    await act(() => teamActions.spendLifeline(room.id, id))
     setChecking(false)
   }
 
@@ -414,6 +424,7 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props)
             onContinue={() => setShownReveal(null)}
             watching={reveal.userId === room.me ? undefined : reveal.name}
             autoContinueSeconds={REVEAL_SECONDS}
+            lifelines={reveal.lifelines}
             footer={<PopupChatRow chat={chat} me={room.me} watching={false} colorOf={colorOf} />}
           />
         ) : current && room.pending ? (
@@ -431,6 +442,8 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props)
             watching={myTurn ? undefined : (turnPlayer?.name ?? 'A classmate')}
             clockSeconds={secondsLeft}
             checking={checking}
+            lifelines={room.lifelines}
+            lifelineBar={myTurn && me ? { used: me.lifelinesUsed, onUse: (id) => void spendLifelineNow(id) } : undefined}
             footer={<PopupChatRow chat={chat} me={room.me} watching={!myTurn} colorOf={colorOf} />}
           />
         ) : null}

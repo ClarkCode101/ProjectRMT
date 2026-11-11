@@ -33,6 +33,8 @@ export type OutboxAttempt = {
   time_ms: number | null
   /** when she answered (not when it was sent), so her streak and history count the right day */
   created_at: string
+  /** a Board Review lifeline helped (migration 0032): saved, but left out of her scores */
+  assisted?: boolean
 }
 
 export type OutboxItem =
@@ -72,6 +74,17 @@ export function latestPerCard(rows: readonly ReviewRow[]): ReviewRow[] {
     latest.set(row.question_id, row)
   }
   return [...latest.values()]
+}
+
+/**
+ * The answers of a batch as rows for the database. `assisted` is only sent when one of them was helped by a lifeline,
+ * and then on every row (one request needs the same columns on every row, or the others would get null).
+ * So ordinary answers never depend on that column existing (migration 0032).
+ */
+export function attemptRows(batch: readonly OutboxItem[]): OutboxAttempt[] {
+  const rows = batch.flatMap((item) => (item.kind === 'attempt' ? [item.row] : []))
+  const anyAssisted = rows.some((row) => row.assisted === true)
+  return rows.map(({ assisted, ...row }) => (anyAssisted ? { ...row, assisted: assisted === true } : row))
 }
 
 /**
@@ -193,8 +206,13 @@ async function send(batch: OutboxItem[]): Promise<'sent' | 'retry' | 'drop'> {
     if (first.kind === 'session') {
       result = await supabase.from('quiz_sessions').upsert(first.row, { onConflict: 'id', ignoreDuplicates: true })
     } else if (first.kind === 'attempt') {
-      const rows = batch.flatMap((item) => (item.kind === 'attempt' ? [item.row] : []))
+      const rows = attemptRows(batch)
       result = await supabase.from('attempts').upsert(rows, { onConflict: 'id', ignoreDuplicates: true })
+      // Refused, and a row carries `assisted`: maybe migration 0032 isn't run yet. Better saved without the flag than lost.
+      if (result.error && failureAction(result.status) === 'drop' && rows.some((row) => 'assisted' in row)) {
+        const plain = rows.map(({ assisted: _assisted, ...row }) => row)
+        result = await supabase.from('attempts').upsert(plain, { onConflict: 'id', ignoreDuplicates: true })
+      }
     } else if (first.kind === 'review') {
       // One row per card (user_id is filled in by the database): sending it again just saves the same schedule.
       const rows = latestPerCard(batch.flatMap((item) => (item.kind === 'review' ? [item.row] : [])))

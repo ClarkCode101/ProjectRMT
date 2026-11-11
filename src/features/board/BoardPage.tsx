@@ -13,7 +13,13 @@ import {
   answerQuestion,
   BOARD_SIZE,
   challengePool,
+  isAssisted,
   layoutOf,
+  lifelineBlock,
+  NO_LIFELINES,
+  pickOutcome,
+  ruleOutChoices,
+  spendLifeline,
   newGame,
   pickLayoutId,
   rescuePool,
@@ -23,7 +29,9 @@ import {
   weakestTopic,
   zoneOf,
   type BoardGame,
+  type LifelineId,
   type Pending,
+  type QuestionLifelines,
 } from '@/lib/board'
 import { clearBoard, loadBoard, saveBoard, type SavedBoard } from '@/lib/boardSave'
 import { keyToPosition } from '@/lib/choiceKeys'
@@ -52,6 +60,8 @@ type Turn = {
   shownAt: number
   /** the original index she picked, once she answers */
   selectedIndex?: number
+  /** Rule out 2, Second chance and Snake shield on this question */
+  lifelines: QuestionLifelines
 }
 
 /** All questions in the subjects (built-in + hers), the same pool as Practice with "All" chosen. */
@@ -162,6 +172,7 @@ export default function BoardPage() {
       positionBefore: g.position,
       weakTopicName,
       shownAt: Date.now(),
+      lifelines: NO_LIFELINES,
     }
   }
 
@@ -211,12 +222,50 @@ export default function BoardPage() {
     }, SPIN_MS)
   }
 
+  /** She tapped a lifeline: it's spent for the game right away, and works on this question. */
+  function applyLifeline(id: LifelineId) {
+    if (!saved || !game || !turn || turn.selectedIndex !== undefined) return
+    const block = lifelineBlock(id, { used: game.lifelinesUsed, pendingKind: turn.purpose.kind, choiceCount: turn.question.choices.length, current: turn.lifelines })
+    if (block) return
+    persist({ ...saved, game: spendLifeline(game, id) })
+    const l = turn.lifelines
+    setTurn({
+      ...turn,
+      lifelines:
+        id === 'rule_out'
+          ? { ...l, ruledOut: ruleOutChoices(turn.question.choices.length, turn.question.correct_index) }
+          : id === 'second_chance'
+            ? { ...l, secondChance: true }
+            : { ...l, shield: true },
+    })
+  }
+
   function choose(originalIndex: number) {
     if (!saved || !game || !turn || turn.selectedIndex !== undefined) return
+    const outcome = pickOutcome(originalIndex, turn.question.correct_index, turn.lifelines)
+    if (outcome === 'ignore') return
+    // Second chance: the wrong first pick only gets crossed out (nothing saved yet), and she picks once more.
+    if (outcome === 'retry') {
+      setTurn({ ...turn, lifelines: { ...turn.lifelines, firstWrong: originalIndex } })
+      return
+    }
     const isCorrect = originalIndex === turn.question.correct_index
     // Counts toward her scores and Mistake notebook like Practice (saved on the device first, works offline).
-    queueAnswer({ sessionId: saved.sessionId, questionId: turn.question.id, selectedIndex: originalIndex, isCorrect, timeMs: Date.now() - turn.shownAt })
-    const next = answerQuestion(game, { questionId: turn.question.id, subjectCode: subjectCodeOfTopic(turn.question.topic_id), isCorrect })
+    // Helped by Rule out 2 or Second chance: still saved, but left out of her scores.
+    queueAnswer({
+      sessionId: saved.sessionId,
+      questionId: turn.question.id,
+      selectedIndex: originalIndex,
+      isCorrect,
+      timeMs: Date.now() - turn.shownAt,
+      assisted: isAssisted(turn.lifelines),
+    })
+    const next = answerQuestion(game, {
+      questionId: turn.question.id,
+      subjectCode: subjectCodeOfTopic(turn.question.topic_id),
+      isCorrect,
+      shielded: turn.lifelines.shield,
+    })
     persist({ ...saved, game: next })
     setTurn({ ...turn, selectedIndex: originalIndex })
     if (next.finished) {
@@ -374,6 +423,8 @@ export default function BoardPage() {
             position={turn.positionBefore}
             onChoose={choose}
             onContinue={continueTurn}
+            lifelines={turn.lifelines}
+            lifelineBar={{ used: game.lifelinesUsed, onUse: applyLifeline }}
           />
         )}
       </Dialog>

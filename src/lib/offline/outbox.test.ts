@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 // outbox.ts imports the Supabase client; these tests only use the pure helpers.
 vi.mock('@/lib/supabase', () => ({ supabase: {} }))
 
-const { failureAction, parseOutbox, takeBatch } = await import('./outbox')
+const { attemptRows, failureAction, parseOutbox, takeBatch } = await import('./outbox')
 type OutboxItem = import('./outbox').OutboxItem
 
 const session: OutboxItem = {
@@ -15,6 +15,20 @@ const attempt = (id: string): OutboxItem => ({
   row: { id, session_id: 's1', question_id: `q-${id}`, selected_index: 0, is_correct: true, time_ms: 1000, created_at: '2026-11-09T10:01:00.000Z' },
 })
 const finish: OutboxItem = { kind: 'finish', sessionId: 's1', score: 2, durationSec: 60, finishedAt: '2026-11-09T10:05:00.000Z' }
+
+describe('attemptRows', () => {
+  it('leaves out the assisted column when no answer was helped (works before migration 0032)', () => {
+    const rows = attemptRows([attempt('a1'), attempt('a2')])
+    expect(rows.every((row) => !('assisted' in row))).toBe(true)
+  })
+
+  it('sends assisted on every row once one answer was helped', () => {
+    const helped = attempt('a2')
+    if (helped.kind === 'attempt') helped.row.assisted = true
+    const rows = attemptRows([attempt('a1'), helped])
+    expect(rows.map((row) => row.assisted)).toEqual([false, true])
+  })
+})
 
 describe('takeBatch', () => {
   it('is empty when there is nothing to send', () => {

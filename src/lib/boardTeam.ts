@@ -2,7 +2,7 @@
 // (board_room_state, migration 0023), the turn clock, token colors, the finish order, and the "what just happened" line.
 // Pure logic: no Supabase or React here, so it is easy to unit test.
 import type { Json } from './database.types'
-import type { Pending } from './board'
+import { LIFELINE_IDS, NO_LIFELINES, type LifelineId, type Pending, type QuestionLifelines } from './board'
 import { parseChoiceNotes, parseChoices } from './quiz'
 
 export type TeamPlayerStatus = 'joined' | 'left' | 'removed'
@@ -19,6 +19,8 @@ export type TeamPlayer = {
   correct: number
   /** finished games: tapped Back to Board Review, so not playing again (migration 0025) */
   rematchDone: boolean
+  /** lifelines spent this game (migration 0032) */
+  lifelinesUsed: LifelineId[]
 }
 
 export type TeamQuestion = { id: string; topicId: number; stem: string; choices: string[] }
@@ -40,6 +42,8 @@ export type TeamEvent =
       isCorrect: boolean
       from: number
       to: number
+      /** the lifelines on that question (migration 0032), for the reveal */
+      lifelines: QuestionLifelines
     }
   | { kind: 'timeout'; at: string; userId: string; name: string; removed: boolean }
   | { kind: 'left'; at: string; userId: string; name: string }
@@ -70,6 +74,8 @@ export type TeamRoom = {
   invited: { userId: string; name: string }[]
   /** finished games: the next game someone made with "Play again" (migration 0024) */
   rematch: TeamRematch | null
+  /** the lifelines on the question on screen (migration 0032) */
+  lifelines: QuestionLifelines
 }
 
 export type TeamRematch = {
@@ -96,6 +102,25 @@ export function parsePending(v: unknown): Pending | null {
   if (p.kind === 'move') return { kind: 'move', roll: num(p.roll, 1) }
   if (p.kind === 'ladder' || p.kind === 'snake') return { kind: p.kind, from: num(p.from, 1), to: num(p.to, 1) }
   return null
+}
+
+const indexList = (v: unknown): number[] => (Array.isArray(v) ? v.filter((i): i is number => typeof i === 'number' && Number.isInteger(i)) : [])
+
+/** The current question's lifelines (board_room_state's "lifelines"). Missing (before migration 0032) = none. */
+export function parseLifelines(v: unknown): QuestionLifelines {
+  const l = obj(v)
+  if (!l) return NO_LIFELINES
+  return {
+    ruledOut: indexList(l.rule_out),
+    secondChance: l.second_chance === true,
+    firstWrong: numOrNull(l.first_wrong),
+    shield: l.shield === true,
+  }
+}
+
+/** Which lifelines a player has spent. */
+export function parseLifelinesUsed(v: unknown): LifelineId[] {
+  return Array.isArray(v) ? LIFELINE_IDS.filter((id) => v.includes(id)) : []
 }
 
 function parseQuestion(v: unknown): TeamQuestion | null {
@@ -151,6 +176,13 @@ export function parseEvent(v: unknown): TeamEvent | null {
         isCorrect: e.is_correct === true,
         from: num(e.from, 1),
         to: num(e.to, 1),
+        lifelines: {
+          ruledOut: indexList(e.rule_out),
+          // the database only notes the first wrong pick; Second chance was on if there is one
+          secondChance: numOrNull(e.first_wrong) !== null,
+          firstWrong: numOrNull(e.first_wrong),
+          shield: e.shielded === true,
+        },
       }
     }
     case 'timeout':
@@ -202,6 +234,7 @@ export function parseTeamRoom(v: unknown): TeamRoom | null {
           answered: num(o.answered),
           correct: num(o.correct),
           rematchDone: o.rematch_done === true,
+          lifelinesUsed: parseLifelinesUsed(o.lifelines_used),
         },
       ]
     }),
@@ -210,6 +243,7 @@ export function parseTeamRoom(v: unknown): TeamRoom | null {
       return o && typeof o.user_id === 'string' ? [{ userId: o.user_id, name: str(o.name, 'A classmate') }] : []
     }),
     rematch: parseRematch(r.rematch),
+    lifelines: parseLifelines(r.lifelines),
   }
 }
 
@@ -329,7 +363,11 @@ export function eventLine(event: TeamEvent | null, me: string): string | null {
       return `${who} rolled ${event.roll}.`
     case 'answer': {
       if (event.purpose.kind === 'ladder') return event.isCorrect ? `${who} climbed a ladder to ${event.to}!` : `${who} missed the ladder.`
-      if (event.purpose.kind === 'snake') return event.isCorrect ? `${who} escaped a snake!` : `${who} slid down a snake to ${event.to}.`
+      if (event.purpose.kind === 'snake') {
+        if (event.isCorrect) return `${who} escaped a snake!`
+        if (event.lifelines.shield) return `${who === 'You' ? 'Your' : `${who}’s`} Snake shield stopped the slide!`
+        return `${who} slid down a snake to ${event.to}.`
+      }
       return event.isCorrect ? `${who} answered right and moved to ${event.to}.` : `${who} missed and stays on ${event.from}.`
     }
     case 'timeout':

@@ -2,6 +2,7 @@
 // which checks who is calling; the screen only reads the room's state and shows it.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
+import type { LifelineId } from '@/lib/board'
 import { parseTeamRoom, type TeamRoom } from '@/lib/boardTeam'
 import { supabase } from '@/lib/supabase'
 
@@ -181,6 +182,8 @@ export const teamActions = {
   roll: (roomId: string) => call(supabase.rpc('board_roll', { p_room: roomId })),
   answer: (roomId: string, selectedIndex: number) => call(supabase.rpc('board_answer', { p_room: roomId, p_selected: selectedIndex })),
   skip: (roomId: string) => call(supabase.rpc('board_skip', { p_room: roomId })),
+  /** Rule out 2, Second chance or Snake shield on her question (the database does it; migration 0032) */
+  spendLifeline: (roomId: string, lifeline: LifelineId) => call(supabase.rpc('board_use_lifeline', { p_room: roomId, p_lifeline: lifeline })),
 }
 
 /** Read the room (and the start screen's lists) again right away. */

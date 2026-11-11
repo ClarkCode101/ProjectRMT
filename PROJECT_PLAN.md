@@ -473,7 +473,7 @@ mtle-reviewer/
 23. [x] Skip the ones I have: in that warning, each question has a tick box (Same ones ticked, alike ones not, like Merge). Ticked ones aren't copied (`add_community_book` p_skip, migration 0021); "N questions will be added · M skipped". Add waits for the check; skipping every question can't add an empty book.
 24. [x] Board Review, solo (see §14, step 1): `/board`, three layouts, works offline (migration 0022)
 25. [x] Board Review, live team games (§14, step 2): lobby, invites, invite link, 90-second turns, watching + reveal (migration 0023, already run on Supabase 2026-11-11). First live test with 2 accounts at once done 2026-11-11 (create → invite/link → join → start → roll, watch, reveal, clock run out, Exit).
-26. [ ] Board Review, Lifeline (§14, step 2b): on a snake, a teammate answers the rescue question for you
+26. [x] Board Review, Lifelines (§14, step 2b): three of your own, once each per game (Rule out 2, Second chance, Snake shield), in solo and team games (migration 0032: `attempts.assisted`, `board_use_lifeline`; run it on Supabase before deploying)
 27. [x] Board Review, room chat that clears after 5 hours (§14, step 3; migration 0029), and the redesigned team finish screen with the race and "Your answers" (migration 0030). Both migrations already run on Supabase 2026-11-11.
 28. [ ] *(maybe)* Push notifications for invites (§14, step 4)
 
@@ -540,7 +540,19 @@ Changed from the first idea (one shared token, async over a week): the owner wan
 - **Red dot on the Board Review nav icon** when an invite or your turn is waiting. No push notifications yet.
 - Online only. Live updates with Supabase Realtime (plus a slow refresh as a fallback).
 - Tables (RLS: members only, no direct writes): `board_rooms`, `board_room_players`, `board_invites`, `board_layout_jumps` (the three layouts, kept in step with `LAYOUTS` by a test). Migration 0023.
-- **Step 2b (later): Lifeline** — on a snake, ask a teammate to answer the rescue question for you.
+- **Step 2b: Lifelines** (decided 2026-11-11, replaces "a teammate answers your rescue question"). Everyone at the board is racing against each other, so **no lifeline involves another player** (they could steer you wrong on purpose, and a 2-player game would be unfair). "Ask a classmate" and "Poll the room" were considered and rejected for that reason; "New question" was swapped for Snake shield.
+  - **Three lifelines, the same for everyone, each usable once per game:**
+    1. **Rule out 2**: two wrong choices disappear.
+    2. **Second chance**: if your answer is wrong, you pick once more (the first pick stays crossed out).
+    3. **Snake shield**: only on a snake Rescue question; if you get it wrong, you don't slide.
+  - **Chosen before you answer**, in one row under the choices. Rule out 2 acts at once; Second chance and Snake shield are switched on and are used up even if you then answer right (a gamble, so picking when to use them is the strategy; offering them after a wrong answer would make them automatic and slow down the watchers).
+  - Usable on any question in your turn (normal, ladder Challenge, snake Rescue); Snake shield only shows on Rescue. Used ones stay in the row, greyed and crossed out.
+  - **Team games:** the database does all three (it removes the two wrong choices, checks a Second chance pick without revealing the right one, and applies the shield), so nobody can cheat. Watchers see "Ana used Second chance" on the question. The 90-second clock keeps running.
+  - **Solo board:** the same three, saved with the game on the device.
+  - **Scores:** answers helped by Rule out 2 or Second chance are still saved, but not counted in subject/topic accuracy (they'd make her look more ready than she is); wrong ones still go to the Mistake notebook. Snake shield doesn't change the answer, so it counts normally. One attempt per question: with Second chance, only her final pick is saved (the crossed-out first pick isn't). `attempts.assisted` marks them; `topic_performance` and the snake's "weakest topic" skip them. The 7-day activity chart on Home still counts them (it shows how much she practiced).
+  - Once Second chance has crossed out her first pick, the other lifelines are locked for that question (Rule out 2 then would nearly give the answer away). Rule out 2 takes 1 choice on a 3-choice question, and can't be used with only 2.
+  - The outbox only sends `assisted` when an answer in the batch was helped, and resends without it if the database refuses (migration not run yet), so no answer is ever lost.
+  - Finish screens show the lifelines each player used.
 
 ### Step 3 — Room chat that clears after 5 hours
 - Chat lives inside a game room only (no separate messenger; the class already has a Messenger group). One chat per room: in the lobby and the game. **Not on the finish screen** (changed 2026-11-11: Play again already shows who wants another game, and the screen is for the result and what to review). Play again makes a new room, so a new chat.
