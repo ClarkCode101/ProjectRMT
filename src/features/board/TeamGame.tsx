@@ -13,6 +13,7 @@ import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import type { QuizQuestion } from '@/features/quiz/api'
 import { BoardGrid, type BoardToken } from './BoardGrid'
+import { DevAnswerHint } from './DevAnswerHint'
 import { teamActions } from './teamApi'
 import { DieFace, TurnSheet } from './TurnSheet'
 import { useFittedBoardWidth } from './useFittedBoardWidth'
@@ -382,6 +383,10 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft }: Props) {
             checking={checking}
           />
         ) : null}
+        {/* npm run dev only: the right answer, for live testing (removed from the deployed build) */}
+        {import.meta.env.DEV && current && room.pending && !reveal && !showOrder && (
+          <DevAnswerHint questionId={current.id} order={orderFor(current.id, current.choices.length)} />
+        )}
       </Dialog>
 
       <Dialog open={confirmLeave} onClose={() => setConfirmLeave(false)} labelledBy="team-leave-heading">
