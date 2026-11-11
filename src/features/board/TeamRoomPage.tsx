@@ -5,14 +5,22 @@ import { useFocusMode } from '@/components/layoutContext'
 import { TeamGame } from './TeamGame'
 import { TeamLobby } from './TeamLobby'
 import { TeamResults } from './TeamResults'
+import { useRoomChat } from './chatApi'
 import { teamActions, useRefreshTeam, useTeamRoom } from './teamApi'
 
 // /board/team/:roomId → one team game: the lobby, then the live game, then the finish screen.
+// Keyed by the room, so Play again (a new room) starts fresh: its own chat, clock and reveals.
 export default function TeamRoomPage() {
   const { roomId } = useParams()
+  return <TeamRoomScreen key={roomId} roomId={roomId} />
+}
+
+function TeamRoomScreen({ roomId }: { roomId: string | undefined }) {
   const navigate = useNavigate()
   const state = useTeamRoom(roomId)
   const refresh = useRefreshTeam()
+  // One chat for the room: lobby and game (migration 0029)
+  const chat = useRoomChat(roomId, state.data?.room.me)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const room = state.data?.room ?? null
@@ -64,12 +72,12 @@ export default function TeamRoomPage() {
             {message}
           </p>
         )}
-        <TeamLobby room={room} act={act} busy={busy} onLeave={leaveLobby} />
+        <TeamLobby room={room} act={act} busy={busy} onLeave={leaveLobby} chat={chat} />
       </>
     )
   }
 
   if (room.status === 'finished') return <TeamResults room={room} />
 
-  return <TeamGame room={room} fetchedAt={state.data!.fetchedAt} act={act} message={message} onLeft={() => navigate('/board')} />
+  return <TeamGame room={room} fetchedAt={state.data!.fetchedAt} act={act} message={message} onLeft={() => navigate('/board')} chat={chat} />
 }

@@ -5,11 +5,16 @@ import { Dialog } from '@/components/Dialog'
 import { heroButtonClass } from '@/components/report'
 import { inviteLink, playerColor, type TeamRoom } from '@/lib/boardTeam'
 import { cn } from '@/lib/utils'
+import type { RoomChat as RoomChatState } from './chatApi'
+import { ChatSheet, RoomChat } from './RoomChat'
 import { teamActions, useClassmates } from './teamApi'
 
 const MAX_PLAYERS = 4
 /** invites waiting at a time per person (board_invite, migration 0023) */
 const MAX_WAITING_INVITES = 3
+
+/** One seat: a wide row on phones and iPad portrait, a small upright card (avatar over name) from 1024px. */
+const seatClass = 'flex h-16 items-center gap-3 rounded-xl border px-4 lg:h-auto lg:flex-col lg:justify-center lg:gap-1.5 lg:px-2 lg:py-3 lg:text-center'
 
 type Props = {
   room: TeamRoom
@@ -17,10 +22,11 @@ type Props = {
   act: (action: () => Promise<unknown>) => Promise<boolean>
   busy: boolean
   onLeave: () => void
+  chat: RoomChatState
 }
 
-/** The lobby: who's in, invite classmates (list or link), and the host's Start. Laid out like the other start screens. */
-export function TeamLobby({ room, act, busy, onLeave }: Props) {
+/** The lobby: who's in, invite classmates (list or link), the room chat, and the host's Start. Laid out like the other start screens. */
+export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
   const [inviteOpen, setInviteOpen] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
@@ -28,10 +34,11 @@ export function TeamLobby({ room, act, busy, onLeave }: Props) {
   const isHost = room.hostId === room.me
   const joined = room.players.filter((p) => p.status === 'joined')
   const full = joined.length >= MAX_PLAYERS
-  const needPlayers = joined.length < 2 // a game needs 2; until then inviting is the focus, not Start
-  // invites waiting in this lobby (the database also counts her invites in other lobbies, and says so if over)
+  const needPlayers = joined.length < 2 // a game needs 2; until then inviting is the focus, not Start  // invites waiting in this lobby (the database also counts her invites in other lobbies, and says so if over)
   const invitesFull = room.invited.length >= MAX_WAITING_INVITES
   const [inviteError, setInviteError] = useState<string | null>(null)
+  const [chatSheetOpen, setChatSheetOpen] = useState(false)
+  const chatColor = (userId: string) => playerColor(joined, userId)
 
   /** Invite from the list; a failure (e.g. the 3-invite limit) shows inside the popup, where she's looking. */
   function inviteClassmate(userId: string) {
@@ -71,27 +78,84 @@ export function TeamLobby({ room, act, busy, onLeave }: Props) {
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-5">
-      <PageHeader title="Team game" subtitle="Up to 4 players, live." />
+    // Tablets and computers: one screen, no page scroll (like Mock exam's start screen); the chat takes the space left.
+    // Very short windows (under 36rem) scroll the page instead of squeezing the chat.
+    <div className="mx-auto flex max-w-3xl flex-col gap-5 md:h-[calc(100dvh-2.5rem)] md:min-h-[36rem]">
+      {/* ---------- Title on the left; invite with code in the space beside it (top right), so the chat gets the room ----------
+          The code is the main way, the link the backup; the seats below open the classmate list. The box stands out
+          while she still needs players and quiets down once 2 are in, so Start takes the focus. Hidden when full. */}
+      <PageHeader
+        title="Team game"
+        subtitle="Up to 4 players, live."
+        actions={
+          !full && (
+            <section
+              aria-labelledby="lobby-invite-heading"
+              className={cn(
+                'flex items-center gap-4 rounded-xl border py-2.5 pr-2.5 pl-4',
+                needPlayers ? 'border-primary/50 bg-card shadow-sm' : 'border-dashed',
+              )}
+            >
+              <div>
+                <h2 id="lobby-invite-heading" className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
+                  Invite with code
+                </h2>
+                {/* tap to copy it, e.g. to paste in the group chat */}
+                <button
+                  type="button"
+                  onClick={copyCode}
+                  aria-label={`${room.inviteCode.split('').join(' ')}. Tap to copy.`}
+                  className="group -ml-1.5 flex items-center gap-2 rounded-lg px-1.5 outline-none hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px"
+                >
+                  <span className="font-mono text-xl font-bold tracking-widest">{room.inviteCode}</span>
+                  <span className="flex items-center gap-1 text-xs font-semibold text-muted-foreground group-hover:text-primary" aria-live="polite">
+                    {codeCopied ? (
+                      <>
+                        <Check className="size-4 text-correct" aria-hidden />
+                        Copied
+                      </>
+                    ) : (
+                      <Copy className="size-4" aria-hidden />
+                    )}
+                  </span>
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={copyLink}
+                aria-live="polite"
+                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border bg-card px-3.5 text-sm font-semibold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+              >
+                {linkCopied ? <Check className="size-4 text-correct" aria-hidden /> : <Link2 className="size-4 text-primary" aria-hidden />}
+                {linkCopied ? 'Link copied' : 'Copy link'}
+              </button>
+            </section>
+          )
+        }
+      />
 
       {/* ---------- Who's in: four seats ---------- */}
       <section aria-labelledby="lobby-players-heading" className="space-y-2">
         <h2 id="lobby-players-heading" className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
           Players · {joined.length} of {MAX_PLAYERS}
         </h2>
-        <ul className="grid gap-2 sm:grid-cols-2">
+        {/* Phones and iPad portrait: 2 × 2 wide cards. iPad landscape and computers: one row of 4 small upright
+            cards (avatar on top, name under it), so the whole lobby fits on the screen without scrolling. */}
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: MAX_PLAYERS }, (_, i) => {
             const p = joined[i]
             if (!p) {
               const invitedName = room.invited[i - joined.length]?.name
               if (invitedName) {
                 return (
-                  <li key={`empty-${i}`} className="flex h-16 items-center gap-3 rounded-xl border border-dashed px-4 text-muted-foreground">
-                    <span className="flex size-9 items-center justify-center rounded-full border border-dashed" aria-hidden>
+                  <li key={`empty-${i}`} className={cn(seatClass, 'border-dashed text-muted-foreground')}>
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-dashed" aria-hidden>
                       <UserPlus className="size-4" />
                     </span>
-                    <span className="min-w-0 truncate">
-                      <span className="font-semibold text-foreground">{invitedName}</span> · invited, waiting
+                    <span className="min-w-0 truncate lg:max-w-full lg:text-sm">
+                      <span className="font-semibold text-foreground">{invitedName}</span>
+                      <span className="lg:hidden"> · invited, waiting</span>
+                      <span className="hidden lg:block lg:text-xs">Invited, waiting</span>
                     </span>
                   </li>
                 )
@@ -105,86 +169,66 @@ export function TeamLobby({ room, act, busy, onLeave }: Props) {
                     onClick={() => setInviteOpen(true)}
                     aria-label="Open seat. Invite a classmate."
                     className={cn(
-                      'flex h-16 w-full items-center gap-3 rounded-xl border border-dashed px-4 text-left text-muted-foreground outline-none hover:border-primary/60 hover:bg-card hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40',
+                      seatClass,
+                      'w-full border-dashed text-left text-muted-foreground outline-none hover:border-primary/60 hover:bg-card hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 lg:h-full',
                       firstOpen && 'font-semibold',
                     )}
                   >
-                    <span className="flex size-9 items-center justify-center rounded-full border border-dashed border-current" aria-hidden>
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-dashed border-current" aria-hidden>
                       <UserPlus className="size-4" />
                     </span>
-                    {firstOpen ? 'Invite a classmate' : 'Open seat'}
+                    <span className="min-w-0 truncate lg:max-w-full lg:text-sm">{firstOpen ? 'Invite a classmate' : 'Open seat'}</span>
                   </button>
                 </li>
               )
             }
             return (
-              <li key={p.userId} className="flex h-16 items-center gap-3 rounded-xl border bg-card px-4">
+              <li key={p.userId} className={cn(seatClass, 'relative bg-card')}>
                 <span
-                  className="flex size-9 items-center justify-center rounded-full font-heading font-bold text-white uppercase"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-full font-heading font-bold text-white uppercase"
                   style={{ backgroundColor: playerColor(joined, p.userId) }}
                   aria-hidden
                 >
                   {p.name.charAt(0)}
                 </span>
-                <span className="min-w-0 flex-1 truncate font-semibold">
+                <span className="min-w-0 flex-1 truncate font-semibold lg:max-w-full lg:flex-none lg:text-sm">
                   {p.name}
                   {p.userId === room.me && <span className="text-muted-foreground"> (you)</span>}
                 </span>
-                {p.userId === room.hostId && <span className="rounded-[4px] bg-secondary px-1.5 text-xs font-bold">Host</span>}
+                {p.userId === room.hostId && (
+                  <span className="rounded-[4px] bg-secondary px-1.5 text-xs font-bold lg:absolute lg:top-1.5 lg:right-1.5">Host</span>
+                )}
               </li>
             )
           })}
         </ul>
       </section>
 
-      {/* ---------- Invite with code: the code is the main way; the link is the backup. Seats above open the list. ----------
-          Stands out while she still needs players; quiets down once 2 are in, so Start takes the focus. */}
-      {!full && (
-        <section
-          aria-labelledby="lobby-invite-heading"
-          className={cn(
-            'flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between',
-            needPlayers ? 'border-primary/50 bg-card shadow-sm' : 'border-dashed',
-          )}
-        >
-          <div>
-            <h2 id="lobby-invite-heading" className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
-              Invite with code
-            </h2>
-            {/* tap to copy it, e.g. to paste in the group chat */}
-            <button
-              type="button"
-              onClick={copyCode}
-              aria-label={`${room.inviteCode.split('').join(' ')}. Tap to copy.`}
-              className="group -ml-2 flex items-center gap-2 rounded-lg px-2 py-1 outline-none hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px"
-            >
-              <span className={cn('font-mono font-bold tracking-widest', needPlayers ? 'text-2xl' : 'text-xl')}>{room.inviteCode}</span>
-              <span className="flex items-center gap-1 text-xs font-semibold text-muted-foreground group-hover:text-primary" aria-live="polite">
-                {codeCopied ? (
-                  <>
-                    <Check className="size-4 text-correct" aria-hidden />
-                    Copied
-                  </>
-                ) : (
-                  <Copy className="size-4" aria-hidden />
-                )}
-              </span>
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={copyLink}
-            aria-live="polite"
-            className="flex h-10 items-center justify-center gap-2 rounded-lg border bg-card px-4 text-sm font-semibold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
-          >
-            {linkCopied ? <Check className="size-4 text-correct" aria-hidden /> : <Link2 className="size-4 text-primary" aria-hidden />}
-            {linkCopied ? 'Link copied' : 'Copy link'}
-          </button>
-        </section>
-      )}
+      {/* ---------- Room chat (migration 0029) ---------- */}
+      {/* phones: the latest 3 only, older ones in the sheet; tablets and computers: fills the space left and scrolls inside */}
+      <RoomChat
+        chat={chat}
+        me={room.me}
+        moment="lobby"
+        colorOf={chatColor}
+        headingId="lobby-chat-heading"
+        className="rounded-xl border bg-card p-4 md:min-h-48 md:flex-1"
+        compactLimit={3}
+        onSeeAll={() => setChatSheetOpen(true)}
+      />
+      <ChatSheet
+        open={chatSheetOpen}
+        onClose={() => setChatSheetOpen(false)}
+        chat={chat}
+        me={room.me}
+        moment="lobby"
+        colorOf={chatColor}
+        headingId="lobby-chat-sheet-heading"
+      />
 
-      {/* ---------- Bottom bar: Leave on the left, Start (host) or waiting on the right ---------- */}
-      <div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* ---------- Bottom bar: Leave on the left, Start (host) or waiting on the right ----------
+          On tablets and computers the page fits the screen, so this is always at the bottom, in thumb reach. */}
+      <div className="flex shrink-0 flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={onLeave}

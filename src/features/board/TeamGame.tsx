@@ -1,4 +1,4 @@
-import { CloudOff, Dices } from 'lucide-react'
+import { CloudOff, Dices, MessageCircle } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { ExitButton } from '@/components/ExitButton'
@@ -13,6 +13,8 @@ import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import type { QuizQuestion } from '@/features/quiz/api'
 import { BoardGrid, type BoardToken } from './BoardGrid'
+import { useNewMessageBubble, type RoomChat as RoomChatState } from './chatApi'
+import { ChatBubble, ChatSheet, PopupChatRow } from './RoomChat'
 import { DevAnswerHint } from './DevAnswerHint'
 import { devFinishGame } from './devTools'
 
@@ -42,6 +44,7 @@ type Props = {
   act: (action: () => Promise<unknown>) => Promise<boolean>
   message: string | null
   onLeft: () => void
+  chat: RoomChatState
 }
 
 /**
@@ -49,7 +52,7 @@ type Props = {
  * watch the question and the answer reveal. The database decides everything (roll, question, right or wrong);
  * this screen only shows it, with the same die and popup as the solo game.
  */
-export function TeamGame({ room, fetchedAt, act, message, onLeft }: Props) {
+export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props) {
   const online = useOnline()
   const subjectOf = useSubjectOfTopic()
   const { measure, width } = useFittedBoardWidth()
@@ -230,6 +233,17 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft }: Props) {
 
   const popup = !dice && (showOrder || reveal || current)
 
+  // ---------- Room chat (migration 0029): a sheet from the button left of Roll ----------
+  // The die and the question popup come first: the chat sheet closes by itself when either comes up.
+  const [chatWanted, setChatWanted] = useState(false)
+  const chatOpen = chatWanted && !dice && !popup
+  useEffect(() => {
+    if (dice || popup) setChatWanted(false)
+  }, [dice, popup])
+  // A classmate's new message pops up over the board for a few seconds (inside the popup it shows there instead).
+  const bubble = useNewMessageBubble(chat, room.me, chatOpen || Boolean(popup))
+  const colorOf = (userId: string) => playerColor(room.players, userId)
+
   return (
     <div className="fixed inset-0 z-20 flex flex-col gap-3 bg-background px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))] md:px-6">
       <h1 className="sr-only">Board Review team game</h1>
@@ -297,7 +311,12 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft }: Props) {
       )}
 
       {/* ---------- Bottom: Roll when it's her turn; otherwise what's happening ---------- */}
-      <div className="mx-auto flex w-full max-w-md shrink-0 flex-col items-center gap-1.5">
+      <div className="relative mx-auto flex w-full max-w-md shrink-0 flex-col items-center gap-1.5">
+        {bubble && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 pointer-events-none absolute inset-x-0 bottom-full mb-2 flex justify-center duration-200">
+            <ChatBubble message={bubble} color={colorOf(bubble.userId)} />
+          </div>
+        )}
         <p className="h-5 truncate text-center text-sm text-muted-foreground" aria-live="polite">
           {myTurn && room.phase === 'roll'
             ? `Your turn! You’re in the ${zoneOf(me?.position ?? 1)} zone.`
@@ -306,9 +325,21 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft }: Props) {
               : (line ?? '')}
         </p>
         <div className="flex w-full items-center gap-3">
-          <div className="flex size-14 shrink-0 items-center justify-center rounded-xl border bg-card">
-            <Dices className="size-9 text-primary-deep" aria-hidden />
-          </div>
+          {/* the room chat, in thumb reach; the count is classmates' messages she hasn't read */}
+          <button
+            type="button"
+            onClick={() => setChatWanted(true)}
+            disabled={Boolean(dice || popup)}
+            aria-label={chat.unread > 0 ? `Chat, ${chat.unread} new ${chat.unread === 1 ? 'message' : 'messages'}` : 'Chat'}
+            className="relative flex size-14 shrink-0 items-center justify-center rounded-xl border bg-card outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
+            <MessageCircle className="size-8 text-primary-deep" aria-hidden />
+            {chat.unread > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-wrong px-1.5 font-heading text-xs font-bold text-white tabular-nums" aria-hidden>
+                {chat.unread > 9 ? '9+' : chat.unread}
+              </span>
+            )}
+          </button>
           <button type="button" className={cn(heroButtonClass, 'flex-1 focus-visible:ring-ring/40 sm:flex sm:w-auto')} onClick={roll} disabled={!canRoll}>
             <Dices className="size-5" aria-hidden />
             {canRoll ? `Roll · ${formatTurnClock(secondsLeft)}` : myTurn ? 'Your turn' : turnPlayer ? `${turnPlayer.name}’s turn` : 'Waiting…'}
@@ -383,6 +414,7 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft }: Props) {
             onContinue={() => setShownReveal(null)}
             watching={reveal.userId === room.me ? undefined : reveal.name}
             autoContinueSeconds={REVEAL_SECONDS}
+            footer={<PopupChatRow chat={chat} me={room.me} watching={false} colorOf={colorOf} />}
           />
         ) : current && room.pending ? (
           <TurnSheet
@@ -399,6 +431,7 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft }: Props) {
             watching={myTurn ? undefined : (turnPlayer?.name ?? 'A classmate')}
             clockSeconds={secondsLeft}
             checking={checking}
+            footer={<PopupChatRow chat={chat} me={room.me} watching={!myTurn} colorOf={colorOf} />}
           />
         ) : null}
         {/* npm run dev only: the right answer, for live testing (removed from the deployed build) */}
@@ -406,6 +439,9 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft }: Props) {
           <DevAnswerHint questionId={current.id} order={orderFor(current.id, current.choices.length)} />
         )}
       </Dialog>
+
+      {/* ---------- The room chat sheet (only the X or Esc closes it) ---------- */}
+      <ChatSheet open={chatOpen} onClose={() => setChatWanted(false)} chat={chat} me={room.me} moment="game" colorOf={colorOf} headingId="game-chat-heading" />
 
       <Dialog open={confirmLeave} onClose={() => setConfirmLeave(false)} labelledBy="team-leave-heading">
         <div className="space-y-4">

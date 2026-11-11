@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ChoiceList } from '@/components/ChoiceList'
 import { Button } from '@/components/ui/button'
 import type { Pending } from '@/lib/board'
@@ -103,6 +103,8 @@ type Props = {
   checking?: boolean
   /** team games: after the answer, Continue taps itself after this many seconds */
   autoContinueSeconds?: number
+  /** team games: the chat row at the bottom (newest message, quick replies for watchers) */
+  footer?: ReactNode
 }
 
 /** The question popup's content: what's at stake, the question, then what happens. */
@@ -121,6 +123,7 @@ export function TurnSheet({
   clockSeconds,
   checking = false,
   autoContinueSeconds,
+  footer,
 }: Props) {
   // In a team game the answer is only known once the database has checked it (correct_index -1 until then).
   const answered = selectedIndex !== undefined && question.correct_index >= 0
@@ -173,6 +176,7 @@ export function TurnSheet({
             Continue
           </Button>
         ))}
+      {footer}
     </div>
   )
 }
