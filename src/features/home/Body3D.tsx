@@ -48,8 +48,8 @@ function lathe(profile: [number, number][], material: THREE.Material, segments =
 }
 
 /** A unit sphere whose points are moved by `bend`, for organ shapes a plain ball can't make (liver wedge, kidney bean). */
-function bentSphere(bend: (v: THREE.Vector3) => void) {
-  const geometry = new THREE.SphereGeometry(1, 40, 28)
+function bentSphere(bend: (v: THREE.Vector3) => void, widthSegments = 40, heightSegments = 28) {
+  const geometry = new THREE.SphereGeometry(1, widthSegments, heightSegments)
   const position = geometry.attributes.position
   const v = new THREE.Vector3()
   for (let i = 0; i < position.count; i++) {
@@ -61,45 +61,103 @@ function bentSphere(bend: (v: THREE.Vector3) => void) {
   return geometry
 }
 
+/** A few [radius, height] points turned into a smooth outline for `lathe` (so a drop has no corners). */
+function smoothProfile(points: [number, number][], steps = 32): [number, number][] {
+  const curve = new THREE.SplineCurve(points.map(([r, y]) => new THREE.Vector2(r, y)))
+  return curve.getPoints(steps).map((p) => [Math.max(0, p.x), p.y])
+}
+
+/**
+ * The material of an organ part: a little glossy, like a model in an anatomy lab.
+ * The color itself is set every frame (grey until the subject is started, then the organ's color), so a part only says
+ * how it differs: `tone` above 0 = lighter, below 0 = darker; `own` = its own color instead of the organ's
+ * (the blue vessel on the heart, the green gallbladder).
+ */
+function organMaterial(tone = 0, own?: string) {
+  const material = new THREE.MeshPhysicalMaterial({ roughness: 0.4, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.35 })
+  material.userData = { tone, own: own ? new THREE.Color(own) : null }
+  return material
+}
+
 /** A kidney: a sphere pressed in on one side (the hilum, toward the spine). `side` 1 = her left (viewer's right). */
 function kidney(position: [number, number, number], side: 1 | -1, material: THREE.Material) {
   const mesh = new THREE.Mesh(
     bentSphere((v) => {
-      if (v.x < 0) v.x *= 1 - 0.5 * Math.exp(-(v.y * v.y) / 0.12)
+      if (v.x < 0) v.x *= 1 - 0.55 * Math.exp(-(v.y * v.y) / 0.12)
     }),
     material,
   )
   // Mirrored for her right kidney, so both dents face the spine.
-  mesh.scale.set(0.03 * side, 0.05, 0.026)
+  mesh.scale.set(0.033 * side, 0.054, 0.028)
   mesh.position.set(...position)
+  mesh.rotation.z = side * 0.12 // tops lean in a little, like real ones
   return mesh
 }
 
-/** One lung: narrow at the top, wide and rounded at the bottom, tilted so the tops lean in. */
-function lung(x: number, material: THREE.Material) {
-  const mesh = lathe(
-    [[0, 0.11], [0.022, 0.1], [0.038, 0.075], [0.05, 0.035], [0.058, -0.01], [0.06, -0.05], [0.052, -0.085], [0.03, -0.1], [0, -0.103]],
+/**
+ * One lung: narrow at the top, wide at the bottom with a flat base (it sits on the diaphragm),
+ * flat on the inner side with a dip where the heart is. `side` 1 = her left (viewer's right).
+ */
+function lung(side: 1 | -1, material: THREE.Material) {
+  const mesh = new THREE.Mesh(
+    bentSphere((v) => {
+      const height = (v.y + 1) / 2 // 0 at the bottom, 1 at the top
+      const taper = 1 - 0.5 * height * height
+      v.x *= taper
+      v.z *= taper
+      if (v.y < -0.55) v.y = -0.55 + (v.y + 0.55) * 0.3
+      if (v.x < 0) v.x *= 0.78 - 0.25 * Math.exp(-((v.y + 0.25) ** 2) / 0.12)
+    }),
     material,
   )
-  mesh.scale.z = 0.8
-  mesh.position.set(x, 1.31, 0)
-  mesh.rotation.z = x < 0 ? -0.12 : 0.12
+  mesh.scale.set(0.075 * side, 0.115, 0.055)
+  mesh.position.set(side * 0.078, 1.3, 0)
+  mesh.rotation.z = side * 0.08
   return mesh
 }
+
+/** Half of the brain, with folds, flat on the inner side so the two halves leave a groove between them. */
+function hemisphere(side: 1 | -1, material: THREE.Material) {
+  const mesh = new THREE.Mesh(
+    bentSphere(
+      (v) => {
+        // The folds: two wavy patterns crossing each other, pushed in and out of the surface.
+        const fold = Math.sin(9 * v.y + 2.5 * Math.sin(7 * v.z + 1)) * Math.sin(8 * v.z + 2.5 * Math.sin(6 * v.y))
+        v.multiplyScalar(1 + 0.07 * fold)
+        if (v.x < 0) v.x *= 0.3
+        if (v.y < 0) v.y *= 0.75
+      },
+      72,
+      48,
+    ),
+    material,
+  )
+  mesh.scale.set(0.06 * side, 0.064, 0.088)
+  mesh.position.set(side * 0.022, 1.68, -0.005)
+  return mesh
+}
+
+const at = (x: number, y: number, z = 0) => new THREE.Vector3(x, y, z)
 
 const ORGAN_SPECS: OrganSpec[] = [
   {
     code: 'HTMLE',
     color: '#9B7BEA',
     build: () => {
-      // The brain: two hemispheres and the cerebellum tucked under the back.
+      // The brain: two folded halves, the ridged cerebellum tucked under the back, and the brainstem going down.
       const g = new THREE.Group()
-      const m = organMaterial('#9B7BEA')
-      g.add(
-        ellipsoid([0.043, 0.068, 0.09], [-0.044, 1.675, -0.005], m),
-        ellipsoid([0.043, 0.068, 0.09], [0.044, 1.675, -0.005], m),
-        ellipsoid([0.05, 0.028, 0.035], [0, 1.615, -0.055], m),
+      const m = organMaterial()
+      g.add(hemisphere(-1, m), hemisphere(1, m))
+      const cerebellum = new THREE.Mesh(
+        bentSphere((v) => {
+          v.multiplyScalar(1 + 0.05 * Math.sin(14 * v.y))
+        }),
+        organMaterial(-0.2),
       )
+      cerebellum.scale.set(0.048, 0.026, 0.034)
+      cerebellum.position.set(0, 1.612, -0.05)
+      g.add(cerebellum)
+      g.add(sweep([at(0, 1.63, -0.02), at(0, 1.59, -0.024), at(0, 1.555, -0.02)], [0.015, 0.013, 0.011], organMaterial(0.12), 12))
       return g
     },
   },
@@ -108,9 +166,15 @@ const ORGAN_SPECS: OrganSpec[] = [
     color: '#4FB6E8',
     anchor: [-0.072, 1.31, 0], // the lung on the left, where its card is
     build: () => {
+      // Two lungs, with the windpipe coming down between them and a branch into each.
       const g = new THREE.Group()
-      const m = organMaterial('#4FB6E8')
-      g.add(lung(-0.072, m), lung(0.072, m))
+      const m = organMaterial()
+      const airway = organMaterial(0.45)
+      g.add(lung(-1, m), lung(1, m))
+      g.add(sweep([at(0, 1.47), at(0, 1.42), at(0, 1.385)], [0.012, 0.012, 0.011], airway, 12))
+      for (const side of [-1, 1]) {
+        g.add(sweep([at(0, 1.392), at(side * 0.022, 1.366), at(side * 0.046, 1.335)], [0.0095, 0.008, 0.007], airway, 12))
+      }
       return g
     },
   },
@@ -118,16 +182,32 @@ const ORGAN_SPECS: OrganSpec[] = [
     code: 'HEMA',
     color: '#E5484D',
     build: () => {
-      // Two lobes and a point, tilted so the tip points down and to her left, like a real heart.
+      // The heart: one smooth piece (wide on top with a dip in the middle, narrowing to the tip),
+      // with the aorta arching over the top and the blue vessel to the lungs beside it.
+      // Tilted so the tip points down and to her left, like a real heart.
       const g = new THREE.Group()
-      const m = organMaterial('#E5484D')
-      g.add(ellipsoid([0.03, 0.03, 0.028], [-0.018, 0.012, 0], m), ellipsoid([0.03, 0.03, 0.028], [0.018, 0.012, 0], m))
-      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.042, 0.065, 24), m)
-      tip.rotation.z = Math.PI
-      tip.position.set(0, -0.03, 0)
-      g.add(tip)
-      g.rotation.z = 0.45
-      g.position.set(0.028, 1.29, 0.055)
+      const muscle = new THREE.Mesh(
+        bentSphere((v) => {
+          if (v.y < 0) {
+            const narrow = 1 - 0.6 * Math.pow(-v.y, 1.6)
+            v.x *= narrow
+            v.z *= narrow
+          } else {
+            v.y *= 1 - 0.3 * Math.exp(-(v.x * v.x) / 0.06)
+          }
+        }),
+        organMaterial(),
+      )
+      muscle.scale.set(0.043, 0.05, 0.032)
+      g.add(muscle)
+      const aorta = organMaterial(0.18)
+      g.add(sweep([at(0.006, 0.026), at(0.004, 0.06), at(0.02, 0.077, -0.006), at(0.038, 0.064, -0.012)], [0.013, 0.012, 0.011, 0.0105], aorta, 20))
+      g.add(ellipsoid([0.0105, 0.0105, 0.0105], [0.038, 0.064, -0.012], aorta))
+      const toLungs = organMaterial(0, '#4FB6E8')
+      g.add(sweep([at(-0.014, 0.024, 0.01), at(-0.02, 0.05, 0.008), at(-0.036, 0.06, 0.002)], [0.011, 0.0105, 0.0095], toLungs, 16))
+      g.add(ellipsoid([0.0095, 0.0095, 0.0095], [-0.036, 0.06, 0.002], toLungs))
+      g.rotation.z = 0.4
+      g.position.set(0.028, 1.285, 0.052)
       return g
     },
   },
@@ -135,17 +215,29 @@ const ORGAN_SPECS: OrganSpec[] = [
     code: 'CC',
     color: '#B9773F',
     build: () => {
-      // The liver: a wedge, thick on her right (viewer's left) and thin toward her left.
+      // The liver: a wedge, thick on her right (viewer's left) and thin toward her left, with the groove
+      // between its two lobes and the small green gallbladder peeking out underneath.
+      const g = new THREE.Group()
       const liver = new THREE.Mesh(
-        bentSphere((v) => {
-          v.y *= 1 - 0.45 * v.x
-        }),
-        organMaterial('#B9773F'),
+        bentSphere(
+          (v) => {
+            v.multiplyScalar(1 - 0.1 * Math.exp(-((v.x - 0.2) ** 2) / 0.01))
+            v.y *= 1 - 0.45 * v.x
+            if (v.y < 0) v.y *= 0.75
+          },
+          56,
+          32,
+        ),
+        organMaterial(),
       )
-      liver.scale.set(0.105, 0.045, 0.06)
-      liver.position.set(-0.045, 1.175, 0.02)
+      liver.scale.set(0.11, 0.052, 0.062)
+      liver.position.set(-0.04, 1.178, 0.02)
       liver.rotation.z = -0.12
-      return liver
+      g.add(liver)
+      const gallbladder = ellipsoid([0.013, 0.021, 0.013], [-0.062, 1.133, 0.062], organMaterial(0, '#6FA35A'))
+      gallbladder.rotation.z = 0.35
+      g.add(gallbladder)
+      return g
     },
   },
   {
@@ -153,9 +245,15 @@ const ORGAN_SPECS: OrganSpec[] = [
     color: '#E8875A',
     anchor: [0.065, 1.07, -0.03], // the kidney on the right, where its card is
     build: () => {
+      // The urinary system (this subject is mostly urinalysis): two kidneys, a thin tube from each, and the bladder.
       const g = new THREE.Group()
-      const m = organMaterial('#E8875A')
+      const m = organMaterial()
+      const tube = organMaterial(0.3)
       g.add(kidney([-0.065, 1.07, -0.03], -1, m), kidney([0.065, 1.07, -0.03], 1, m))
+      for (const side of [-1, 1]) {
+        g.add(sweep([at(side * 0.05, 1.07, -0.03), at(side * 0.03, 1.03, -0.028), at(side * 0.022, 0.97, -0.02), at(side * 0.012, 0.925, -0.005)], [0.006, 0.005, 0.005, 0.005], tube, 24, 10))
+      }
+      g.add(ellipsoid([0.034, 0.03, 0.03], [0, 0.912, 0], organMaterial(0, '#E9C46A')))
       return g
     },
   },
@@ -163,21 +261,13 @@ const ORGAN_SPECS: OrganSpec[] = [
     code: 'BBIS',
     color: '#E5484D',
     build: () => {
-      // A blood drop at the inner elbow, where blood is drawn.
-      const g = new THREE.Group()
-      const m = organMaterial('#E5484D')
-      g.add(ellipsoid([0.026, 0.026, 0.026], [-0.255, 1.12, 0.06], m))
-      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.023, 0.045, 24), m)
-      tip.position.set(-0.255, 1.155, 0.06)
-      g.add(tip)
-      return g
+      // A blood drop at the inner elbow, where blood is drawn: one smooth piece, pointed on top.
+      const drop = lathe(smoothProfile([[0, 0.058], [0.006, 0.04], [0.017, 0.012], [0.026, -0.012], [0.024, -0.03], [0.013, -0.041], [0, -0.043]]), organMaterial())
+      drop.position.set(-0.255, 1.125, 0.06)
+      return drop
     },
   },
 ]
-
-function organMaterial(color: string) {
-  return new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.05, emissive: color, emissiveIntensity: 0.15 })
-}
 
 /**
  * See-through "glass" skin: pale inside with soft shading from one light (so it reads as round, not flat),
@@ -357,6 +447,8 @@ function canUseWebGL() {
 
 /** Not started: the organ shows in this grey until she answers something in its subject. */
 const NOT_STARTED_GREY = new THREE.Color('#B8C4CE')
+const WHITE = new THREE.Color('#FFFFFF')
+const BLACK = new THREE.Color('#000000')
 
 export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, className, celebrate = false }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -593,6 +685,7 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
     const clock = new THREE.Clock()
     const projected = new THREE.Vector3()
     const worldPos = new THREE.Vector3()
+    const tint = new THREE.Color()
     let frame = 0
     function tick() {
       frame = requestAnimationFrame(tick)
@@ -684,12 +777,17 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
         // Grey until she starts the subject, then its own color; a passing subject glows a little.
         // (No look given, e.g. scores still loading: its color.)
         const look = organLooks?.[o.code] ?? 'color'
-        const shown = look === 'grey' ? NOT_STARTED_GREY : o.color
         o.object.traverse((child) => {
           if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+            // Each part starts from grey (not started), its own color, or the organ's color,
+            // then goes a little lighter or darker (its tone).
+            const { tone, own } = child.material.userData as { tone: number; own: THREE.Color | null }
+            tint.copy(look === 'grey' ? NOT_STARTED_GREY : (own ?? o.color))
+            if (tone > 0) tint.lerp(WHITE, tone)
+            else if (tone < 0) tint.lerp(BLACK, -tone)
             // Organs stay solid (see-through organs would hide behind the skin's first pass); the chosen one glows most.
-            child.material.color.copy(shown)
-            child.material.emissive.copy(shown)
+            child.material.color.copy(tint)
+            child.material.emissive.copy(tint)
             child.material.emissiveIntensity = isSelected ? 0.6 : look === 'glow' ? 0.35 : 0.1
           }
         })
