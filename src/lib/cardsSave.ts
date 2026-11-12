@@ -75,7 +75,7 @@ function isGame(value: unknown): value is CardGame {
     g.usedQuestionIds.every((id) => typeof id === 'string') &&
     (g.winner === null || seat(g.winner)) &&
     typeof g.finished === 'boolean' &&
-    (g.endReason === null || g.endReason === 'emptied' || g.endReason === 'outOfCards') &&
+    (g.endReason === null || g.endReason === 'emptied' || g.endReason === 'outOfCards' || g.endReason === 'everyoneLeft') &&
     Array.isArray(g.log) &&
     (g.moveCount === undefined || isCount(g.moveCount)) &&
     typeof g.startedAt === 'string'

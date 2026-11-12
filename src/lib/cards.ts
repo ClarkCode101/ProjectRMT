@@ -117,8 +117,8 @@ export type CardGame = {
   /** null = no winner (still playing, or a tie when the cards ran out) */
   winner: number | null
   finished: boolean
-  /** why it ended: someone emptied their hand, or there was nothing left to draw */
-  endReason: 'emptied' | 'outOfCards' | null
+  /** why it ended: someone emptied their hand, there was nothing left to draw, or (live) every person left */
+  endReason: 'emptied' | 'outOfCards' | 'everyoneLeft' | null
   log: CardEvent[]
   /** counts the moves, to group the events of each one (missing in games saved before it existed) */
   moveCount?: number
@@ -287,9 +287,17 @@ export function ranking(game: CardGame): number[] {
   return game.players.map((_, i) => i).sort((a, b) => game.players[a].hand.length - game.players[b].hand.length)
 }
 
-/** True when it's her turn and nothing is waiting, so she may tap a card (or draw, if nothing fits). */
-export function isHerMove(game: CardGame): boolean {
-  return !game.finished && game.turn === 0 && game.pending === null
+/** True when it's a person's turn (not a computer player's): only then do the moves below do anything. */
+export function isHumanTurn(game: CardGame): boolean {
+  return !game.finished && (game.players[game.turn]?.isHuman ?? false)
+}
+
+/**
+ * True when it's the turn of the player in `seat` (her seat in the solo game is 0) and nothing is waiting,
+ * so she may tap a card (or draw, if nothing fits).
+ */
+export function isHerMove(game: CardGame, seat = 0): boolean {
+  return !game.finished && game.turn === seat && game.pending === null
 }
 
 /**
@@ -303,12 +311,14 @@ export function questionNeeded(game: CardGame): { kind: 'subject'; subject: Card
   if (pending === null || game.finished) return null
   if (pending.kind === 'draw2') return { kind: 'subject', subject: pending.subject }
   if (pending.kind !== 'play') return null
-  const card = findCard(game.players[0].hand, pending.cardId)
+  const card = findCard(game.players[game.turn].hand, pending.cardId)
   if (!card) return null
   return card.kind === 'wild' ? { kind: 'weakest' } : { kind: 'subject', subject: card.subject }
 }
 
-// ---------- Her turn ----------
+// ---------- A person's turn ----------
+// These act for the player whose turn it is (game.turn), and only when that player is a person.
+// Solo: she is the only person (seat 0). Live (§15 step 2): the server checks the caller IS that player first.
 
 export type CardAnswer = { questionId: string; subjectCode: string; isCorrect: boolean }
 
@@ -335,9 +345,10 @@ export function pendingQuestionId(game: CardGame): string | null {
  * After drawing, only the drawn card may be played.
  */
 export function startPlay(game: CardGame, cardId: string): CardGame {
-  if (game.finished || game.turn !== 0) return game
+  if (!isHumanTurn(game)) return game
+  const me = game.turn
   if (game.pending !== null && !(game.pending.kind === 'drawn' && game.pending.cardId === cardId)) return game
-  const card = findCard(game.players[0].hand, cardId)
+  const card = findCard(game.players[me].hand, cardId)
   if (!card || !canPlay(card, game)) return game
   return { ...game, pending: { kind: 'play', cardId } }
 }
@@ -349,38 +360,40 @@ export function startPlay(game: CardGame, cardId: string): CardGame {
  */
 export function answerPlay(game: CardGame, answer: CardAnswer, random: RandomFn = Math.random): CardGame {
   const pending = game.pending
-  if (game.finished || game.turn !== 0 || pending?.kind !== 'play') return game
-  const card = findCard(game.players[0].hand, pending.cardId)
+  if (!isHumanTurn(game) || pending?.kind !== 'play') return game
+  const me = game.turn
+  const card = findCard(game.players[me].hand, pending.cardId)
   if (!card) return game
 
   const g = tallyAnswer(startMove(copyGame(game)), answer)
   g.pending = null
 
   if (!answer.isCorrect) {
-    addEvent(g, { player: 0, kind: 'miss', cardId: card.id })
-    g.drawnForMistakes += drawCards(g, 0, 1, random)
-    if (!g.finished) g.turn = nextPlayer(g, 0)
+    addEvent(g, { player: me, kind: 'miss', cardId: card.id })
+    g.drawnForMistakes += drawCards(g, me, 1, random)
+    if (!g.finished) g.turn = nextPlayer(g, me)
     return g
   }
 
-  putDown(g, 0, card)
+  putDown(g, me, card)
   if (g.finished) return g
   if (card.kind === 'wild') {
     g.pending = { kind: 'chooseSubject' }
     return g
   }
-  applyAction(g, 0, card, random)
+  applyAction(g, me, card, random)
   return g
 }
 
 /** After a right Wild: she picks the subject everyone has to match next. */
 export function chooseSubject(game: CardGame, subject: CardSubject): CardGame {
-  if (game.finished || game.turn !== 0 || game.pending?.kind !== 'chooseSubject') return game
+  if (!isHumanTurn(game) || game.pending?.kind !== 'chooseSubject') return game
+  const me = game.turn
   const g = startMove(copyGame(game))
   g.pending = null
   g.subject = subject
-  addEvent(g, { player: 0, kind: 'choose', subject })
-  g.turn = nextPlayer(g, 0)
+  addEvent(g, { player: me, kind: 'choose', subject })
+  g.turn = nextPlayer(g, me)
   return g
 }
 
@@ -390,27 +403,30 @@ export function chooseSubject(game: CardGame, subject: CardSubject): CardGame {
  * (a wrong answer costs the same 1 card, and she learns something).
  */
 export function drawForTurn(game: CardGame, random: RandomFn = Math.random): CardGame {
-  if (!isHerMove(game) || playableCards(game, 0).length > 0) return game
+  if (!isHumanTurn(game) || game.pending !== null) return game
+  const me = game.turn
+  if (playableCards(game, me).length > 0) return game
   const g = startMove(copyGame(game))
-  const drawn = drawCards(g, 0, 1, random)
+  const drawn = drawCards(g, me, 1, random)
   if (g.finished) return g
-  const card = g.players[0].hand[g.players[0].hand.length - 1]
+  const card = g.players[me].hand[g.players[me].hand.length - 1]
   if (drawn === 1 && canPlay(card, g)) {
     g.pending = { kind: 'drawn', cardId: card.id }
   } else {
-    addEvent(g, { player: 0, kind: 'pass' })
-    g.turn = nextPlayer(g, 0)
+    addEvent(g, { player: me, kind: 'pass' })
+    g.turn = nextPlayer(g, me)
   }
   return g
 }
 
 /** She drew a card that fits but keeps it. */
 export function passDrawn(game: CardGame): CardGame {
-  if (game.finished || game.turn !== 0 || game.pending?.kind !== 'drawn') return game
+  if (!isHumanTurn(game) || game.pending?.kind !== 'drawn') return game
+  const me = game.turn
   const g = startMove(copyGame(game))
   g.pending = null
-  addEvent(g, { player: 0, kind: 'pass' })
-  g.turn = nextPlayer(g, 0)
+  addEvent(g, { player: me, kind: 'pass' })
+  g.turn = nextPlayer(g, me)
   return g
 }
 
@@ -420,19 +436,49 @@ export function passDrawn(game: CardGame): CardGame {
  */
 export function answerDraw2(game: CardGame, answer: CardAnswer, random: RandomFn = Math.random): CardGame {
   const pending = game.pending
-  if (game.finished || game.turn !== 0 || pending?.kind !== 'draw2') return game
+  if (!isHumanTurn(game) || pending?.kind !== 'draw2') return game
+  const me = game.turn
   const g = tallyAnswer(startMove(copyGame(game)), answer)
-  if (!answer.isCorrect) g.drawnForMistakes += drawCards(g, 0, 1, random)
+  if (!answer.isCorrect) g.drawnForMistakes += drawCards(g, me, 1, random)
   if (g.finished) return g
   const left = pending.left - 1
   if (left > 0) {
     g.pending = { kind: 'draw2', subject: pending.subject, left }
   } else {
     g.pending = null
-    addEvent(g, { player: 0, kind: 'skipped' })
-    g.turn = nextPlayer(g, 0)
+    addEvent(g, { player: me, kind: 'skipped' })
+    g.turn = nextPlayer(g, me)
   }
   return g
+}
+
+/**
+ * Live games (§15 step 2): the person whose turn it is ran out of time. What they were in the middle of ends the way
+ * a wrong answer would: a Draw 2 still owed draws its remaining cards, a Wild waiting for a subject gets the subject
+ * they hold the most of; otherwise they draw 1. Then the turn passes. Ignored on a computer player's turn.
+ */
+export function passTimedOutTurn(game: CardGame, random: RandomFn = Math.random): CardGame {
+  if (!isHumanTurn(game)) return game
+  const me = game.turn
+  const g = startMove(copyGame(game))
+  const pending = g.pending
+  g.pending = null
+  if (pending?.kind === 'chooseSubject') {
+    g.subject = botFavoriteSubject(g.players[me].hand, g.subject)
+    addEvent(g, { player: me, kind: 'choose', subject: g.subject })
+  } else {
+    drawCards(g, me, pending?.kind === 'draw2' ? pending.left : 1, random)
+    if (g.finished) return g
+    addEvent(g, { player: me, kind: pending?.kind === 'draw2' ? 'skipped' : 'pass' })
+  }
+  g.turn = nextPlayer(g, me)
+  return g
+}
+
+/** Live games: ends a game nobody is playing any more (every person left or was removed). */
+export function endWithEveryoneGone(game: CardGame): CardGame {
+  if (game.finished) return game
+  return { ...game, pending: null, finished: true, winner: null, endReason: 'everyoneLeft' }
 }
 
 // ---------- Computer players ----------

@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed:sql": "node scripts/build-seed-sql.ts"
+    "seed:sql": "node scripts/build-seed-sql.ts",
+    "build:cards-rules": "node scripts/build-cards-rules.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

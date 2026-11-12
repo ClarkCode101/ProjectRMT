@@ -674,7 +674,7 @@ A match-and-shed card game (the old Crazy Eights family): match the top card by 
 **Decided with the owner**
 - **Always 4 at the table: computer players fill the empty seats** (2 classmates + 2 computers, 3 + 1, or 4 classmates), so the rules and the pace stay the same however many join. The computer players are Easy, as in the solo game.
 - **Everyone sees the question of the player whose turn it is, and the answer reveal** (like Board Review), so waiting is review time.
-- **90 seconds per turn.** Time runs out → that player draws 1 and the turn passes. **3 missed turns in a row → removed** (their cards go back under the draw pile); Board Review removes after 2.
+- **90 seconds per turn.** Time runs out → that player draws 1 and the turn passes. **3 missed turns in a row → removed** (a computer player takes their seat and cards); Board Review removes after 2.
 - Built-in questions only (everyone's own questions differ), like Board Review's team games.
 
 **How it's built (recommended, to confirm)**
@@ -688,6 +688,13 @@ A match-and-shed card game (the old Crazy Eights family): match the top card by 
 - Games → Last Card → **"Play with classmates"**: the same lobby as Board Review (seats, invite list, code + Copy link, chat); empty seats show "Computer".
 - The game: the same table as solo; each seat shows the player's name (classmate or computer), whose turn it is with the 90-second clock, the question popup for everyone (only the player whose turn it is can answer), flying cards for every move.
 - Finish: the shared finish screen (§16) with Play again for the group.
+
+**As built in step 1 (2026-11-13; decided: Edge Function, option B)**
+- `lib/cards.ts`: the moves act for the person whose turn it is (any seat, not just seat 0; solo unchanged), plus `passTimedOutTurn` and `endWithEveryoneGone`.
+- `lib/cardsLive.ts` (pure, 20 tests incl. 25 whole live games): seats (people in join order, the host first; Easy computer players fill to 4), `liveAct` / `liveAnswer` / `liveTimeout` / `liveLeave`, `liveNeed` (a question is needed: also after a computer's Draw 2 on a person), `withQuestion`, each person's own score, and `liveView` (her cards; the others as counts; the question without its answer; tested that no other hand or answer is in it). **A person who leaves or misses 3 turns in a row is replaced by a computer player that keeps their cards** (simpler and fairer than putting the cards back); when every person is gone the game ends.
+- `npm run build:cards-rules` bundles those rules (rolldown) into `supabase/functions/cards-game/rules.js`; a test fails if the rules changed but the bundle wasn't rebuilt, and another plays a move with the bundle as plain JavaScript.
+- Edge Function `cards-game` (start, play, draw, keep, choose, answer, timeout, leave): checks the login, applies the move with the bundled rules, picks the next question, saves with a version check (two moves at once: the later one reads again and retries, up to 3 times).
+- Migration 0042: `board_rooms.game` ('board' | 'cards') and a new status **'live'** for a Last Card game (Board Review's game functions only act on 'playing' rooms, so they can't touch it; `board_start` refuses a cards room), `board_create_room(p_game)`, `card_games` (the whole game, server only), `card_views` (each player reads only their own row; Realtime sends it on every change), and server-only `cards__begin`, `cards__save` (saves the answer as an attempt in the player's own session, mode `cards`), `cards__pick_question` (by subject, or for a Wild the player's weakest topic).
 
 **Steps (each one tested before the next)**
 1. Migration 0042: `game` column on rooms, the private game state, the player's view function; Edge Function `cards-game` with start + play + draw + answer + timeout + computer turns; tests for the server-side moves.
