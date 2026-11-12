@@ -239,6 +239,23 @@ export type Database = {
         Args: { p_user: string }
         Returns: undefined
       }
+      // migration 0040: phone notifications for the admin
+      save_push_subscription: {
+        Args: { p_endpoint: string; p_p256dh: string; p_auth: string }
+        Returns: undefined
+      }
+      delete_push_subscription: {
+        Args: { p_endpoint: string }
+        Returns: undefined
+      }
+      has_push_subscription: {
+        Args: { p_endpoint: string }
+        Returns: boolean
+      }
+      send_test_push: {
+        Args: { p_endpoint: string }
+        Returns: undefined
+      }
       set_member_access: {
         Args: { p_user: string; p_status: 'approved' | 'declined' }
         Returns: undefined

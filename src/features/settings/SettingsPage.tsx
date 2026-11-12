@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, CircleAlert, CloudUpload, Copy, Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { BellRing, Check, CircleAlert, CloudUpload, Copy, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { useId, useState, type ComponentProps, type FormEvent, type ReactNode } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
@@ -8,11 +8,12 @@ import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/authContext'
 import { adminResetPassword, deleteMember, initials, lastStudiedLabel, listMembers, makeTempPassword, setMemberAccess, signInMethod, type Member } from '@/lib/access'
-import { useInstall } from '@/lib/install'
+import { isIosDevice, useInstall } from '@/lib/install'
 import { downloadBank, useBankStatus } from '@/lib/offline/bank'
 import { clearOutbox, usePendingAnswerCount } from '@/lib/offline/outbox'
 import { useOnline } from '@/lib/offline/useOfflineSync'
 import { countdownLabel, daysUntil, isValidDate } from '@/lib/planner'
+import { canUsePush, loadPushState, pickPushSupport, sendTestPush, turnOffPush, turnOnPush } from '@/lib/push'
 import {
   changePassword,
   firstName,
@@ -770,6 +771,100 @@ function AdminRow({ member, isYou }: { member: Member; isYou: boolean }) {
 }
 
 /**
+ * "Notify me" (migration 0040): a notification on this phone when someone asks to join, even with the app closed.
+ * Each device is turned on by itself. On iPhone it only works from the Home Screen icon.
+ */
+function PushRow() {
+  const online = useOnline()
+  const { mode } = useInstall()
+  const support = pickPushSupport({
+    hasPush: canUsePush(),
+    ios: isIosDevice(navigator.userAgent, navigator.maxTouchPoints),
+    standalone: mode === 'installed',
+  })
+  const state = useQuery({ queryKey: ['push-state'], queryFn: loadPushState, enabled: support === 'ready' })
+  const queryClient = useQueryClient()
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
+
+  async function run(action: () => Promise<unknown>, okText: string | null, failText: string) {
+    setBusy(true)
+    setNote(null)
+    try {
+      await action()
+      if (okText) setNote({ ok: true, text: okText })
+    } catch {
+      setNote({ ok: false, text: failText })
+    } finally {
+      await queryClient.invalidateQueries({ queryKey: ['push-state'] })
+      setBusy(false)
+    }
+  }
+
+  const turnOn = () => void run(turnOnPush, null, 'Couldn’t turn on notifications. Check your internet connection and try again.')
+  const turnOff = () => void run(turnOffPush, null, 'Couldn’t turn off notifications. Check your internet connection and try again.')
+  const test = () => void run(sendTestPush, 'Sent. It should pop up in a few seconds.', 'Couldn’t send the test. Try again.')
+
+  let value: ReactNode
+  let action: ReactNode
+  if (support === 'needs-install') {
+    value = <span className="text-sm">On iPhone and iPad, add ProjectRMT to your Home Screen first, then open it from there.</span>
+  } else if (support === 'unsupported') {
+    value = <span className="text-sm">This browser can’t show notifications.</span>
+  } else if (state.isPending) {
+    value = 'Checking…'
+  } else if (state.isError) {
+    value = <span className="text-sm">Couldn’t check. Check your internet connection, then refresh.</span>
+  } else if (state.data === 'blocked') {
+    value = (
+      <span className="text-sm">
+        Blocked on this device. To allow them, open your phone’s <span className="font-semibold text-foreground">Settings</span>, then{' '}
+        <span className="font-semibold text-foreground">Notifications</span>, then <span className="font-semibold text-foreground">ProjectRMT</span>.
+      </span>
+    )
+  } else if (state.data === 'on') {
+    value = (
+      <span className="inline-flex items-center gap-1.5 font-semibold text-correct">
+        <Check className="size-4" aria-hidden />
+        On for this device
+      </span>
+    )
+    action = (
+      <RowButton disabled={busy || !online} onClick={turnOff}>
+        Turn off
+      </RowButton>
+    )
+  } else {
+    value = <span className="text-sm">Get a notification on this device when someone asks to join.</span>
+    action = (
+      <RowButton disabled={busy || !online} onClick={turnOn}>
+        {busy ? 'Turning on…' : 'Turn on'}
+      </RowButton>
+    )
+  }
+
+  return (
+    <Row label="Notify me" hint="New access requests" value={value} action={action}>
+      {(state.data === 'on' || note) && (
+        <div className="flex flex-wrap items-center gap-3">
+          {state.data === 'on' && (
+            <Button type="button" variant="outline" className="h-11 gap-1.5 px-4 font-bold" disabled={busy || !online} onClick={test}>
+              <BellRing className="size-4" aria-hidden />
+              Send test
+            </Button>
+          )}
+          {note && (
+            <p role={note.ok ? 'status' : 'alert'} className={cn('text-sm', note.ok ? 'font-semibold text-correct' : 'text-destructive')}>
+              {note.text}
+            </p>
+          )}
+        </div>
+      )}
+    </Row>
+  )
+}
+
+/**
  * The admin's list (migrations 0033–0035), three parts:
  * - people waiting, with Accept / Decline (always shown)
  * - Members: who can use the app, with Remove (folded until View)
@@ -908,6 +1003,8 @@ function AccessGroup() {
             <span className="min-w-0 break-all">Deleted {deleted}.</span>
           </p>
         )}
+
+        <PushRow />
 
         {members.isSuccess && (
           <Row

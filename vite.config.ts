@@ -38,6 +38,8 @@ export default defineConfig({
         // Any page link (like /practice) opens the cached app.
         navigateFallback: '/index.html',
         cleanupOutdatedCaches: true,
+        // Phone notifications for the admin (public/push-sw.js).
+        importScripts: ['/push-sw.js'],
       },
     }),
   ],
