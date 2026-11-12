@@ -441,6 +441,7 @@ mtle-reviewer/
 | `/mock` | Mock exam setup → exam → results (score, readings, trend) + review |
 | `/flashcards` | Due cards (FSRS) |
 | `/board` | Board Review: snakes and ladders, answer right to move (§14) |
+| `/cards` | Card game: match subject or number, answer right to put a card down (§15) |
 | `/mistakes` | Redirects to `/practice?from=mistakes` (Review again is a quiz on Practice, not a list page) |
 | `/questions` | Browse, add, edit, verify; coverage map |
 | `/upload` | Upload → parse → duplicate review |
@@ -492,6 +493,7 @@ mtle-reviewer/
 26. [x] Board Review, Lifelines (§14, step 2b): three of your own, once each per game (Rule out 2, Second chance, Snake shield), in solo and team games (migration 0032: `attempts.assisted`, `board_use_lifeline`; run it on Supabase before deploying)
 27. [x] Board Review, room chat that clears after 5 hours (§14, step 3; migration 0029), and the redesigned team finish screen with the race and "Your answers" (migration 0030). Both migrations already run on Supabase 2026-11-11.
 28. [ ] *(maybe)* Push notifications for invites (§14, step 4)
+29. [ ] Card game, solo against 3 computer players (§15, step 1): `/cards`, works offline (migration 0041)
 
 ---
 
@@ -579,6 +581,70 @@ Changed from the first idea (one shared token, async over a week): the owner wan
 
 ### Step 4 — *(maybe)* Push notifications
 - Web Push (installed PWA on iPad, iOS 16.4+) through a Supabase Edge Function. Only if invites get missed without it.
+
+---
+
+## 15. Card game (shedding game, our own version) — planned 2026-11-12
+
+A match-and-shed card game (the old Crazy Eights family): match the top card by **subject or number**, first to empty their hand wins. **You only get to put a card down if you answer a question from its subject.** Our own name, cards and look: never the name, logo, card design or "UNO" call of the trademarked game. Name: **"Last Card"** (decided 2026-11-12).
+
+### Step 1 — Solo against 3 computer players (works offline)
+
+**Deck (78 cards)**
+- **Six suits = the six built-in subjects**, in exam order: CC, MICRO, HEMA, BBIS, CM, HTMLE (decided 2026-11-12: as many colors as built-in subjects).
+- Each subject: numbers 1–9, Skip, Reverse, Draw 2 (12 cards × 6 = 72), plus **6 Wild**. No "Wild Draw 4" in step 1.
+- 7 cards each, 4 players. The rest is the draw pile; one number card starts the discard pile. Draw pile empty → shuffle the discard pile (except the top card) back in.
+
+**A turn (hers)**
+1. Playable cards (same subject, same number/action, or Wild) are raised in her hand; the rest are dimmed but still readable.
+2. She taps a card → a question from **that card's subject** pops up (the same bottom sheet as Board Review).
+3. Correct → the card goes down and its action happens. Wrong → the card stays in her hand, she **draws 1**, and her turn ends. The review shows the explanation and the note on every choice (same as Practice).
+4. No playable card → she draws 1; if it's playable she may play it (with a question), else the turn passes.
+5. **Wild**: question from her **weakest topic** (same pick as the Board Review snake), then she chooses the next subject. A way to aim the game at a subject she wants to practice.
+
+**Action cards**
+- **Skip**: the next player loses their turn. **Reverse**: the direction flips (arrow in the middle of the table).
+- **Draw 2 played on her**: she answers 2 questions from that card's subject; each wrong answer = draw 1 (so 0 to 2 cards). No stacking.
+
+**"Last card" banner (decided 2026-11-12)**
+- No button to tap and no penalty: when anyone (her or a bot) is down to 1 card, the app shows a gold **Last card** banner on that player by itself. The game is about answering questions, not remembering to tap in time. (A tap-it-or-draw-2 call was considered and dropped for step 1; maybe later if the group wants more pressure.)
+
+**Winning**
+- **The first player with no cards left wins, and the game stops there** (decided 2026-11-12: no playing on for 2nd/3rd place; keeps a game around 10–15 minutes). The last card still needs a right answer: wrong → it stays, she draws 1, and the game goes on.
+- If the last card is an action card (Skip, Draw 2, Wild), the game **ends at once**; its action doesn't happen.
+- Draw pile AND discard pile both empty (rare) → the game ends; fewest cards wins, a tie if equal.
+- A bot winning ends the game too; she still gets her finish screen.
+
+**Computer players**
+- 3 bots with made-up names. Simple strategy: play a matching action card first, else a matching number, Wild last; Wild picks the subject they hold most of.
+- A bot "answers" right with a fixed chance (about 70%); wrong → it draws 1, like her. Their questions are not shown (keeps the game fast); each bot turn takes about 1 second with the card sliding to the pile. Honor reduced motion.
+
+**Questions**
+- Source = All (built-in + hers), anti-repeat with `pickQuestions` / `priorityScore`, never the same question twice in one game.
+- Every answer is saved as an attempt (counts in subject/topic scores and the Mistake notebook; offline through the same outbox). New session mode `cards` (migration 0041: add the enum value).
+- Board Review lifelines: not in step 1.
+
+**Saving the game**
+- One game in progress on the device (local storage) after every turn: all hands, both piles, direction, whose turn, questions used. "Continue game" / "New game". Losing it is acceptable; the answers are already in Supabase.
+
+**Finish screen (Lab report style, like Board Review)**
+- Who won, everyone ranked by cards left, "You: 12 of 16 correct (75%)", cards drawn because of wrong answers, accuracy per subject with the 60% tick, and **Review next** → Practice for subjects under 60%.
+
+**Layout (iPad first)**
+- Table in the middle: the 3 bots around the top (name, card-back count, a "turn" ring), the draw pile and discard pile in the center with the current subject chip and the direction arrow.
+- **Her hand at the bottom (thumb zone)**, fanned, scrolls sideways if it grows past what fits. Tap a card to play; no drag needed.
+- Lab-report colors; no emoji, lucide icons only. **Color is never the only signal** (WCAG 1.4.1): every card shows its subject code big plus the number/action.
+- **Card colors (decided 2026-11-12):** today's `SUBJECT_COLOR` has two near-twin pairs (CC `#8A6410` vs CM `#7E5410`, HEMA `#9C3A68` vs HTMLE `#A2406F`), and in a game where matching by color IS the play they must be told apart at a glance. So **CM becomes green `#3A6B23` and HTMLE blue `#2B5C8F`, app-wide** (one subject = one color everywhere: books, Board Review zones, cards); CC, MICRO, HEMA, BBIS stay. Check any other place that hard-codes the old two colors.
+- **Table layout (mockup v2, approved 2026-11-12):** players around a white oval table (left, top-right, right), draw pile top-left of center, the pile in the middle with direction arrows, her hand fanned at the bottom, "You" + Draw a card bottom-left, the big analyzer-blue **Answer to play** button bottom-right (tap a card to pick it, then the button; a mis-tap never traps her in a question). Card faces: subject color, white rounded window with the number/action, subject code in the corners. Card backs: analyzer-blue stripes with an "RMT" mark. Players shown with initials. Top-right round buttons: Settings, How to play, Exit. No glass look.
+
+**Files**
+- `src/lib/cards.ts`: deck, shuffle, `canPlay`, apply a card, next player, bot move. Pure functions with tests in `cards.test.ts`.
+- `src/lib/cardsSave.ts`: read/write the saved game (try/catch, falls back to "no game").
+- `src/features/cards/`: `CardsPage.tsx`, `CardTable.tsx`, `Hand.tsx`, `CardResults.tsx`; reuse the Board Review question sheet.
+- Route `/cards`; nav icon right after Board Review (phones: in the More sheet).
+
+### Step 2 — *(later)* Live with classmates
+- Reuse Board Review's rooms, invites, code/link, chat and Play again; the database deals, checks answers and keeps each hand private. Only after step 1 is fun on its own.
 
 ---
 
