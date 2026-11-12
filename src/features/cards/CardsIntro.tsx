@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/dashboard'
 import { heroButtonClass } from '@/components/report'
 import type { Card, CardGame } from '@/lib/cards'
 import { cn } from '@/lib/utils'
+import { BackToGames } from '@/features/games/BackToGames'
 import { CardBack, CardFace } from './PlayingCard'
 
 // Last Card's start screen, laid out like Board Review and Mock exam (one screen, read top to bottom):
@@ -37,7 +38,10 @@ export function CardsIntro({ inProgress, onContinue, onNewGame }: Props) {
   return (
     // One screen tall, no scrolling (same as Board Review).
     <div className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-120 max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-136">
-      <PageHeader title="Last Card" subtitle="Match the subject or the number. Answer right to put a card down." />
+      <div className="shrink-0 space-y-1">
+        <BackToGames />
+        <PageHeader title="Last Card" subtitle="Match the subject or the number. Answer right to put a card down." />
+      </div>
 
       {/* ---------- The picture: the draw pile and a fanned hand ---------- */}
       <section aria-hidden className="flex min-h-0 flex-1 items-center justify-center gap-10">

@@ -51,10 +51,10 @@ export function BoardResults({ game, onPlayAgain }: Props) {
             Play again
           </button>
           <Link
-            to="/"
+            to="/games"
             className="rounded-md px-2 py-2.5 text-center text-sm font-semibold text-white/85 underline-offset-4 outline-none hover:text-white hover:underline focus-visible:ring-3 focus-visible:ring-white/60"
           >
-            Back to Home
+            Back to Games
           </Link>
         </div>
       </HeroPanel>

@@ -336,3 +336,35 @@
     animation: none;
   }
 }
+
+/* Games page: the chosen game "comes alive" like a game's select screen. It pops when it's picked, then floats
+   up and down with a gentle sway, while its shadow on the floor shrinks as it rises. */
+@keyframes game-pick {
+  0%   { transform: scale(0.82); }
+  55%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.game-pick {
+  animation: game-pick 520ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+@keyframes game-float {
+  0%, 100% { transform: translateY(0) rotate(-1.6deg); }
+  50%      { transform: translateY(-14px) rotate(1.6deg); }
+}
+.game-float {
+  animation: game-float 3.2s ease-in-out infinite;
+}
+@keyframes game-shadow {
+  0%, 100% { transform: scaleX(1); opacity: 0.7; }
+  50%      { transform: scaleX(0.78); opacity: 0.4; }
+}
+.game-shadow {
+  animation: game-shadow 3.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-pick,
+  .game-float,
+  .game-shadow {
+    animation: none;
+  }
+}

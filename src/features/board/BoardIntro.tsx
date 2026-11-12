@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/dashboard'
 import { heroButtonClass } from '@/components/report'
 import { BOARD_SIZE, layoutOf, zoneOf, type BoardGame } from '@/lib/board'
 import { cn } from '@/lib/utils'
+import { BackToGames } from '@/features/games/BackToGames'
 import { BoardGrid } from './BoardGrid'
 import { TeamEntry } from './TeamEntry'
 import { useFittedBoardWidth } from './useFittedBoardWidth'
@@ -34,7 +35,10 @@ export function BoardIntro({ inProgress, previewLayoutId, onContinue, onNewGame 
     // One screen tall, no scrolling (same as Mock exam): the board takes whatever height is left.
     // Phone: minus the top bar, main's padding and the bottom nav. Tablet/computer: minus main's padding (2.5rem).
     <div className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-120 max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-136">
-      <PageHeader title="Board Review" subtitle="Snakes and ladders through the six subjects. Answer right to move." />
+      <div className="shrink-0 space-y-1">
+        <BackToGames />
+        <PageHeader title="Board Review" subtitle="Snakes and ladders through the six subjects. Answer right to move." />
+      </div>
 
       {/* ---------- The board ---------- */}
       <section aria-label="Board" ref={measure} className="flex min-h-0 flex-1 items-center justify-center">

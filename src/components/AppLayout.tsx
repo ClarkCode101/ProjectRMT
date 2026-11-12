@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  Dices,
   Ellipsis,
+  Gamepad2,
   House,
   Layers,
   Library,
@@ -9,13 +9,12 @@ import {
   NotebookPen,
   Play,
   Settings,
-  Spade,
   Timer,
   Users,
   type LucideIcon,
 } from 'lucide-react'
 import { Suspense, useState } from 'react'
-import { NavLink, Outlet } from 'react-router'
+import { NavLink, Outlet, useLocation } from 'react-router'
 import { useAuth } from '@/features/auth/authContext'
 import { leaveLobbyBeforeLogout, useBoardAlert } from '@/features/board/teamApi'
 import { forgetBank } from '@/lib/offline/bank'
@@ -29,14 +28,15 @@ import { InstallHint } from './InstallHint'
 import type { LayoutContext } from './layoutContext'
 import { Brand, Logo } from './report'
 
-type NavItem = { to: string; label: string; icon: LucideIcon }
+/** alsoFor: other addresses that light this item up (e.g. a game opened from the Games page) */
+type NavItem = { to: string; label: string; icon: LucideIcon; alsoFor?: string[] }
 
 const HOME: NavItem = { to: '/', label: 'Home', icon: House }
 const PRACTICE: NavItem = { to: '/practice', label: 'Practice', icon: NotebookPen }
 const MOCK: NavItem = { to: '/mock', label: 'Mock exam', icon: Timer }
 const FLASHCARDS: NavItem = { to: '/flashcards', label: 'Flashcards', icon: Layers }
-const BOARD: NavItem = { to: '/board', label: 'Board Review', icon: Dices }
-const CARDS: NavItem = { to: '/cards', label: 'Last Card', icon: Spade }
+/** Board Review and Last Card, picked on the Games page (PROJECT_PLAN.md §16). Lit up inside either game too. */
+const GAMES: NavItem = { to: '/games', label: 'Games', icon: Gamepad2, alsoFor: ['/board', '/cards'] }
 const QUESTIONS: NavItem = { to: '/questions', label: 'Questions', icon: Library }
 const COMMUNITY: NavItem = { to: '/community', label: 'Community', icon: Users }
 // Quick reference (/reference) is off the menus for now; the page and its address still work.
@@ -85,6 +85,8 @@ function AlertDot() {
 /** One round icon in the floating rail. `alert` = show the red dot. */
 function RailLink({ item, alert = false }: { item: NavItem; alert?: boolean }) {
   const Icon = item.icon
+  const { pathname } = useLocation()
+  const alsoActive = item.alsoFor?.some((path) => pathname.startsWith(path)) ?? false
   return (
     <NavLink
       to={item.to}
@@ -94,13 +96,13 @@ function RailLink({ item, alert = false }: { item: NavItem; alert?: boolean }) {
         cn(
           'group relative flex size-11 items-center justify-center rounded-full transition-colors',
           focusRing,
-          isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+          isActive || alsoActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
         )
       }
     >
       {({ isActive }) => (
         <>
-          <Icon className="size-5" strokeWidth={isActive ? 2.4 : 1.8} aria-hidden />
+          <Icon className="size-5" strokeWidth={isActive || alsoActive ? 2.4 : 1.8} aria-hidden />
           {alert && <AlertDot />}
           <Tooltip>{item.label}</Tooltip>
         </>
@@ -168,8 +170,7 @@ export function AppLayout() {
               <RailLink item={PRACTICE} />
               <RailLink item={MOCK} />
               <RailLink item={FLASHCARDS} />
-              <RailLink item={BOARD} alert={boardAlert} />
-              <RailLink item={CARDS} />
+              <RailLink item={GAMES} alert={boardAlert} />
               <RailLink item={QUESTIONS} />
               <RailLink item={COMMUNITY} />
             </nav>
@@ -301,23 +302,15 @@ export function AppLayout() {
             </h2>
             {email && <p className="text-sm text-muted-foreground">Logged in as {email}</p>}
           </div>
-          {/* Board Review lives here on phones: the bottom bar is full. */}
+          {/* Games (Board Review, Last Card) live here on phones: the bottom bar is full. */}
           <NavLink
-            to="/board"
+            to="/games"
             onClick={() => setMoreOpen(false)}
             className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
           >
-            <Dices className="size-5" aria-hidden />
-            Board Review
+            <Gamepad2 className="size-5" aria-hidden />
+            Games
             {boardAlert && <span className="ml-auto rounded-full bg-wrong px-2 text-xs font-bold text-white">Waiting</span>}
-          </NavLink>
-          <NavLink
-            to="/cards"
-            onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
-          >
-            <Spade className="size-5" aria-hidden />
-            Last Card
           </NavLink>
           <NavLink
             to="/community"

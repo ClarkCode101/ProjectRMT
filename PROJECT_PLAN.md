@@ -440,6 +440,7 @@ mtle-reviewer/
 | `/practice` | Source selector → practice quiz; also the per-subject / per-topic scores (the old `/dashboard` redirects here) |
 | `/mock` | Mock exam setup → exam → results (score, readings, trend) + review |
 | `/flashcards` | Due cards (FSRS) |
+| `/games` | Games: pick Board Review or Last Card from a row of cards you can swipe (§16) |
 | `/board` | Board Review: snakes and ladders, answer right to move (§14) |
 | `/cards` | Card game: match subject or number, answer right to put a card down (§15) |
 | `/mistakes` | Redirects to `/practice?from=mistakes` (Review again is a quiz on Practice, not a list page) |
@@ -493,7 +494,8 @@ mtle-reviewer/
 26. [x] Board Review, Lifelines (§14, step 2b): three of your own, once each per game (Rule out 2, Second chance, Snake shield), in solo and team games (migration 0032: `attempts.assisted`, `board_use_lifeline`; run it on Supabase before deploying)
 27. [x] Board Review, room chat that clears after 5 hours (§14, step 3; migration 0029), and the redesigned team finish screen with the race and "Your answers" (migration 0030). Both migrations already run on Supabase 2026-11-11.
 28. [ ] *(maybe)* Push notifications for invites (§14, step 4)
-29. [ ] Card game, solo against 3 computer players (§15, step 1): `/cards`, works offline (migration 0041)
+29. [x] Last Card, solo against 3 computer players (§15, step 1): `/cards`, works offline (migration 0041, already run on Supabase 2026-11-12)
+30. [x] Games page (§16): one "Games" nav item for Board Review and Last Card, a swipeable card picker at `/games`
 
 ---
 
@@ -642,12 +644,28 @@ A match-and-shed card game (the old Crazy Eights family): match the top card by 
 - `src/lib/cards.ts`: deck, shuffle, `canPlay`, apply a card, next player, bot move. Pure functions with tests in `cards.test.ts`.
 - `src/lib/cardsSave.ts`: read/write the saved game (try/catch, falls back to "no game").
 - `src/features/cards/`: `CardsPage.tsx` (loads questions, saves answers, runs the computer turns), `CardsGameView.tsx` (the game screen's look, no data), `CardTable.tsx`, `Hand.tsx`, `PlayingCard.tsx` (card faces and backs), `CardQuestionSheet.tsx` (its own question popup: the Board Review one is about dice and squares), `CardsIntro.tsx`, `CardResults.tsx`, `handState.ts` (what she can tap, how far apart her cards sit; tested), `api.ts` (the `cards` session).
-- Route `/cards`; nav icon (Spade) right after Board Review (phones: in the More sheet).
+- Route `/cards`; opened from the Games page (§16). (It first had its own Spade nav icon; replaced by "Games" the same day.)
 - **The line at the top says the whole last move** (added 2026-11-12, the owner found Skip confusing): one move's events joined with " · ", so it's always clear who lost a turn and who goes next, e.g. "Kat S. played HEMA Skip · Your turn is skipped", "You played CC Reverse · Direction flipped · Kat S. goes next", "You played HEMA Draw 2 · Rafa M. drew 2 and is skipped" (`describeMove`; events carry a move number).
 - **Screen sizes (checked with screenshots 2026-11-12):** from 1024px (iPad landscape) her side is three columns like the mockup (You + Draw | hand | Answer to play). Narrower (iPad portrait 744–834px, phones) her hand takes the whole width and Draw + Answer to play sit side by side under it (in three columns her hand only got ~320px on an iPad in portrait). The computer players sit around the oval from 700px (every iPad), in one row above it on phones. Her cards overlap just enough to fit; past the tightest overlap the row scrolls.
 
 ### Step 2 — *(later)* Live with classmates
 - Reuse Board Review's rooms, invites, code/link, chat and Play again; the database deals, checks answers and keeps each hand private. Only after step 1 is fun on its own.
+
+---
+
+## 16. Games page — decided 2026-11-12
+
+The rail had two game icons (Board Review, Last Card) next to each other. They're grouped into **one nav item, "Games"** (Gamepad2 icon), so the menu stays short and new games have one home.
+
+- **`/games`: a row of game cards to swipe** (a game picker, like a console's), chosen over putting both full start screens in a carousel: one look shows every game's status, the Board Review start screen is too heavy to swipe, and a third game just adds a card.
+- **Like a game's select screen: no boxes, just the game itself** (changed twice on 2026-11-12, by the owner: first the cards had Continue / New game / Play with classmates on them, easy to hit by accident while swiping; then a boxed card with a picture, which felt like a list, not a game). Each game is the **object** (the board with her token / a fanned hand in front of the draw pile) **standing over a soft shadow**, then its name, a red **"Team game waiting"** on Board Review when an invite or her turn is waiting, one quiet line (**"Paused · where she left off"** or **"New game · what the game is"**), and "Tap to play ›".
+- **The game in the middle is "picked"**: it pops when it arrives, then **floats up and down with a gentle sway** while its shadow shrinks as it rises (`game-pick`, `game-float`, `game-shadow` in index.css; off with Reduce Motion). The others wait at the sides, smaller and faded.
+- **The whole game is one big button**: tapping the picked one opens its start screen (Continue, New game and the team games are there); tapping one at the side first brings it to the middle. A swipe never counts as a tap.
+- **Swipe** on iPad and phones; **press and drag with a mouse** on a computer (added 2026-11-12: the row follows the mouse with a grab cursor; a drag of 60px or more goes one game over, a shorter one settles on the nearest; a drag never opens a game; touch keeps the browser's own swipe; checked with real mouse events in Chrome); **arrows and dots** do the same for any device and the keyboard (WCAG 2.5.1, never swipe-only). The next card **peeks in** at the side so it's clear there's more. The **last game she looked at** shows first next time (local storage).
+- The start screens have a **"‹ Games"** link on top; finish screens say **"Back to Games"**.
+- `/board`, `/cards`, and the invite links (`/board/join/…`, `/board/team/…`) keep working. The Games icon lights up inside either game and carries Board Review's red dot (on phones: "Games" in the More sheet, with "Waiting").
+- One screen tall on tablets and computers; on phones the page scrolls (a game card is taller than the space left).
+- Files: `src/features/games/`: `GamesPage.tsx`, `GamePicker.tsx` (the carousel, no data), `games.ts` (status lines, last game; tested), `BackToGames.tsx`.
 
 ---
 

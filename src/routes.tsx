@@ -15,6 +15,7 @@ const BoardPage = lazy(() => import('@/features/board/BoardPage'))
 const TeamRoomPage = lazy(() => import('@/features/board/TeamRoomPage'))
 const JoinTeamPage = lazy(() => import('@/features/board/JoinTeamPage'))
 const CardsPage = lazy(() => import('@/features/cards/CardsPage'))
+const GamesPage = lazy(() => import('@/features/games/GamesPage'))
 const ReferencePage = lazy(() => import('@/features/reference/ReferencePage'))
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'))
 const QuestionsPage = lazy(() => import('@/features/questions/QuestionsPage'))
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
       { path: '/practice', element: <PracticePage /> },
       { path: '/mock', element: <MockPage /> },
       { path: '/flashcards', element: <FlashcardsPage /> },
+      { path: '/games', element: <GamesPage /> },
       { path: '/board', element: <BoardPage /> },
       { path: '/board/team/:roomId', element: <TeamRoomPage /> },
       { path: '/board/join/:code', element: <JoinTeamPage /> },
