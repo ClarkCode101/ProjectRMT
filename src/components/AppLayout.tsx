@@ -19,6 +19,7 @@ import { useAuth } from '@/features/auth/authContext'
 import { useBoardAlert } from '@/features/board/teamApi'
 import { forgetBank } from '@/lib/offline/bank'
 import { useOfflineSync } from '@/lib/offline/useOfflineSync'
+import { useAnnouncePresence } from '@/lib/presence'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { Dialog } from './Dialog'
@@ -117,6 +118,8 @@ export function AppLayout() {
   useOfflineSync(session?.user.id ?? null)
   // A Board Review team invite or turn is waiting: red dot on its nav icon (and on "More" on phones).
   const boardAlert = useBoardAlert(session?.user.id ?? null)
+  // "I have the app open": the Board Review invite list shows only classmates who are online.
+  useAnnouncePresence(session?.user.id ?? null)
 
   const email = session?.user.email ?? ''
   const displayName = email.split('@')[0] || 'Reviewer'

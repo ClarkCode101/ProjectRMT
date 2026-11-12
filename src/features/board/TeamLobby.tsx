@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/dashboard'
 import { Dialog } from '@/components/Dialog'
 import { heroButtonClass } from '@/components/report'
 import { inviteLink, playerColor, type TeamRoom } from '@/lib/boardTeam'
+import { useOnlineIds } from '@/lib/presence'
 import { cn } from '@/lib/utils'
 import type { RoomChat as RoomChatState } from './chatApi'
 import { ChatSheet, RoomChat } from './RoomChat'
@@ -57,6 +58,10 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
   }
   const invitedIds = new Set(room.invited.map((i) => i.userId))
   const joinedIds = new Set(joined.map((p) => p.userId))
+  // Only classmates with the app open right now (they can answer the invite), plus anyone already invited or in
+  // the game, so their status stays in view even if they step away.
+  const onlineIds = useOnlineIds()
+  const shownClassmates = (classmates.data ?? []).filter((c) => onlineIds.has(c.userId) || invitedIds.has(c.userId) || joinedIds.has(c.userId))
   const link = inviteLink(window.location.origin, room.inviteCode)
 
   /** Copy the invite link to paste in the group chat; "Link copied" shows for 2 seconds. */
@@ -281,11 +286,11 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
             <p className="text-sm text-muted-foreground">Loading classmates…</p>
           ) : classmates.isError ? (
             <p className="text-sm text-wrong">{classmates.error.message}</p>
-          ) : (classmates.data ?? []).length === 0 ? (
-            <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">No classmates with a first name yet. Share the code below instead.</p>
+          ) : shownClassmates.length === 0 ? (
+            <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">No classmates online right now. Share the code below instead.</p>
           ) : (
             <ul className="max-h-[50dvh] divide-y overflow-y-auto rounded-lg border bg-card">
-              {(classmates.data ?? []).map((c) => {
+              {shownClassmates.map((c) => {
                 const state = joinedIds.has(c.userId) ? 'in' : invitedIds.has(c.userId) ? 'invited' : 'none'
                 return (
                   <li key={c.userId} className="flex items-center gap-3 px-4 py-2.5">
