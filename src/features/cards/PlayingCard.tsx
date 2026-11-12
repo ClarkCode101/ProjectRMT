@@ -20,14 +20,11 @@ function cardBox(size: CardSize): CSSProperties {
   return { width, height: Math.round(width * 1.42) }
 }
 
-/** What's printed in the corner: "7", a Skip/Reverse mark, "+2", or "W". */
-function Corner({ card, size }: { card: Card; size: CardSize }) {
-  const iconSize = size === 'lg' ? 'size-4' : 'size-3'
-  if (card.kind === 'wild') return <span>W</span>
-  if (card.kind === 'number') return <span>{card.number}</span>
-  if (card.kind === 'skip') return <Ban className={iconSize} strokeWidth={3} aria-hidden />
-  if (card.kind === 'reverse') return <Repeat className={iconSize} strokeWidth={3} aria-hidden />
-  return <span>+2</span>
+/** The Skip / Reverse mark in the corner index. */
+function Corner({ card, iconClass }: { card: Card; size: CardSize; iconClass: string }) {
+  if (card.kind === 'skip') return <Ban className={iconClass} strokeWidth={3} aria-hidden />
+  if (card.kind === 'reverse') return <Repeat className={iconClass} strokeWidth={3} aria-hidden />
+  return null
 }
 
 /** The big thing in the white window. */
@@ -57,28 +54,53 @@ function Middle({ card, size }: { card: Card; size: CardSize }) {
   )
 }
 
+/**
+ * The corner "index" of each size, like a real playing card's: one line at the top left ("5 HEMA") with nothing
+ * over it, so it still reads when the cards overlap in her hand (only their left edge shows). The white window
+ * sits below it. (Redesigned 2026-11-12: the subject code used to sit under the window, cut to "HE…", at 9px.)
+ */
+const INDEX: Record<CardSize, { symbol: string; code: string; icon: string; band: number; side: number }> = {
+  xs: { symbol: 'text-[8px]', code: 'text-[6px]', icon: 'size-2', band: 10, side: 2 },
+  sm: { symbol: 'text-[11px]', code: 'text-[9px]', icon: 'size-2.5', band: 17, side: 5 },
+  md: { symbol: 'text-[13px]', code: 'text-[10px]', icon: 'size-3', band: 21, side: 7 },
+  lg: { symbol: 'text-[15px]', code: 'text-[11px]', icon: 'size-3.5', band: 25, side: 9 },
+}
+
+/** "5 HEMA", "⊘ CC", "+2 CM", or "WILD": white, with a soft shadow so it reads on every subject color. */
+function Index({ card, size }: { card: Card; size: CardSize }) {
+  const s = INDEX[size]
+  const code = card.kind === 'wild' ? 'WILD' : card.subject
+  return (
+    <span className="flex items-center gap-1 leading-none font-extrabold text-white [text-shadow:0_1px_1px_rgb(0_0_0/0.3)]">
+      {card.kind !== 'wild' && (
+        <span className={cn('flex items-center font-heading', s.symbol)}>
+          {card.kind === 'number' ? card.number : card.kind === 'draw2' ? '+2' : <Corner card={card} size={size} iconClass={s.icon} />}
+        </span>
+      )}
+      <span className={cn('tracking-wide', s.code)}>{code}</span>
+    </span>
+  )
+}
+
 /** A face-up card. Decorative on its own: whatever wraps it gives the name (e.g. a button's aria-label). */
 export function CardFace({ card, size = 'lg', className, style }: { card: Card; size?: CardSize; className?: string; style?: CSSProperties }) {
   const color = card.kind === 'wild' ? undefined : SUBJECT_COLOR[card.subject]
-  const code = card.kind === 'wild' ? 'WILD' : card.subject
-  const cornerText = cn('absolute flex flex-col items-start leading-none font-extrabold text-white', size === 'lg' ? 'text-sm' : 'text-[11px]', size === 'sm' && 'text-[9px]')
+  const { band, side } = INDEX[size]
   return (
     <div
       aria-hidden
       className={cn('relative shrink-0 rounded-xl border-4 border-white shadow-[0_4px_12px_rgb(23_34_44/0.22)]', size === 'sm' && 'rounded-lg border-[3px]', className)}
       style={{ ...cardBox(size), background: card.kind === 'wild' ? WILD_BACKGROUND : color, ...style }}
     >
-      <span className={cn(cornerText, 'top-1 left-1.5')}>
-        <Corner card={card} size={size} />
-        <span className={cn('mt-0.5 tracking-wide', size === 'sm' ? 'text-[7px]' : 'text-[9px]')}>{code}</span>
+      <span className="absolute top-1 left-1.5">
+        <Index card={card} size={size} />
       </span>
-      <span className={cn(cornerText, 'right-1.5 bottom-1 rotate-180')}>
-        <Corner card={card} size={size} />
-        <span className={cn('mt-0.5 tracking-wide', size === 'sm' ? 'text-[7px]' : 'text-[9px]')}>{code}</span>
+      <span className="absolute right-1.5 bottom-1 rotate-180">
+        <Index card={card} size={size} />
       </span>
       <span
-        className={cn('absolute flex items-center justify-center rounded-lg bg-white', size === 'sm' ? 'inset-x-2 inset-y-4.5 rounded-md' : 'inset-x-3 inset-y-7')}
-        style={{ color }}
+        className={cn('absolute flex items-center justify-center bg-white', size === 'sm' ? 'rounded-md' : 'rounded-lg')}
+        style={{ color, top: band, bottom: band, left: side, right: side }}
       >
         <Middle card={card} size={size} />
       </span>

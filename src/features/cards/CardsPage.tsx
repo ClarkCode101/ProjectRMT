@@ -7,12 +7,10 @@ import { useAuth } from '@/features/auth/authContext'
 import { useTopicPerformance } from '@/features/dashboard/api'
 import { attemptHistoryOptions, queueAnswer, queueSessionFinish, questionPoolOptions, type QuizQuestion } from '@/features/quiz/api'
 import { rescuePool, unusedFirst, weakestTopic } from '@/lib/board'
-import { SUBJECT_COLOR } from '@/lib/books'
 import {
   answerDraw2,
   answerPlay,
   botTurn,
-  CARD_SUBJECTS,
   chooseSubject,
   DRAW2_QUESTIONS,
   drawForTurn,
@@ -21,8 +19,8 @@ import {
   questionNeeded,
   startPlay,
   type CardGame,
-  type CardSubject,
 } from '@/lib/cards'
+import { devAnswerLetter } from '@/lib/cardsDev'
 import { clearCards, loadCards, saveCards, type SavedCards } from '@/lib/cardsSave'
 import { keyToPosition } from '@/lib/choiceKeys'
 import { useOnline } from '@/lib/offline/useOfflineSync'
@@ -32,8 +30,10 @@ import { buildHistory, pickQuestions } from '@/lib/selection'
 import { queueCardsSession } from './api'
 import { CardQuestionSheet, type AskPurpose } from './CardQuestionSheet'
 import { CardResults } from './CardResults'
+import { CardsDevPanel } from './CardsDevPanel'
 import { CardsGameView } from './CardsGameView'
 import { CardsIntro } from './CardsIntro'
+import { SubjectPicker } from './SubjectPicker'
 import { handState } from './handState'
 
 /** The question on screen right now, and what it's for. */
@@ -54,6 +54,8 @@ const ALL_QUESTIONS = questionPoolOptions({ source: 'all', subjectId: null, topi
 
 /** How long each computer player's turn takes on screen, so she can follow what happened. */
 const BOT_MS = 1100
+/** npm run dev only: "Fast computer turns" in the DEV panel. */
+const DEV_FAST_BOT_MS = 150
 /** A short pause before a Draw 2's questions pop up, so she sees the card land first. */
 const DRAW2_PAUSE_MS = 700
 /** When a computer player wins, a moment to see the last card go down before the finish screen. */
@@ -81,6 +83,9 @@ export default function CardsPage() {
   const [showResults, setShowResults] = useState(false)
   /** bumped to re-open the question popup if the browser closes it early */
   const [dialogKey, setDialogKey] = useState(0)
+  // npm run dev only (the DEV panel): show the right answer, and make the computer turns quick.
+  const [devShowAnswers, setDevShowAnswers] = useState(false)
+  const [devFastBots, setDevFastBots] = useState(false)
 
   const game = saved?.game ?? null
   useFocusMode(playing && !showResults)
@@ -98,7 +103,6 @@ export default function CardsPage() {
   }
 
   const subjectCodeOfTopic = (topicId: number) => subjectOf(topicId).code ?? '—'
-  const subjectName = (code: string) => subjects.data?.find((s) => s.code === code)?.name ?? code
 
   /** Picks the question her turn is waiting on. null when there are no questions at all. */
   function prepareAsk(g: CardGame): Ask | null {
@@ -158,11 +162,11 @@ export default function CardsPage() {
   // A computer player's turn: wait a moment so she can follow, then play it.
   useEffect(() => {
     if (!playing || !saved || !game || game.finished || game.turn === 0 || ask) return
-    const timer = window.setTimeout(() => persist({ ...saved, game: botTurn(game) }), BOT_MS)
+    const timer = window.setTimeout(() => persist({ ...saved, game: botTurn(game) }), devFastBots ? DEV_FAST_BOT_MS : BOT_MS)
     return () => window.clearTimeout(timer)
     // persist only changes with `saved`, which is listed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, saved, game, ask])
+  }, [playing, saved, game, ask, devFastBots])
 
   // The game ended: show the finish screen (right away if she won; after a moment if someone else did).
   useEffect(() => {
@@ -244,7 +248,6 @@ export default function CardsPage() {
       hand={hand}
       online={online}
       message={message}
-      subjectName={subjectName}
       onExit={() => {
         setPlaying(false)
         setAsk(null)
@@ -253,6 +256,23 @@ export default function CardsPage() {
       onPick={(id) => setPickedId((current) => (current === id ? null : id))}
       onDraw={() => persist({ ...saved, game: hand.keepingDrawn ? passDrawn(game) : drawForTurn(game) })}
       onAnswerToPlay={answerToPlay}
+      paused={ask !== null}
+      devTools={
+        import.meta.env.DEV && (
+          <CardsDevPanel
+            game={game}
+            onApply={(change) => {
+              setAsk(null)
+              setPickedId(null)
+              persist({ ...saved, game: change(game) })
+            }}
+            showAnswers={devShowAnswers}
+            onShowAnswers={setDevShowAnswers}
+            fastBots={devFastBots}
+            onFastBots={setDevFastBots}
+          />
+        )
+      }
     >
       {/* The question pops up from the bottom, so the choices are in thumb reach. It can't be dismissed before she
           answers; after that, Continue closes it. */}
@@ -281,32 +301,21 @@ export default function CardsPage() {
             onContinue={() => setAsk(null)}
           />
         )}
+        {/* npm run dev only: the right answer, so a test can answer right or wrong on purpose */}
+        {import.meta.env.DEV && devShowAnswers && ask && ask.selectedIndex === undefined && (
+          <p className="mt-3 rounded-md border border-dashed border-wrong/60 bg-wrong-soft px-3 py-2 font-mono text-xs" role="note">
+            <span className="font-bold">DEV TEST ONLY · </span>
+            Answer: {devAnswerLetter(ask.question.correct_index, ask.order)}. {ask.question.choices[ask.question.correct_index]}
+          </p>
+        )}
       </Dialog>
 
-      {/* After a right Wild: she picks the next subject. */}
-      <Dialog open={choosingSubject} onClose={() => {}} labelledBy="pick-subject-heading" closeOnBackdrop={false} closeOnEscape={false}>
-        <div className="space-y-4">
-          <div>
-            <h2 id="pick-subject-heading" className="font-heading text-xl font-bold">
-              Pick the next subject
-            </h2>
-            <p className="text-sm text-muted-foreground">Everyone has to match it next. A good chance to practice a subject you want.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {CARD_SUBJECTS.map((code: CardSubject) => (
-              <button
-                key={code}
-                type="button"
-                onClick={() => persist({ ...saved, game: chooseSubject(game, code) })}
-                className="flex min-h-16 flex-col items-start justify-center rounded-xl px-4 py-2 text-left text-white outline-none focus-visible:ring-4 focus-visible:ring-ring/50 active:translate-y-px"
-                style={{ background: SUBJECT_COLOR[code] }}
-              >
-                <span className="font-heading text-lg font-bold">{code}</span>
-                <span className="text-xs text-white/85">{subjectName(code)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* After a right Wild: she picks the next subject (from the bottom, in thumb reach, like the question). */}
+      <Dialog open={choosingSubject} onClose={() => {}} labelledBy="pick-subject-heading" variant="bottom" closeOnBackdrop={false} closeOnEscape={false}>
+        <SubjectPicker
+          headingId="pick-subject-heading"
+          onPick={(subject) => persist({ ...saved, game: chooseSubject(game, subject) })}
+        />
       </Dialog>
     </CardsGameView>
   )

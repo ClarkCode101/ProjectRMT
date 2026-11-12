@@ -7,6 +7,7 @@ import {
   botTurn,
   buildDeck,
   canPlay,
+  cardMoves,
   CARD_SUBJECTS,
   cardLabel,
   chooseSubject,
@@ -443,6 +444,46 @@ describe('a Draw 2 played on her', () => {
     const next = botTurn(g, botRight)
     expect(next.turn).toBe(0)
     expect(next.pending).toEqual({ kind: 'draw2', subject: 'HEMA', left: 2 })
+  })
+})
+
+// ---------- what moved (for the flying cards) ----------
+
+describe('cardMoves', () => {
+  it('her right answer: the card she played', () => {
+    const g = startPlay(table({ hands: [[num('HEMA', 3), num('CC', 2)], filler(), filler(), filler()] }), 'HEMA-3')
+    expect(cardMoves(g, answerPlay(g, right()))).toEqual([{ kind: 'play', player: 0, cardId: 'HEMA-3' }])
+  })
+
+  it('her wrong answer: the card she drew', () => {
+    const g = startPlay(table({ hands: [[num('HEMA', 3), num('CC', 2)], filler(), filler(), filler()] }), 'HEMA-3')
+    expect(cardMoves(g, answerPlay(g, wrong()))).toEqual([{ kind: 'draw', player: 0, cardId: 'CC-5' }])
+  })
+
+  it('her Draw 2 on a computer player: the play first, then its two cards', () => {
+    const g = startPlay(table({ hands: [[act('HEMA', 'draw2'), num('CC', 2)], filler(), filler(), filler()] }), 'HEMA-draw2')
+    expect(cardMoves(g, answerPlay(g, right(), botWrong))).toEqual([
+      { kind: 'play', player: 0, cardId: 'HEMA-draw2' },
+      { kind: 'draw', player: 1, cardId: 'CC-5' },
+      { kind: 'draw', player: 1, cardId: 'CC-4' },
+    ])
+  })
+
+  it('a computer player playing a card', () => {
+    const g = table({ hands: [filler(), [num('HEMA', 2), num('CC', 1)], filler(), filler()], turn: 1 })
+    expect(cardMoves(g, botTurn(g, botRight))).toEqual([{ kind: 'play', player: 1, cardId: 'HEMA-2' }])
+  })
+
+  it('nothing moved: no moves', () => {
+    const g = table({ hands: [[num('HEMA', 3)], filler(), filler(), filler()] })
+    expect(cardMoves(g, startPlay(g, 'HEMA-3'))).toEqual([])
+  })
+
+  it('a new deal, or cards passed between hands (DEV shortcuts), give no moves', () => {
+    const g = table({ hands: [[num('HEMA', 3)], [num('CC', 4)], filler(), filler()] })
+    expect(cardMoves(g, { ...g, startedAt: '2030-01-01T00:00:00.000Z' })).toEqual([])
+    const passed = { ...g, players: g.players.map((p, i) => (i === 0 ? { ...p, hand: [...p.hand, num('CC', 4)] } : i === 1 ? { ...p, hand: [] } : p)) }
+    expect(cardMoves(g, passed)).toEqual([])
   })
 })
 

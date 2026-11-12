@@ -4,8 +4,10 @@ import { ExitButton } from '@/components/ExitButton'
 import { describeMove, type CardGame } from '@/lib/cards'
 import type { HandState } from './handState'
 import { cn } from '@/lib/utils'
+import { CardFlights } from './CardFlights'
 import { CardTable } from './CardTable'
 import { Hand } from './Hand'
+import { useCardFlights } from './useCardFlights'
 
 // The game screen's look (PROJECT_PLAN.md §15, mockup v2), with no data loading or saving in it:
 // CardsPage owns the game and passes it in. Top line → the table → her side (You + Draw | her hand | Answer to play).
@@ -16,19 +18,23 @@ type Props = {
   online: boolean
   /** a problem to show at the top (e.g. no questions loaded) */
   message: string | null
-  /** subject code → full name */
-  subjectName: (code: string) => string
   onExit: () => void
   /** tapped a card in her hand */
   onPick: (cardId: string) => void
   /** Draw a card, or Keep card after drawing one that fits */
   onDraw: () => void
   onAnswerToPlay: () => void
+  /** a popup is up (the question): flying cards wait until it closes, so she sees them */
+  paused?: boolean
+  /** npm run dev only: the DEV test panel, next to Exit */
+  devTools?: ReactNode
   /** the popups (question, subject picker) */
   children?: ReactNode
 }
 
-export function CardsGameView({ game, hand, online, message, subjectName, onExit, onPick, onDraw, onAnswerToPlay, children }: Props) {
+export function CardsGameView({ game, hand, online, message, onExit, onPick, onDraw, onAnswerToPlay, paused = false, devTools, children }: Props) {
+  // Cards flying from the draw pile into a hand, and from a hand onto the pile.
+  const flights = useCardFlights(game)
   const lastMove = describeMove(game.log, game.players)
   const yourTurn = game.turn === 0 && !game.finished
   const cardsLeft = game.players[0].hand.length
@@ -37,7 +43,10 @@ export function CardsGameView({ game, hand, online, message, subjectName, onExit
     <div className="fixed inset-0 z-20 flex flex-col gap-2 bg-[radial-gradient(ellipse_at_50%_45%,#FFFFFF_0%,#EEF3F6_55%,#E2E9EE_100%)] px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:px-6">
       <h1 className="sr-only">Last Card</h1>
       <div className="mx-auto flex w-full max-w-6xl shrink-0 items-center justify-between gap-3 text-sm">
-        <ExitButton onClick={onExit} />
+        <div className="flex shrink-0 items-center gap-2">
+          <ExitButton onClick={onExit} />
+          {devTools}
+        </div>
         {/* What just happened (screen readers hear it too) */}
         <p aria-live="polite" className="min-w-0 truncate rounded-full border bg-card px-3 py-1 text-center font-semibold text-muted-foreground">
           {lastMove ?? 'Cards dealt. You go first.'}
@@ -53,7 +62,7 @@ export function CardsGameView({ game, hand, online, message, subjectName, onExit
         </p>
       )}
 
-      <CardTable game={game} subjectName={subjectName} />
+      <CardTable game={game} hideTop={flights.hideTop} />
 
       {!online && (
         <p role="status" className="flex shrink-0 items-center justify-center gap-1.5 text-sm text-muted-foreground">
@@ -102,7 +111,7 @@ export function CardsGameView({ game, hand, online, message, subjectName, onExit
           <p className="text-center text-sm font-semibold text-muted-foreground" aria-live="polite">
             {hand.hint}
           </p>
-          <Hand cards={game.players[0].hand} playableIds={hand.playableIds} selectedId={hand.picked} onSelect={onPick} />
+          <Hand cards={game.players[0].hand} playableIds={hand.playableIds} selectedId={hand.picked} onSelect={onPick} hiddenIds={flights.hiddenIds} />
         </div>
 
         <button
@@ -119,6 +128,7 @@ export function CardsGameView({ game, hand, online, message, subjectName, onExit
         </button>
       </div>
 
+      <CardFlights flights={flights.flights} paused={paused} onLanded={flights.land} />
       {children}
     </div>
   )

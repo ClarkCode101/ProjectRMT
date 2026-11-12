@@ -217,6 +217,39 @@ export function newCardGame(random: RandomFn = Math.random, now: Date = new Date
   }
 }
 
+/** A card that moved between two moments of the game, for the flying-card animation. */
+export type CardMove = { kind: 'play'; player: number; cardId: string } | { kind: 'draw'; player: number; cardId: string }
+
+/** More cards than this landing in one hand at once is a DEV shortcut, not a draw: no animation for it. */
+const MAX_DRAWS_TO_ANIMATE = 4
+
+/**
+ * What moved from `before` to `after`: the card someone put on the pile, then the cards drawn into each hand
+ * (from the draw pile, or the pile shuffled back in). Plays come first, as they happen first in a move.
+ * A different game (new deal) or cards passed between hands (DEV shortcuts) give no moves.
+ */
+export function cardMoves(before: CardGame, after: CardGame): CardMove[] {
+  if (before.startedAt !== after.startedAt || before.players.length !== after.players.length) return []
+  const moves: CardMove[] = []
+
+  const oldTop = topCard(before)
+  const newTop = topCard(after)
+  if (newTop.id !== oldTop.id) {
+    const player = before.players.findIndex((p, i) => p.hand.some((c) => c.id === newTop.id) && !after.players[i].hand.some((c) => c.id === newTop.id))
+    if (player !== -1) moves.push({ kind: 'play', player, cardId: newTop.id })
+  }
+
+  // Where every card was before, to tell a real draw (from the draw pile or the discard pile) from a DEV move.
+  const wasInHand = new Set(before.players.flatMap((p) => p.hand.map((c) => c.id)))
+  after.players.forEach((player, i) => {
+    const old = new Set(before.players[i].hand.map((c) => c.id))
+    const added = player.hand.filter((c) => !old.has(c.id))
+    if (added.length === 0 || added.length > MAX_DRAWS_TO_ANIMATE || added.some((c) => wasInHand.has(c.id))) return
+    added.forEach((c) => moves.push({ kind: 'draw', player: i, cardId: c.id }))
+  })
+  return moves
+}
+
 /** The card on top of the discard pile. */
 export function topCard(game: CardGame): Card {
   return game.discard[game.discard.length - 1]

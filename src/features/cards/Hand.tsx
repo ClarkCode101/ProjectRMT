@@ -10,14 +10,17 @@ type Props = {
   playableIds: ReadonlySet<string>
   selectedId: string | null
   onSelect: (cardId: string) => void
+  /** cards still flying into her hand (useCardFlights): their spot is kept, but they show once they land */
+  hiddenIds?: ReadonlySet<string>
 }
 
 /**
- * Her hand, fanned at the bottom (thumb zone). Tap a card that fits to pick it (it rises, with a blue outline);
- * the cards that don't fit right now are faded. The more cards, the more they overlap; past the tightest
- * overlap, the row scrolls sideways.
+ * Her hand, fanned at the bottom (thumb zone). On her turn the cards that fit lift a little, like cards you mean to
+ * play; tap one to pick it (it lifts more, with a blue outline). The colors never change: fading the cards that don't
+ * fit made the whole hand change color on every turn (changed 2026-11-12). The more cards, the more they overlap;
+ * past the tightest overlap, the row scrolls sideways.
  */
-export function Hand({ cards, playableIds, selectedId, onSelect }: Props) {
+export function Hand({ cards, playableIds, selectedId, onSelect, hiddenIds }: Props) {
   const listRef = useRef<HTMLUListElement>(null)
   const [width, setWidth] = useState<number | null>(null)
   useLayoutEffect(() => {
@@ -46,7 +49,12 @@ export function Hand({ cards, playableIds, selectedId, onSelect }: Props) {
         const tilt = Math.max(-12, Math.min(12, offset * (count > 8 ? 2 : 3.5)))
         const drop = Math.min(16, offset * offset * (count > 8 ? 0.3 : 1.1))
         return (
-          <li key={card.id} className="shrink-0" style={{ marginLeft: i === 0 ? 0 : step - CARD_WIDTH, zIndex: i }}>
+          <li
+            key={card.id}
+            data-card-id={card.id}
+            className="shrink-0"
+            style={{ marginLeft: i === 0 ? 0 : step - CARD_WIDTH, zIndex: i, visibility: hiddenIds?.has(card.id) ? 'hidden' : undefined }}
+          >
             <button
               type="button"
               onClick={() => onSelect(card.id)}
@@ -57,15 +65,9 @@ export function Hand({ cards, playableIds, selectedId, onSelect }: Props) {
                 'block rounded-xl outline-none transition-transform duration-150 focus-visible:ring-4 focus-visible:ring-ring/50 motion-reduce:transition-none',
                 playable ? 'cursor-pointer' : 'cursor-default',
               )}
-              style={{ transform: `translateY(${drop - (selected ? 26 : playable ? 10 : 0)}px) rotate(${tilt}deg)`, transformOrigin: '50% 120%' }}
+              style={{ transform: `translateY(${drop - (selected ? 28 : playable ? 14 : 0)}px) rotate(${tilt}deg)`, transformOrigin: '50% 120%' }}
             >
-              <CardFace
-                card={card}
-                className={cn(
-                  !playable && 'brightness-110 grayscale-[55%]',
-                  selected && 'shadow-[0_0_0_3px_white,0_0_0_6px_var(--primary),0_12px_22px_rgb(23_34_44/0.35)]',
-                )}
-              />
+              <CardFace card={card} className={selected ? 'shadow-[0_0_0_3px_white,0_0_0_6px_var(--primary),0_12px_22px_rgb(23_34_44/0.35)]' : undefined} />
             </button>
           </li>
         )
