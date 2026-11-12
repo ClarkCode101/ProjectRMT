@@ -216,6 +216,15 @@ export type Database = {
           last_active_at?: string | null
         }[]
       }
+      // migration 0038: temporary password from the admin
+      admin_reset_password: {
+        Args: { p_user: string; p_password: string }
+        Returns: undefined
+      }
+      finish_password_change: {
+        Args: Record<string, never>
+        Returns: undefined
+      }
       // migration 0036: the admin's notices
       set_notice: {
         Args: { p_place: 'questions' | 'home'; p_body: string }

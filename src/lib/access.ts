@@ -1,3 +1,4 @@
+import { MIN_PASSWORD_LENGTH } from './profile'
 import { supabase } from './supabase'
 
 // Access = "may this account use the app?" (migration 0033).
@@ -11,10 +12,12 @@ export type AccessInfo = {
   isAdmin: boolean
   /** ISO time she first signed in (when the request was made), or null if unknown */
   requestedAt: string | null
+  /** she logged in with a temporary password from the admin and must choose her own first (migration 0038) */
+  mustChangePassword: boolean
 }
 
 /** Used when the server can't be asked and nothing is saved: let her in. The database still decides what she gets. */
-export const ASSUMED_ACCESS: AccessInfo = { status: 'approved', isAdmin: false, requestedAt: null }
+export const ASSUMED_ACCESS: AccessInfo = { status: 'approved', isAdmin: false, requestedAt: null, mustChangePassword: false }
 
 /** Reads the server's (or the saved) answer. Null when it isn't a shape we know. */
 export function parseAccess(value: unknown): AccessInfo | null {
@@ -26,6 +29,7 @@ export function parseAccess(value: unknown): AccessInfo | null {
     status,
     isAdmin: status === 'approved' && row.is_admin === true,
     requestedAt: typeof row.requested_at === 'string' ? row.requested_at : null,
+    mustChangePassword: row.must_change_password === true,
   }
 }
 
@@ -44,7 +48,12 @@ function saveAccess(userId: string, info: AccessInfo) {
   try {
     localStorage.setItem(
       cacheKey(userId),
-      JSON.stringify({ status: info.status, is_admin: info.isAdmin, requested_at: info.requestedAt }),
+      JSON.stringify({
+        status: info.status,
+        is_admin: info.isAdmin,
+        requested_at: info.requestedAt,
+        must_change_password: info.mustChangePassword,
+      }),
     )
   } catch {
     // storage blocked: we just ask again next time
@@ -118,9 +127,6 @@ export async function deleteMember(userId: string) {
   if (error) throw error
 }
 
-/** The shortest password the sign-up form accepts (Supabase's own minimum is lower). */
-export const MIN_PASSWORD_LENGTH = 8
-
 /**
  * Plain words for a failed email sign-up. Always our own text: Supabase's messages are technical.
  * Codes: https://supabase.com/docs/guides/auth/debugging/error-codes
@@ -165,6 +171,41 @@ export function lastStudiedLabel(lastActiveAt: string | null | undefined, now: n
   const days = Math.floor(ago / DAY)
   if (days <= 30) return `Studied ${days} ${days === 1 ? 'day' : 'days'} ago`
   return `Studied on ${new Date(time).toLocaleDateString()}`
+}
+
+/* ---------------------------------- Temporary password (migration 0038) ---------------------------------- */
+
+/** Letters and digits that can't be mixed up when read out or typed: no 0/o, 1/l/i. */
+const TEMP_PASSWORD_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789'
+
+/**
+ * A temporary password like "kx7m-4pqr-9tzb": 12 random characters in three groups (about 59 bits).
+ * Made in the browser with the secure random generator; the database only ever keeps it hashed.
+ */
+export function makeTempPassword(
+  fillRandom: (bytes: Uint8Array<ArrayBuffer>) => Uint8Array = (bytes) => crypto.getRandomValues(bytes),
+): string {
+  const chars: string[] = []
+  // Reject bytes past the last full multiple of the alphabet, so every character is equally likely.
+  const limit = 256 - (256 % TEMP_PASSWORD_ALPHABET.length)
+  while (chars.length < 12) {
+    for (const byte of fillRandom(new Uint8Array(16))) {
+      if (byte < limit && chars.length < 12) chars.push(TEMP_PASSWORD_ALPHABET[byte % TEMP_PASSWORD_ALPHABET.length])
+    }
+  }
+  return [chars.slice(0, 4), chars.slice(4, 8), chars.slice(8)].map((group) => group.join('')).join('-')
+}
+
+/** Admin: give an email account a temporary password. Logs them out everywhere; they must pick a new one next login. */
+export async function adminResetPassword(userId: string, password: string) {
+  const { error } = await supabase.rpc('admin_reset_password', { p_user: userId, p_password: password })
+  if (error) throw error
+}
+
+/** The member saved a new password: stop asking for one. */
+export async function finishPasswordChange() {
+  const { error } = await supabase.rpc('finish_password_change')
+  if (error) throw error
 }
 
 /** Two letters for the round badge next to a name: "Sample Student" → "SS", no name → from the email. */

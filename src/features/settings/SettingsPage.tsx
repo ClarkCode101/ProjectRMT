@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, CloudUpload, Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { Check, CircleAlert, CloudUpload, Copy, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { useId, useState, type ComponentProps, type FormEvent, type ReactNode } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
@@ -7,7 +7,7 @@ import { ShareKey } from '@/components/InstallHint'
 import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/authContext'
-import { deleteMember, initials, lastStudiedLabel, listMembers, setMemberAccess, signInMethod, type Member } from '@/lib/access'
+import { adminResetPassword, deleteMember, initials, lastStudiedLabel, listMembers, makeTempPassword, setMemberAccess, signInMethod, type Member } from '@/lib/access'
 import { useInstall } from '@/lib/install'
 import { downloadBank, useBankStatus } from '@/lib/offline/bank'
 import { clearOutbox, usePendingAnswerCount } from '@/lib/offline/outbox'
@@ -786,8 +786,14 @@ function AccessGroup() {
   const [failed, setFailed] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<Member | null>(null) // the account in the "Delete for good?" box
   const [deleted, setDeleted] = useState<string | null>(null) // email of the account just deleted
+  const [resetting, setResetting] = useState<Member | null>(null) // the account in the "Reset this password?" box
+  // The temporary password just made, shown once. Only kept in memory, and gone when the box closes.
+  const [temp, setTemp] = useState<{ email: string; password: string } | null>(null)
+  const [copied, setCopied] = useState(false)
   const id = useId()
   const dialogHeadingId = useId()
+  const resetHeadingId = useId()
+  const tempHeadingId = useId()
   const [now] = useState(() => Date.now())
   const myId = useAuth().session?.user.id
 
@@ -810,6 +816,32 @@ function AccessGroup() {
 
   const decide = (member: Member, status: 'approved' | 'declined') =>
     void run(member, () => setMemberAccess(member.userId, status), SAVE_FAILED)
+
+  async function confirmReset() {
+    if (!resetting) return
+    const member = resetting
+    setResetting(null)
+    const password = makeTempPassword()
+    const ok = await run(
+      member,
+      () => adminResetPassword(member.userId, password),
+      'Couldn’t reset the password. Check your internet connection and try again.',
+    )
+    if (ok) {
+      setCopied(false)
+      setTemp({ email: member.email, password })
+    }
+  }
+
+  async function copyTemp() {
+    if (!temp) return
+    try {
+      await navigator.clipboard.writeText(temp.password)
+      setCopied(true)
+    } catch {
+      // Clipboard blocked: the password is on screen to copy by hand.
+    }
+  }
 
   async function confirmDelete() {
     if (!deleting) return
@@ -892,6 +924,12 @@ function AccessGroup() {
         {showMembers &&
           approved.map((member) => (
             <MemberRow key={member.userId} member={member} note={lastStudiedLabel(member.lastActiveAt, now) ?? undefined}>
+              {/* Only accounts that log in with email have a password here (Google accounts don't). */}
+              {member.providers.includes('email') && (
+                <RowButton disabled={locked(member)} onClick={() => setResetting(member)}>
+                  {busy === member.userId ? 'Saving…' : 'Reset password'}
+                </RowButton>
+              )}
               <RowButton className={dangerButton} disabled={locked(member)} onClick={() => decide(member, 'declined')}>
                 Remove
               </RowButton>
@@ -923,6 +961,55 @@ function AccessGroup() {
             </MemberRow>
           ))}
       </div>
+
+      {/* Reset password: asks first (Cancel gets the focus), then shows the temporary password once. */}
+      <Dialog open={resetting !== null} onClose={() => setResetting(null)} labelledBy={resetHeadingId}>
+        <div className="space-y-4 p-5">
+          <h3 id={resetHeadingId} className="text-xl font-bold">
+            Reset this password?
+          </h3>
+          <p className="font-semibold break-all">{resetting?.email}</p>
+          <p className="text-sm text-muted-foreground">
+            You’ll get a temporary password to send them. Their old password stops working, and they’re logged out on every
+            device. After they log in, they have to choose a new password.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" autoFocus className="h-11 px-4 font-bold" onClick={() => setResetting(null)}>
+              Cancel
+            </Button>
+            <Button type="button" className="h-11 px-4 font-bold" onClick={() => void confirmReset()}>
+              Reset password
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog open={temp !== null} onClose={() => setTemp(null)} labelledBy={tempHeadingId} closeOnBackdrop={false}>
+        <div className="space-y-4 p-5">
+          <h3 id={tempHeadingId} className="text-xl font-bold">
+            Temporary password
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            For <b className="break-all text-foreground">{temp?.email}</b>. Send it to them in a private message.
+          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-dashed border-primary bg-primary/[0.04] px-4 py-3.5">
+            <span className="font-mono text-2xl font-bold tracking-wider select-all">{temp?.password}</span>
+            <Button type="button" className="h-10 gap-1.5 px-3.5 font-bold" onClick={() => void copyTemp()}>
+              {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+              {copied ? 'Copied' : 'Copy'}
+            </Button>
+          </div>
+          <p className="flex items-start gap-2 rounded-lg bg-highlight-soft px-3 py-2.5 text-sm">
+            <CircleAlert className="mt-0.5 size-4 shrink-0 text-[#9A5B00]" aria-hidden />
+            This is the only time you’ll see it. If you lose it, reset again.
+          </p>
+          <div className="flex justify-end">
+            <Button type="button" className="h-11 px-5 font-bold" onClick={() => setTemp(null)}>
+              Done
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       {/* Delete can't be undone, so it always asks first. Cancel is the safe default (it gets the focus). */}
       <Dialog open={deleting !== null} onClose={() => setDeleting(null)} labelledBy={dialogHeadingId}>

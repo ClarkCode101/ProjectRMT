@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 // access.ts imports the Supabase client; the tests here don't need it.
 vi.mock('./supabase', () => ({ supabase: {} }))
 
-const { initials, lastStudiedLabel, oauthErrorFrom, parseAccess, signInMethod, signUpErrorMessage } = await import('./access')
+const { initials, lastStudiedLabel, makeTempPassword, oauthErrorFrom, parseAccess, signInMethod, signUpErrorMessage } = await import('./access')
 
 describe('parseAccess', () => {
   it('reads the server answer', () => {
@@ -11,6 +11,7 @@ describe('parseAccess', () => {
       status: 'pending',
       isAdmin: false,
       requestedAt: '2026-11-11T06:14:00Z',
+      mustChangePassword: false,
     })
   })
 
@@ -27,7 +28,7 @@ describe('parseAccess', () => {
   })
 
   it('a missing request time is fine', () => {
-    expect(parseAccess({ status: 'approved' })).toEqual({ status: 'approved', isAdmin: false, requestedAt: null })
+    expect(parseAccess({ status: 'approved' })).toEqual({ status: 'approved', isAdmin: false, requestedAt: null, mustChangePassword: false })
   })
 })
 
@@ -122,5 +123,33 @@ describe('signUpErrorMessage', () => {
   it('never shows Supabase’s own text', () => {
     expect(signUpErrorMessage({ code: 'something_new', message: 'internal detail' })).not.toMatch(/internal detail/)
     expect(signUpErrorMessage({})).toMatch(/Couldn’t create the account/)
+  })
+})
+
+describe('makeTempPassword', () => {
+  it('gives three groups of four easy-to-read characters', () => {
+    for (let i = 0; i < 50; i++) {
+      expect(makeTempPassword()).toMatch(/^[a-hjkmnp-z2-9]{4}-[a-hjkmnp-z2-9]{4}-[a-hjkmnp-z2-9]{4}$/)
+    }
+  })
+
+  it('is different each time', () => {
+    const seen = new Set(Array.from({ length: 50 }, () => makeTempPassword()))
+    expect(seen.size).toBe(50)
+  })
+
+  it('skips bytes that would make some characters more likely', () => {
+    // 31 characters: bytes 248–255 are skipped, so all-255 bytes then all-0 bytes give "aaaa-aaaa-aaaa".
+    let call = 0
+    const fill = (b: Uint8Array) => b.fill(call++ === 0 ? 255 : 0)
+    expect(makeTempPassword(fill)).toBe('aaaa-aaaa-aaaa')
+  })
+})
+
+describe('parseAccess must_change_password', () => {
+  it('is true only when the server says so', () => {
+    expect(parseAccess({ status: 'approved', must_change_password: true })?.mustChangePassword).toBe(true)
+    expect(parseAccess({ status: 'approved' })?.mustChangePassword).toBe(false)
+    expect(parseAccess({ status: 'approved', must_change_password: 'yes' })?.mustChangePassword).toBe(false)
   })
 })
