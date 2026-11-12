@@ -1,4 +1,4 @@
-import { CloudOff, Layers, Play } from 'lucide-react'
+import { CircleHelp, CloudOff, Layers, Play } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ExitButton } from '@/components/ExitButton'
 import { describeMove, type CardGame } from '@/lib/cards'
@@ -19,6 +19,8 @@ type Props = {
   /** a problem to show at the top (e.g. no questions loaded) */
   message: string | null
   onExit: () => void
+  /** the ? at the top right: opens How to play */
+  onHelp: () => void
   /** tapped a card in her hand */
   onPick: (cardId: string) => void
   /** Draw a card, or Keep card after drawing one that fits */
@@ -32,7 +34,7 @@ type Props = {
   children?: ReactNode
 }
 
-export function CardsGameView({ game, hand, online, message, onExit, onPick, onDraw, onAnswerToPlay, paused = false, devTools, children }: Props) {
+export function CardsGameView({ game, hand, online, message, onExit, onHelp, onPick, onDraw, onAnswerToPlay, paused = false, devTools, children }: Props) {
   // Cards flying from the draw pile into a hand, and from a hand onto the pile.
   const flights = useCardFlights(game)
   const lastMove = describeMove(game.log, game.players)
@@ -51,9 +53,21 @@ export function CardsGameView({ game, hand, online, message, onExit, onPick, onD
         <p aria-live="polite" className="min-w-0 truncate rounded-full border bg-card px-3 py-1 text-center font-semibold text-muted-foreground">
           {lastMove ?? 'Cards dealt. You go first.'}
         </p>
-        <p className="min-w-16 text-right text-muted-foreground tabular-nums">
-          {game.correct} of {game.answered} correct
-        </p>
+        {/* The score and How to play on the right, away from Exit (side by side, a tap meant for ? could hit Exit). */}
+        <div className="flex shrink-0 items-center gap-3">
+          <p className="text-right text-muted-foreground tabular-nums">
+            {game.correct} of {game.answered} correct
+          </p>
+          <button
+            type="button"
+            onClick={onHelp}
+            aria-label="How to play"
+            title="How to play"
+            className="flex size-10 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-[0_1px_3px_rgb(23_34_44/0.08)] outline-none hover:border-primary/60 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
+            <CircleHelp className="size-5" aria-hidden />
+          </button>
+        </div>
       </div>
 
       {message && (

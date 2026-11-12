@@ -16,7 +16,9 @@ import {
   drawForTurn,
   newCardGame,
   passDrawn,
+  pendingQuestionId,
   questionNeeded,
+  setPendingQuestion,
   startPlay,
   type CardGame,
 } from '@/lib/cards'
@@ -35,6 +37,7 @@ import { CardsGameView } from './CardsGameView'
 import { CardsIntro } from './CardsIntro'
 import { SubjectPicker } from './SubjectPicker'
 import { handState } from './handState'
+import { HowToPlay } from './HowToPlay'
 
 /** The question on screen right now, and what it's for. */
 type Ask = {
@@ -84,6 +87,8 @@ export default function CardsPage() {
   /** bumped to re-open the question popup if the browser closes it early */
   const [dialogKey, setDialogKey] = useState(0)
   // npm run dev only (the DEV panel): show the right answer, and make the computer turns quick.
+  /** How to play is open (the ? at the top right): the computer players wait */
+  const [helpOpen, setHelpOpen] = useState(false)
   const [devShowAnswers, setDevShowAnswers] = useState(false)
   const [devFastBots, setDevFastBots] = useState(false)
 
@@ -112,7 +117,7 @@ export default function CardsPage() {
     const attempts = history.data ?? []
 
     let candidates: QuizQuestion[]
-    let weakTopicName: string | null = null
+    let weak: { topicId: number; topicName: string } | null = null
     if (need.kind === 'subject') {
       const inSubject = all.filter((q) => subjectCodeOfTopic(q.topic_id) === need.subject)
       // A subject with no questions at all: any subject, so the game never gets stuck.
@@ -120,14 +125,18 @@ export default function CardsPage() {
     } else {
       // A Wild: her weakest topic, else a past mistake, else anything (same pick as the Board Review snake).
       const mistakeIds = new Set(latestMistakes(attempts.map((a) => ({ ...a, selected_index: null }))).map((a) => a.question_id))
-      const weak = weakestTopic(summarizePerformance(performance.data ?? [], subjects.data ?? [], topics.data ?? []))
+      weak = weakestTopic(summarizePerformance(performance.data ?? [], subjects.data ?? [], topics.data ?? []))
       const unused = unusedFirst(all, g.usedQuestionIds)
       candidates = rescuePool(unused, unused, { weakTopicId: weak?.topicId ?? null, mistakeIds })
-      if (weak && candidates.some((q) => q.topic_id === weak.topicId)) weakTopicName = weak.topicName
     }
 
-    const question = pickQuestions(candidates, buildHistory(attempts), 1)[0]
+    // The question already shown for this (she left the game and came back) stays the same, so leaving
+    // can't skip a hard one. Otherwise a new pick.
+    const remembered = pendingQuestionId(g)
+    const question = (remembered ? all.find((q) => q.id === remembered) : undefined) ?? pickQuestions(candidates, buildHistory(attempts), 1)[0]
     if (!question) return null
+    // "From your weak topic" only when the question really is from it.
+    const weakTopicName = weak && question.topic_id === weak.topicId ? weak.topicName : null
 
     let purpose: AskPurpose
     if (g.pending.kind === 'draw2') {
@@ -149,8 +158,11 @@ export default function CardsPage() {
     const timer = window.setTimeout(
       () => {
         const next = prepareAsk(game)
-        if (next) setAsk(next)
-        else setMessage('No questions to ask yet. Add some on the Questions page, or go online once to load them.')
+        if (next) {
+          // Saved with the game right away, so coming back after Exit shows this same question.
+          if (saved && pendingQuestionId(game) !== next.question.id) persist({ ...saved, game: setPendingQuestion(game, next.question.id) })
+          setAsk(next)
+        } else setMessage('No questions to ask yet. Add some on the Questions page, or go online once to load them.')
       },
       game.pending?.kind === 'draw2' ? DRAW2_PAUSE_MS : 0,
     )
@@ -161,12 +173,12 @@ export default function CardsPage() {
 
   // A computer player's turn: wait a moment so she can follow, then play it.
   useEffect(() => {
-    if (!playing || !saved || !game || game.finished || game.turn === 0 || ask) return
+    if (!playing || !saved || !game || game.finished || game.turn === 0 || ask || helpOpen) return
     const timer = window.setTimeout(() => persist({ ...saved, game: botTurn(game) }), devFastBots ? DEV_FAST_BOT_MS : BOT_MS)
     return () => window.clearTimeout(timer)
     // persist only changes with `saved`, which is listed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, saved, game, ask, devFastBots])
+  }, [playing, saved, game, ask, devFastBots, helpOpen])
 
   // The game ended: show the finish screen (right away if she won; after a moment if someone else did).
   useEffect(() => {
@@ -248,6 +260,7 @@ export default function CardsPage() {
       hand={hand}
       online={online}
       message={message}
+      onHelp={() => setHelpOpen(true)}
       onExit={() => {
         setPlaying(false)
         setAsk(null)
@@ -308,6 +321,11 @@ export default function CardsPage() {
             Answer: {devAnswerLetter(ask.question.correct_index, ask.order)}. {ask.question.choices[ask.question.correct_index]}
           </p>
         )}
+      </Dialog>
+
+      {/* How to play (the ? at the top right). */}
+      <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} labelledBy="how-to-play-heading" size="lg">
+        <HowToPlay headingId="how-to-play-heading" onClose={() => setHelpOpen(false)} />
       </Dialog>
 
       {/* After a right Wild: she picks the next subject (from the bottom, in thumb reach, like the question). */}

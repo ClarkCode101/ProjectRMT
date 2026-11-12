@@ -84,5 +84,8 @@ describe('parseSavedCards', () => {
     expect(bad({ pending: { kind: 'draw2', subject: 'MICRO', left: 0 } })).toBeNull()
     expect(bad({ pending: { kind: 'play' } })).toBeNull()
     expect(bad({ pending: { kind: 'chooseSubject' } })?.game.pending).toEqual({ kind: 'chooseSubject' })
+    expect(bad({ pending: { kind: 'play', cardId: 'HEMA-3', questionId: 'q9' } })?.game.pending).toEqual({ kind: 'play', cardId: 'HEMA-3', questionId: 'q9' })
+    expect(bad({ pending: { kind: 'play', cardId: 'HEMA-3', questionId: 9 } })).toBeNull()
+    expect(bad({ pending: { kind: 'draw2', subject: 'MICRO', left: 1, questionId: 'q2' } })?.game.pending).toMatchObject({ questionId: 'q2' })
   })
 })

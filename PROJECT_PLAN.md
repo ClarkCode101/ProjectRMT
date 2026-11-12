@@ -621,7 +621,7 @@ A match-and-shed card game (the old Crazy Eights family): match the top card by 
 
 **Computer players**
 - 3 bots with made-up names. Simple strategy: play a matching action card first, else a matching number, Wild last; Wild picks the subject they hold most of.
-- A bot "answers" right with a fixed chance (about 70%); wrong → it draws 1, like her. Their questions are not shown (keeps the game fast); each bot turn takes about 1 second with the card sliding to the pile. Honor reduced motion.
+- A bot "answers" right with a fixed chance (**50%, "Easy"**; it was 70% at first); wrong → it draws 1, like her. Their questions are not shown (keeps the game fast); each bot turn takes about 1 second with the card sliding to the pile. Honor reduced motion.
 
 **Questions**
 - Source = All (built-in + hers), anti-repeat with `pickQuestions` / `priorityScore`, never the same question twice in one game.
@@ -654,13 +654,49 @@ A match-and-shed card game (the old Crazy Eights family): match the top card by 
 - **The line at the top says the whole last move** (added 2026-11-12, the owner found Skip confusing): one move's events joined with " · ", so it's always clear who lost a turn and who goes next, e.g. "Kat S. played HEMA Skip · Your turn is skipped", "You played CC Reverse · Direction flipped · Kat S. goes next", "You played HEMA Draw 2 · Rafa M. drew 2 and is skipped" (`describeMove`; events carry a move number).
 - **Screen sizes (checked with screenshots 2026-11-12):** from 1024px (iPad landscape) her side is three columns like the mockup (You + Draw | hand | Answer to play). Narrower (iPad portrait 744–834px, phones) her hand takes the whole width and Draw + Answer to play sit side by side under it (in three columns her hand only got ~320px on an iPad in portrait). The computer players sit around the oval from 700px (every iPad), in one row above it on phones. Her cards overlap just enough to fit; past the tightest overlap the row scrolls.
 
+**The computer players are always Easy (decided 2026-11-12)**
+- They answer right 50% of the time, with no choice to make. Easy / Normal (70%) / Hard (85%) chips on the start screen were built and dropped the same day, to keep the game simple and friendly; games saved with a level still load (it's ignored).
+
+**Leaving can't skip a question (fixed 2026-11-12)**
+- The question picked for what she is waiting on (playing a card, or a Draw 2 question) is saved with the game (`pending.questionId`, `setPendingQuestion` in lib/cards.ts, tested; older saves without it still load). Exit and Continue, or a refresh, shows the SAME question, so a hard one can't be skipped by going out and back in. (Board Review's solo game still picks a new one after Exit; same fix possible there.)
+- "From your weak topic" on a Wild shows only when the question really is from it.
+
+**How to play, in the game (added 2026-11-12)**
+- A round **?** at the top right, next to the score (moved away from Exit the same day: side by side, a tap meant for ? could hit Exit), opens the rules (`HowToPlay.tsx`): the goal, the four steps of a turn, and the four special cards with a small picture of each. The computer players wait while it's open.
+
 **DEV test panel (`npm run dev` only, added 2026-11-12)**
 - A red dashed **DEV** button next to Exit on the table (`CardsDevPanel.tsx`, shortcuts in `lib/cardsDev.ts` with tests). Behind `import.meta.env.DEV`, so `npm run build` leaves it out (checked: none of its text is in `dist/`).
 - **Show answers** (the right letter under the question), **Fast computer turns** (0.15 s instead of 1.1 s), **Me: 1 card left** (one card that fits, her move: one right answer wins), **Next computer: 1 card left** (to see a computer win), **Give me Skip, Reverse, Draw 2, Wild**, **Draw 2 on me**, **Empty draw pile** (the next draw shuffles the pile back in), **Finish: I win / bot wins**.
 - The shortcuts never make up cards: they take real ones from the draw pile, a hand or under the top card, so a game still has its 78 cards and loads as a saved game. Answers given while testing are real attempts (they count in that account's scores), so test with a test account if the scores matter.
 
-### Step 2 — *(later)* Live with classmates
-- Reuse Board Review's rooms, invites, code/link, chat and Play again; the database deals, checks answers and keeps each hand private. Only after step 1 is fun on its own.
+### Step 2 — Live with classmates (planned 2026-11-12)
+
+**Decided with the owner**
+- **Always 4 at the table: computer players fill the empty seats** (2 classmates + 2 computers, 3 + 1, or 4 classmates), so the rules and the pace stay the same however many join. The computer players are Easy, as in the solo game.
+- **Everyone sees the question of the player whose turn it is, and the answer reveal** (like Board Review), so waiting is review time.
+- **90 seconds per turn.** Time runs out → that player draws 1 and the turn passes. **3 missed turns in a row → removed** (their cards go back under the draw pile); Board Review removes after 2.
+- Built-in questions only (everyone's own questions differ), like Board Review's team games.
+
+**How it's built (recommended, to confirm)**
+- **Rooms, invites, the code/link, the lobby, chat, Play again, host passing on, kick: Board Review's**, with a new `game` column on `board_rooms` ('board' | 'cards'). The lobby and invites say which game.
+- **The game itself runs on the server in a Supabase Edge Function (`cards-game`) that reuses `src/lib/cards.ts`**, so the rules exist once and keep their tests (the alternative, rewriting every rule in SQL like Board Review's team game, means two copies that can drift apart). The function: starts the game (deals, seats the computer players), picks and checks questions, plays / draws / keeps / picks a subject, passes a timed-out turn, and plays the computer players' turns right after a human's move (no timers needed), logging each move so screens can animate them one by one.
+- **Each hand stays private:** the full game is stored where no one can read it directly; a database function gives each player the table with only their own cards (others as counts). The question on screen comes without its answer until it's answered.
+- **Live updates:** Supabase Realtime on the room (as in Board Review) plus a slow refresh as a fallback. Answers are saved as attempts in each player's own session (mode `cards`), so they count in their scores.
+- **Wild in a live game:** the question comes from that player's weakest topic (worked out on the server from their own answers).
+
+**Screens**
+- Games → Last Card → **"Play with classmates"**: the same lobby as Board Review (seats, invite list, code + Copy link, chat); empty seats show "Computer".
+- The game: the same table as solo; each seat shows the player's name (classmate or computer), whose turn it is with the 90-second clock, the question popup for everyone (only the player whose turn it is can answer), flying cards for every move.
+- Finish: the shared finish screen (§16) with Play again for the group.
+
+**Steps (each one tested before the next)**
+1. Migration 0042: `game` column on rooms, the private game state, the player's view function; Edge Function `cards-game` with start + play + draw + answer + timeout + computer turns; tests for the server-side moves.
+2. Lobby: "Play with classmates" for Last Card, game shown on invites.
+3. The live table: realtime state, clock, watching the question and reveal, animations from the move log.
+4. Finish + Play again; then a live test with 2 accounts (like Board Review's on 2026-11-11).
+
+### Step 3 — *(later)*
+- Ideas not planned yet: lifelines, number = question difficulty.
 
 ---
 

@@ -32,15 +32,18 @@ export function CardResults({ game, onPlayAgain }: Props) {
       won={game.winner === 0}
       headline={headline(game)}
       subline={subline(game)}
-      details={ranking(game).map((seat) => {
-        const player = game.players[seat]
-        const count = player.hand.length
-        return (
-          <FinishChip key={seat} strong={player.isHuman}>
-            {player.isHuman ? 'You' : player.name} · {count} {count === 1 ? 'card' : 'cards'}
-          </FinishChip>
-        )
-      })}
+      details={[
+        // Everyone's cards left, fewest first (hers in gold).
+        ...ranking(game).map((seat) => {
+          const player = game.players[seat]
+          const count = player.hand.length
+          return (
+            <FinishChip key={seat} strong={player.isHuman}>
+              {player.isHuman ? 'You' : player.name} · {count} {count === 1 ? 'card' : 'cards'}
+            </FinishChip>
+          )
+        }),
+      ]}
       correct={game.correct}
       answered={game.answered}
       notes={game.drawnForMistakes > 0 ? [`${game.drawnForMistakes} ${game.drawnForMistakes === 1 ? 'card' : 'cards'} drawn for wrong answers`] : []}

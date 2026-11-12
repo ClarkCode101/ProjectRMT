@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   answerDraw2,
   answerPlay,
+  BOT_CORRECT_CHANCE,
   botChoice,
   botFavoriteSubject,
   botTurn,
@@ -18,8 +19,10 @@ import {
   newCardGame,
   nextPlayer,
   passDrawn,
+  pendingQuestionId,
   playableCards,
   questionNeeded,
+  setPendingQuestion,
   ranking,
   startPlay,
   topCard,
@@ -569,5 +572,42 @@ describe('a whole game', () => {
 
   it('keeps the event log short', () => {
     expect(playOut(7, 0.6).log.length).toBeLessThanOrEqual(12)
+  })
+})
+
+// ---------- the question stays the same after leaving and coming back ----------
+
+describe('setPendingQuestion / pendingQuestionId', () => {
+  it('remembers the question for the card she is playing', () => {
+    const g = startPlay(table({ hands: [[num('HEMA', 3)], filler(), filler(), filler()] }), 'HEMA-3')
+    expect(pendingQuestionId(g)).toBeNull()
+    const remembered = setPendingQuestion(g, 'q42')
+    expect(remembered.pending).toEqual({ kind: 'play', cardId: 'HEMA-3', questionId: 'q42' })
+    expect(pendingQuestionId(remembered)).toBe('q42')
+  })
+
+  it('remembers a Draw 2 question, and forgets it once answered (the next one is new)', () => {
+    const hit: CardGame = { ...table({ hands: [[num('CC', 9)], filler(), filler(), filler()] }), pending: { kind: 'draw2', subject: 'MICRO', left: 2 } }
+    const remembered = setPendingQuestion(hit, 'q1')
+    expect(pendingQuestionId(remembered)).toBe('q1')
+    expect(pendingQuestionId(answerDraw2(remembered, wrong('q1', 'MICRO')))).toBeNull()
+  })
+
+  it('does nothing when no question is waiting', () => {
+    const g = table({ hands: [[num('HEMA', 3)], filler(), filler(), filler()] })
+    expect(setPendingQuestion(g, 'q1')).toBe(g)
+    const picking = { ...g, pending: { kind: 'chooseSubject' as const } }
+    expect(setPendingQuestion(picking, 'q1')).toBe(picking)
+  })
+})
+
+// ---------- the computer players are always Easy ----------
+
+describe('computer players (always Easy)', () => {
+  it('answer right half the time: a roll under 0.5 plays the card, 0.5 or more misses', () => {
+    expect(BOT_CORRECT_CHANCE).toBe(0.5)
+    const g = table({ hands: [filler(), [num('HEMA', 2), num('CC', 1)], filler(), filler()], turn: 1 })
+    expect(botTurn(g, always(0.49)).players[1].hand).toHaveLength(1)
+    expect(botTurn(g, always(0.5)).players[1].hand).toHaveLength(3)
   })
 })

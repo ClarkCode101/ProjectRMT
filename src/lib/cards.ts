@@ -21,8 +21,11 @@ export type Card =
 
 export const HAND_SIZE = 7
 export const WILD_COUNT = 6
-/** How often a computer player "answers" right. */
-export const BOT_CORRECT_CHANCE = 0.7
+/**
+ * How often a computer player "answers" right: always Easy (decided 2026-11-12; Normal 70% and Hard 85% were tried
+ * as a choice on the start screen and dropped, to keep the game simple and friendly).
+ */
+export const BOT_CORRECT_CHANCE = 0.5
 /** Questions she answers when a Draw 2 is played on her (each wrong one = draw 1). */
 export const DRAW2_QUESTIONS = 2
 
@@ -66,10 +69,10 @@ export type CardPlayer = {
  * - draw2: a Draw 2 was played on her; `left` questions to go from `subject`
  */
 export type CardPending =
-  | { kind: 'play'; cardId: string }
+  | { kind: 'play'; cardId: string; questionId?: string }
   | { kind: 'drawn'; cardId: string }
   | { kind: 'chooseSubject' }
-  | { kind: 'draw2'; subject: CardSubject; left: number }
+  | { kind: 'draw2'; subject: CardSubject; left: number; questionId?: string }
 
 /**
  * One thing that happened, so the screen can say "Rafa M. played HEMA 3" or "Joy D. is skipped".
@@ -308,6 +311,23 @@ export function questionNeeded(game: CardGame): { kind: 'subject'; subject: Card
 // ---------- Her turn ----------
 
 export type CardAnswer = { questionId: string; subjectCode: string; isCorrect: boolean }
+
+/**
+ * Remembers which question is up for what she is waiting on (playing a card, or a Draw 2 question), so leaving the
+ * game and coming back shows the SAME question: she can't skip a hard one by going out and in (fixed 2026-11-12).
+ * Ignored when no question is waiting.
+ */
+export function setPendingQuestion(game: CardGame, questionId: string): CardGame {
+  const pending = game.pending
+  if (pending?.kind !== 'play' && pending?.kind !== 'draw2') return game
+  return { ...game, pending: { ...pending, questionId } }
+}
+
+/** The question already chosen for what she is waiting on, if any (see setPendingQuestion). */
+export function pendingQuestionId(game: CardGame): string | null {
+  const pending = game.pending
+  return (pending?.kind === 'play' || pending?.kind === 'draw2') && pending.questionId ? pending.questionId : null
+}
 
 /**
  * She picked a card and tapped "Answer to play": the question for it comes up.

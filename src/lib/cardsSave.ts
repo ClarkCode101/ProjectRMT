@@ -31,9 +31,12 @@ function isPending(value: unknown): value is CardPending | null {
   if (value === null) return true
   if (typeof value !== 'object') return false
   const p = value as Record<string, unknown>
-  if (p.kind === 'play' || p.kind === 'drawn') return typeof p.cardId === 'string'
+  // the question already shown for it (optional: games saved before 2026-11-12 don't have one)
+  const questionOk = p.questionId === undefined || typeof p.questionId === 'string'
+  if (p.kind === 'play') return typeof p.cardId === 'string' && questionOk
+  if (p.kind === 'drawn') return typeof p.cardId === 'string'
   if (p.kind === 'chooseSubject') return true
-  if (p.kind === 'draw2') return isSubject(p.subject) && isCount(p.left) && (p.left as number) >= 1
+  if (p.kind === 'draw2') return isSubject(p.subject) && isCount(p.left) && (p.left as number) >= 1 && questionOk
   return false
 }
 
