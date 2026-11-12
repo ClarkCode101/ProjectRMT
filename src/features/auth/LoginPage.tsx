@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router'
-import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
+import { Eye, EyeOff, LockKeyhole, Mail, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { signInWithGoogle, signUpErrorMessage, takeOAuthError } from '@/lib/access'
 import { MIN_PASSWORD_LENGTH } from '@/lib/profile'
 import { supabase } from '@/lib/supabase'
+import { cn } from '@/lib/utils'
 import { AuthShell, PhoneStrip, ReportSlip, Stamp } from './AuthShell'
 import { useAuth } from './authContext'
 
@@ -92,6 +93,10 @@ export default function LoginPage() {
   /** the email a confirmation link was sent to (only when "Confirm email" is on in Supabase) */
   const [checkEmail, setCheckEmail] = useState<string | null>(null)
   const signingUp = mode === 'signup'
+  /** the "Forgot password?" note under the password field */
+  const [showForgot, setShowForgot] = useState(false)
+  /** the last log in failed (wrong email or password): the error offers "Forgot your password?" */
+  const [loginFailed, setLoginFailed] = useState(false)
 
   const from = (location.state as { from?: string } | null)?.from ?? '/'
   if (session) return <Navigate to={from} replace />
@@ -102,12 +107,15 @@ export default function LoginPage() {
     setPassword('')
     setShowPassword(false)
     setError(null)
+    setLoginFailed(false)
+    setShowForgot(false)
   }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setSubmitting(true)
     setError(null)
+    setLoginFailed(false)
     if (signingUp) {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -124,7 +132,10 @@ export default function LoginPage() {
     }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setSubmitting(false)
-    if (error) setError('Wrong email or password. Please try again.')
+    if (error) {
+      setError('Wrong email or password.')
+      setLoginFailed(true)
+    }
     // On success, AuthProvider gets the new session and the <Navigate> above redirects.
   }
 
@@ -200,9 +211,27 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="font-semibold">
-            Password
-          </Label>
+          <div className="flex items-baseline justify-between gap-3">
+            <Label htmlFor="password" className="font-semibold">
+              Password
+            </Label>
+            {/* Where people look for it. For now it explains the admin reset; with a custom email sender (option B)
+                this becomes a real "send reset link". */}
+            {!signingUp && (
+              <button
+                type="button"
+                onClick={() => setShowForgot((shown) => !shown)}
+                aria-expanded={showForgot}
+                aria-controls="forgot-help"
+                className={cn(
+                  'rounded-sm text-sm font-semibold text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40',
+                  showForgot && 'underline underline-offset-3',
+                )}
+              >
+                Forgot password?
+              </button>
+            )}
+          </div>
           <div className="relative">
             <LockKeyhole
               aria-hidden
@@ -234,11 +263,45 @@ export default function LoginPage() {
               At least {MIN_PASSWORD_LENGTH} characters.
             </p>
           )}
+          {/* Inside the card, not a popup: nothing to dismiss on iPad. */}
+          {showForgot && !signingUp && (
+            <div
+              id="forgot-help"
+              role="note"
+              className="animate-in fade-in relative space-y-1.5 rounded-lg border border-primary/20 bg-primary/[0.06] py-3 pr-10 pl-3.5 text-sm leading-relaxed duration-150"
+            >
+              <p>
+                <b>Message your admin.</b> They’ll send you a temporary password, and you’ll choose a new one after you log in.
+              </p>
+              <p className="text-muted-foreground">Signed up with Google? Use Continue with Google instead. You don’t need a password.</p>
+              <button
+                type="button"
+                onClick={() => setShowForgot(false)}
+                aria-label="Close"
+                className="absolute top-1.5 right-1.5 grid size-8 place-items-center rounded-full text-muted-foreground outline-none hover:bg-black/5 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            </div>
+          )}
         </div>
 
         {error && (
           <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
             {error}
+            {/* A wrong password is the moment she needs the way back. */}
+            {loginFailed && !showForgot && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(true)}
+                  className="rounded-sm font-bold underline underline-offset-3 outline-none focus-visible:ring-3 focus-visible:ring-wrong/40"
+                >
+                  Forgot your password?
+                </button>
+              </>
+            )}
           </p>
         )}
 
