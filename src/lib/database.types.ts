@@ -212,6 +212,8 @@ export type Database = {
           status: 'pending' | 'approved' | 'declined'
           is_admin: boolean
           requested_at: string
+          /** when they last studied; null = never (migration 0037; missing before it runs) */
+          last_active_at?: string | null
         }[]
       }
       // migration 0036: the admin's notices

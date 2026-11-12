@@ -7,7 +7,7 @@ import { ShareKey } from '@/components/InstallHint'
 import { PageHeader } from '@/components/dashboard'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/authContext'
-import { deleteMember, initials, listMembers, setMemberAccess, signInMethod, type Member } from '@/lib/access'
+import { deleteMember, initials, lastStudiedLabel, listMembers, setMemberAccess, signInMethod, type Member } from '@/lib/access'
 import { useInstall } from '@/lib/install'
 import { downloadBank, useBankStatus } from '@/lib/offline/bank'
 import { clearOutbox, usePendingAnswerCount } from '@/lib/offline/outbox'
@@ -891,7 +891,7 @@ function AccessGroup() {
         )}
         {showMembers &&
           approved.map((member) => (
-            <MemberRow key={member.userId} member={member}>
+            <MemberRow key={member.userId} member={member} note={lastStudiedLabel(member.lastActiveAt, now) ?? undefined}>
               <RowButton className={dangerButton} disabled={locked(member)} onClick={() => decide(member, 'declined')}>
                 Remove
               </RowButton>

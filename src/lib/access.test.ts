@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 // access.ts imports the Supabase client; the tests here don't need it.
 vi.mock('./supabase', () => ({ supabase: {} }))
 
-const { initials, oauthErrorFrom, parseAccess, signInMethod } = await import('./access')
+const { initials, lastStudiedLabel, oauthErrorFrom, parseAccess, signInMethod } = await import('./access')
 
 describe('parseAccess', () => {
   it('reads the server answer', () => {
@@ -72,5 +72,39 @@ describe('oauthErrorFrom', () => {
 
   it('falls back to the error code', () => {
     expect(oauthErrorFrom('', '#error=access_denied')).toBe('access_denied')
+  })
+})
+
+describe('lastStudiedLabel', () => {
+  const now = Date.parse('2026-11-12T12:00:00Z')
+  const ago = (ms: number) => new Date(now - ms).toISOString()
+  const MIN = 60_000
+  const HOUR = 60 * MIN
+  const DAY = 24 * HOUR
+
+  it('shows nothing when the database does not send it yet', () => {
+    expect(lastStudiedLabel(undefined, now)).toBeNull()
+    expect(lastStudiedLabel('not a date', now)).toBeNull()
+  })
+
+  it('says when someone never studied', () => {
+    expect(lastStudiedLabel(null, now)).toBe('Not studied yet')
+  })
+
+  it('counts minutes, hours, then days', () => {
+    expect(lastStudiedLabel(ago(20_000), now)).toBe('Studied just now')
+    expect(lastStudiedLabel(ago(12 * MIN), now)).toBe('Studied 12 min ago')
+    expect(lastStudiedLabel(ago(3 * HOUR + 50 * MIN), now)).toBe('Studied 3 h ago')
+    expect(lastStudiedLabel(ago(DAY), now)).toBe('Studied 1 day ago')
+    expect(lastStudiedLabel(ago(5 * DAY + HOUR), now)).toBe('Studied 5 days ago')
+    expect(lastStudiedLabel(ago(30 * DAY), now)).toBe('Studied 30 days ago')
+  })
+
+  it('gives the date after 30 days', () => {
+    expect(lastStudiedLabel(ago(45 * DAY), now)).toMatch(/^Studied on /)
+  })
+
+  it('treats a time a little in the future (clock drift) as just now', () => {
+    expect(lastStudiedLabel(new Date(now + 5_000).toISOString(), now)).toBe('Studied just now')
   })
 })

@@ -80,6 +80,11 @@ export type Member = {
   status: AccessStatus
   isAdmin: boolean
   requestedAt: string
+  /**
+   * When they last studied (an answer, a session, a flashcard review). null = never studied.
+   * undefined = the database doesn't send it yet (migration 0037 not run): then nothing is shown.
+   */
+  lastActiveAt?: string | null
 }
 
 /** Everyone with an account, newest request first. Admin only (the database refuses anyone else). */
@@ -94,6 +99,7 @@ export async function listMembers(): Promise<Member[]> {
     status: row.status,
     isAdmin: row.is_admin,
     requestedAt: row.requested_at,
+    lastActiveAt: row.last_active_at,
   }))
 }
 
@@ -110,6 +116,28 @@ export async function setMemberAccess(userId: string, status: 'approved' | 'decl
 export async function deleteMember(userId: string) {
   const { error } = await supabase.rpc('delete_member', { p_user: userId })
   if (error) throw error
+}
+
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const DAY = 24 * HOUR
+
+/**
+ * The admin's "when did they last study" note: "Studied 2 h ago", "Studied 5 days ago", "Not studied yet".
+ * After 30 days it gives the date instead. undefined (the database doesn't send it yet) → null: show nothing.
+ */
+export function lastStudiedLabel(lastActiveAt: string | null | undefined, now: number): string | null {
+  if (lastActiveAt === undefined) return null
+  if (lastActiveAt === null) return 'Not studied yet'
+  const time = Date.parse(lastActiveAt)
+  if (Number.isNaN(time)) return null
+  const ago = Math.max(0, now - time)
+  if (ago < MINUTE) return 'Studied just now'
+  if (ago < HOUR) return `Studied ${Math.floor(ago / MINUTE)} min ago`
+  if (ago < DAY) return `Studied ${Math.floor(ago / HOUR)} h ago`
+  const days = Math.floor(ago / DAY)
+  if (days <= 30) return `Studied ${days} ${days === 1 ? 'day' : 'days'} ago`
+  return `Studied on ${new Date(time).toLocaleDateString()}`
 }
 
 /** Two letters for the round badge next to a name: "Sample Student" → "SS", no name → from the email. */
