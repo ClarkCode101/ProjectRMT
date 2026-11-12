@@ -604,7 +604,8 @@ A match-and-shed card game (the old Crazy Eights family): match the top card by 
 
 **Action cards**
 - **Skip**: the next player loses their turn. **Reverse**: the direction flips (arrow in the middle of the table).
-- **Draw 2 played on her**: she answers 2 questions from that card's subject; each wrong answer = draw 1 (so 0 to 2 cards). No stacking.
+- **Draw 2 played on her**: she answers 2 questions from that card's subject; each wrong answer = draw 1 (so 0 to 2 cards), then her turn is skipped (as usual for a Draw 2). A bot hit by Draw 2 "answers" both at once the same way. No stacking.
+- **Drawing is only for when nothing fits**: while a card in her hand fits she has to try it (a wrong answer costs the same 1 card, and she learns something).
 
 **"Last card" banner (decided 2026-11-12)**
 - No button to tap and no penalty: when anyone (her or a bot) is down to 1 card, the app shows a gold **Last card** banner on that player by itself. The game is about answering questions, not remembering to tap in time. (A tap-it-or-draw-2 call was considered and dropped for step 1; maybe later if the group wants more pressure.)
