@@ -641,8 +641,10 @@ A match-and-shed card game (the old Crazy Eights family): match the top card by 
 **Files**
 - `src/lib/cards.ts`: deck, shuffle, `canPlay`, apply a card, next player, bot move. Pure functions with tests in `cards.test.ts`.
 - `src/lib/cardsSave.ts`: read/write the saved game (try/catch, falls back to "no game").
-- `src/features/cards/`: `CardsPage.tsx`, `CardTable.tsx`, `Hand.tsx`, `CardResults.tsx`; reuse the Board Review question sheet.
-- Route `/cards`; nav icon right after Board Review (phones: in the More sheet).
+- `src/features/cards/`: `CardsPage.tsx` (loads questions, saves answers, runs the computer turns), `CardsGameView.tsx` (the game screen's look, no data), `CardTable.tsx`, `Hand.tsx`, `PlayingCard.tsx` (card faces and backs), `CardQuestionSheet.tsx` (its own question popup: the Board Review one is about dice and squares), `CardsIntro.tsx`, `CardResults.tsx`, `handState.ts` (what she can tap, how far apart her cards sit; tested), `api.ts` (the `cards` session).
+- Route `/cards`; nav icon (Spade) right after Board Review (phones: in the More sheet).
+- **The line at the top says the whole last move** (added 2026-11-12, the owner found Skip confusing): one move's events joined with " · ", so it's always clear who lost a turn and who goes next, e.g. "Kat S. played HEMA Skip · Your turn is skipped", "You played CC Reverse · Direction flipped · Kat S. goes next", "You played HEMA Draw 2 · Rafa M. drew 2 and is skipped" (`describeMove`; events carry a move number).
+- **Screen sizes (checked with screenshots 2026-11-12):** from 1024px (iPad landscape) her side is three columns like the mockup (You + Draw | hand | Answer to play). Narrower (iPad portrait 744–834px, phones) her hand takes the whole width and Draw + Answer to play sit side by side under it (in three columns her hand only got ~320px on an iPad in portrait). The computer players sit around the oval from 700px (every iPad), in one row above it on phones. Her cards overlap just enough to fit; past the tightest overlap the row scrolls.
 
 ### Step 2 — *(later)* Live with classmates
 - Reuse Board Review's rooms, invites, code/link, chat and Play again; the database deals, checks answers and keeps each hand private. Only after step 1 is fun on its own.

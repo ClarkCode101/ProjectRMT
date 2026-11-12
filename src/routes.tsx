@@ -14,6 +14,7 @@ const FlashcardsPage = lazy(() => import('@/features/flashcards/FlashcardsPage')
 const BoardPage = lazy(() => import('@/features/board/BoardPage'))
 const TeamRoomPage = lazy(() => import('@/features/board/TeamRoomPage'))
 const JoinTeamPage = lazy(() => import('@/features/board/JoinTeamPage'))
+const CardsPage = lazy(() => import('@/features/cards/CardsPage'))
 const ReferencePage = lazy(() => import('@/features/reference/ReferencePage'))
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'))
 const QuestionsPage = lazy(() => import('@/features/questions/QuestionsPage'))
@@ -54,6 +55,7 @@ export const router = createBrowserRouter([
       { path: '/board', element: <BoardPage /> },
       { path: '/board/team/:roomId', element: <TeamRoomPage /> },
       { path: '/board/join/:code', element: <JoinTeamPage /> },
+      { path: '/cards', element: <CardsPage /> },
       { path: '/reference', element: <ReferencePage /> },
       { path: '/settings', element: <SettingsPage /> },
       // The old Review Again list; reviewing mistakes is now a quiz (answer first, then see why).

@@ -13,8 +13,8 @@ type Table<Row, Required extends keyof Row = never> = {
 
 export type QuestionSource = 'builtin' | 'user' | 'upload'
 export type VerifyStatus = 'unverified' | 'verified'
-/** 'board' = one Board Review game (migration 0022) */
-export type SessionMode = 'practice' | 'mock' | 'flashcard' | 'board'
+/** 'board' = one Board Review game (migration 0022); 'cards' = one Last Card game (migration 0041) */
+export type SessionMode = 'practice' | 'mock' | 'flashcard' | 'board' | 'cards'
 /** The spine colors she can pick for a book (migration 0004 checks the same list). */
 export type BookColor = 'teal' | 'red' | 'green' | 'gold' | 'purple' | 'slate'
 

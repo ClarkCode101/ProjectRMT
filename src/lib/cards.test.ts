@@ -10,6 +10,8 @@ import {
   CARD_SUBJECTS,
   cardLabel,
   chooseSubject,
+  describeEvent,
+  describeMove,
   drawForTurn,
   isHerMove,
   newCardGame,
@@ -100,6 +102,73 @@ describe('cardLabel', () => {
     expect(cardLabel(act('CC', 'skip'))).toBe('CC Skip')
     expect(cardLabel(act('CM', 'draw2'))).toBe('CM Draw 2')
     expect(cardLabel(wild())).toBe('Wild')
+  })
+})
+
+describe('describeEvent', () => {
+  const players = [
+    { name: 'You', isHuman: true },
+    { name: 'Rafa M.', isHuman: false },
+  ]
+  it('says what happened in one line', () => {
+    expect(describeEvent({ player: 1, kind: 'play', cardId: 'HEMA-3' }, players)).toBe('Rafa M. played HEMA 3')
+    expect(describeEvent({ player: 0, kind: 'play', cardId: 'wild-2' }, players)).toBe('You played Wild')
+    expect(describeEvent({ player: 1, kind: 'miss', cardId: 'CC-skip' }, players)).toBe('Rafa M. missed the question for CC Skip')
+    expect(describeEvent({ player: 0, kind: 'draw', count: 2 }, players)).toBe('You drew 2')
+    expect(describeEvent({ player: 1, kind: 'pass' }, players)).toBe('Rafa M. passed')
+    expect(describeEvent({ player: 1, kind: 'choose', subject: 'CM' }, players)).toBe('Rafa M. picked CM')
+    expect(describeEvent({ player: 1, kind: 'skipped' }, players)).toBe('Rafa M. is skipped')
+    expect(describeEvent({ player: 0, kind: 'skipped' }, players)).toBe('Your turn is skipped')
+    expect(describeEvent({ player: 0, kind: 'reverse', next: 1 }, players)).toBe('Direction flipped · Rafa M. goes next')
+    expect(describeEvent({ player: 1, kind: 'reverse', next: 0 }, players)).toBe('Direction flipped · your turn')
+  })
+})
+
+describe('describeMove (the line at the top of the table)', () => {
+  const g4 = () => table({ hands: [[num('HEMA', 1), num('CC', 2)], filler(), filler(), filler()] })
+  const line = (g: CardGame) => describeMove(g.log, g.players)
+
+  it('is empty before anything happened', () => {
+    expect(describeMove([], [])).toBeNull()
+  })
+
+  it('her Skip says who is skipped', () => {
+    const g = { ...g4(), players: g4().players.map((p, i) => (i === 0 ? { ...p, hand: [act('HEMA', 'skip'), num('CC', 2)] } : p)) }
+    expect(line(answerPlay(startPlay(g, 'HEMA-skip'), right()))).toBe('You played HEMA Skip · Bot 1 is skipped')
+  })
+
+  it("a computer player's Skip on her says her turn is skipped", () => {
+    const g = table({ hands: [filler(), filler(), filler(), [act('HEMA', 'skip'), num('CC', 1)]], turn: 3 })
+    const next = botTurn(g, botRight)
+    expect(line(next)).toBe('Bot 3 played HEMA Skip · Your turn is skipped')
+    expect(next.turn).toBe(1)
+  })
+
+  it('Reverse says who goes next', () => {
+    const g = table({ hands: [[act('HEMA', 'reverse'), num('CC', 2)], filler(), filler(), filler()] })
+    expect(line(answerPlay(startPlay(g, 'HEMA-reverse'), right()))).toBe('You played HEMA Reverse · Direction flipped · Bot 3 goes next')
+  })
+
+  it('her Draw 2 on a computer player: what it drew, and that it is skipped', () => {
+    const g = table({ hands: [[act('HEMA', 'draw2'), num('CC', 2)], filler(), filler(), filler()] })
+    const played = answerPlay(startPlay(g, 'HEMA-draw2'), right())
+    expect(line(answerPlay(startPlay(g, 'HEMA-draw2'), right(), botWrong))).toBe('You played HEMA Draw 2 · Bot 1 drew 2 and is skipped')
+    expect(line(answerPlay(startPlay(g, 'HEMA-draw2'), right(), botRight))).toBe('You played HEMA Draw 2 · Bot 1 is skipped')
+    expect(played.turn).toBe(2)
+  })
+
+  it('after her Draw 2 questions: what she drew, and that her turn is skipped', () => {
+    const hit: CardGame = { ...table({ hands: [[num('CC', 9)], filler(), filler(), filler()], top: act('MICRO', 'draw2') }), pending: { kind: 'draw2', subject: 'MICRO', left: 1 } }
+    expect(line(answerDraw2(hit, wrong('q1', 'MICRO')))).toBe('You drew 1, and your turn is skipped')
+    expect(line(answerDraw2(hit, right('q1', 'MICRO')))).toBe('Your turn is skipped')
+  })
+
+  it('only shows the latest move, not the ones before it', () => {
+    const g = startPlay(g4(), 'HEMA-1')
+    const afterHer = answerPlay(g, right())
+    const afterBot = botTurn(afterHer, botWrong)
+    expect(line(afterBot)).toMatch(/^Bot 1 /)
+    expect(line(afterBot)).not.toContain('You played')
   })
 })
 
@@ -208,7 +277,7 @@ describe('answerPlay', () => {
     expect(next.turn).toBe(1)
     expect(next.pending).toBeNull()
     expect(next).toMatchObject({ answered: 1, correct: 1, usedQuestionIds: ['q9'], bySubject: { HEMA: { answered: 1, correct: 1 } } })
-    expect(next.log.at(-1)).toEqual({ player: 0, kind: 'play', cardId: 'HEMA-3' })
+    expect(next.log.at(-1)).toMatchObject({ player: 0, kind: 'play', cardId: 'HEMA-3' })
   })
 
   it("wrong: the card stays, she draws 1, and her turn ends", () => {
@@ -396,7 +465,7 @@ describe('computer players', () => {
     expect(played.turn).toBe(2)
     const missed = botTurn(g, botWrong)
     expect(missed.players[1].hand).toHaveLength(3)
-    expect(missed.log.at(-2)).toEqual({ player: 1, kind: 'miss', cardId: 'HEMA-2' })
+    expect(missed.log.at(-2)).toMatchObject({ player: 1, kind: 'miss', cardId: 'HEMA-2' })
     expect(missed.turn).toBe(2)
   })
 

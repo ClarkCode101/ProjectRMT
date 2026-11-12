@@ -71,13 +71,20 @@ export type CardPending =
   | { kind: 'chooseSubject' }
   | { kind: 'draw2'; subject: CardSubject; left: number }
 
-/** One thing that happened, so the screen can say "Rafa M. played HEMA 3" or "Joy D. drew 2". */
-export type CardEvent =
+/**
+ * One thing that happened, so the screen can say "Rafa M. played HEMA 3" or "Joy D. is skipped".
+ * `move` groups the events of one move (her answer, or a computer player's whole turn), so the screen can show
+ * a move as one line: "Kat S. played HEMA Skip · Your turn is skipped".
+ */
+export type CardEvent = { move?: number } & (
   | { player: number; kind: 'play'; cardId: string }
   | { player: number; kind: 'miss'; cardId: string } // answered wrong, the card went back
   | { player: number; kind: 'draw'; count: number }
   | { player: number; kind: 'pass' }
   | { player: number; kind: 'choose'; subject: CardSubject }
+  | { player: number; kind: 'skipped' } // lost their turn (Skip, or after a Draw 2)
+  | { player: number; kind: 'reverse'; next: number } // the direction flipped; `next` goes now
+)
 
 /** The newest few events are kept (enough for the screen, small enough for the saved game). */
 export const EVENT_LOG_SIZE = 12
@@ -110,7 +117,63 @@ export type CardGame = {
   /** why it ended: someone emptied their hand, or there was nothing left to draw */
   endReason: 'emptied' | 'outOfCards' | null
   log: CardEvent[]
+  /** counts the moves, to group the events of each one (missing in games saved before it existed) */
+  moveCount?: number
   startedAt: string
+}
+
+/** One line for what happened, e.g. "Rafa M. played HEMA 3" or "You drew 2". */
+export function describeEvent(event: CardEvent, players: readonly Pick<CardPlayer, 'name' | 'isHuman'>[]): string {
+  const player = players[event.player]
+  const you = player?.isHuman ?? false
+  const name = you ? 'You' : (player?.name ?? 'Someone')
+  const card = (id: string) => {
+    const found = buildDeck().find((c) => c.id === id)
+    return found ? cardLabel(found) : 'a card'
+  }
+  switch (event.kind) {
+    case 'play':
+      return `${name} played ${card(event.cardId)}`
+    case 'miss':
+      return `${name} missed the question for ${card(event.cardId)}`
+    case 'draw':
+      return `${name} drew ${event.count}`
+    case 'pass':
+      return `${name} passed`
+    case 'choose':
+      return `${name} picked ${event.subject}`
+    case 'skipped':
+      return you ? 'Your turn is skipped' : `${name} is skipped`
+    case 'reverse': {
+      const next = players[event.next]
+      return `Direction flipped · ${next?.isHuman ? 'your turn' : `${next?.name ?? 'someone'} goes next`}`
+    }
+  }
+}
+
+/**
+ * The latest move in one line, e.g. "You played CC Skip · Joy D. is skipped" or
+ * "You played HEMA Draw 2 · Rafa M. drew 2 and is skipped". null before anything happened.
+ */
+export function describeMove(log: readonly CardEvent[], players: readonly Pick<CardPlayer, 'name' | 'isHuman'>[]): string | null {
+  const last = log.at(-1)
+  if (!last) return null
+  // Games saved before moves were counted: just the newest event.
+  const events = last.move === undefined ? [last] : log.filter((e) => e.move === last.move)
+  const parts: string[] = []
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i]
+    const after = events[i + 1]
+    // "Rafa M. drew 2" + "Rafa M. is skipped" → "Rafa M. drew 2 and is skipped"
+    if (event.kind === 'draw' && after?.kind === 'skipped' && after.player === event.player) {
+      const you = players[event.player]?.isHuman ?? false
+      parts.push(you ? `You drew ${event.count}, and your turn is skipped` : `${players[event.player]?.name ?? 'Someone'} drew ${event.count} and is skipped`)
+      i++
+      continue
+    }
+    parts.push(describeEvent(event, players))
+  }
+  return parts.join(' · ')
 }
 
 /** Made-up names for the computer players. */
@@ -237,7 +300,7 @@ export function answerPlay(game: CardGame, answer: CardAnswer, random: RandomFn 
   const card = findCard(game.players[0].hand, pending.cardId)
   if (!card) return game
 
-  const g = tallyAnswer(copyGame(game), answer)
+  const g = tallyAnswer(startMove(copyGame(game)), answer)
   g.pending = null
 
   if (!answer.isCorrect) {
@@ -260,7 +323,7 @@ export function answerPlay(game: CardGame, answer: CardAnswer, random: RandomFn 
 /** After a right Wild: she picks the subject everyone has to match next. */
 export function chooseSubject(game: CardGame, subject: CardSubject): CardGame {
   if (game.finished || game.turn !== 0 || game.pending?.kind !== 'chooseSubject') return game
-  const g = copyGame(game)
+  const g = startMove(copyGame(game))
   g.pending = null
   g.subject = subject
   addEvent(g, { player: 0, kind: 'choose', subject })
@@ -275,7 +338,7 @@ export function chooseSubject(game: CardGame, subject: CardSubject): CardGame {
  */
 export function drawForTurn(game: CardGame, random: RandomFn = Math.random): CardGame {
   if (!isHerMove(game) || playableCards(game, 0).length > 0) return game
-  const g = copyGame(game)
+  const g = startMove(copyGame(game))
   const drawn = drawCards(g, 0, 1, random)
   if (g.finished) return g
   const card = g.players[0].hand[g.players[0].hand.length - 1]
@@ -291,7 +354,7 @@ export function drawForTurn(game: CardGame, random: RandomFn = Math.random): Car
 /** She drew a card that fits but keeps it. */
 export function passDrawn(game: CardGame): CardGame {
   if (game.finished || game.turn !== 0 || game.pending?.kind !== 'drawn') return game
-  const g = copyGame(game)
+  const g = startMove(copyGame(game))
   g.pending = null
   addEvent(g, { player: 0, kind: 'pass' })
   g.turn = nextPlayer(g, 0)
@@ -305,7 +368,7 @@ export function passDrawn(game: CardGame): CardGame {
 export function answerDraw2(game: CardGame, answer: CardAnswer, random: RandomFn = Math.random): CardGame {
   const pending = game.pending
   if (game.finished || game.turn !== 0 || pending?.kind !== 'draw2') return game
-  const g = tallyAnswer(copyGame(game), answer)
+  const g = tallyAnswer(startMove(copyGame(game)), answer)
   if (!answer.isCorrect) g.drawnForMistakes += drawCards(g, 0, 1, random)
   if (g.finished) return g
   const left = pending.left - 1
@@ -313,6 +376,7 @@ export function answerDraw2(game: CardGame, answer: CardAnswer, random: RandomFn
     g.pending = { kind: 'draw2', subject: pending.subject, left }
   } else {
     g.pending = null
+    addEvent(g, { player: 0, kind: 'skipped' })
     g.turn = nextPlayer(g, 0)
   }
   return g
@@ -328,7 +392,7 @@ export function answerDraw2(game: CardGame, answer: CardAnswer, random: RandomFn
  */
 export function botTurn(game: CardGame, random: RandomFn = Math.random, chance = BOT_CORRECT_CHANCE): CardGame {
   if (game.finished || game.players[game.turn].isHuman) return game
-  const g = copyGame(game)
+  const g = startMove(copyGame(game))
   const me = g.turn
 
   let card = botChoice(g, me)
@@ -399,7 +463,13 @@ function findCard(hand: readonly Card[], cardId: string): Card | undefined {
 }
 
 function addEvent(g: CardGame, event: CardEvent) {
-  g.log = [...g.log, event].slice(-EVENT_LOG_SIZE)
+  g.log = [...g.log, { ...event, move: g.moveCount ?? 0 }].slice(-EVENT_LOG_SIZE)
+}
+
+/** A new move starts: its events are grouped under the next move number. */
+function startMove(g: CardGame): CardGame {
+  g.moveCount = (g.moveCount ?? 0) + 1
+  return g
 }
 
 function tallyAnswer(g: CardGame, { questionId, subjectCode, isCorrect }: CardAnswer): CardGame {
@@ -429,10 +499,12 @@ function putDown(g: CardGame, playerIndex: number, card: Card) {
 /** What a number or action card does after it goes down, and whose turn is next. */
 function applyAction(g: CardGame, playerIndex: number, card: Card, random: RandomFn, botChance = BOT_CORRECT_CHANCE) {
   if (card.kind === 'skip') {
+    addEvent(g, { player: nextPlayer(g, playerIndex), kind: 'skipped' })
     g.turn = nextPlayer(g, playerIndex, 2)
   } else if (card.kind === 'reverse') {
     g.direction = g.direction === 1 ? -1 : 1
     g.turn = nextPlayer(g, playerIndex)
+    addEvent(g, { player: playerIndex, kind: 'reverse', next: g.turn })
   } else if (card.kind === 'draw2') {
     const target = nextPlayer(g, playerIndex)
     if (g.players[target].isHuman) {
@@ -444,7 +516,10 @@ function applyAction(g: CardGame, playerIndex: number, card: Card, random: Rando
       let misses = 0
       for (let i = 0; i < DRAW2_QUESTIONS; i++) if (random() >= botChance) misses++
       drawCards(g, target, misses, random)
-      if (!g.finished) g.turn = nextPlayer(g, target)
+      if (!g.finished) {
+        addEvent(g, { player: target, kind: 'skipped' })
+        g.turn = nextPlayer(g, target)
+      }
     }
   } else {
     g.turn = nextPlayer(g, playerIndex)

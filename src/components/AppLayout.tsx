@@ -9,6 +9,7 @@ import {
   NotebookPen,
   Play,
   Settings,
+  Spade,
   Timer,
   Users,
   type LucideIcon,
@@ -35,6 +36,7 @@ const PRACTICE: NavItem = { to: '/practice', label: 'Practice', icon: NotebookPe
 const MOCK: NavItem = { to: '/mock', label: 'Mock exam', icon: Timer }
 const FLASHCARDS: NavItem = { to: '/flashcards', label: 'Flashcards', icon: Layers }
 const BOARD: NavItem = { to: '/board', label: 'Board Review', icon: Dices }
+const CARDS: NavItem = { to: '/cards', label: 'Last Card', icon: Spade }
 const QUESTIONS: NavItem = { to: '/questions', label: 'Questions', icon: Library }
 const COMMUNITY: NavItem = { to: '/community', label: 'Community', icon: Users }
 // Quick reference (/reference) is off the menus for now; the page and its address still work.
@@ -167,6 +169,7 @@ export function AppLayout() {
               <RailLink item={MOCK} />
               <RailLink item={FLASHCARDS} />
               <RailLink item={BOARD} alert={boardAlert} />
+              <RailLink item={CARDS} />
               <RailLink item={QUESTIONS} />
               <RailLink item={COMMUNITY} />
             </nav>
@@ -307,6 +310,14 @@ export function AppLayout() {
             <Dices className="size-5" aria-hidden />
             Board Review
             {boardAlert && <span className="ml-auto rounded-full bg-wrong px-2 text-xs font-bold text-white">Waiting</span>}
+          </NavLink>
+          <NavLink
+            to="/cards"
+            onClick={() => setMoreOpen(false)}
+            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
+          >
+            <Spade className="size-5" aria-hidden />
+            Last Card
           </NavLink>
           <NavLink
             to="/community"
