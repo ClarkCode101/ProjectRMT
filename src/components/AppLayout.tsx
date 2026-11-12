@@ -16,7 +16,7 @@ import {
 import { Suspense, useState } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { useAuth } from '@/features/auth/authContext'
-import { useBoardAlert } from '@/features/board/teamApi'
+import { leaveLobbyBeforeLogout, useBoardAlert } from '@/features/board/teamApi'
 import { forgetBank } from '@/lib/offline/bank'
 import { useOfflineSync } from '@/lib/offline/useOfflineSync'
 import { useAnnouncePresence } from '@/lib/presence'
@@ -127,6 +127,7 @@ export function AppLayout() {
   async function logOut() {
     setMoreOpen(false)
     setProfileOpen(false)
+    await leaveLobbyBeforeLogout() // while still logged in: free her seat in a team lobby
     await supabase.auth.signOut()
     queryClient.clear() // forget cached quiz data from this account
     await forgetBank() // and the offline copy on this device (shared iPads)

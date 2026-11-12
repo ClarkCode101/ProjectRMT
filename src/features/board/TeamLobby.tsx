@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/dashboard'
 import { Dialog } from '@/components/Dialog'
 import { heroButtonClass } from '@/components/report'
 import { inviteLink, playerColor, type TeamRoom } from '@/lib/boardTeam'
-import { useOnlineIds } from '@/lib/presence'
+import { useOnlineIds, usePresenceKnown } from '@/lib/presence'
 import { cn } from '@/lib/utils'
 import type { RoomChat as RoomChatState } from './chatApi'
 import { ChatSheet, RoomChat } from './RoomChat'
@@ -16,6 +16,12 @@ const MAX_WAITING_INVITES = 3
 
 /** One seat: a wide row on phones and iPad portrait, a small upright card (avatar over name) from 1024px. */
 const seatClass = 'flex h-16 items-center gap-3 rounded-xl border px-4 lg:h-auto lg:flex-col lg:justify-center lg:gap-1.5 lg:px-2 lg:py-3 lg:text-center'
+
+/** "Echay is", "Echay and Super are", "Echay, Super and Ana are" */
+function offlineNames(names: string[]): string {
+  if (names.length === 1) return `${names[0]} is`
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]} are`
+}
 
 type Props = {
   room: TeamRoom
@@ -61,6 +67,12 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
   // Only classmates with the app open right now (they can answer the invite), plus anyone already invited or in
   // the game, so their status stays in view even if they step away.
   const onlineIds = useOnlineIds()
+  const presenceKnown = usePresenceKnown()
+  // closed the app or lost the connection (never "offline" until we know who's online, and never herself)
+  const isOffline = (userId: string) => presenceKnown && userId !== room.me && !onlineIds.has(userId)
+  // Start waits for them: a game with someone away would just burn their turns. Remove them, or wait for them to come back.
+  const offlinePlayers = joined.filter((p) => isOffline(p.userId))
+  const canStart = !needPlayers && offlinePlayers.length === 0
   const shownClassmates = (classmates.data ?? []).filter((c) => onlineIds.has(c.userId) || invitedIds.has(c.userId) || joinedIds.has(c.userId))
   const link = inviteLink(window.location.origin, room.inviteCode)
 
@@ -191,10 +203,13 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
                 </li>
               )
             }
+            // closed the app or lost the connection: kept in the seat (an iPad drops it just by switching apps for a
+            // moment), but the host can see it before tapping Start
+            const offline = isOffline(p.userId)
             return (
               <li key={p.userId} className={cn(seatClass, 'relative bg-card')}>
                 <span
-                  className="flex size-9 shrink-0 items-center justify-center rounded-full font-heading font-bold text-white uppercase"
+                  className={cn('flex size-9 shrink-0 items-center justify-center rounded-full font-heading font-bold text-white uppercase', offline && 'opacity-40 grayscale')}
                   style={{ backgroundColor: playerColor(joined, p.userId) }}
                   aria-hidden
                 >
@@ -203,6 +218,15 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
                 <span className="min-w-0 flex-1 truncate font-semibold lg:max-w-full lg:flex-none lg:text-sm">
                   {p.name}
                   {p.userId === room.me && <span className="text-muted-foreground"> (you)</span>}
+                  {offline && (
+                    <>
+                      <span className="font-normal text-muted-foreground lg:hidden"> · offline</span>
+                      <span className="hidden items-center justify-center gap-1 text-xs font-normal text-muted-foreground lg:flex">
+                        <span className="size-2 rounded-full border border-current" aria-hidden />
+                        Offline
+                      </span>
+                    </>
+                  )}
                 </span>
                 {p.userId === room.hostId && (
                   <span className="rounded-[4px] bg-secondary px-1.5 text-xs font-bold lg:absolute lg:top-1.5 lg:right-1.5">Host</span>
@@ -249,13 +273,17 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
         </button>
         {isHost ? (
           <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
-            <button type="button" onClick={() => act(() => teamActions.start(room.id))} disabled={busy || needPlayers} className={cn(heroButtonClass, 'px-8 focus-visible:ring-ring/50')}>
+            <button type="button" onClick={() => act(() => teamActions.start(room.id))} disabled={busy || !canStart} className={cn(heroButtonClass, 'px-8 focus-visible:ring-ring/50')}>
               <Play className="size-5 fill-current" aria-hidden />
               {busy ? 'Starting…' : 'Start game'}
             </button>
-            {/* After Play again the host is whoever tapped first, so say it plainly */}
+            {/* After Play again the host is whoever tapped first, so say it plainly. When Start is off, say why and what to do. */}
             <p className="text-center text-xs text-muted-foreground sm:text-right" aria-live="polite">
-              {needPlayers ? 'Need 1 more player to start.' : 'You’re the host. Tap Start when everyone’s in.'}
+              {needPlayers
+                ? 'Need 1 more player to start.'
+                : offlinePlayers.length > 0
+                  ? `${offlineNames(offlinePlayers.map((p) => p.name))} offline. Wait for them, or remove them to start.`
+                  : 'You’re the host. Tap Start when everyone’s in.'}
             </p>
           </div>
         ) : (

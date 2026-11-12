@@ -193,6 +193,21 @@ export const teamActions = {
   spendLifeline: (roomId: string, lifeline: LifelineId) => call(supabase.rpc('board_use_lifeline', { p_room: roomId, p_lifeline: lifeline })),
 }
 
+/**
+ * Logging out = leaving her team lobby, like tapping Leave lobby, so the others don't wait on an empty seat
+ * (a host passes the lobby on, or cancels it if alone). A game that already started is kept: she may be
+ * switching devices, and the turn timer moves on without her. Best effort: never stops the logout.
+ */
+export async function leaveLobbyBeforeLogout() {
+  try {
+    const { data } = await supabase.rpc('board_my_room')
+    const room = data?.[0]
+    if (room?.status === 'lobby') await supabase.rpc('board_leave', { p_room: room.room_id })
+  } catch {
+    // offline or the call failed: log out anyway
+  }
+}
+
 /** Read the room (and the start screen's lists) again right away. */
 export function useRefreshTeam() {
   const queryClient = useQueryClient()

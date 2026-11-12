@@ -10,10 +10,13 @@ const CHANNEL = 'online-members'
 // ---------- A tiny store: the set of user ids online, and who wants to hear when it changes ----------
 
 let onlineIds: ReadonlySet<string> = new Set()
+// false until the first list arrives (and again if the connection drops), so nobody is shown "Offline" by mistake
+let known = false
 const listeners = new Set<() => void>()
 
-function setOnline(next: ReadonlySet<string>) {
+function setOnline(next: ReadonlySet<string>, isKnown: boolean) {
   onlineIds = next
+  known = isKnown
   listeners.forEach((listener) => listener())
 }
 
@@ -29,6 +32,11 @@ export function useOnlineIds(): ReadonlySet<string> {
   return useSyncExternalStore(subscribe, () => onlineIds)
 }
 
+/** True once we have the list of who's online (her own connection works). Until then, show nobody as offline. */
+export function usePresenceKnown(): boolean {
+  return useSyncExternalStore(subscribe, () => known)
+}
+
 /**
  * Join the "online" channel while she's signed in. Call once, in the app layout (always on screen).
  * Quiet if it fails: the invite list then just shows nobody online, and the code still works.
@@ -41,14 +49,16 @@ export function useAnnouncePresence(userId: string | null) {
       .on('presence', { event: 'sync' }, () => {
         // presenceState() is keyed by the presence key we set above (her user id); one key per person,
         // even if she has the app open on two devices
-        setOnline(new Set(Object.keys(channel.presenceState())))
+        setOnline(new Set(Object.keys(channel.presenceState())), true)
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') void channel.track({ online_at: new Date().toISOString() })
+        // her own connection dropped: we no longer know who's online (don't call everyone offline)
+        else setOnline(onlineIds, false)
       })
     return () => {
       void supabase.removeChannel(channel)
-      setOnline(new Set())
+      setOnline(new Set(), false)
     }
   }, [userId])
 }
