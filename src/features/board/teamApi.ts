@@ -1,7 +1,7 @@
 // Board Review team games: talking to the database (migration 0023). Every change goes through a database function,
 // which checks who is calling; the screen only reads the room's state and shows it.
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import type { LifelineId } from '@/lib/board'
 import { parseTeamRoom, type TeamRoom } from '@/lib/boardTeam'
 import { supabase } from '@/lib/supabase'
@@ -181,6 +181,8 @@ export const teamActions = {
     }
   },
   leave: (roomId: string) => call(supabase.rpc('board_leave', { p_room: roomId })),
+  /** The host removes a player from the lobby (migration 0039). They can come back with an invite or the code. */
+  kick: (roomId: string, userId: string) => call(supabase.rpc('board_kick', { p_room: roomId, p_user: userId })),
   /** Play again from the finish screen: makes the next lobby, or joins it if someone already did. */
   rematch: (finishedRoomId: string) => call(supabase.rpc('board_rematch', { p_room: finishedRoomId })),
   /** Back to Board Review from the finish screen: "I'm done", so a later Play again won't invite her. */
@@ -211,9 +213,13 @@ export async function leaveLobbyBeforeLogout() {
 /** Read the room (and the start screen's lists) again right away. */
 export function useRefreshTeam() {
   const queryClient = useQueryClient()
-  return (roomId?: string) => {
-    if (roomId) void queryClient.invalidateQueries({ queryKey: ['board-room', roomId] })
-    void queryClient.invalidateQueries({ queryKey: ['board-invites'] })
-    void queryClient.invalidateQueries({ queryKey: ['board-my-room'] })
-  }
+  // the same function every render, so effects that use it don't run again on each re-render
+  return useCallback(
+    (roomId?: string) => {
+      if (roomId) void queryClient.invalidateQueries({ queryKey: ['board-room', roomId] })
+      void queryClient.invalidateQueries({ queryKey: ['board-invites'] })
+      void queryClient.invalidateQueries({ queryKey: ['board-my-room'] })
+    },
+    [queryClient],
+  )
 }

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { useFocusMode } from '@/components/layoutContext'
@@ -27,6 +27,15 @@ function TeamRoomScreen({ roomId }: { roomId: string | undefined }) {
   // No nav while the game is on, like the solo game.
   useFocusMode(room?.status === 'playing')
 
+  // She was in this lobby, and now the room says she isn't a player: the host removed her (migration 0039).
+  // (Leaving on her own goes straight back to Board Review, and a closed lobby says "cancelled".)
+  const [wasInLobby, setWasInLobby] = useState(false)
+  if (room?.status === 'lobby' && !wasInLobby) setWasInLobby(true)
+  const removed = wasInLobby && state.isSuccess && !room
+  useEffect(() => {
+    if (removed) refresh() // Board Review's start screen stops offering "Back to your team lobby"
+  }, [removed, refresh])
+
   /** Runs a database change, shows its message if it fails, and reads the room again. */
   const act = useCallback(
     async (action: () => Promise<unknown>) => {
@@ -52,6 +61,17 @@ function TeamRoomScreen({ roomId }: { roomId: string | undefined }) {
 
   if (state.isPending) return <FullPageMessage>Loading the game…</FullPageMessage>
   if (state.isError) return <FullPageMessage>{state.error.message}</FullPageMessage>
+  if (removed) {
+    return (
+      <div className="mx-auto max-w-md space-y-4 py-16 text-center">
+        <p className="font-heading text-2xl font-bold">You’re no longer in this lobby</p>
+        <p className="text-muted-foreground">The host removed you from the lobby. You can join again if they invite you or send you the code.</p>
+        <Link to="/board" className="inline-flex h-11 items-center rounded-lg border bg-card px-5 font-semibold hover:border-primary">
+          Back to Board Review
+        </Link>
+      </div>
+    )
+  }
   if (!room || room.status === 'cancelled') {
     return (
       <div className="mx-auto max-w-md space-y-4 py-16 text-center">

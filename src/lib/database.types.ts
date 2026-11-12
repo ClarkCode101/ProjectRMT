@@ -333,6 +333,7 @@ export type Database = {
       board_join: { Args: { p_code: string }; Returns: string }
       board_my_room: { Args: Record<string, never>; Returns: { room_id: string; status: string; my_turn: boolean; players: number }[] }
       board_leave: { Args: { p_room: string }; Returns: undefined }
+      board_kick: { Args: { p_room: string; p_user: string }; Returns: undefined }
       board_start: { Args: { p_room: string }; Returns: undefined }
       board_roll: { Args: { p_room: string }; Returns: number }
       board_answer: { Args: { p_room: string; p_selected: number }; Returns: boolean }

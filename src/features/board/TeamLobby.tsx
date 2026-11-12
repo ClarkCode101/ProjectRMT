@@ -2,6 +2,7 @@ import { Check, Copy, Link2, LogOut, Play, UserPlus, X } from 'lucide-react'
 import { useState } from 'react'
 import { PageHeader } from '@/components/dashboard'
 import { Dialog } from '@/components/Dialog'
+import { Button } from '@/components/ui/button'
 import { heroButtonClass } from '@/components/report'
 import { inviteLink, playerColor, type TeamRoom } from '@/lib/boardTeam'
 import { useOnlineIds, usePresenceKnown } from '@/lib/presence'
@@ -49,6 +50,16 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
   const invitesFull = room.invited.length >= MAX_WAITING_INVITES
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [chatSheetOpen, setChatSheetOpen] = useState(false)
+  // the player the host tapped X on, waiting for "Remove" in the confirm popup
+  const [removeTarget, setRemoveTarget] = useState<{ userId: string; name: string } | null>(null)
+
+  /** Host only: remove a player from the lobby (migration 0039). A failure shows above the lobby, like other actions. */
+  function removePlayer() {
+    if (!removeTarget) return
+    const { userId } = removeTarget
+    setRemoveTarget(null)
+    void act(() => teamActions.kick(room.id, userId))
+  }
   const chatColor = (userId: string) => playerColor(joined, userId)
 
   /** Invite from the list; a failure (e.g. the 3-invite limit) shows inside the popup, where she's looking. */
@@ -231,6 +242,18 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
                 {p.userId === room.hostId && (
                   <span className="rounded-[4px] bg-secondary px-1.5 text-xs font-bold lg:absolute lg:top-1.5 lg:right-1.5">Host</span>
                 )}
+                {/* the host can remove anyone else (asks first); always visible, since an iPad has no hover */}
+                {isHost && p.userId !== room.me && (
+                  <button
+                    type="button"
+                    onClick={() => setRemoveTarget({ userId: p.userId, name: p.name })}
+                    disabled={busy}
+                    aria-label={`Remove ${p.name} from the lobby`}
+                    className="-mr-2 flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-wrong-soft hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50 lg:absolute lg:top-0 lg:right-0 lg:mr-0"
+                  >
+                    <X className="size-4" aria-hidden />
+                  </button>
+                )}
               </li>
             )
           })}
@@ -292,6 +315,26 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
           </p>
         )}
       </div>
+
+      {/* ---------- Host: confirm removing a player (a stray tap on the X shouldn't remove anyone) ---------- */}
+      <Dialog open={removeTarget !== null} onClose={() => setRemoveTarget(null)} labelledBy="remove-player-heading">
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h2 id="remove-player-heading" className="text-xl font-bold">
+              Remove {removeTarget?.name} from the lobby?
+            </h2>
+            <p className="text-muted-foreground">They can come back if you invite them again or they use the code.</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button className="h-11 rounded-lg text-base font-bold sm:order-2" variant="destructive" onClick={removePlayer}>
+              Remove
+            </Button>
+            <Button variant="outline" className="h-11 rounded-lg text-base sm:order-1" onClick={() => setRemoveTarget(null)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Dialog>
 
       {/* ---------- The classmate list ---------- */}
       {/* Only the X (or Esc) closes it, like the Play with classmates sheet */}
