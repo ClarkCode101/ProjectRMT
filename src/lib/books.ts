@@ -23,14 +23,19 @@ export const BOOK_SPINE: Record<BookColor, string> = {
   slate: '#3E5566',
 }
 
-/** Each subject book's color, tinted like its stain on the Flashcards lens (dark enough for white text). */
+/**
+ * Each subject's color everywhere in the app (books, Board Review zones, Last Card suits). Dark enough for white text,
+ * and six clearly different hues so the card game can be played by color (PROJECT_PLAN.md §15). CC, MICRO, HEMA and
+ * BBIS are tinted like their stain on the Flashcards lens; CM (green) and HTMLE (blue) were changed on 2026-11-12
+ * because they looked almost the same as CC and HEMA.
+ */
 export const SUBJECT_COLOR: Record<string, string> = {
   CC: '#8A6410',
   MICRO: '#5E3B9C',
   HEMA: '#9C3A68',
   BBIS: '#A8303F',
-  CM: '#7E5410',
-  HTMLE: '#A2406F',
+  CM: '#3A6B23',
+  HTMLE: '#2B5C8F',
 }
 
 /** Text with extra spaces removed, or an error to show under the box. */

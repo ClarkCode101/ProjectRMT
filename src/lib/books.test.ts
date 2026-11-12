@@ -18,7 +18,42 @@ import {
   questionsOnlyIn,
   starsFor,
   subjectTopicList,
+  SUBJECT_COLOR,
 } from './books'
+
+describe('SUBJECT_COLOR', () => {
+  const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+  /** WCAG relative luminance */
+  const luminance = (hex: string) => {
+    const [r, g, b] = rgb(hex).map((v) => {
+      const c = v / 255
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+    })
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
+
+  it('has a color for each of the six subjects', () => {
+    expect(Object.keys(SUBJECT_COLOR).sort()).toEqual(['BBIS', 'CC', 'CM', 'HEMA', 'HTMLE', 'MICRO'])
+  })
+
+  it('is dark enough for white text (WCAG AA, 4.5:1)', () => {
+    for (const [code, hex] of Object.entries(SUBJECT_COLOR)) {
+      expect({ code, ratio: 1.05 / (luminance(hex) + 0.05) >= 4.5 }).toEqual({ code, ratio: true })
+    }
+  })
+
+  it('has no two subjects that look almost the same (Last Card is played by color)', () => {
+    const entries = Object.entries(SUBJECT_COLOR)
+    for (const [i, [a, hexA]] of entries.entries()) {
+      for (const [b, hexB] of entries.slice(i + 1)) {
+        const [ra, ga, ba] = rgb(hexA)
+        const [rb, gb, bb] = rgb(hexB)
+        const distance = Math.hypot(ra - rb, ga - gb, ba - bb)
+        expect({ pair: `${a}/${b}`, farEnough: distance >= 40 }).toEqual({ pair: `${a}/${b}`, farEnough: true })
+      }
+    }
+  })
+})
 
 describe('cleanBookTitle', () => {
   it('trims and squeezes spaces', () => {
