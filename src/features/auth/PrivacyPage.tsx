@@ -78,8 +78,8 @@ export default function PrivacyPage() {
 
         <Section title="Who can see it">
           <p>
-            Only you can see your own progress. The admin can see the list of accounts (names and emails) to accept new
-            members. Books you publish and messages you send in games are visible to other members.
+            Only you can see your own progress. The admin can see the list of accounts (names, emails, and when each person
+            last studied) to accept new members. Books you publish and messages you send in games are visible to other members.
           </p>
           <p>We don’t use analytics or tracking tools, and we don’t share your data with anyone else.</p>
         </Section>
