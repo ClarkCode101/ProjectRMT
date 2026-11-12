@@ -27,6 +27,10 @@ export type Database = {
       >
       topics: Table<{ id: number; subject_id: number; name: string }, 'subject_id' | 'name'>
       // migration 0036: the admin's notice at the top of a page (read-only here; the admin writes through set_notice)
+      // Team rooms (migration 0023); only what the app reads directly. game: migration 0042.
+      board_rooms: Table<{ id: string; game: 'board' | 'cards'; status: string }>
+      // migration 0042: what each Last Card player may see (her own row only; Realtime sends it on every change)
+      card_views: Table<{ room_id: string; user_id: string; view: Json; version: number; updated_at: string }>
       notices: Table<{ place: 'questions' | 'home'; body: string; posted_at: string }, 'place' | 'body'>
       uploads: Table<
         {
@@ -340,15 +344,17 @@ export type Database = {
       }
       // migration 0023: Board Review team games (lib/boardTeam.ts reads board_room_state)
       board_classmates: { Args: Record<string, never>; Returns: { user_id: string; name: string }[] }
-      board_create_room: { Args: Record<string, never>; Returns: string }
+      // migration 0042: a lobby for Board Review ('board') or Last Card ('cards')
+      board_create_room: { Args: { p_game: string }; Returns: string }
       board_invite: { Args: { p_room: string; p_to: string }; Returns: undefined }
       board_my_invites: {
         Args: Record<string, never>
-        Returns: { invite_id: string; room_id: string; from_name: string; players: number; created_at: string }[]
+        // game: migration 0043
+        Returns: { invite_id: string; room_id: string; from_name: string; players: number; created_at: string; game: string }[]
       }
       board_respond_invite: { Args: { p_invite: string; p_accept: boolean }; Returns: string | null }
       board_join: { Args: { p_code: string }; Returns: string }
-      board_my_room: { Args: Record<string, never>; Returns: { room_id: string; status: string; my_turn: boolean; players: number }[] }
+      board_my_room: { Args: Record<string, never>; Returns: { room_id: string; status: string; my_turn: boolean; players: number; game: string }[] }
       board_leave: { Args: { p_room: string }; Returns: undefined }
       board_kick: { Args: { p_room: string; p_user: string }; Returns: undefined }
       board_start: { Args: { p_room: string }; Returns: undefined }

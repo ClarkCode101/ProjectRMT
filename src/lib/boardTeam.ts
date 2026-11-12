@@ -48,7 +48,8 @@ export type TeamEvent =
   | { kind: 'timeout'; at: string; userId: string; name: string; removed: boolean }
   | { kind: 'left'; at: string; userId: string; name: string }
 
-export type TeamRoomStatus = 'lobby' | 'playing' | 'finished' | 'cancelled'
+/** 'live': a Last Card game in progress (migration 0042; Board Review's game is 'playing') */
+export type TeamRoomStatus = 'lobby' | 'playing' | 'live' | 'finished' | 'cancelled'
 export type TeamRoom = {
   id: string
   hostId: string
@@ -194,7 +195,7 @@ export function parseEvent(v: unknown): TeamEvent | null {
   }
 }
 
-const STATUSES: TeamRoomStatus[] = ['lobby', 'playing', 'finished', 'cancelled']
+const STATUSES: TeamRoomStatus[] = ['lobby', 'playing', 'live', 'finished', 'cancelled']
 const PLAYER_STATUSES: TeamPlayerStatus[] = ['joined', 'left', 'removed']
 
 /** The room as the app uses it. null when the database said nothing (not a member, or no such room). */

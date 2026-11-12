@@ -5,15 +5,16 @@ import { Dialog } from '@/components/Dialog'
 import { cleanGameCode, GAME_CODE_LENGTH } from '@/lib/boardTeam'
 import { useOnline } from '@/lib/offline/useOfflineSync'
 import { cn } from '@/lib/utils'
-import { teamActions, useMyInvites, useMyTeamRoom, useNeedsTeamName, useRefreshTeam } from './teamApi'
+import { GAME_NAME, readRoomGame, teamActions, teamRoomPath, useMyInvites, useMyTeamRoom, useNeedsTeamName, useRefreshTeam, type GameKind } from './teamApi'
 import { TeamNameStep } from './TeamNameStep'
 
 /**
- * "Play with classmates" on Board Review's start screen: opens a sheet with the invites waiting for her (only when
- * there are some), "Join with a code", and "Host a new game". If she's already in a team game, the button takes her
- * back to it instead.
+ * "Play with classmates" on Board Review's and Last Card's start screens: opens a sheet with the invites waiting for
+ * her (only when there are some; each says which game), "Join with a code", and "Host a new game" (of this screen's
+ * game). If she's already in a team game, the button takes her back to it instead. Rooms, invites and codes are shared
+ * by both games (migration 0042), so after joining it checks which game the room is for and opens that screen.
  */
-export function TeamEntry() {
+export function TeamEntry({ game = 'board' }: { game?: GameKind }) {
   const navigate = useNavigate()
   const invites = useMyInvites()
   const myRoom = useMyTeamRoom()
@@ -37,7 +38,7 @@ export function TeamEntry() {
     try {
       const roomId = await action()
       refresh()
-      if (roomId) navigate(`/board/team/${roomId}`)
+      if (roomId) navigate(teamRoomPath(await readRoomGame(roomId), roomId))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.')
     } finally {
@@ -68,11 +69,13 @@ export function TeamEntry() {
     return (
       <button
         type="button"
-        onClick={() => navigate(`/board/team/${room.roomId}`)}
+        onClick={() => navigate(teamRoomPath(room.game, room.roomId))}
         className="relative flex h-12 items-center gap-2 rounded-lg border bg-card px-4 font-heading font-bold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
       >
         <Users className="size-5 text-primary" aria-hidden />
         {room.status === 'lobby' ? 'Back to your team lobby' : room.myTurn ? 'Your turn in your team game' : 'Back to your team game'}
+        {/* her team game is the other game: say which */}
+        {room.game !== game && <span className="font-semibold text-muted-foreground">({GAME_NAME[room.game]})</span>}
         {room.myTurn && <span className="absolute -top-1 -right-1 size-3 rounded-full bg-wrong ring-2 ring-background" aria-hidden />}
       </button>
     )
@@ -119,7 +122,9 @@ export function TeamEntry() {
               <h2 id="team-entry-heading" className="font-heading text-xl font-bold">
                 Play with classmates
               </h2>
-              <p className="text-sm text-muted-foreground">2–4 players, live. Everyone gets the same questions.</p>
+              <p className="text-sm text-muted-foreground">
+                {game === 'cards' ? '2–4 players, live. Computer players fill the empty seats.' : '2–4 players, live. Everyone gets the same questions.'}
+              </p>
             </div>
             <button
               type="button"
@@ -150,7 +155,9 @@ export function TeamEntry() {
                 {waiting.map((inv) => (
                   <li key={inv.inviteId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                     <div className="min-w-0">
-                      <p className="font-semibold">{inv.fromName} invited you</p>
+                      <p className="font-semibold">
+                        {inv.fromName} invited you to {GAME_NAME[inv.game]}
+                      </p>
                       <p className="text-sm text-muted-foreground tabular-nums">
                         {inv.players} of 4 {inv.players === 1 ? 'player' : 'players'} in the lobby
                       </p>
@@ -224,7 +231,7 @@ export function TeamEntry() {
           <button
             type="button"
             disabled={busy || !online}
-            onClick={() => run(() => teamActions.createRoom())}
+            onClick={() => run(() => teamActions.createRoom(game))}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-highlight font-heading text-lg font-bold text-foreground outline-none hover:brightness-105 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px disabled:opacity-60"
           >
             <Plus className="size-5" aria-hidden />

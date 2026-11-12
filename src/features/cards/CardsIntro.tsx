@@ -4,6 +4,7 @@ import { heroButtonClass } from '@/components/report'
 import type { Card, CardGame } from '@/lib/cards'
 import { cn } from '@/lib/utils'
 import { BackToGames } from '@/features/games/BackToGames'
+import { TeamEntry } from '@/features/board/TeamEntry'
 import { CardBack, CardFace } from './PlayingCard'
 
 // Last Card's start screen, laid out like Board Review and Mock exam (one screen, read top to bottom):
@@ -79,8 +80,11 @@ export function CardsIntro({ inProgress, onContinue, onNewGame }: Props) {
         )}
       </p>
 
-      {/* ---------- One row of buttons (Continue / Start is the main action) ---------- */}
+      {/* ---------- One row: team on the left | solo on the right (Continue / Start is the main action), like Board Review ---------- */}
       <div className="flex shrink-0 flex-wrap items-center justify-center gap-2">
+        {/* Live with classmates (PROJECT_PLAN.md §15 step 2) */}
+        <TeamEntry game="cards" />
+        <span className="mx-1 hidden h-8 w-px bg-border sm:block" aria-hidden />
         {inProgress && (
           <button
             type="button"

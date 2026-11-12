@@ -7,7 +7,8 @@ import { rulesFingerprint } from './build-cards-rules'
 
 describe('the Last Card rules bundle for the server', () => {
   it('was built from the current rules (if this fails: npm run build:cards-rules)', () => {
-    const firstLine = readFileSync('supabase/functions/cards-game/rules.js', 'utf8').split('\n')[0]
+    // split on \r\n too: git may give the file Windows line endings on checkout
+    const firstLine = readFileSync('supabase/functions/cards-game/rules.js', 'utf8').split(/\r?\n/)[0]
     expect(firstLine).toBe(`// rules-fingerprint: ${rulesFingerprint()}`)
   })
 

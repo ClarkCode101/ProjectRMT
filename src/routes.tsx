@@ -58,6 +58,8 @@ export const router = createBrowserRouter([
       { path: '/board/team/:roomId', element: <TeamRoomPage /> },
       { path: '/board/join/:code', element: <JoinTeamPage /> },
       { path: '/cards', element: <CardsPage /> },
+      // Last Card with classmates: the same room page as Board Review's team games (the room says which game)
+      { path: '/cards/team/:roomId', element: <TeamRoomPage /> },
       { path: '/reference', element: <ReferencePage /> },
       { path: '/settings', element: <SettingsPage /> },
       // The old Review Again list; reviewing mistakes is now a quiz (answer first, then see why).

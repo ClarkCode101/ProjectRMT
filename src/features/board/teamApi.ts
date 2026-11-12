@@ -29,8 +29,18 @@ async function call<T>(promise: PromiseLike<{ data: T; error: unknown }>): Promi
 // ---------- Reading ----------
 
 export type Classmate = { userId: string; name: string }
-export type TeamInvite = { inviteId: string; roomId: string; fromName: string; players: number; createdAt: string }
-export type MyTeamRoom = { roomId: string; status: string; myTurn: boolean; players: number }
+/** Which game a team room is for (migration 0042): Board Review or Last Card. They share rooms, invites and lobbies. */
+export type GameKind = 'board' | 'cards'
+export const GAME_NAME: Record<GameKind, string> = { board: 'Board Review', cards: 'Last Card' }
+const gameOf = (value: unknown): GameKind => (value === 'cards' ? 'cards' : 'board')
+
+/** Where a team room lives in the app (the lobby, then the game). */
+export function teamRoomPath(game: GameKind, roomId: string): string {
+  return game === 'cards' ? `/cards/team/${roomId}` : `/board/team/${roomId}`
+}
+
+export type TeamInvite = { inviteId: string; roomId: string; fromName: string; players: number; createdAt: string; game: GameKind }
+export type MyTeamRoom = { roomId: string; status: string; myTurn: boolean; players: number; game: GameKind }
 
 /** She has no first name yet: team games ask for one first (TeamNameStep), since classmates see it. */
 export function useNeedsTeamName(): boolean {
@@ -61,6 +71,7 @@ export function useMyInvites() {
         fromName: i.from_name,
         players: i.players,
         createdAt: i.created_at,
+        game: gameOf(i.game), // missing before migration 0043: Board Review
       })),
   })
 }
@@ -74,7 +85,7 @@ export function useMyTeamRoom() {
     queryFn: async (): Promise<MyTeamRoom | null> => {
       const rows = await call(supabase.rpc('board_my_room'))
       const r = rows?.[0]
-      return r ? { roomId: r.room_id, status: r.status, myTurn: r.my_turn, players: r.players } : null
+      return r ? { roomId: r.room_id, status: r.status, myTurn: r.my_turn, players: r.players, game: gameOf(r.game) } : null
     },
   })
 }
@@ -165,7 +176,8 @@ export function useTeamRoom(roomId: string | undefined) {
 // ---------- Changing (each one reads the room again afterwards) ----------
 
 export const teamActions = {
-  createRoom: () => call(supabase.rpc('board_create_room')),
+  /** A new lobby for Board Review or Last Card (migration 0042). */
+  createRoom: (game: GameKind = 'board') => call(supabase.rpc('board_create_room', { p_game: game })),
   invite: (roomId: string, userId: string) => call(supabase.rpc('board_invite', { p_room: roomId, p_to: userId })),
   respondInvite: (inviteId: string, accept: boolean) => call(supabase.rpc('board_respond_invite', { p_invite: inviteId, p_accept: accept })),
   join: (code: string) => call(supabase.rpc('board_join', { p_code: code })),
@@ -208,6 +220,26 @@ export async function leaveLobbyBeforeLogout() {
   } catch {
     // offline or the call failed: log out anyway
   }
+}
+
+/** Which game a room she's in is for (the member-only policy lets her read it). Doesn't change, so read once. */
+export function useRoomGame(roomId: string | undefined) {
+  return useQuery({
+    queryKey: ['board-room-game', roomId],
+    enabled: Boolean(roomId),
+    staleTime: Infinity,
+    retry: false,
+    queryFn: async (): Promise<GameKind | null> => {
+      const row = await call(supabase.from('board_rooms').select('game').eq('id', roomId!).maybeSingle())
+      return row ? gameOf(row.game) : null
+    },
+  })
+}
+
+/** Which game a room is for, read once right after joining it (to open the right screen). */
+export async function readRoomGame(roomId: string): Promise<GameKind> {
+  const row = await call(supabase.from('board_rooms').select('game').eq('id', roomId).maybeSingle())
+  return gameOf(row?.game)
 }
 
 /** Read the room (and the start screen's lists) again right away. */

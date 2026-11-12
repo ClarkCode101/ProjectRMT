@@ -698,7 +698,7 @@ A match-and-shed card game (the old Crazy Eights family): match the top card by 
 
 **Steps (each one tested before the next)**
 1. Migration 0042: `game` column on rooms, the private game state, the player's view function; Edge Function `cards-game` with start + play + draw + answer + timeout + computer turns; tests for the server-side moves.
-2. Lobby: "Play with classmates" for Last Card, game shown on invites.
+2. Lobby: "Play with classmates" for Last Card, game shown on invites. **Built 2026-11-13:** migration 0043 (`board_my_invites` and `board_my_room` say the game); the same `TeamEntry` (invites read "Ana invited you to Last Card"; after joining by invite or code it checks the room's game and opens the right screen; "Host a new game" makes a room of this screen's game) and `TeamLobby` (`game` prop: title "Last Card with classmates", "Computer players fill the empty seats", extra seats say "Open seat · computer", Start calls the Edge Function); `/cards/team/:roomId` uses the same room page; the invite link `/board/join/CODE` works for both games; the room status list knows 'live' (it used to turn unknown statuses into "cancelled"); the Games page shows "Team game waiting" on the right game. Once started, a plain temporary screen reads her own `card_views` row (seats, card counts, her cards, whose turn) to check Start, the Edge Function and privacy before the real table.
 3. The live table: realtime state, clock, watching the question and reveal, animations from the move log.
 4. Finish + Play again; then a live test with 2 accounts (like Board Review's on 2026-11-11).
 

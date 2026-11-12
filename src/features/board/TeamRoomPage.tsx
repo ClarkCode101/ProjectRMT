@@ -6,9 +6,11 @@ import { TeamGame } from './TeamGame'
 import { TeamLobby } from './TeamLobby'
 import { TeamResults } from './TeamResults'
 import { useRoomChat } from './chatApi'
-import { teamActions, useRefreshTeam, useTeamRoom } from './teamApi'
+import { CardsLiveRoom } from '@/features/cards/CardsLiveRoom'
+import { teamActions, useRefreshTeam, useRoomGame, useTeamRoom } from './teamApi'
 
-// /board/team/:roomId → one team game: the lobby, then the live game, then the finish screen.
+// /board/team/:roomId and /cards/team/:roomId → one team game: the lobby, then the live game, then the finish screen.
+// Board Review and Last Card share the room and the lobby (migration 0042); the room says which game it is.
 // Keyed by the room, so Play again (a new room) starts fresh: its own chat, clock and reveals.
 export default function TeamRoomPage() {
   const { roomId } = useParams()
@@ -18,6 +20,10 @@ export default function TeamRoomPage() {
 function TeamRoomScreen({ roomId }: { roomId: string | undefined }) {
   const navigate = useNavigate()
   const state = useTeamRoom(roomId)
+  const gameQuery = useRoomGame(roomId)
+  const cards = gameQuery.data === 'cards'
+  const home = cards ? '/cards' : '/board'
+  const homeLabel = cards ? 'Back to Last Card' : 'Back to Board Review'
   const refresh = useRefreshTeam()
   // One chat for the room: lobby and game (migration 0029)
   const chat = useRoomChat(roomId, state.data?.room.me)
@@ -25,7 +31,7 @@ function TeamRoomScreen({ roomId }: { roomId: string | undefined }) {
   const [message, setMessage] = useState<string | null>(null)
   const room = state.data?.room ?? null
   // No nav while the game is on, like the solo game.
-  useFocusMode(room?.status === 'playing')
+  useFocusMode(room?.status === 'playing' || room?.status === 'live')
 
   // She was in this lobby, and now the room says she isn't a player: the host removed her (migration 0039).
   // (Leaving on her own goes straight back to Board Review, and a closed lobby says "cancelled".)
@@ -56,18 +62,18 @@ function TeamRoomScreen({ roomId }: { roomId: string | undefined }) {
   )
 
   async function leaveLobby() {
-    if (room && (await act(() => teamActions.leave(room.id)))) navigate('/board')
+    if (room && (await act(() => teamActions.leave(room.id)))) navigate(home)
   }
 
-  if (state.isPending) return <FullPageMessage>Loading the game…</FullPageMessage>
+  if (state.isPending || (gameQuery.isPending && gameQuery.fetchStatus !== 'idle')) return <FullPageMessage>Loading the game…</FullPageMessage>
   if (state.isError) return <FullPageMessage>{state.error.message}</FullPageMessage>
   if (removed) {
     return (
       <div className="mx-auto max-w-md space-y-4 py-16 text-center">
         <p className="font-heading text-2xl font-bold">You’re no longer in this lobby</p>
         <p className="text-muted-foreground">The host removed you from the lobby. You can join again if they invite you or send you the code.</p>
-        <Link to="/board" className="inline-flex h-11 items-center rounded-lg border bg-card px-5 font-semibold hover:border-primary">
-          Back to Board Review
+        <Link to={home} className="inline-flex h-11 items-center rounded-lg border bg-card px-5 font-semibold hover:border-primary">
+          {homeLabel}
         </Link>
       </div>
     )
@@ -77,8 +83,8 @@ function TeamRoomScreen({ roomId }: { roomId: string | undefined }) {
       <div className="mx-auto max-w-md space-y-4 py-16 text-center">
         <p className="font-heading text-2xl font-bold">{room ? 'This game was cancelled.' : 'This game isn’t available.'}</p>
         <p className="text-muted-foreground">{room ? 'The host closed the lobby.' : 'It may have ended, or you’re not one of its players.'}</p>
-        <Link to="/board" className="inline-flex h-11 items-center rounded-lg border bg-card px-5 font-semibold hover:border-primary">
-          Back to Board Review
+        <Link to={home} className="inline-flex h-11 items-center rounded-lg border bg-card px-5 font-semibold hover:border-primary">
+          {homeLabel}
         </Link>
       </div>
     )
@@ -92,10 +98,13 @@ function TeamRoomScreen({ roomId }: { roomId: string | undefined }) {
             {message}
           </p>
         )}
-        <TeamLobby room={room} act={act} busy={busy} onLeave={leaveLobby} chat={chat} />
+        <TeamLobby room={room} act={act} busy={busy} onLeave={leaveLobby} chat={chat} game={cards ? 'cards' : 'board'} />
       </>
     )
   }
+
+  // Last Card: its own live table (and, for now, its own finish), read from her card view (step 2–3)
+  if (cards) return <CardsLiveRoom roomId={room.id} />
 
   if (room.status === 'finished') return <TeamResults room={room} />
 

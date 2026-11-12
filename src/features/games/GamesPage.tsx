@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router'
 import { PageHeader } from '@/components/dashboard'
 import { useAuth } from '@/features/auth/authContext'
-import { useMyInvites, useMyTeamRoom } from '@/features/board/teamApi'
+import { useMyInvites, useMyTeamRoom, type GameKind } from '@/features/board/teamApi'
 import { loadBoard } from '@/lib/boardSave'
 import { loadCards } from '@/lib/cardsSave'
 import { GamePicker, type GameSlide } from './GamePicker'
@@ -20,7 +20,9 @@ export default function GamesPage() {
   // A team game invite or her turn is waiting (the same check as the red dot on the Games nav icon).
   const invites = useMyInvites()
   const room = useMyTeamRoom()
-  const teamWaiting = (invites.data?.length ?? 0) > 0 || room.data?.myTurn === true
+  // An invite or her turn waiting, for each game (the rooms say which game: migration 0043)
+  const waitingFor = (game: GameKind) =>
+    (invites.data ?? []).some((inv) => inv.game === game) || (room.data?.myTurn === true && room.data.game === game)
 
   const games: GameSlide[] = [
     {
@@ -28,7 +30,7 @@ export default function GamesPage() {
       title: 'Board Review',
       blurb: 'Snakes and ladders through the six subjects. Answer right to move.',
       status: boardStatus(board),
-      alert: teamWaiting ? 'Team game waiting' : null,
+      alert: waitingFor('board') ? 'Team game waiting' : null,
       art: { kind: 'board', layoutId: board?.layoutId ?? 0, token: board && !board.finished ? board.position : 1 },
     },
     {
@@ -36,7 +38,7 @@ export default function GamesPage() {
       title: 'Last Card',
       blurb: 'Match the subject or the number. Answer right to put a card down.',
       status: cardsStatus(cards),
-      alert: null,
+      alert: waitingFor('cards') ? 'Team game waiting' : null,
       art: { kind: 'cards' },
     },
   ]

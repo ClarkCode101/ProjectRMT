@@ -9,7 +9,8 @@ import { useOnlineIds, usePresenceKnown } from '@/lib/presence'
 import { cn } from '@/lib/utils'
 import type { RoomChat as RoomChatState } from './chatApi'
 import { ChatSheet, RoomChat } from './RoomChat'
-import { teamActions, useClassmates } from './teamApi'
+import { cardsLive } from '@/features/cards/liveApi'
+import { teamActions, useClassmates, type GameKind } from './teamApi'
 
 const MAX_PLAYERS = 4
 /** invites waiting at a time per person (board_invite, migration 0023) */
@@ -31,10 +32,13 @@ type Props = {
   busy: boolean
   onLeave: () => void
   chat: RoomChatState
+  /** Board Review (default) or Last Card: the same lobby; Last Card starts on the server, computers fill empty seats */
+  game?: GameKind
 }
 
 /** The lobby: who's in, invite classmates (list or link), the room chat, and the host's Start. Laid out like the other start screens. */
-export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
+export function TeamLobby({ room, act, busy, onLeave, chat, game = 'board' }: Props) {
+  const cards = game === 'cards'
   const [inviteOpen, setInviteOpen] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const [codeCopied, setCodeCopied] = useState(false)
@@ -117,8 +121,8 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
           The code is the main way, the link the backup; the seats below open the classmate list. The box stands out
           while she still needs players and quiets down once 2 are in, so Start takes the focus. Hidden when full. */}
       <PageHeader
-        title="Team game"
-        subtitle="Up to 4 players, live."
+        title={cards ? 'Last Card with classmates' : 'Team game'}
+        subtitle={cards ? 'Up to 4 players, live. Computer players fill the empty seats.' : 'Up to 4 players, live.'}
         actions={
           !full && (
             <section
@@ -209,7 +213,7 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-dashed border-current" aria-hidden>
                       <UserPlus className="size-4" />
                     </span>
-                    <span className="min-w-0 truncate lg:max-w-full lg:text-sm">{firstOpen ? 'Invite a classmate' : 'Open seat'}</span>
+                    <span className="min-w-0 truncate lg:max-w-full lg:text-sm">{firstOpen ? 'Invite a classmate' : cards ? 'Open seat · computer' : 'Open seat'}</span>
                   </button>
                 </li>
               )
@@ -296,7 +300,10 @@ export function TeamLobby({ room, act, busy, onLeave, chat }: Props) {
         </button>
         {isHost ? (
           <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
-            <button type="button" onClick={() => act(() => teamActions.start(room.id))} disabled={busy || !canStart} className={cn(heroButtonClass, 'px-8 focus-visible:ring-ring/50')}>
+            <button
+              type="button"
+              // Last Card deals and seats the computer players on the server (Edge Function cards-game)
+              onClick={() => act(() => (cards ? cardsLive.start(room.id) : teamActions.start(room.id)))} disabled={busy || !canStart} className={cn(heroButtonClass, 'px-8 focus-visible:ring-ring/50')}>
               <Play className="size-5 fill-current" aria-hidden />
               {busy ? 'Starting…' : 'Start game'}
             </button>
