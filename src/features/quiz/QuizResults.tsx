@@ -23,6 +23,8 @@ type Props = {
   onRestart: () => void
   /** Review again only: quiz the ones she just missed */
   onReviewLeft: (missed: QuizQuestion[]) => void
+  /** Practice only: quiz her whole Review again list */
+  onReviewMistakes: () => void
   starting: boolean
 }
 
@@ -41,7 +43,7 @@ function Count({ value, label, win = false }: { value: number; label: string; wi
 
 // Practice is for learning, so the results lead with what she learned (new, cleared, to review),
 // not a pass/fail verdict. The PASSED stamp belongs to Mock exam, where the score is the point.
-export function QuizResults({ answers, mode, prior, label, onRestart, onReviewLeft, starting }: Props) {
+export function QuizResults({ answers, mode, prior, label, onRestart, onReviewLeft, onReviewMistakes, starting }: Props) {
   const subjectOf = useSubjectOfTopic()
   const report = practiceReport(
     answers.map((a) => ({ questionId: a.question.id, isCorrect: a.isCorrect })),
@@ -166,9 +168,13 @@ export function QuizResults({ answers, mode, prior, label, onRestart, onReviewLe
               Questions you missed ({wrong.length})
             </h2>
             {!review && (
-              <Link to="/practice?from=mistakes" className="text-sm font-semibold text-primary hover:underline">
+              <button
+                type="button"
+                onClick={onReviewMistakes}
+                className="rounded-sm text-sm font-semibold text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40"
+              >
                 Review again
-              </Link>
+              </button>
             )}
           </div>
           <ul className="divide-y overflow-hidden rounded-xl border bg-card">

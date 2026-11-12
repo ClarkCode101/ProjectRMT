@@ -153,7 +153,8 @@ export default function PracticePage() {
       autoStarted.current = false
       return
     }
-    if (autoStarted.current || !mistakes.isSuccess || mistakeIds.length === 0 || stage.name !== 'setup') return
+    // isFetching: right after a session the list is being refreshed (her new answers), so wait for the fresh one.
+    if (autoStarted.current || !mistakes.isSuccess || mistakes.isFetching || mistakeIds.length === 0 || stage.name !== 'setup') return
     autoStarted.current = true
     startMistakes(mistakeIds)
   })
@@ -196,6 +197,17 @@ export default function PracticePage() {
     restart()
   }
 
+  /**
+   * "Review again" on the results. A plain link to /practice?from=mistakes only changed the address
+   * (this page stays on the results), so also go back to setup: the effect above then starts the quiz.
+   */
+  function reviewMistakes() {
+    autoStarted.current = false
+    setMessage(null)
+    setStage({ name: 'setup' })
+    setSearchParams({ from: 'mistakes' })
+  }
+
   function restart() {
     setSearchParams({}) // leave mistakes mode
     setMessage(null)
@@ -214,6 +226,7 @@ export default function PracticePage() {
         label={book?.title}
         onRestart={restart}
         onReviewLeft={reviewLeft}
+        onReviewMistakes={reviewMistakes}
         starting={starting}
       />
     )
@@ -259,7 +272,7 @@ export default function PracticePage() {
   if (fromMistakes) {
     const ids = mistakeIds
     // Loading, or about to jump straight into the quiz (see the effect above).
-    if (mistakes.isPending || (ids.length > 0 && !message)) return <FullPageMessage>Loading your mistakes…</FullPageMessage>
+    if (mistakes.isPending || mistakes.isFetching || (ids.length > 0 && !message)) return <FullPageMessage>Loading your mistakes…</FullPageMessage>
     // Only shown when there's nothing to review, or the quiz couldn't start (then the button tries again).
     return (
       <div className="mx-auto max-w-xl space-y-4 sm:pt-6">
