@@ -5,6 +5,8 @@ import { useEffect } from 'react'
 import type { LifelineId } from '@/lib/board'
 import { parseTeamRoom, type TeamRoom } from '@/lib/boardTeam'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/features/auth/authContext'
+import { firstName } from '@/lib/profile'
 
 /** What went wrong, in words she can act on. */
 export function teamErrorMessage(error: unknown): string {
@@ -29,6 +31,11 @@ async function call<T>(promise: PromiseLike<{ data: T; error: unknown }>): Promi
 export type Classmate = { userId: string; name: string }
 export type TeamInvite = { inviteId: string; roomId: string; fromName: string; players: number; createdAt: string }
 export type MyTeamRoom = { roomId: string; status: string; myTurn: boolean; players: number }
+
+/** She has no first name yet: team games ask for one first (TeamNameStep), since classmates see it. */
+export function useNeedsTeamName(): boolean {
+  return firstName(useAuth().session?.user) === null
+}
 
 /** Classmates to invite (accounts with a first name). */
 export function useClassmates(enabled: boolean) {

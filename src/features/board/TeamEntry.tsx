@@ -5,7 +5,8 @@ import { Dialog } from '@/components/Dialog'
 import { cleanGameCode, GAME_CODE_LENGTH } from '@/lib/boardTeam'
 import { useOnline } from '@/lib/offline/useOfflineSync'
 import { cn } from '@/lib/utils'
-import { teamActions, useMyInvites, useMyTeamRoom, useRefreshTeam } from './teamApi'
+import { teamActions, useMyInvites, useMyTeamRoom, useNeedsTeamName, useRefreshTeam } from './teamApi'
+import { TeamNameStep } from './TeamNameStep'
 
 /**
  * "Play with classmates" on Board Review's start screen: opens a sheet with the invites waiting for her (only when
@@ -23,6 +24,9 @@ export function TeamEntry() {
   const [code, setCode] = useState('')
   const codeReady = code.length === GAME_CODE_LENGTH
   const online = useOnline()
+  const needsName = useNeedsTeamName()
+  // set right after saving, so she goes on at once instead of waiting for the login to refresh with the name
+  const [nameSaved, setNameSaved] = useState(false)
 
   const waiting = invites.data ?? []
   const room = myRoom.data ?? null
@@ -93,6 +97,22 @@ export function TeamEntry() {
 
       {/* Only the X (or Esc) closes it: a stray tap outside shouldn't lose a half-typed code */}
       <Dialog open={open} onClose={() => setOpen(false)} labelledBy="team-entry-heading" variant="sheet" size="lg" closeOnBackdrop={false}>
+        {/* No name yet: ask for it first (classmates see it, and it puts her on their Invite list), then the usual sheet */}
+        {needsName && !nameSaved ? (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="-mb-2 flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-secondary hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+              >
+                <X className="size-5" aria-hidden />
+              </button>
+            </div>
+            <TeamNameStep headingId="team-entry-heading" onSaved={() => setNameSaved(true)} />
+          </div>
+        ) : (
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -211,6 +231,7 @@ export function TeamEntry() {
             {busy ? 'One moment…' : 'Host a new game'}
           </button>
         </div>
+        )}
       </Dialog>
     </>
   )
