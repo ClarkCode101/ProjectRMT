@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronRight, CloudOff, Flag, House, Minus, RotateCcw, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, CloudOff, Flag, House, Minus, RotateCcw, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { AnswerReview } from '@/components/AnswerReview'
@@ -6,7 +6,8 @@ import { NoteCard } from '@/components/NoteCard'
 import { VerseCard } from '@/components/VerseCard'
 import { HeroPanel, heroButtonClass, LowFlag, RangeBar } from '@/components/report'
 import type { QuizQuestion } from '@/features/quiz/api'
-import { formatClock, runStats, SECONDS_PER_ITEM, type MockScore } from '@/lib/mockExam'
+import { formatClock, mockTrend, runStats, SECONDS_PER_ITEM, type MockScope, type MockScore, type MockTrend } from '@/lib/mockExam'
+import { usePreviousMockRate } from './api'
 import { useOnline } from '@/lib/offline/useOfflineSync'
 import { formatPercent, PASSING_RATE } from '@/lib/quiz'
 import { useSubjectOfTopic, useTopics } from '@/lib/referenceData'
@@ -16,6 +17,9 @@ type Filter = 'missed' | 'all' | 'flagged'
 
 type Props = {
   label: string
+  sessionId: string
+  /** what the exam was on, for the trend; missing on exams saved before it existed (then no trend) */
+  scope: MockScope | undefined
   questions: QuizQuestion[]
   answers: (number | null)[]
   flags: boolean[]
@@ -130,6 +134,41 @@ function ResultTable({ title, children }: { title: string; children: ReactNode }
   )
 }
 
+/** This mock vs her last one on the same subject: green up, red down, grey same or first. */
+function TrendChip({ trend, label }: { trend: MockTrend; label: string }) {
+  const name = label === 'All subjects' ? 'full-board' : label
+  const tone =
+    trend.kind === 'change' && trend.points > 0
+      ? 'bg-correct-soft text-correct'
+      : trend.kind === 'change' && trend.points < 0
+        ? 'bg-wrong-soft text-wrong'
+        : 'bg-secondary text-muted-foreground'
+  let icon: ReactNode = null
+  let text: string
+  if (trend.kind === 'first') {
+    text = `First ${name} mock. The next one shows your trend.`
+  } else {
+    const last = `your last ${name} mock (${formatPercent(trend.previousRate)})`
+    const points = Math.abs(trend.points)
+    const pts = `${points} ${points === 1 ? 'point' : 'points'}`
+    if (trend.points > 0) {
+      icon = <ArrowUp className="size-3.5 shrink-0" aria-hidden />
+      text = `Up ${pts} from ${last}`
+    } else if (trend.points < 0) {
+      icon = <ArrowDown className="size-3.5 shrink-0" aria-hidden />
+      text = `Down ${pts} from ${last}`
+    } else {
+      text = `Same as ${last}`
+    }
+  }
+  return (
+    <p className={cn('mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm tabular-nums', tone, trend.kind === 'change' ? 'font-bold' : 'font-semibold')}>
+      {icon}
+      <span>{text}</span>
+    </p>
+  )
+}
+
 /** One reading in the row under the score: a small caps label, the value, and a short note under it. */
 function Reading({ label, value, bad = false, children }: { label: string; value: ReactNode; bad?: boolean; children: ReactNode }) {
   return (
@@ -144,7 +183,7 @@ function Reading({ label, value, bad = false, children }: { label: string; value
 /** "Focus on" lists at most this many topics below 60% (the rest are under "See all topics"). */
 const FOCUS_TOPICS_SHOWN = 3
 
-export function MockResults({ label, questions, answers, flags, score, durationSec, timedOut, onNewExam, note }: Props) {
+export function MockResults({ label, sessionId, scope, questions, answers, flags, score, durationSec, timedOut, onNewExam, note }: Props) {
   // Answers are saved on the device first (the outbox) and sent when there's internet.
   const online = useOnline()
   const topics = useTopics()
@@ -154,6 +193,7 @@ export function MockResults({ label, questions, answers, flags, score, durationS
   const [filter, setFilter] = useState<Filter>('missed')
   const [reviewOpen, setReviewOpen] = useState(false)
   const stats = runStats(questions, answers, flags, durationSec)
+  const previous = usePreviousMockRate(scope, sessionId)
 
   // Add the topics up per subject. More than one subject = a mixed exam.
   const bySubject = new Map<string, { code: string; name: string; correct: number; total: number }>()
@@ -243,6 +283,7 @@ export function MockResults({ label, questions, answers, flags, score, durationS
                   <p className="mt-1 font-mono text-sm text-muted-foreground tabular-nums">
                     {score.correct} of {score.total} correct
                   </p>
+                  {previous.isSuccess && <TrendChip trend={mockTrend(score.rate, previous.data)} label={label} />}
                   <p className="mt-2 text-sm">{resultMessage(score.rate)}</p>
                 </div>
                 <p

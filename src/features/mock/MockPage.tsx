@@ -103,6 +103,7 @@ export default function MockPage() {
         current: 0,
         startedAt: Date.now(),
         limitSec: timeLimitSec(questions.length),
+        scope: { source: filters.source, subjectId: filters.subjectId, bookId: filters.bookId ?? null },
       }
       writeSaved(exam)
       setSaved(exam)
@@ -203,6 +204,8 @@ export default function MockPage() {
     return (
       <MockResults
         label={stage.exam.label}
+        sessionId={stage.exam.sessionId}
+        scope={stage.exam.scope}
         questions={stage.questions}
         answers={stage.exam.answers}
         flags={stage.exam.flags}

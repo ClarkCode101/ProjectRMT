@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildMockExam, formatClock, parseSavedMock, runStats, scoreMock, secondsLeft, timeLimitSec, type SavedMock } from './mockExam'
+import { buildMockExam, formatClock, mockTrend, parseSavedMock, previousMockRate, runStats, scoreMock, secondsLeft, timeLimitSec, type SavedMock } from './mockExam'
 
 /** Simple seeded random number generator so picks are repeatable in tests. */
 function seeded(seed: number) {
@@ -134,5 +134,76 @@ describe('runStats', () => {
   it('handles no questions and odd durations', () => {
     expect(runStats([], [], [], 100)).toEqual({ paceSec: 0, blank: 0, flagged: 0, flaggedRight: 0 })
     expect(runStats(qs, [0, 1, 2, 3], [false, false, false, false], -5).paceSec).toBe(0)
+  })
+})
+
+describe('previousMockRate / mockTrend', () => {
+  const micro = { source: 'all', subjectId: 3, bookId: null }
+  const row = (id: string, score: number | null, total: number | null, finished_at: string | null, filters: unknown = { source: 'all', subject_id: 3, book_id: null }) => ({
+    id,
+    score,
+    total_items: total,
+    finished_at,
+    filters,
+  })
+
+  it('takes the latest other finished mock on the same thing', () => {
+    const rows = [
+      row('old', 40, 100, '2026-01-01T00:00:00Z'),
+      row('last', 50, 100, '2026-02-01T00:00:00Z'),
+      row('now', 58, 100, '2026-03-01T00:00:00Z'), // this exam, already synced
+    ]
+    expect(previousMockRate(rows, micro, 'now')).toBe(0.5)
+  })
+
+  it('skips other subjects, sources, books, and unfinished or empty runs', () => {
+    const rows = [
+      row('other-subject', 90, 100, '2026-02-05T00:00:00Z', { source: 'all', subject_id: 4, book_id: null }),
+      row('other-source', 90, 100, '2026-02-04T00:00:00Z', { source: 'mine', subject_id: 3, book_id: null }),
+      row('a-book', 90, 100, '2026-02-03T00:00:00Z', { source: 'all', subject_id: 3, book_id: 'b1' }),
+      row('unfinished', null, 100, null),
+      row('empty', 0, 0, '2026-02-02T00:00:00Z'),
+      row('broken', 90, 100, '2026-02-06T00:00:00Z', null),
+    ]
+    expect(previousMockRate(rows, micro, 'now')).toBeNull()
+  })
+
+  it('matches All subjects (subject null) only with All subjects', () => {
+    const all = { source: 'all', subjectId: null, bookId: null }
+    const rows = [row('micro', 50, 100, '2026-02-01T00:00:00Z'), row('full', 30, 50, '2026-01-01T00:00:00Z', { source: 'all', subject_id: null, book_id: null })]
+    expect(previousMockRate(rows, all, 'now')).toBe(0.6)
+  })
+
+  it('reports first, up, down, and same in whole points', () => {
+    expect(mockTrend(0.58, null)).toEqual({ kind: 'first' })
+    expect(mockTrend(0.58, 0.5)).toEqual({ kind: 'change', previousRate: 0.5, points: 8 })
+    expect(mockTrend(0.5, 0.58)).toMatchObject({ points: -8 })
+    expect(mockTrend(0.584, 0.576)).toMatchObject({ points: 0 }) // both show as 58%
+  })
+})
+
+describe('parseSavedMock scope', () => {
+  const base = {
+    version: 1,
+    sessionId: 's',
+    label: 'MICRO',
+    questionIds: ['a'],
+    orders: [[0, 1]],
+    answers: [null],
+    flags: [false],
+    current: 0,
+    startedAt: 1,
+    limitSec: 72,
+  }
+
+  it('keeps a valid scope', () => {
+    const scope = { source: 'all', subjectId: 3, bookId: null }
+    expect(parseSavedMock({ ...base, scope })?.scope).toEqual(scope)
+  })
+
+  it('drops a broken scope but keeps the exam', () => {
+    const parsed = parseSavedMock({ ...base, scope: { source: 5 } })
+    expect(parsed).not.toBeNull()
+    expect(parsed && 'scope' in parsed).toBe(false)
   })
 })

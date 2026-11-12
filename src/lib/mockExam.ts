@@ -124,6 +124,46 @@ export function runStats(
   return { paceSec, blank, flagged, flaggedRight }
 }
 
+// ---------- Trend: this mock vs her last one on the same thing ----------
+
+/** What a mock was on, so only like is compared with like (same subject or book, same question source). */
+export type MockScope = { source: string; subjectId: number | null; bookId: string | null }
+
+/** A finished mock as saved in quiz_sessions. */
+export type PastMock = { id: string; score: number | null; total_items: number | null; filters: unknown; finished_at: string | null }
+
+function scopeOf(filters: unknown): MockScope | null {
+  if (typeof filters !== 'object' || filters === null) return null
+  const f = filters as Record<string, unknown>
+  if (typeof f.source !== 'string') return null
+  return {
+    source: f.source,
+    subjectId: typeof f.subject_id === 'number' ? f.subject_id : null,
+    bookId: typeof f.book_id === 'string' ? f.book_id : null,
+  }
+}
+
+/** Her score on the latest other finished mock with the same scope (0–1), or null if this is the first. */
+export function previousMockRate(rows: readonly PastMock[], scope: MockScope, currentId: string): number | null {
+  const same = rows
+    .filter((r) => r.id !== currentId && r.finished_at !== null && r.score !== null && (r.total_items ?? 0) > 0)
+    .filter((r) => {
+      const s = scopeOf(r.filters)
+      return s !== null && s.source === scope.source && s.subjectId === scope.subjectId && s.bookId === scope.bookId
+    })
+    .sort((a, b) => (b.finished_at ?? '').localeCompare(a.finished_at ?? ''))
+  const last = same[0]
+  return last ? last.score! / last.total_items! : null
+}
+
+export type MockTrend = { kind: 'first' } | { kind: 'change'; previousRate: number; /** whole percentage points, as shown */ points: number }
+
+export function mockTrend(rate: number, previousRate: number | null): MockTrend {
+  if (previousRate === null) return { kind: 'first' }
+  // From the rounded percents she sees, so "58%" vs "50%" always says 8.
+  return { kind: 'change', previousRate, points: Math.round(rate * 100) - Math.round(previousRate * 100) }
+}
+
 // ---------- Saving an exam in progress (on this device), so a refresh or a closed tab doesn't lose it ----------
 
 export const SAVED_MOCK_KEY = 'projectrmt:mock-exam'
@@ -142,6 +182,18 @@ export type SavedMock = {
   /** ms since 1970 */
   startedAt: number
   limitSec: number
+  /** what it's on, for the trend on the results; missing on exams saved before this was added */
+  scope?: MockScope
+}
+
+function isScope(v: unknown): v is MockScope {
+  if (typeof v !== 'object' || v === null) return false
+  const s = v as Record<string, unknown>
+  return (
+    typeof s.source === 'string' &&
+    (s.subjectId === null || Number.isInteger(s.subjectId)) &&
+    (s.bookId === null || typeof s.bookId === 'string')
+  )
 }
 
 const isIntArray = (v: unknown): v is number[] => Array.isArray(v) && v.every((n) => Number.isInteger(n))
@@ -172,7 +224,10 @@ export function parseSavedMock(raw: unknown): SavedMock | null {
     typeof m.startedAt === 'number' &&
     typeof m.limitSec === 'number' &&
     m.limitSec > 0
-  return ok ? (m as unknown as SavedMock) : null
+  if (!ok) return null
+  // A broken scope only costs the trend, so drop it instead of throwing the exam away.
+  const { scope, ...rest } = m
+  return (isScope(scope) ? { ...rest, scope } : rest) as unknown as SavedMock
 }
 
 /** Seconds left on the clock (never below 0). */
