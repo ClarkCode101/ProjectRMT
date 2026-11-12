@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, CloudUpload, Eye, EyeOff } from 'lucide-react'
+import { Check, CloudUpload, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { useId, useState, type ComponentProps, type FormEvent, type ReactNode } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
@@ -727,7 +727,7 @@ function ResetProgress() {
  * One person: round badge, then their EMAIL first (the name is typed by the person themself, so a stranger
  * could copy a real classmate's name), then that name, how they sign in, and the note. Then the buttons.
  */
-function MemberRow({ member, note, children }: { member: Member; note: string; children?: ReactNode }) {
+function MemberRow({ member, note, children }: { member: Member; note?: string; children?: ReactNode }) {
   const details = [member.name && `Name: ${member.name}`, signInMethod(member.providers), note].filter(Boolean).join(' · ')
   return (
     <div className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2 px-5 py-3 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto]">
@@ -739,6 +739,32 @@ function MemberRow({ member, note, children }: { member: Member; note: string; c
         <p className="truncate text-sm text-muted-foreground">{details}</p>
       </div>
       {children && <div className="col-span-2 flex items-center justify-end gap-1 sm:col-span-1">{children}</div>}
+    </div>
+  )
+}
+
+/**
+ * An admin account, kept apart from the members (common region: same box = same kind of thing).
+ * Always on top and always shown, with a light blue tint, a dark badge and an ADMIN pill. No buttons: an admin can't be removed here.
+ */
+function AdminRow({ member, isYou }: { member: Member; isYou: boolean }) {
+  const details = [member.name && `Name: ${member.name}`, signInMethod(member.providers)].filter(Boolean).join(' · ')
+  return (
+    <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-x-3.5 bg-primary/5 px-5 py-3.5">
+      <span aria-hidden className="grid size-11 place-items-center rounded-full bg-primary-deep font-heading font-bold text-white">
+        {initials(null, member.email)}
+      </span>
+      <div className="min-w-0">
+        <p className="truncate font-semibold">
+          {member.email}
+          {isYou && <span className="font-normal text-muted-foreground"> (you)</span>}
+        </p>
+        <p className="truncate text-sm text-muted-foreground">{details}</p>
+      </div>
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary-deep px-2.5 py-0.5 text-xs font-bold tracking-wide text-white">
+        <ShieldCheck className="size-3.5" aria-hidden />
+        ADMIN
+      </span>
     </div>
   )
 }
@@ -763,6 +789,7 @@ function AccessGroup() {
   const id = useId()
   const dialogHeadingId = useId()
   const [now] = useState(() => Date.now())
+  const myId = useAuth().session?.user.id
 
   /** Runs one change, then reloads the list. */
   async function run(member: Member, action: () => Promise<void>, failText: string) {
@@ -793,9 +820,11 @@ function AccessGroup() {
   }
 
   const all = members.data ?? []
-  const pending = all.filter((member) => member.status === 'pending')
-  const approved = all.filter((member) => member.status === 'approved')
-  const declined = all.filter((member) => member.status === 'declined')
+  const pending = all.filter((member) => member.status === 'pending' && !member.isAdmin)
+  // Admins get their own rows on top; Members lists (and counts) only the people the admin manages.
+  const admins = all.filter((member) => member.isAdmin)
+  const approved = all.filter((member) => member.status === 'approved' && !member.isAdmin)
+  const declined = all.filter((member) => member.status === 'declined' && !member.isAdmin)
   const asked = (member: Member) => `asked ${timeAgo(new Date(member.requestedAt).getTime(), now)}`
   const locked = (member: Member) => busy !== null || !online || member.isAdmin
   const dangerButton = 'text-wrong hover:bg-wrong/5'
@@ -815,6 +844,9 @@ function AccessGroup() {
             Couldn’t load the list. Check your internet connection, then refresh.
           </p>
         )}
+        {admins.map((member) => (
+          <AdminRow key={member.userId} member={member} isYou={member.userId === myId} />
+        ))}
         {members.isSuccess && pending.length === 0 && <p className="px-5 py-4 text-muted-foreground">No one is waiting.</p>}
 
         {pending.map((member) => (
@@ -859,12 +891,10 @@ function AccessGroup() {
         )}
         {showMembers &&
           approved.map((member) => (
-            <MemberRow key={member.userId} member={member} note={member.isAdmin ? 'Admin' : 'Member'}>
-              {!member.isAdmin && (
-                <RowButton className={dangerButton} disabled={locked(member)} onClick={() => decide(member, 'declined')}>
-                  Remove
-                </RowButton>
-              )}
+            <MemberRow key={member.userId} member={member}>
+              <RowButton className={dangerButton} disabled={locked(member)} onClick={() => decide(member, 'declined')}>
+                Remove
+              </RowButton>
             </MemberRow>
           ))}
 
