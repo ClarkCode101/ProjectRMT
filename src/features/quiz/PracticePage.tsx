@@ -10,6 +10,7 @@ import { useMistakes } from '@/features/mistakes/api'
 import { useBooks } from '@/features/questions/booksApi'
 import { shuffle } from '@/lib/quiz'
 import { useTopics } from '@/lib/referenceData'
+import { priorHistory, type PracticeMode, type PriorHistory } from '@/lib/practiceReport'
 import { buildHistory, pickQuestions } from '@/lib/selection'
 import {
   attemptHistoryOptions,
@@ -34,10 +35,13 @@ function Notice({ children }: { children: ReactNode }) {
   )
 }
 
+/** What the results screen needs to know about the session besides the answers. */
+type SessionInfo = { mode: PracticeMode; prior: PriorHistory | null }
+
 type Stage =
   | { name: 'setup' }
-  | { name: 'quiz'; sessionId: string; questions: QuizQuestion[]; startedAt: number }
-  | { name: 'results'; answers: AnswerResult[] }
+  | ({ name: 'quiz'; sessionId: string; questions: QuizQuestion[]; startedAt: number } & SessionInfo)
+  | ({ name: 'results'; answers: AnswerResult[] } & SessionInfo)
 
 /** "Practice this book" quizzes the whole book, up to this many (mixed up), so a huge book stays a doable session. */
 const BOOK_SESSION_MAX = 50
@@ -71,11 +75,14 @@ export default function PracticePage() {
    * Starts a quiz. `ready` = the questions are already in memory (Review again), so only the session
    * still has to be saved: one request instead of two before the first question shows.
    */
-  async function start(filters: QuizFilters, itemCount: number, ready?: QuizQuestion[]) {
+  async function start(filters: QuizFilters, itemCount: number, ready?: QuizQuestion[], mode: PracticeMode = 'practice') {
     setStarting(true)
     setMessage(null)
     try {
       let picked: QuizQuestion[]
+      // Her answers before this session, so the results can say which were new and which old mistakes she fixed.
+      // Not needed in Review again (every item there is an old mistake). If it can't load, the quiz still starts.
+      let prior: PriorHistory | null = null
       if (ready) {
         picked = shuffle(ready).slice(0, itemCount)
       } else if (filters.questionIds) {
@@ -91,6 +98,13 @@ export default function PracticePage() {
         const candidates = filters.topicId === null ? subjectPool : subjectPool.filter((q) => q.topic_id === filters.topicId)
         // Smart selection (PROJECT_PLAN.md §6): new questions first, then old mistakes, then ones she got right.
         picked = pickQuestions(candidates, buildHistory(attempts), itemCount)
+        prior = priorHistory(attempts)
+      }
+      if (prior === null && mode === 'practice') {
+        prior = await queryClient
+          .fetchQuery(attemptHistoryOptions)
+          .then(priorHistory)
+          .catch(() => null)
       }
       if (picked.length === 0) {
         setMessage('No questions match these filters yet. Try a different subject, topic, or source.')
@@ -98,7 +112,7 @@ export default function PracticePage() {
       }
       // Saved on the device first and sent in the background, so this works offline too.
       const sessionId = queueSessionStart(filters, picked.length)
-      setStage({ name: 'quiz', sessionId, questions: picked, startedAt: Date.now() })
+      setStage({ name: 'quiz', sessionId, questions: picked, startedAt: Date.now(), mode, prior })
     } catch {
       setMessage(
         navigator.onLine
@@ -117,7 +131,13 @@ export default function PracticePage() {
   const mistakeIds = mistakeQuestions.map((q) => q.id)
 
   function startMistakes(questionIds: string[]) {
-    void start({ source: 'all', subjectId: null, topicId: null, questionIds }, questionIds.length, mistakeQuestions)
+    void start({ source: 'all', subjectId: null, topicId: null, questionIds }, questionIds.length, mistakeQuestions, 'review')
+  }
+
+  /** "Review the N left" on the results: straight into the ones she just missed (the mistakes list may not have caught up yet). */
+  function reviewLeft(missed: QuizQuestion[]) {
+    const questionIds = missed.map((q) => q.id)
+    void start({ source: 'all', subjectId: null, topicId: null, questionIds }, questionIds.length, missed, 'review')
   }
 
   function startBook() {
@@ -153,7 +173,7 @@ export default function PracticePage() {
   async function finish(answers: AnswerResult[]) {
     if (stage.name !== 'quiz') return
     const score = answers.filter((a) => a.isCorrect).length
-    setStage({ name: 'results', answers })
+    setStage({ name: 'results', answers, mode: stage.mode, prior: stage.prior })
     queueSessionFinish(stage.sessionId, score, Math.round((Date.now() - stage.startedAt) / 1000))
     refreshAfterAnswers()
   }
@@ -186,7 +206,17 @@ export default function PracticePage() {
     return <QuizRunner sessionId={stage.sessionId} questions={stage.questions} onFinish={finish} onExit={exit} />
   }
   if (stage.name === 'results') {
-    return <QuizResults answers={stage.answers} onRestart={restart} />
+    return (
+      <QuizResults
+        answers={stage.answers}
+        mode={stage.mode}
+        prior={stage.prior}
+        label={book?.title}
+        onRestart={restart}
+        onReviewLeft={reviewLeft}
+        starting={starting}
+      />
+    )
   }
 
   if (bookParam !== null) {
