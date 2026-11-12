@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildMockExam, formatClock, parseSavedMock, scoreMock, secondsLeft, timeLimitSec, type SavedMock } from './mockExam'
+import { buildMockExam, formatClock, parseSavedMock, runStats, scoreMock, secondsLeft, timeLimitSec, type SavedMock } from './mockExam'
 
 /** Simple seeded random number generator so picks are repeatable in tests. */
 function seeded(seed: number) {
@@ -116,5 +116,23 @@ describe('parseSavedMock / secondsLeft', () => {
     expect(secondsLeft(good, good.startedAt)).toBe(144)
     expect(secondsLeft(good, good.startedAt + 44_500)).toBe(100)
     expect(secondsLeft(good, good.startedAt + 999_000)).toBe(0)
+  })
+})
+
+describe('runStats', () => {
+  const qs = [{ correct_index: 0 }, { correct_index: 1 }, { correct_index: 2 }, { correct_index: 3 }]
+
+  it('counts blanks, flags and the flags that ended up right', () => {
+    const s = runStats(qs, [0, null, 1, 3], [true, true, true, false], 200)
+    expect(s).toEqual({ paceSec: 50, blank: 1, flagged: 3, flaggedRight: 1 })
+  })
+
+  it('a flagged blank is flagged but not right', () => {
+    expect(runStats(qs, [null, null, null, null], [true, false, false, false], 0)).toMatchObject({ blank: 4, flagged: 1, flaggedRight: 0 })
+  })
+
+  it('handles no questions and odd durations', () => {
+    expect(runStats([], [], [], 100)).toEqual({ paceSec: 0, blank: 0, flagged: 0, flaggedRight: 0 })
+    expect(runStats(qs, [0, 1, 2, 3], [false, false, false, false], -5).paceSec).toBe(0)
   })
 })

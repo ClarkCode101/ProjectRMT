@@ -93,6 +93,37 @@ export function scoreMock(questions: readonly { topic_id: number; correct_index:
   }
 }
 
+/** The run's readings beside the score: things Practice can't tell her (pace, blanks, how her flags went). */
+export type RunStats = {
+  /** average seconds per item (time used ÷ items) */
+  paceSec: number
+  blank: number
+  flagged: number
+  /** flagged items that ended up right */
+  flaggedRight: number
+}
+
+export function runStats(
+  questions: readonly { correct_index: number }[],
+  answers: readonly (number | null)[],
+  flags: readonly boolean[],
+  durationSec: number,
+): RunStats {
+  let blank = 0
+  let flagged = 0
+  let flaggedRight = 0
+  questions.forEach((q, i) => {
+    const answer = answers[i] ?? null
+    if (answer === null) blank++
+    if (flags[i]) {
+      flagged++
+      if (answer === q.correct_index) flaggedRight++
+    }
+  })
+  const paceSec = questions.length > 0 ? Math.max(0, durationSec) / questions.length : 0
+  return { paceSec, blank, flagged, flaggedRight }
+}
+
 // ---------- Saving an exam in progress (on this device), so a refresh or a closed tab doesn't lose it ----------
 
 export const SAVED_MOCK_KEY = 'projectrmt:mock-exam'

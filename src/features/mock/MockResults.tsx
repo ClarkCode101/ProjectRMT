@@ -6,7 +6,7 @@ import { NoteCard } from '@/components/NoteCard'
 import { VerseCard } from '@/components/VerseCard'
 import { HeroPanel, heroButtonClass, LowFlag, RangeBar } from '@/components/report'
 import type { QuizQuestion } from '@/features/quiz/api'
-import { formatClock, type MockScore } from '@/lib/mockExam'
+import { formatClock, runStats, SECONDS_PER_ITEM, type MockScore } from '@/lib/mockExam'
 import { useOnline } from '@/lib/offline/useOfflineSync'
 import { formatPercent, PASSING_RATE } from '@/lib/quiz'
 import { useSubjectOfTopic, useTopics } from '@/lib/referenceData'
@@ -130,6 +130,17 @@ function ResultTable({ title, children }: { title: string; children: ReactNode }
   )
 }
 
+/** One reading in the row under the score: a small caps label, the value, and a short note under it. */
+function Reading({ label, value, bad = false, children }: { label: string; value: ReactNode; bad?: boolean; children: ReactNode }) {
+  return (
+    <div className="min-w-0 border-l border-dashed border-foreground/20 px-3 first:border-l-0 first:pl-0 last:pr-0 sm:px-4">
+      <dt className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">{label}</dt>
+      <dd className={cn('mt-1 font-mono text-xl leading-tight font-bold tabular-nums sm:text-2xl', bad && 'text-wrong')}>{value}</dd>
+      <dd className="mt-0.5 text-xs text-muted-foreground tabular-nums">{children}</dd>
+    </div>
+  )
+}
+
 /** "Focus on" lists at most this many topics below 60% (the rest are under "See all topics"). */
 const FOCUS_TOPICS_SHOWN = 3
 
@@ -142,6 +153,7 @@ export function MockResults({ label, questions, answers, flags, score, durationS
   const topicLabel = (topicId: number) => topicName.get(topicId) ?? `Topic #${topicId}`
   const [filter, setFilter] = useState<Filter>('missed')
   const [reviewOpen, setReviewOpen] = useState(false)
+  const stats = runStats(questions, answers, flags, durationSec)
 
   // Add the topics up per subject. More than one subject = a mixed exam.
   const bySubject = new Map<string, { code: string; name: string; correct: number; total: number }>()
@@ -229,7 +241,7 @@ export function MockResults({ label, questions, answers, flags, score, durationS
                   <p className="text-xs font-bold tracking-widest text-muted-foreground uppercase">Score</p>
                   <p className={cn('font-heading text-6xl leading-none font-bold tabular-nums sm:text-7xl', !score.passed && 'text-wrong')}>{formatPercent(score.rate)}</p>
                   <p className="mt-1 font-mono text-sm text-muted-foreground tabular-nums">
-                    {score.correct} of {score.total} correct · {formatClock(durationSec)} used{timedOut && ' (time ran out)'}
+                    {score.correct} of {score.total} correct
                   </p>
                   <p className="mt-2 text-sm">{resultMessage(score.rate)}</p>
                 </div>
@@ -242,6 +254,22 @@ export function MockResults({ label, questions, answers, flags, score, durationS
                   {score.passed ? 'PASSED' : 'NOT YET'}
                 </p>
               </div>
+
+              {/* ---------- The run's readings: what Practice can't tell her (pace, blanks, how her flags went) ---------- */}
+              <dl className="grid grid-cols-3">
+                <Reading label="Pace" value={<>{Math.round(stats.paceSec)}s <small className="text-sm font-semibold text-muted-foreground">/ item</small></>}>
+                  Board pace {SECONDS_PER_ITEM}s · {formatClock(durationSec)} used{timedOut && ' (time ran out)'}
+                </Reading>
+                <Reading label="Blank" value={stats.blank} bad={stats.blank > 0}>
+                  {stats.blank > 0 ? 'counted as wrong' : 'none left blank'}
+                </Reading>
+                <Reading
+                  label="Flagged"
+                  value={stats.flagged > 0 ? <>{stats.flaggedRight} <small className="text-sm font-semibold text-muted-foreground">of {stats.flagged} right</small></> : 'None'}
+                >
+                  {stats.flagged > 0 ? 'your second guesses' : 'nothing flagged'}
+                </Reading>
+              </dl>
               <PaperRule />
 
               {/* ---------- Focus on: at most a few topics below 60%, weakest first ---------- */}
