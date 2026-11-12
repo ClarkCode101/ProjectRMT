@@ -118,6 +118,33 @@ export async function deleteMember(userId: string) {
   if (error) throw error
 }
 
+/** The shortest password the sign-up form accepts (Supabase's own minimum is lower). */
+export const MIN_PASSWORD_LENGTH = 8
+
+/**
+ * Plain words for a failed email sign-up. Always our own text: Supabase's messages are technical.
+ * Codes: https://supabase.com/docs/guides/auth/debugging/error-codes
+ */
+export function signUpErrorMessage(error: { code?: string; message?: string }): string {
+  switch (error.code) {
+    case 'user_already_exists':
+    case 'email_exists':
+      return 'That email already has an account. Log in instead.'
+    case 'weak_password':
+      return `Use a stronger password, at least ${MIN_PASSWORD_LENGTH} characters.`
+    case 'email_address_invalid':
+      return 'That email doesn’t look right. Check it and try again.'
+    case 'over_email_send_rate_limit':
+    case 'over_request_rate_limit':
+      return 'Too many sign-ups right now. Try again in a few minutes.'
+    case 'signup_disabled':
+    case 'email_provider_disabled':
+      return 'Sign-up with email is turned off. Use Continue with Google, or ask your admin.'
+    default:
+      return 'Couldn’t create the account. Check your internet connection and try again.'
+  }
+}
+
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR

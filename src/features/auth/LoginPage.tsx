@@ -4,16 +4,22 @@ import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { signInWithGoogle, takeOAuthError } from '@/lib/access'
+import { MIN_PASSWORD_LENGTH, signInWithGoogle, signUpErrorMessage, takeOAuthError } from '@/lib/access'
 import { supabase } from '@/lib/supabase'
 import { AuthShell, PhoneStrip, ReportSlip, Stamp } from './AuthShell'
 import { useAuth } from './authContext'
 
-// Two ways in:
-// - Email + password, for accounts the admin made by hand (not magic link: on iPhone, a magic link opens
-//   in Safari instead of the installed home-screen app, which is confusing).
-// - Continue with Google, for everyone new. There is still no sign-up form: a new Google account lands on
-//   the "waiting for approval" page until the admin accepts it in Settings (migration 0033).
+// Ways in:
+// - Email + password (not magic link: on iPhone, a magic link opens in Safari instead of the installed
+//   home-screen app, which is confusing).
+// - Create an account with email + password, on the same card ("New here? Create an account").
+// - Continue with Google.
+// Every new account, email or Google, lands on the "waiting for approval" page until the admin accepts it in
+// Settings (migration 0033 makes each new account pending).
+//
+// Supabase "Confirm email" is OFF for now (small private group; the admin's approval is the gate), so sign-up
+// logs her in right away. If it's turned on later (with a custom email sender), sign-up returns no session
+// and the "Check your email" screen shows instead. No code change needed for that switch.
 
 /** "Good morning / afternoon / evening", based on the device's clock. */
 function greeting(hour = new Date().getHours()) {
@@ -81,14 +87,40 @@ export default function LoginPage() {
   )
   const [openingGoogle, setOpeningGoogle] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  /** the email a confirmation link was sent to (only when "Confirm email" is on in Supabase) */
+  const [checkEmail, setCheckEmail] = useState<string | null>(null)
+  const signingUp = mode === 'signup'
 
   const from = (location.state as { from?: string } | null)?.from ?? '/'
   if (session) return <Navigate to={from} replace />
+
+  /** Log in ⇄ Create an account. Keeps the email she typed, clears the password and any message. */
+  function switchMode(next: 'login' | 'signup') {
+    setMode(next)
+    setPassword('')
+    setShowPassword(false)
+    setError(null)
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setSubmitting(true)
     setError(null)
+    if (signingUp) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        // where the confirmation link opens, if "Confirm email" is turned on later
+        options: { emailRedirectTo: window.location.origin },
+      })
+      setSubmitting(false)
+      if (error) setError(signUpErrorMessage(error))
+      // No session = Supabase sent a confirmation link first.
+      else if (!data.session) setCheckEmail(email)
+      // With a session, AuthProvider picks it up and the <Navigate> above goes on to the waiting page.
+      return
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setSubmitting(false)
     if (error) setError('Wrong email or password. Please try again.')
@@ -106,12 +138,42 @@ export default function LoginPage() {
     }
   }
 
+  if (checkEmail) {
+    return (
+      <AuthShell slip={SAMPLE_SLIP} strip={SAMPLE_STRIP}>
+        <div className="space-y-5 p-6 md:p-9">
+          <span aria-hidden className="grid size-14 place-items-center rounded-full bg-secondary text-primary">
+            <Mail className="size-7" />
+          </span>
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold">Check your email</h2>
+            <p className="text-muted-foreground">
+              We sent a link to <b className="break-all text-foreground">{checkEmail}</b>. Open it on this device to finish creating your
+              account. Then your admin accepts you.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 rounded-md px-4 font-bold"
+            onClick={() => {
+              setCheckEmail(null)
+              switchMode('login')
+            }}
+          >
+            Back to log in
+          </Button>
+        </div>
+      </AuthShell>
+    )
+  }
+
   return (
     <AuthShell slip={SAMPLE_SLIP} strip={SAMPLE_STRIP}>
       <form onSubmit={handleSubmit} className="space-y-5 p-6 md:p-9">
         <div className="space-y-1">
-          <h2 className="text-3xl font-bold">{greeting()}</h2>
-          <p className="text-muted-foreground">Log in to continue your review.</p>
+          <h2 className="text-3xl font-bold">{signingUp ? 'Create an account' : greeting()}</h2>
+          <p className="text-muted-foreground">{signingUp ? 'Your admin accepts new accounts before you can start.' : 'Log in to continue your review.'}</p>
         </div>
 
         <div className="space-y-2">
@@ -148,7 +210,9 @@ export default function LoginPage() {
             <Input
               id="password"
               type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
+              autoComplete={signingUp ? 'new-password' : 'current-password'}
+              minLength={signingUp ? MIN_PASSWORD_LENGTH : undefined}
+              aria-describedby={signingUp ? 'password-hint' : undefined}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -164,6 +228,11 @@ export default function LoginPage() {
               {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
             </button>
           </div>
+          {signingUp && (
+            <p id="password-hint" className="text-sm text-muted-foreground">
+              At least {MIN_PASSWORD_LENGTH} characters.
+            </p>
+          )}
         </div>
 
         {error && (
@@ -173,7 +242,7 @@ export default function LoginPage() {
         )}
 
         <Button type="submit" className="h-12 w-full rounded-md font-heading text-lg font-bold" disabled={submitting}>
-          {submitting ? 'Logging in…' : 'Log in'}
+          {signingUp ? (submitting ? 'Creating account…' : 'Create account') : submitting ? 'Logging in…' : 'Log in'}
         </Button>
 
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -194,7 +263,14 @@ export default function LoginPage() {
         </Button>
 
         <p className="text-center text-sm text-muted-foreground">
-          New here? Continue with Google, then wait for your admin to accept you.
+          {signingUp ? 'Already have an account?' : 'New here?'}{' '}
+          <button
+            type="button"
+            onClick={() => switchMode(signingUp ? 'login' : 'signup')}
+            className="rounded-sm font-bold text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
+            {signingUp ? 'Log in' : 'Create an account'}
+          </button>
         </p>
 
         <p className="text-center text-sm">

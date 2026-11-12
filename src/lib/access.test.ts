@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 // access.ts imports the Supabase client; the tests here don't need it.
 vi.mock('./supabase', () => ({ supabase: {} }))
 
-const { initials, lastStudiedLabel, oauthErrorFrom, parseAccess, signInMethod } = await import('./access')
+const { initials, lastStudiedLabel, oauthErrorFrom, parseAccess, signInMethod, signUpErrorMessage } = await import('./access')
 
 describe('parseAccess', () => {
   it('reads the server answer', () => {
@@ -106,5 +106,21 @@ describe('lastStudiedLabel', () => {
 
   it('treats a time a little in the future (clock drift) as just now', () => {
     expect(lastStudiedLabel(new Date(now + 5_000).toISOString(), now)).toBe('Studied just now')
+  })
+})
+
+describe('signUpErrorMessage', () => {
+  it('turns Supabase codes into plain words', () => {
+    expect(signUpErrorMessage({ code: 'user_already_exists' })).toMatch(/already has an account/)
+    expect(signUpErrorMessage({ code: 'email_exists' })).toMatch(/already has an account/)
+    expect(signUpErrorMessage({ code: 'weak_password' })).toMatch(/at least 8 characters/)
+    expect(signUpErrorMessage({ code: 'email_address_invalid' })).toMatch(/doesn’t look right/)
+    expect(signUpErrorMessage({ code: 'over_email_send_rate_limit' })).toMatch(/Too many sign-ups/)
+    expect(signUpErrorMessage({ code: 'signup_disabled' })).toMatch(/turned off/)
+  })
+
+  it('never shows Supabase’s own text', () => {
+    expect(signUpErrorMessage({ code: 'something_new', message: 'internal detail' })).not.toMatch(/internal detail/)
+    expect(signUpErrorMessage({})).toMatch(/Couldn’t create the account/)
   })
 })
