@@ -47,7 +47,7 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 ### Phase 1 — MVP (must-have)
 - [x] **Auth**: email login (Supabase Auth); app is private
 - [x] **Question bank**: multiple choice (4 options), tagged by subject → topic
-- [x] **Practice quiz**: filter by subject/topic/source; instant feedback + explanation after each answer
+- [x] **Practice quiz**: filter by subject/topic/source; instant feedback + explanation after each answer; results show what she learned (new, cleared, to review), not pass/fail (see §6 "Results")
 - [x] **Mistake notebook**: wrong answers are collected automatically and quizzed again from "Review again" on Practice (the list page was removed: answer first, then see why)
 - [x] **Weak-area dashboard**: score per subject and per topic; anything below 60% is highlighted
 - [x] **Built-in seed content import** (JSON → Supabase)
@@ -61,7 +61,7 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 
 ### Phase 3 — Study modes
 - [x] **Question Source selector** used by every mode (see §6)
-- [x] **Mock exam mode**: timed, 100 items per subject, no feedback until submit, review screen afterwards
+- [x] **Mock exam mode**: timed, 100 items per subject, no feedback until submit, review screen afterwards; results add readiness signals (pace, blanks, flagged-right, trend vs her last mock) (see §6 "Results")
 - [x] **Flashcards** with FSRS spaced repetition (Again / Hard / Good / Easy)
 - [x] **Smart anti-repeat selection** (see §6)
 - [x] **Shuffle choices** every time
@@ -153,6 +153,22 @@ Give every candidate question a priority score:
 
 **Mock exam**: follow the exam structure (100 items per subject), spread across topics so a single upload can't dominate.
 
+### Results: Practice = learn, Mock exam = measure
+The two results screens must say different things, or the two modes feel the same (decided 2026-11-12).
+
+**Practice results** (`QuizResults.tsx`, counts in `lib/practiceReport.ts`):
+- Lead with what she learned: **New** (first time seen), **Cleared** (old mistakes now right, the only gold number), **To review** (wrong now, so in Review again). Plus a best-streak badge from 3 in a row.
+- The score stays, but small ("5 of 10 correct"). **No PASSED / NOT YET stamp and no big %**: a 10-item session is not a pass/fail event.
+- Her history is taken when the session starts, so this session's answers don't count as "seen before". If it can't load, New and Cleared are left out and the quiz still runs.
+- Review again sessions show only Cleared and Still to review, and the gold button is "Review the N left".
+- Two buttons of the same size: gold Practice again, see-through Back to Home.
+
+**Mock exam results** (`MockResults.tsx`, logic in `lib/mockExam.ts`):
+- Keeps the big score and the PASSED / NOT YET stamp: here the score is the point.
+- One row of readings under the score: **Pace** (average seconds per item vs the 72s board pace, plus time used), **Blank** (counted as wrong, red when any), **Flagged** (how many flagged items ended up right).
+- **Trend**: vs her last finished mock with the same scope (source + subject or book, saved as `scope` on the exam in progress). Green up, red down, grey same or first. Online only; not shown offline or for exams saved before scope existed.
+- **Not planned:** time per item in Mock exam. Pace stays an average over the whole run (decided 2026-11-12).
+
 ---
 
 ## 7. Database Schema (Supabase / Postgres)
@@ -230,7 +246,7 @@ create table quiz_sessions (
   id            uuid primary key default gen_random_uuid(),
   user_id       uuid not null references auth.users(id) on delete cascade,
   mode          session_mode not null,
-  filters       jsonb,                 -- { source, subject_ids, topic_ids, upload_id, verified_only }
+  filters       jsonb,                 -- { source, upload_id, verified_only, subject_id, topic_id, from_mistakes, book_id } (the Mock exam trend matches on source + subject_id + book_id)
   total_items   int,
   score         int,
   duration_sec  int,
@@ -422,7 +438,7 @@ mtle-reviewer/
 | `/login` | Login |
 | `/` | Home: countdown, streak, today's target, quick start buttons |
 | `/practice` | Source selector → practice quiz; also the per-subject / per-topic scores (the old `/dashboard` redirects here) |
-| `/mock` | Mock exam setup → exam → results review |
+| `/mock` | Mock exam setup → exam → results (score, readings, trend) + review |
 | `/flashcards` | Due cards (FSRS) |
 | `/board` | Board Review: snakes and ladders, answer right to move (§14) |
 | `/mistakes` | Redirects to `/practice?from=mistakes` (Review again is a quiz on Practice, not a list page) |
