@@ -36,7 +36,8 @@ type ChipState = 'done' | 'current' | 'waiting'
 function PaperChip({ paper, state, onPick }: { paper: SubjectSummary; state: ChipState; onPick?: () => void }) {
   const low = paper.accuracy !== null && paper.belowPassing
   const className = cn(
-    'flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-bold whitespace-nowrap tabular-nums',
+    // px-2 on a phone: all six fit on one line (from 360px wide), so the strip doesn't take two rows
+    'flex h-9 items-center gap-1.5 rounded-full border px-2 text-xs sm:px-3 font-bold whitespace-nowrap tabular-nums',
     state === 'current' && 'border-highlight bg-highlight text-foreground',
     state === 'waiting' && 'border-border bg-transparent text-muted-foreground',
     state === 'done' && (low ? 'border-wrong/30 bg-wrong-soft text-wrong' : 'border-correct/30 bg-correct-soft text-correct'),
@@ -225,20 +226,23 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
   const sheetsBehind = pausedOther || complete ? 0 : Math.min(2, papers.length - done - 1)
 
   return (
-    // One screen tall, no scrolling (same as Practice): the big paper takes whatever height is left.
+    // At least one screen tall (same as Practice): the big paper takes whatever height is left.
     // Phone: minus the top bar (3.5rem), main's padding (0.5 + 1.5rem) and the bottom nav (5.5rem).
-    // Tablet/computer: minus main's padding (pt-5 + pb-5 = 2.5rem). min-h: on a very short screen it scrolls instead of squashing.
+    // Tablet/computer: minus main's padding (pt-5 + pb-5 = 2.5rem).
+    // min-h, not h (fixed 2026-11-13): the cover is as tall as its content, so on a short phone a fixed height made it
+    // spill over the title and the paper chips. Now the page grows and scrolls a little instead; nothing overlaps.
     <form
       onSubmit={handleSubmit}
-      className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-136 max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-144"
+      className="mx-auto flex min-h-[max(34rem,calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom)))] max-w-5xl flex-col gap-3 md:min-h-[max(36rem,calc(100dvh-2.5rem))]"
     >
       <PageHeader title="Mock exam" subtitle="The full board: six papers, one subject each. Timed like the real exam." />
 
       {/* ---------- The hero: the paper she takes next, as one big exam paper ---------- */}
       {/* overflow-x-clip: the paper sliding out goes past the edge without making the page scroll sideways */}
-      <section aria-label="Next paper" aria-live="polite" className="flex min-h-0 flex-1 items-center justify-center overflow-x-clip px-6 py-3">
-        {/* The cover's height comes from its content (so nothing gets cut off); the plain paper fills the room. */}
-        <div className={cn('relative w-full', showCover ? 'max-w-sm md:max-w-md' : 'h-full max-h-104 max-w-xs md:max-w-sm')}>
+      {/* No min-h-0 here: the section is never shorter than the cover, so the cover can't spill over its neighbors. */}
+      <section aria-label="Next paper" aria-live="polite" className="flex flex-1 items-center justify-center overflow-x-clip px-3 py-3 sm:px-6">
+        {/* The cover's height comes from its content (so nothing gets cut off); the plain paper is a fixed size. */}
+        <div className={cn('relative w-full', showCover ? 'max-w-sm md:max-w-md' : 'h-80 max-w-xs md:h-104 md:max-w-sm')}>
           {/* the papers still to come, peeking out behind */}
           {sheetsBehind >= 2 && <span aria-hidden className="absolute inset-0 rotate-3 rounded-xl border border-primary/10 bg-card/70 shadow-sm" />}
           {sheetsBehind >= 1 && <span aria-hidden className="absolute inset-0 -rotate-2 rounded-xl border border-primary/15 bg-card/90 shadow-sm" />}
@@ -347,7 +351,7 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
 
       {/* ---------- The whole run in one small strip, and the average so far ---------- */}
       <div className="shrink-0 space-y-2 text-center">
-        <ol aria-label="Papers" className="flex flex-wrap justify-center gap-1.5">
+        <ol aria-label="Papers" className="flex flex-wrap justify-center gap-1 sm:gap-1.5">
           {papers.map((p, i) => (
             <PaperChip key={p.subjectId} paper={p} state={chipState(i, p)} onPick={canSwitch ? () => showPaper(i) : undefined} />
           ))}

@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils'
 
 /** Topics shown on the cover before "+N more" (about two lines, so the cover stays short enough for an iPad). */
 const TOPICS_SHOWN = 4
+/** On a phone (below `sm`), only this many: one line, so the cover fits the screen with the chips and Start under it. */
+const TOPICS_SHOWN_PHONE = 2
 
 /** A made-up barcode: bar widths come from the text, so the same booklet always gets the same bars. */
 function Barcode({ text, className }: { text: string; className?: string }) {
@@ -82,6 +84,7 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
   const sorted = weakestFirst(topics)
   const shown = sorted.slice(0, TOPICS_SHOWN)
   const more = sorted.length - shown.length
+  const morePhone = sorted.length - Math.min(sorted.length, TOPICS_SHOWN_PHONE)
   const anyTried = topics.some((t) => t.accuracy !== null)
 
   return (
@@ -91,7 +94,7 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
       <span aria-hidden className="h-2.5 shrink-0" style={{ background: color }} />
 
       {/* ---------- The booklet's header: what it is, which booklet, a barcode, the weight ---------- */}
-      <div className="flex shrink-0 items-start justify-between gap-3 px-5 pt-3">
+      <div className="flex shrink-0 items-start justify-between gap-3 px-4 pt-3 sm:px-5">
         <div className="min-w-0">
           <p className="text-[11px] font-bold tracking-widest uppercase">MTLE Mock · Full Board</p>
           <Barcode text={`${code}-${number}`} className="mt-1.5 h-5 w-28 text-foreground/70" />
@@ -107,7 +110,7 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
       </div>
 
       {/* ---------- Name and date, already filled in ---------- */}
-      <div className="mx-5 mt-3 flex shrink-0 gap-4 border-y border-dashed border-foreground/15 py-2.5">
+      <div className="mx-4 mt-2.5 flex shrink-0 gap-4 border-y border-dashed border-foreground/15 py-2 sm:mx-5 sm:mt-3 sm:py-2.5">
         <Field label="Name" className="flex-1">
           {studentName ?? ' '}
         </Field>
@@ -117,12 +120,13 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
       </div>
 
       {/* ---------- The subject, what it covers, and where she stands ---------- */}
-      <div className="flex flex-col gap-3 px-5 py-3">
+      {/* A phone gets the same cover, a little tighter (smaller code, less space), so it fits above Start. */}
+      <div className="flex flex-col gap-2.5 px-4 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
         <div className="text-center">
-          <p className="font-heading text-5xl leading-none font-black tracking-wide md:text-6xl" style={{ color }}>
+          <p className="font-heading text-4xl leading-none font-black tracking-wide sm:text-5xl md:text-6xl" style={{ color }}>
             {code}
           </p>
-          <p title={name} className="mt-2 truncate text-muted-foreground">
+          <p title={name} className="mt-1.5 truncate text-muted-foreground sm:mt-2">
             {name}
           </p>
         </div>
@@ -133,13 +137,22 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
               Covers{anyTried && <span className="font-semibold normal-case tracking-normal"> · your scores</span>}
             </p>
             <ul className="mt-1.5 flex flex-wrap gap-1.5" aria-label={`Topics in ${code}, with your scores, lowest first`}>
-              {shown.map((t) => (
-                <li key={t.name} className={cn('flex max-w-full items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs', topicTone(t.accuracy))}>
+              {shown.map((t, i) => (
+                <li
+                  key={t.name}
+                  className={cn(
+                    'flex max-w-full items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs',
+                    i >= TOPICS_SHOWN_PHONE && 'max-sm:hidden',
+                    topicTone(t.accuracy),
+                  )}
+                >
                   <span className="truncate text-foreground">{t.name}</span>
                   {t.accuracy !== null && <span className="shrink-0 font-mono font-bold tabular-nums">{formatPercent(t.accuracy)}</span>}
                 </li>
               ))}
-              {more > 0 && <li className="px-1 py-0.5 text-xs font-semibold text-muted-foreground">+{more} more</li>}
+              {/* "+N more": counted for the phone (fewer chips shown) and for bigger screens */}
+              {morePhone > 0 && <li className="px-1 py-0.5 text-xs font-semibold text-muted-foreground sm:hidden">+{morePhone} more</li>}
+              {more > 0 && <li className="px-1 py-0.5 text-xs font-semibold text-muted-foreground max-sm:hidden">+{more} more</li>}
             </ul>
           </div>
         )}
