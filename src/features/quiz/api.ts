@@ -1,7 +1,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import type { Json, QuestionSource, SessionMode } from '@/lib/database.types'
-import { parseChoiceNotes, parseChoices } from '@/lib/quiz'
-import { allAttempts, filterBankQuestions, withOfflineFallback } from '@/lib/offline/bank'
+import { markGameAnswers, parseChoiceNotes, parseChoices } from '@/lib/quiz'
+import { allAttempts, fetchGameSessionIds, filterBankQuestions, withOfflineFallback } from '@/lib/offline/bank'
 import { queueAttempt, queueFinish, queueSession } from '@/lib/offline/outbox'
 import type { HistoryAttempt } from '@/lib/selection'
 import { supabase } from '@/lib/supabase'
@@ -175,12 +175,18 @@ export const attemptHistoryOptions = queryOptions({
 })
 
 async function fetchAttemptHistory(): Promise<HistoryAttempt[]> {
-  const all: HistoryAttempt[] = []
+  const [rows, gameSessionIds] = await Promise.all([fetchAttemptRows(), fetchGameSessionIds()])
+  // Game answers are marked, so Practice results don't call a game mistake "Cleared" (it was never in Review again).
+  return markGameAnswers(rows, gameSessionIds)
+}
+
+async function fetchAttemptRows() {
+  const all: (Omit<HistoryAttempt, 'from_game'> & { session_id: string | null })[] = []
   for (let from = 0; ; from += PAGE_SIZE) {
     // RLS returns only her own attempts.
     const { data, error } = await supabase
       .from('attempts')
-      .select('question_id, is_correct, created_at')
+      .select('question_id, is_correct, created_at, session_id')
       .order('id')
       .range(from, from + PAGE_SIZE - 1)
     if (error) throw error
@@ -240,6 +246,8 @@ export function queueAnswer(answer: {
   timeMs: number | null
   /** Board Review: a lifeline helped, so it's left out of her scores */
   assisted?: boolean
+  /** a solo game (Board Review, Last Card): kept out of Review again while it waits to be sent */
+  fromGame?: boolean
 }) {
   queueAttempt({
     id: crypto.randomUUID(),
@@ -250,6 +258,7 @@ export function queueAnswer(answer: {
     time_ms: answer.timeMs,
     created_at: new Date().toISOString(),
     ...(answer.assisted && { assisted: true }),
+    ...(answer.fromGame && { from_game: true }),
   })
 }
 

@@ -2,7 +2,8 @@
 // Pure logic: no Supabase or React here, so it is easy to unit test.
 import { shuffle, type RandomFn } from './quiz'
 
-export type HistoryAttempt = { question_id: string; is_correct: boolean; created_at: string | null }
+/** from_game: answered in Board Review or Last Card (left out of Review again, see GAME_MODES in quiz.ts) */
+export type HistoryAttempt = { question_id: string; is_correct: boolean; created_at: string | null; from_game?: boolean }
 
 /** What she has done with one question so far. Times are in milliseconds. */
 export type QuestionHistory = {

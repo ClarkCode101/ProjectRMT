@@ -70,6 +70,25 @@ export function latestMistakes<A extends AttemptLike>(attempts: readonly A[]): A
   return mistakes
 }
 
+/**
+ * The games (Board Review, Last Card). Their answers still count in her scores and streak,
+ * but they don't add to Review again or take anything out of it: game answers are rushed and often guesses.
+ */
+export const GAME_MODES = ['board', 'cards'] as const
+
+/** Sets `from_game` on each answer whose session is one of her games (and drops session_id, which isn't needed after). */
+export function markGameAnswers<A extends { session_id: string | null }>(
+  attempts: readonly A[],
+  gameSessionIds: ReadonlySet<string>,
+): (Omit<A, 'session_id'> & { from_game: boolean })[] {
+  return attempts.map(({ session_id, ...rest }) => ({ ...rest, from_game: session_id !== null && gameSessionIds.has(session_id) }))
+}
+
+/** Only the answers from Practice, Mock exam and Flashcards: what Review again is made from. */
+export function withoutGameAnswers<A extends { from_game?: boolean }>(attempts: readonly A[]): A[] {
+  return attempts.filter((a) => a.from_game !== true)
+}
+
 export type TopicPerformanceRow = { subject_id: number; topic_id: number; attempts: number; accuracy: number }
 export type SubjectInfo = { id: number; code: string; name: string; sort_order: number | null }
 export type TopicInfo = { id: number; subject_id: number; name: string }

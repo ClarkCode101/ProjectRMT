@@ -9,7 +9,7 @@ import { useSyncExternalStore } from 'react'
 import type { QuizFilters, QuizQuestion } from '@/features/quiz/api'
 import type { VerifyStatus } from '@/lib/database.types'
 import type { ReviewRow } from '@/lib/fsrs'
-import { parseChoiceNotes, parseChoices, type SubjectInfo, type TopicInfo, type TopicPerformanceRow } from '@/lib/quiz'
+import { GAME_MODES, markGameAnswers, parseChoiceNotes, parseChoices, type SubjectInfo, type TopicInfo, type TopicPerformanceRow } from '@/lib/quiz'
 import { supabase } from '@/lib/supabase'
 import { pendingAttempts, pendingReviews, type Synced } from './outbox'
 import { getOfflineUserId, idbDelete, idbGet, idbSet, isOnline } from './storage'
@@ -22,15 +22,21 @@ export type BankQuestion = QuizQuestion & {
   in_subject: boolean
 }
 
-/** One past answer: enough for smart selection, Review again, and the streak. */
-export type BankAttempt = { question_id: string; is_correct: boolean; selected_index: number | null; created_at: string | null }
+/** One past answer: enough for smart selection, Review again, and the streak. from_game: left out of Review again. */
+export type BankAttempt = {
+  question_id: string
+  is_correct: boolean
+  selected_index: number | null
+  created_at: string | null
+  from_game?: boolean
+}
 
 /** Her planner row (exam date, daily goal); null until she saves one. */
 export type BankStudySettings = { exam_date: string | null; daily_target: number | null } | null
 
 export type OfflineBank = {
-  /** 2: added the flashcard schedule and study settings (older copies are downloaded again) */
-  version: 2
+  /** 2: added the flashcard schedule and study settings; 3: game answers marked (older copies are downloaded again) */
+  version: 3
   /** whose copy this is: another account on the same device never sees it */
   userId: string
   /** when it was downloaded (ms) */
@@ -83,7 +89,13 @@ export function filterBankQuestions(questions: readonly BankQuestion[], filters:
 
 /** An outbox answer in the saved copy's shape. */
 export function toBankAttempt(row: Synced['attempts'][number]): BankAttempt {
-  return { question_id: row.question_id, is_correct: row.is_correct, selected_index: row.selected_index, created_at: row.created_at }
+  return {
+    question_id: row.question_id,
+    is_correct: row.is_correct,
+    selected_index: row.selected_index,
+    created_at: row.created_at,
+    ...(row.from_game && { from_game: true }),
+  }
 }
 
 /** Flashcard schedules with newer ones on top: one row per card, the latest wins. */
@@ -118,7 +130,7 @@ export async function getBank(): Promise<OfflineBank | null> {
   if (!userId) return null
   if (memory?.userId === userId) return memory
   const saved = await idbGet<OfflineBank>(BANK_KEY)
-  if (saved?.version !== 2 || saved.userId !== userId) return null
+  if (saved?.version !== 3 || saved.userId !== userId) return null
   memory = saved
   notify()
   return saved
@@ -164,11 +176,18 @@ async function fetchAllPages<T>(getPage: (from: number, to: number) => PromiseLi
   }
 }
 
+/** The ids of her game sessions (Board Review, Last Card, solo and team), so their answers can be left out of Review again. */
+export async function fetchGameSessionIds(): Promise<Set<string>> {
+  // RLS returns only her own sessions.
+  const rows = await fetchAllPages((from, to) => supabase.from('quiz_sessions').select('id').in('mode', [...GAME_MODES]).order('id').range(from, to))
+  return new Set(rows.map((r) => r.id))
+}
+
 async function runDownload(): Promise<boolean> {
   const userId = getOfflineUserId()
   if (!userId || !isOnline()) return false
   try {
-    const [subjects, topics, questionRows, attempts, performance, reviewStates, settings] = await Promise.all([
+    const [subjects, topics, questionRows, attemptRows, gameSessionIds, performance, reviewStates, settings] = await Promise.all([
       fetchAllPages((from, to) => supabase.from('subjects').select('id, code, name, sort_order').order('sort_order').range(from, to)),
       fetchAllPages((from, to) => supabase.from('topics').select('id, subject_id, name').order('name').range(from, to)),
       fetchAllPages((from, to) =>
@@ -178,7 +197,10 @@ async function runDownload(): Promise<boolean> {
           .order('id')
           .range(from, to),
       ),
-      fetchAllPages((from, to) => supabase.from('attempts').select('question_id, is_correct, selected_index, created_at').order('id').range(from, to)),
+      fetchAllPages((from, to) =>
+        supabase.from('attempts').select('question_id, is_correct, selected_index, created_at, session_id').order('id').range(from, to),
+      ),
+      fetchGameSessionIds(),
       fetchAllPages((from, to) => supabase.from('topic_performance').select('subject_id, topic_id, attempts, accuracy').range(from, to)),
       fetchAllPages((from, to) =>
         supabase
@@ -200,8 +222,11 @@ async function runDownload(): Promise<boolean> {
     // She may have logged out while this was downloading.
     if (getOfflineUserId() !== userId) return false
 
+    // Only the game answers carry the flag, so the saved copy stays small.
+    const attempts: BankAttempt[] = markGameAnswers(attemptRows, gameSessionIds).map(({ from_game, ...a }) => (from_game ? { ...a, from_game } : a))
+
     memory = {
-      version: 2,
+      version: 3,
       userId,
       savedAt: Date.now(),
       subjects,

@@ -35,6 +35,8 @@ export type OutboxAttempt = {
   created_at: string
   /** a Board Review lifeline helped (migration 0032): saved, but left out of her scores */
   assisted?: boolean
+  /** answered in a solo game (Board Review, Last Card): kept on the device only, never sent (the server knows from the session) */
+  from_game?: boolean
 }
 
 export type OutboxItem =
@@ -79,12 +81,12 @@ export function latestPerCard(rows: readonly ReviewRow[]): ReviewRow[] {
 /**
  * The answers of a batch as rows for the database. `assisted` is only sent when one of them was helped by a lifeline,
  * and then on every row (one request needs the same columns on every row, or the others would get null).
- * So ordinary answers never depend on that column existing (migration 0032).
+ * So ordinary answers never depend on that column existing (migration 0032). `from_game` is never sent (no such column).
  */
-export function attemptRows(batch: readonly OutboxItem[]): OutboxAttempt[] {
+export function attemptRows(batch: readonly OutboxItem[]): Omit<OutboxAttempt, 'from_game'>[] {
   const rows = batch.flatMap((item) => (item.kind === 'attempt' ? [item.row] : []))
   const anyAssisted = rows.some((row) => row.assisted === true)
-  return rows.map(({ assisted, ...row }) => (anyAssisted ? { ...row, assisted: assisted === true } : row))
+  return rows.map(({ assisted, from_game: _fromGame, ...row }) => (anyAssisted ? { ...row, assisted: assisted === true } : row))
 }
 
 /**

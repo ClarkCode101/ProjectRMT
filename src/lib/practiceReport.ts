@@ -15,10 +15,12 @@ export type PriorHistory = {
 
 export function priorHistory(attempts: readonly HistoryAttempt[]): PriorHistory {
   const seen = new Set<string>()
-  // The latest attempt per question decides if it is still a mistake.
+  // The latest attempt per question decides if it is still a mistake. Game answers don't (same rule as Review again),
+  // but they still count as seen.
   const latest = new Map<string, HistoryAttempt>()
   for (const a of attempts) {
     seen.add(a.question_id)
+    if (a.from_game) continue
     const prev = latest.get(a.question_id)
     if (!prev || (a.created_at ?? '') >= (prev.created_at ?? '')) latest.set(a.question_id, a)
   }

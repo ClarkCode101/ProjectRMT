@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { latestMistakes, parseChoiceNotes, parseChoices } from '@/lib/quiz'
+import { latestMistakes, markGameAnswers, parseChoiceNotes, parseChoices, withoutGameAnswers } from '@/lib/quiz'
 import type { QuestionSource } from '@/lib/database.types'
-import { allAttempts, withOfflineFallback, type OfflineBank } from '@/lib/offline/bank'
+import { allAttempts, fetchGameSessionIds, withOfflineFallback, type OfflineBank } from '@/lib/offline/bank'
 import { supabase } from '@/lib/supabase'
 
 export type Mistake = {
@@ -19,7 +19,10 @@ export type Mistake = {
   answeredAt: string | null
 }
 
-/** Her "Review Again" list: questions whose latest attempt was wrong. */
+/**
+ * Her "Review Again" list: questions whose latest attempt was wrong.
+ * Only Practice, Mock exam and Flashcard answers count: a game answer neither adds a mistake nor clears one (GAME_MODES).
+ */
 export function useMistakes() {
   return useQuery({
     queryKey: ['mistakes'],
@@ -31,7 +34,7 @@ export function useMistakes() {
 /** Review again from the saved copy: same rule (latest answer was wrong), answers still waiting to sync included. */
 function offlineMistakes(bank: OfflineBank): Mistake[] {
   const byId = new Map(bank.questions.map((q) => [q.id, q]))
-  return latestMistakes(allAttempts(bank)).flatMap((a) => {
+  return latestMistakes(withoutGameAnswers(allAttempts(bank))).flatMap((a) => {
     const q = byId.get(a.question_id)
     if (!q) return []
     return [
@@ -53,15 +56,18 @@ function offlineMistakes(bank: OfflineBank): Mistake[] {
 
 /** Review again from Supabase. */
 async function fetchMistakes(): Promise<Mistake[]> {
-  // RLS returns only her own attempts.
-  const { data: attempts, error } = await supabase
-    .from('attempts')
-    .select('question_id, is_correct, selected_index, created_at')
-    .order('created_at', { ascending: false })
-    .limit(5000)
+  // RLS returns only her own attempts and sessions.
+  const [{ data: attempts, error }, gameSessionIds] = await Promise.all([
+    supabase
+      .from('attempts')
+      .select('question_id, is_correct, selected_index, created_at, session_id')
+      .order('created_at', { ascending: false })
+      .limit(5000),
+    fetchGameSessionIds(),
+  ])
   if (error) throw error
 
-  const wrong = latestMistakes(attempts)
+  const wrong = latestMistakes(withoutGameAnswers(markGameAnswers(attempts, gameSessionIds)))
   if (wrong.length === 0) return []
 
   const { data: questions, error: qError } = await supabase

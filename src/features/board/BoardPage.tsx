@@ -287,6 +287,7 @@ export default function BoardPage() {
       isCorrect,
       timeMs: Date.now() - turn.shownAt,
       assisted: isAssisted(turn.lifelines),
+      fromGame: true,
     })
     const next = answerQuestion(game, {
       questionId: turn.question.id,

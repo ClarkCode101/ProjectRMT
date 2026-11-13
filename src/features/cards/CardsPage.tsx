@@ -207,7 +207,7 @@ export default function CardsPage() {
     if (!saved || !game || !ask || ask.selectedIndex !== undefined) return
     const isCorrect = originalIndex === ask.question.correct_index
     // Counts toward her scores and Mistake notebook like Practice (saved on the device first, works offline).
-    queueAnswer({ sessionId: saved.sessionId, questionId: ask.question.id, selectedIndex: originalIndex, isCorrect, timeMs: Date.now() - ask.shownAt })
+    queueAnswer({ sessionId: saved.sessionId, questionId: ask.question.id, selectedIndex: originalIndex, isCorrect, timeMs: Date.now() - ask.shownAt, fromGame: true })
     const answer = { questionId: ask.question.id, subjectCode: subjectCodeOfTopic(ask.question.topic_id), isCorrect }
     persist({ ...saved, game: ask.purpose.kind === 'draw2' ? answerDraw2(game, answer) : answerPlay(game, answer) })
     setAsk({ ...ask, selectedIndex: originalIndex })

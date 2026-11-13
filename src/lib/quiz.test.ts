@@ -3,6 +3,7 @@ import {
   closestToPassing,
   formatPercent,
   latestMistakes,
+  markGameAnswers,
   overallStats,
   parseChoiceNotes,
   parseChoices,
@@ -10,6 +11,7 @@ import {
   shuffledChoiceOrder,
   smartPick,
   summarizePerformance,
+  withoutGameAnswers,
 } from './quiz'
 
 /** Simple seeded random number generator so shuffles are repeatable in tests. */
@@ -106,6 +108,37 @@ describe('latestMistakes', () => {
 
   it('works with no attempts', () => {
     expect(latestMistakes([])).toEqual([])
+  })
+})
+
+describe('game answers and Review again', () => {
+  const row = (question_id: string, is_correct: boolean, created_at: string, session_id: string | null) => ({
+    question_id,
+    is_correct,
+    selected_index: 0,
+    created_at,
+    session_id,
+  })
+  const games = new Set(['board-1', 'cards-1'])
+
+  it('marks only the answers from a game session', () => {
+    const marked = markGameAnswers([row('q1', false, '2026-01-01', 'board-1'), row('q2', false, '2026-01-01', 'practice-1'), row('q3', true, '2026-01-01', null)], games)
+    expect(marked.map((a) => a.from_game)).toEqual([true, false, false])
+    expect(marked[0]).not.toHaveProperty('session_id')
+  })
+
+  it('a wrong game answer does not go to Review again', () => {
+    const attempts = markGameAnswers([row('q1', false, '2026-01-01', 'cards-1')], games)
+    expect(latestMistakes(withoutGameAnswers(attempts))).toEqual([])
+  })
+
+  it('a right game answer does not clear a Practice mistake', () => {
+    const attempts = markGameAnswers([row('q1', false, '2026-01-01', 'practice-1'), row('q1', true, '2026-01-02', 'board-1')], games)
+    expect(latestMistakes(withoutGameAnswers(attempts)).map((a) => a.question_id)).toEqual(['q1'])
+  })
+
+  it('answers waiting on the device count as games by their own flag', () => {
+    expect(withoutGameAnswers([{ question_id: 'q1', from_game: true }, { question_id: 'q2' }]).map((a) => a.question_id)).toEqual(['q2'])
   })
 })
 

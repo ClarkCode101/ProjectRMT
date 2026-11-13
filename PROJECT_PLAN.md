@@ -48,7 +48,7 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 - [x] **Auth**: email login (Supabase Auth); app is private
 - [x] **Question bank**: multiple choice (4 options), tagged by subject → topic
 - [x] **Practice quiz**: filter by subject/topic/source; instant feedback + explanation after each answer; results show what she learned (new, cleared, to review), not pass/fail (see §6 "Results")
-- [x] **Mistake notebook**: wrong answers are collected automatically and quizzed again from "Review again" on Practice (the list page was removed: answer first, then see why)
+- [x] **Mistake notebook**: wrong answers are collected automatically and quizzed again from "Review again" on Practice (the list page was removed: answer first, then see why). Only Practice, Mock exam and Flashcard answers count: game answers (Board Review, Last Card) neither add a mistake nor clear one, since they are rushed and often guesses. They still count in the scores and streak (GAME_MODES in lib/quiz.ts).
 - [x] **Weak-area dashboard**: score per subject and per topic; anything below 60% is highlighted
 - [x] **Built-in seed content import** (JSON → Supabase)
 
@@ -521,7 +521,7 @@ A snakes-and-ladders board where **you only move if you answer right**. Co-op, n
 
 **Questions**
 - Source = All (built-in + hers), same as the Practice default. Anti-repeat with `pickQuestions` / `priorityScore`; never the same question twice in one game.
-- Every answer is saved as an attempt, so it counts toward the subject and topic scores and the Mistake notebook. Offline answers go through the same outbox as Practice. A new session mode `board` (small migration: add the enum value) keeps board answers apart from Practice in the stats.
+- Every answer is saved as an attempt, so it counts toward the subject and topic scores (not Review again: see §3 Mistake notebook). Offline answers go through the same outbox as Practice. A new session mode `board` (small migration: add the enum value) keeps board answers apart from Practice in the stats.
 
 **Saving the game**
 - One game in progress, saved on the device (local storage) after every turn: position, turn count, questions used, snakes escaped, ladders climbed. "Continue game" / "New game". Losing it (iOS clearing storage) is acceptable; the answers are already in Supabase.
@@ -625,7 +625,7 @@ A match-and-shed card game (the old Crazy Eights family): match the top card by 
 
 **Questions**
 - Source = All (built-in + hers), anti-repeat with `pickQuestions` / `priorityScore`, never the same question twice in one game.
-- Every answer is saved as an attempt (counts in subject/topic scores and the Mistake notebook; offline through the same outbox). New session mode `cards` (migration 0041: add the enum value).
+- Every answer is saved as an attempt (counts in subject/topic scores, not in Review again; offline through the same outbox). New session mode `cards` (migration 0041: add the enum value).
 - Board Review lifelines: not in step 1.
 
 **Saving the game**

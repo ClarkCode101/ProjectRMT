@@ -27,6 +27,17 @@ describe('priorHistory', () => {
     const p = priorHistory([at('a', true, '2026-01-02'), at('a', false, '2026-01-01')])
     expect(p.mistakes.has('a')).toBe(false)
   })
+
+  it('leaves game answers out of the mistakes (like Review again), but still counts them as seen', () => {
+    const game = (question_id: string, is_correct: boolean, created_at: string) => ({ ...at(question_id, is_correct, created_at), from_game: true })
+    const p = priorHistory([
+      game('g', false, '2026-01-01'), // only ever missed in a game
+      at('m', false, '2026-01-01'),
+      game('m', true, '2026-01-02'), // a lucky game answer doesn't clear it
+    ])
+    expect([...p.seen].sort()).toEqual(['g', 'm'])
+    expect([...p.mistakes]).toEqual(['m'])
+  })
 })
 
 describe('practiceReport', () => {

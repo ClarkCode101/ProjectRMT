@@ -28,6 +28,12 @@ describe('attemptRows', () => {
     const rows = attemptRows([attempt('a1'), helped])
     expect(rows.map((row) => row.assisted)).toEqual([false, true])
   })
+
+  it('never sends from_game (it is only for Review again on the device)', () => {
+    const game = attempt('a1')
+    if (game.kind === 'attempt') game.row.from_game = true
+    expect(attemptRows([game]).every((row) => !('from_game' in row))).toBe(true)
+  })
 })
 
 describe('takeBatch', () => {
