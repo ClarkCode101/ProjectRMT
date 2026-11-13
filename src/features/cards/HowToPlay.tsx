@@ -28,7 +28,7 @@ export function HowToPlay({ headingId, onClose }: { headingId: string; onClose: 
         <h2 id={headingId} className="font-heading text-xl font-bold">
           How to play
         </h2>
-        <p className="text-sm text-muted-foreground">Be the first to run out of cards.</p>
+        <p className="text-sm text-muted-foreground">Be the first to run out of cards, or hold the fewest when the draw pile runs out.</p>
       </div>
 
       <ol className="list-decimal space-y-2 pl-5 text-[15px] leading-snug marker:font-bold marker:text-primary">
@@ -43,6 +43,9 @@ export function HowToPlay({ headingId, onClose }: { headingId: string; onClose: 
         </li>
         <li>
           <span className="font-semibold">Last card:</span> everyone sees it when a player has one card left.
+        </li>
+        <li>
+          <span className="font-semibold">Draw pile empty?</span> The next time someone has to draw, the game ends. Fewest cards wins.
         </li>
       </ol>
 

@@ -343,7 +343,7 @@ function LiveFinish({ view, room, practiceHref }: { view: LiveView; room: TeamRo
     view.endReason === 'everyoneLeft'
       ? 'Everyone left the game.'
       : view.endReason === 'outOfCards'
-        ? 'No cards were left to draw, so the fewest cards wins.'
+        ? 'The draw pile ran out, so the fewest cards wins.'
         : view.winner === me
           ? 'You ran out of cards first.'
           : `${winnerName} ran out of cards first.`

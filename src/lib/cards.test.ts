@@ -405,11 +405,22 @@ describe('drawing on her turn', () => {
     expect(passed.pending).toBeNull()
   })
 
-  it('shuffles the pile (except its top card) back in when the draw pile is empty', () => {
-    const g = { ...table({ hands: [[num('CC', 9)], filler(), filler(), filler()], drawPile: [] }), discard: [num('MICRO', 5), num('HEMA', 7)] }
+  it('never shuffles the played cards back in: an empty draw pile ends the game, even with cards under the top one', () => {
+    const g = {
+      ...table({ hands: [[num('CC', 9)], [num('CM', 1), num('CM', 2)], filler(), filler()], drawPile: [] }),
+      discard: [num('MICRO', 5), num('HEMA', 7)],
+    }
     const next = drawForTurn(g)
-    expect(next.players[0].hand.map((c) => c.id)).toEqual(['CC-9', 'MICRO-5'])
-    expect(next.discard.map((c) => c.id)).toEqual(['HEMA-7'])
+    expect(next).toMatchObject({ finished: true, winner: 0, endReason: 'outOfCards' })
+    expect(next.players[0].hand.map((c) => c.id)).toEqual(['CC-9']) // nothing was drawn
+    expect(next.discard.map((c) => c.id)).toEqual(['MICRO-5', 'HEMA-7'])
+  })
+
+  it('drawing the last card does not end the game yet: the others can still shed cards', () => {
+    const g = table({ hands: [[num('CC', 9)], filler(), filler(), filler()], drawPile: [num('MICRO', 1)] })
+    const next = drawForTurn(g)
+    expect(next.drawPile).toHaveLength(0)
+    expect(next.finished).toBe(false)
   })
 
   it('nothing left to draw at all: the game ends, fewest cards wins', () => {

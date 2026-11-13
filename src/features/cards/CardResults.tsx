@@ -15,7 +15,7 @@ function headline(game: CardGame): string {
 }
 
 function subline(game: CardGame): string {
-  if (game.endReason === 'outOfCards') return 'No cards were left to draw, so the fewest cards wins.'
+  if (game.endReason === 'outOfCards') return 'The draw pile ran out, so the fewest cards wins.'
   if (game.winner === 0) return 'You ran out of cards first.'
   const left = game.players[0].hand.length
   return `You had ${left} ${left === 1 ? 'card' : 'cards'} left. Next game!`

@@ -666,18 +666,15 @@ function applyAction(g: CardGame, playerIndex: number, card: Card, random: Rando
 }
 
 /**
- * Gives a player `count` cards from the draw pile. When the pile runs out, the discard pile (except its top card)
- * is shuffled into a new draw pile. If there is still nothing to draw, the game ends: fewest cards wins, a tie if equal.
+ * Gives a player `count` cards from the draw pile. The pile is never shuffled back in: when someone has to draw and
+ * it's empty, the game ends, fewest cards wins (a tie if equal). Changed 2026-11-13: the discard pile used to be
+ * shuffled into a new draw pile, and a simulation showed typical games of ~40 minutes (some over an hour), since the
+ * computer players, right half the time, don't shed cards on average. Ending here keeps a game to about 8–10 minutes.
  * Returns how many cards were really drawn.
  */
-function drawCards(g: CardGame, playerIndex: number, count: number, random: RandomFn): number {
+function drawCards(g: CardGame, playerIndex: number, count: number, _random: RandomFn): number {
   let drawn = 0
   for (let i = 0; i < count; i++) {
-    if (g.drawPile.length === 0) {
-      const top = g.discard.pop()!
-      g.drawPile = shuffle(g.discard, random)
-      g.discard = [top]
-    }
     const card = g.drawPile.pop()
     if (!card) {
       endOutOfCards(g)

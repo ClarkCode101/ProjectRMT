@@ -595,7 +595,7 @@ A match-and-shed card game (the old Crazy Eights family): match the top card by 
 **Deck (78 cards)**
 - **Six suits = the six built-in subjects**, in exam order: CC, MICRO, HEMA, BBIS, CM, HTMLE (decided 2026-11-12: as many colors as built-in subjects).
 - Each subject: numbers 1–9, Skip, Reverse, Draw 2 (12 cards × 6 = 72), plus **6 Wild**. No "Wild Draw 4" in step 1.
-- 7 cards each, 4 players. The rest is the draw pile; one number card starts the discard pile. Draw pile empty → shuffle the discard pile (except the top card) back in.
+- 7 cards each, 4 players. The rest is the draw pile; one number card starts the discard pile. The draw pile is never shuffled back in (changed 2026-11-13).
 
 **A turn (hers)**
 1. Playable cards (same subject, same number/action, or Wild) are raised in her hand; the rest are dimmed but still readable.
@@ -616,7 +616,7 @@ A match-and-shed card game (the old Crazy Eights family): match the top card by 
 **Winning**
 - **The first player with no cards left wins, and the game stops there** (decided 2026-11-12: no playing on for 2nd/3rd place; keeps a game around 10–15 minutes). The last card still needs a right answer: wrong → it stays, she draws 1, and the game goes on.
 - If the last card is an action card (Skip, Draw 2, Wild), the game **ends at once**; its action doesn't happen.
-- Draw pile AND discard pile both empty (rare) → the game ends; fewest cards wins, a tie if equal.
+- **The draw pile is the clock (changed 2026-11-13):** when someone has to draw and the pile is empty, the game ends; fewest cards wins, a tie if equal. Drawing the last card does not end it yet, so the others can still shed cards. Before, the discard pile (except the top card) was shuffled back in; a simulation (2,000 games per row, her accuracy 35/50/70/90%, bots right 50% of the time) showed median games of 26–40 minutes, some over an hour, because the bots shed no cards on average (right = −1, wrong = +1). With the new rule a game is about 8–10 minutes (~20 questions for her) at any accuracy; she wins ~3% / 21% / 60% / 86% of games at 35 / 50 / 70 / 90%, ties ~5–13%.
 - A bot winning ends the game too; she still gets her finish screen.
 
 **Computer players**

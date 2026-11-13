@@ -73,7 +73,7 @@ export function devDraw2OnMe(game: CardGame, seat = 0): CardGame {
   return { ...structuredClone(game), turn: seat, pending: { kind: 'draw2', subject: game.subject, left: 2 } }
 }
 
-/** Moves the whole draw pile under the top card, so the next draw has to shuffle the pile back in. */
+/** Moves the whole draw pile under the top card, so the next draw ends the game (fewest cards wins). */
 export function devEmptyDrawPile(game: CardGame): CardGame {
   const g = structuredClone(game)
   g.discard = [...g.drawPile, ...g.discard]
