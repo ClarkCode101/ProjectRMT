@@ -423,7 +423,6 @@ function QuestionBankView({
                     // each opens on this subject (Practice also on the chosen topic, if any)
                     study={{
                       practice: `/practice?subject=${subject.subjectId}${topic ? `&topic=${topic.id}` : ''}`,
-                      mock: `/mock?subject=${subject.subjectId}`,
                       flashcards: `/flashcards?subject=${subject.subjectId}`,
                       due: dueIn(subjectQuestionIds),
                     }}

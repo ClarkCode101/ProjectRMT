@@ -167,10 +167,11 @@ export function TitlePage({
 }
 
 /** Where "Study" can take her for this book. `due` = flashcards due now (shown on that option). */
-export type StudyLinks = { practice: string; mock: string; flashcards: string; due?: number }
+/** `mock` only on her own books: a subject's mock is the Full Board on Mock exam now. */
+export type StudyLinks = { practice: string; mock?: string; flashcards: string; due?: number }
 
 /**
- * One gold "Study" button; tapping it opens the three ways to study the book right under it
+ * One gold "Study" button; tapping it opens the ways to study the book (Mock exam only on her own books) right under it
  * (in the page, not a floating menu, so it works the same with a finger, a mouse or the keyboard).
  */
 function StudyMenu({ links }: { links: StudyLinks }) {
@@ -178,7 +179,7 @@ function StudyMenu({ links }: { links: StudyLinks }) {
   const panelId = useId()
   const options = [
     { to: links.practice, icon: Play, title: 'Practice', hint: 'Untimed · see why after each one' },
-    { to: links.mock, icon: Timer, title: 'Mock exam', hint: 'Timed, like the board' },
+    ...(links.mock ? [{ to: links.mock, icon: Timer, title: 'Mock exam', hint: 'Timed, like the board' }] : []),
     { to: links.flashcards, icon: Microscope, title: 'Flashcards', hint: 'Quick review of what’s due', badge: links.due },
   ]
   return (

@@ -163,15 +163,22 @@
   animation: pour-stream 650ms ease-out 400ms both;
 }
 
-/* Mock exam analyzer: the rotor spins when she presses Start run, the first part of the start scene
-   (keep in step with SPIN_MS in MockSetup.tsx). Two full turns, so the tubes end where they started. */
-@keyframes analyzer-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(720deg); }
+/* Mock exam (Full Board): tap the paper and it goes to the back of the pile, like shuffling real papers (BoardSetup.tsx).
+   - paper-to-back: the paper on top lifts aside, then tucks in BEHIND the next one (z-index drops below its z-5)
+     and sinks into the pile.
+   - paper-from-pile: the next paper rises from the pile to the front.
+   The same move every time (no left/right: that read as going back). Not used with reduced motion: the paper just changes. */
+@keyframes paper-to-back {
+  0%   { transform: none; z-index: 10; }
+  45%  { transform: translate(-55%, -5%) rotate(-9deg); z-index: 10; }
+  50%  { z-index: 1; }
+  100% { transform: translate(0, 3%) rotate(-3deg) scale(0.94); opacity: 0; z-index: 1; }
 }
-.analyzer-spin {
-  animation: analyzer-spin 900ms cubic-bezier(0.5, 0, 0.25, 1) both;
+@keyframes paper-from-pile {
+  from { transform: translateY(10px) scale(0.95); opacity: 0.5; }
 }
+.paper-to-back { animation: paper-to-back 520ms cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.paper-from-pile { animation: paper-from-pile 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
 /* Mock exam results: the printout feeds down out of the analyzer's slot. */
 @keyframes printout-feed {

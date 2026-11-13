@@ -6,6 +6,7 @@ import { FullPageMessage } from '@/components/FullPageMessage'
 import { useFocusMode } from '@/components/layoutContext'
 import { useBooks } from '@/features/questions/booksApi'
 import {
+  DEFAULT_SOURCE,
   fetchQuestions,
   queueAnswer,
   queueSessionFinish,
@@ -13,36 +14,41 @@ import {
   questionPoolOptions,
   type QuizFilters,
   type QuizQuestion,
+  type SourceChoice,
 } from '@/features/quiz/api'
+import { BOARD_RUN_KEY, boardVerdict, newBoardRun, nextPaperIndex, parseBoardRun, recordPaper, type BoardRun } from '@/lib/boardRun'
 import { buildMockExam, parseSavedMock, SAVED_MOCK_KEY, scoreMock, secondsLeft, timeLimitSec, type MockScore, type SavedMock } from '@/lib/mockExam'
 import { NOTES } from '@/data/encouragements'
 import { pickNote } from '@/lib/planner'
-import { shuffledChoiceOrder } from '@/lib/quiz'
+import { shuffledChoiceOrder, type SubjectSummary } from '@/lib/quiz'
 import { useTopics } from '@/lib/referenceData'
+import { BoardResults } from './BoardResults'
+import { BoardSetup } from './BoardSetup'
 import { MockResults } from './MockResults'
 import { MockRunner } from './MockRunner'
 import { MockSetup } from './MockSetup'
 
-// ---------- The exam in progress is kept on this device (localStorage), so a refresh or closed tab doesn't lose it ----------
+// ---------- Kept on this device (localStorage): the exam in progress, and the Full Board run ----------
+// So a refresh or a closed tab doesn't lose them. Broken data → start fresh instead of crashing.
 
-function readSaved(): SavedMock | null {
+function readStored<T>(key: string, parse: (raw: unknown) => T | null): T | null {
   try {
-    const raw = localStorage.getItem(SAVED_MOCK_KEY)
-    return raw ? parseSavedMock(JSON.parse(raw)) : null
+    const raw = localStorage.getItem(key)
+    return raw ? parse(JSON.parse(raw)) : null
   } catch {
-    return null // broken data: start fresh
+    return null
   }
 }
-function writeSaved(exam: SavedMock) {
+function writeStored(key: string, value: unknown) {
   try {
-    localStorage.setItem(SAVED_MOCK_KEY, JSON.stringify(exam))
+    localStorage.setItem(key, JSON.stringify(value))
   } catch {
-    // Storage full or blocked: the exam still works, it just can't be resumed after a refresh.
+    // Storage full or blocked: it still works, it just can't be picked up after a refresh.
   }
 }
-function clearSaved() {
+function clearStored(key: string) {
   try {
-    localStorage.removeItem(SAVED_MOCK_KEY)
+    localStorage.removeItem(key)
   } catch {
     // nothing to do
   }
@@ -59,27 +65,32 @@ type Stage =
       durationSec: number
       timedOut: boolean
     }
+  | { name: 'board' }
 
-// /mock → setup (or resume) → timed exam → results + review
-// /mock?subject=ID → that subject at the top of the rotor; /mock?book=ID → one of her books loaded instead
-// (both from "Study → Mock exam" inside a book on Questions)
+// /mock → the Full Board (BoardSetup): six papers, one at a time → each paper's results → the board's result
+// /mock?book=ID → a timed mock on one of her books instead (MockSetup), from "Study → Mock exam" inside a book
 export default function MockPage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const subjectParam = Number(searchParams.get('subject'))
-  const initialSubjectId = Number.isInteger(subjectParam) && subjectParam > 0 ? subjectParam : null
   const bookParam = searchParams.get('book')
   const books = useBooks({ enabled: bookParam !== null })
   const book = bookParam === null ? null : (books.data?.find((b) => b.id === bookParam) ?? null)
   const queryClient = useQueryClient()
   const topics = useTopics()
   const [stage, setStage] = useState<Stage>({ name: 'setup' })
-  const [saved, setSaved] = useState<SavedMock | null>(readSaved)
+  const [saved, setSaved] = useState<SavedMock | null>(() => readStored(SAVED_MOCK_KEY, parseSavedMock))
+  const [run, setRun] = useState<BoardRun | null>(() => readStored(BOARD_RUN_KEY, parseBoardRun))
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   // No nav bar or sidebar while the exam is running.
   useFocusMode(stage.name === 'exam')
 
-  async function start(filters: QuizFilters, itemCount: number, label: string) {
+  function saveRun(next: BoardRun | null) {
+    if (next) writeStored(BOARD_RUN_KEY, next)
+    else clearStored(BOARD_RUN_KEY)
+    setRun(next)
+  }
+
+  async function start(filters: QuizFilters, itemCount: number, label: string, paper?: SavedMock['paper']) {
     setBusy(true)
     setMessage(null)
     try {
@@ -87,7 +98,7 @@ export default function MockPage() {
       const pool = await queryClient.fetchQuery(questionPoolOptions(filters, subjectTopicIds))
       const questions = buildMockExam(pool, itemCount)
       if (questions.length === 0) {
-        setMessage('No questions match yet. Try another subject or source.')
+        setMessage(paper ? `No questions in ${label} yet. Add some on Questions, then start this paper again.` : 'No questions match yet.')
         return
       }
       // Saved on the device first and sent in the background, so this works offline too.
@@ -104,8 +115,9 @@ export default function MockPage() {
         startedAt: Date.now(),
         limitSec: timeLimitSec(questions.length),
         scope: { source: filters.source, subjectId: filters.subjectId, bookId: filters.bookId ?? null },
+        ...(paper && { paper }),
       }
-      writeSaved(exam)
+      writeStored(SAVED_MOCK_KEY, exam)
       setSaved(exam)
       setStage({ name: 'exam', exam, questions })
     } catch {
@@ -117,6 +129,22 @@ export default function MockPage() {
     } finally {
       setBusy(false)
     }
+  }
+
+  /** Paper `index` of the run (any one she hasn't taken: she chooses the order): its subject, from the run's source, the run's number of items. */
+  function startPaper(current: BoardRun, index: number) {
+    const paper = current.papers[index]
+    if (!paper || paper.result !== null) return
+    const { source, uploadId, bookId, verifiedOnly } = current.source
+    const filters: QuizFilters = { source: source as SourceChoice['source'], uploadId, bookId, verifiedOnly, subjectId: paper.subjectId, topicId: null }
+    void start(filters, current.perSubject, paper.code, { runId: current.id, index })
+  }
+
+  /** A new run always uses all questions (no ⚙ on the Full Board: her own books rarely cover all six subjects). */
+  function startRun(subjects: SubjectSummary[], perSubject: number, first: number) {
+    const fresh = newBoardRun(subjects, perSubject, DEFAULT_SOURCE, crypto.randomUUID(), Date.now())
+    saveRun(fresh)
+    startPaper(fresh, first)
   }
 
   /** Picks up the saved exam. Questions deleted since then are dropped. Time already up → straight to results. */
@@ -151,13 +179,21 @@ export default function MockPage() {
     }
   }
 
+  /** Throws away the paused exam. A board paper stays not taken, so she can take it again. */
   function discard() {
-    clearSaved()
+    clearStored(SAVED_MOCK_KEY)
     setSaved(null)
   }
 
+  function endRun() {
+    // A paused paper of this run goes too (it can't count anywhere any more).
+    if (saved?.paper && saved.paper.runId === run?.id) discard()
+    saveRun(null)
+    setMessage(null)
+  }
+
   function onChange(exam: SavedMock) {
-    writeSaved(exam)
+    writeStored(SAVED_MOCK_KEY, exam)
     setSaved(exam)
     setStage((s) => (s.name === 'exam' ? { ...s, exam } : s))
   }
@@ -182,10 +218,20 @@ export default function MockPage() {
   function submit(exam: SavedMock, questions: QuizQuestion[], timedOut: boolean) {
     const score = scoreMock(questions, exam.answers)
     const durationSec = Math.min(exam.limitSec, Math.round((Date.now() - exam.startedAt) / 1000))
-    clearSaved()
+    clearStored(SAVED_MOCK_KEY)
     setSaved(null)
+    // A board paper: its score goes into the run.
+    if (exam.paper && run && exam.paper.runId === run.id && score.total > 0) {
+      saveRun(recordPaper(run, exam.paper.index, { sessionId: exam.sessionId, correct: score.correct, total: score.total, finishedAt: Date.now() }))
+    }
     setStage({ name: 'results', exam, questions, score, durationSec, timedOut })
     saveResults(exam, questions, score, durationSec)
+  }
+
+  function backToSetup() {
+    setMessage(null)
+    setStage({ name: 'setup' })
+    window.scrollTo({ top: 0 })
   }
 
   if (stage.name === 'exam') {
@@ -201,6 +247,10 @@ export default function MockPage() {
   }
 
   if (stage.name === 'results') {
+    // A board paper: the gold button leads on to the next paper, or to the board's result after the last one.
+    const isPaper = stage.exam.paper !== undefined && run !== null && stage.exam.paper.runId === run.id
+    const next = isPaper ? nextPaperIndex(run) : null
+    const nextLabel = !isPaper ? undefined : next === null ? 'See board result' : `Next paper · ${run.papers[next].code}`
     return (
       <MockResults
         label={stage.exam.label}
@@ -212,11 +262,26 @@ export default function MockPage() {
         score={stage.score}
         durationSec={stage.durationSec}
         timedOut={stage.timedOut}
-        note={pickNote(NOTES, stage.score.passed ? 'mock_passed' : 'mock_done', stage.exam.sessionId)}
+        note={isPaper ? null : pickNote(NOTES, stage.score.passed ? 'mock_passed' : 'mock_done', stage.exam.sessionId)}
+        nextLabel={nextLabel}
         onNewExam={() => {
-          setMessage(null)
-          setStage({ name: 'setup' })
-          window.scrollTo({ top: 0 })
+          if (isPaper && next === null) {
+            setStage({ name: 'board' })
+            window.scrollTo({ top: 0 })
+          } else backToSetup()
+        }}
+      />
+    )
+  }
+
+  if (stage.name === 'board' && run) {
+    return (
+      <BoardResults
+        run={run}
+        note={pickNote(NOTES, boardVerdict(run).passed ? 'mock_passed' : 'mock_done', run.id)}
+        onNewRun={() => {
+          saveRun(null)
+          backToSetup()
         }}
       />
     )
@@ -232,18 +297,31 @@ export default function MockPage() {
           {message}
         </p>
       )}
-      <MockSetup
-        // key: a different subject or book in the address starts the setup fresh
-        key={`${initialSubjectId}-${book?.id ?? ''}`}
-        onStart={(f, n, label) => void start(f, n, label)}
-        starting={busy}
-        saved={saved}
-        onResume={() => void resume()}
-        onDiscard={discard}
-        initialSubjectId={initialSubjectId}
-        book={book}
-        onLeaveBook={() => setSearchParams({})}
-      />
+      {book ? (
+        <MockSetup
+          // key: a different book in the address starts the setup fresh
+          key={book.id}
+          book={book}
+          onStart={(f, n, label) => void start(f, n, label)}
+          starting={busy}
+          saved={saved}
+          onResume={() => void resume()}
+          onDiscard={discard}
+          onLeaveBook={() => setSearchParams({})}
+        />
+      ) : (
+        <BoardSetup
+          run={run}
+          saved={saved}
+          starting={busy}
+          onStartRun={startRun}
+          onStartPaper={(index) => run && startPaper(run, index)}
+          onResume={() => void resume()}
+          onDiscard={discard}
+          onEndRun={endRun}
+          onSeeResult={() => setStage({ name: 'board' })}
+        />
+      )}
     </div>
   )
 }

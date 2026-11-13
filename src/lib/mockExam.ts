@@ -2,7 +2,7 @@
 // Pure functions: no Supabase or React here, so it is easy to unit test.
 import { PASSING_RATE, shuffle, type RandomFn } from './quiz'
 
-/** Item counts she can choose. 100 = one full subject on the board exam. */
+/** Item counts she can choose for a mock on one of her books. 100 = one full subject on the board exam. */
 export const MOCK_ITEM_COUNTS = [25, 50, 100] as const
 
 /**
@@ -184,6 +184,14 @@ export type SavedMock = {
   limitSec: number
   /** what it's on, for the trend on the results; missing on exams saved before this was added */
   scope?: MockScope
+  /** which paper of a Full Board run this is (lib/boardRun.ts); missing on a book's mock */
+  paper?: { runId: string; index: number }
+}
+
+function isPaperRef(v: unknown): v is { runId: string; index: number } {
+  if (typeof v !== 'object' || v === null) return false
+  const p = v as Record<string, unknown>
+  return typeof p.runId === 'string' && Number.isInteger(p.index) && (p.index as number) >= 0
 }
 
 function isScope(v: unknown): v is MockScope {
@@ -225,9 +233,9 @@ export function parseSavedMock(raw: unknown): SavedMock | null {
     typeof m.limitSec === 'number' &&
     m.limitSec > 0
   if (!ok) return null
-  // A broken scope only costs the trend, so drop it instead of throwing the exam away.
-  const { scope, ...rest } = m
-  return (isScope(scope) ? { ...rest, scope } : rest) as unknown as SavedMock
+  // A broken scope only costs the trend (a broken paper, the link to its run), so drop it instead of throwing the exam away.
+  const { scope, paper, ...rest } = m
+  return { ...rest, ...(isScope(scope) && { scope }), ...(isPaperRef(paper) && { paper }) } as unknown as SavedMock
 }
 
 /** Seconds left on the clock (never below 0). */

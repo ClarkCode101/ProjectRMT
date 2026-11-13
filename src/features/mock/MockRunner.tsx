@@ -1,9 +1,10 @@
 import { Check, ChevronLeft, ChevronRight, CircleDashed, Flag, ListChecks, Timer } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { Button } from '@/components/ui/button'
 import { ExitButton } from '@/components/ExitButton'
 import type { QuizQuestion } from '@/features/quiz/api'
+import { SUBJECT_COLOR } from '@/lib/books'
 import { formatClock, LOW_TIME_SEC, secondsLeft, type SavedMock } from '@/lib/mockExam'
 import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
@@ -30,10 +31,13 @@ type Props = {
 // Status light color on the dark bar (same as the setup display): brighter than the brand green so it looks lit.
 const LED_ON = 'bg-[#5EE39A]'
 
-/** The clock in the run bar. The whole bar turns red in the last 5 minutes. */
-function Clock({ left, className }: { left: number; className?: string }) {
+/**
+ * The clock in the run bar. Last 5 minutes: a mock on her book turns the whole bar red; a Full Board paper keeps
+ * its subject's color, so the clock itself turns into a white pill with red numbers instead (`alert`).
+ */
+function Clock({ left, alert = false, className }: { left: number; alert?: boolean; className?: string }) {
   return (
-    <p className={cn('flex items-center gap-1.5 font-mono font-bold tabular-nums', className)} aria-live="off">
+    <p className={cn('flex items-center gap-1.5 font-mono font-bold tabular-nums', alert && 'rounded-lg bg-white px-2 py-0.5 text-wrong', className)} aria-live="off">
       <Timer className="size-[0.9em] opacity-70" aria-hidden />
       {formatClock(left)}
       <span className="sr-only"> left</span>
@@ -120,6 +124,11 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
   const blankItems = exam.answers.flatMap((a, index) => (a === null ? [index] : []))
   const answered = questions.length - blankItems.length
   const low = left <= LOW_TIME_SEC
+  // A Full Board paper: the whole run bar is its subject's color (same as its booklet cover; decided 2026-11-13).
+  // White text passes on every subject color (all darker than 4.5:1). Since BBIS is already red, low time can't
+  // be "the bar turns red" there: the clock becomes a white pill with red numbers, and the light blinks.
+  // A mock on her book mixes subjects, so it keeps the dark teal bar (and the whole bar turns red on low time).
+  const paperColor = exam.paper ? (SUBJECT_COLOR[exam.label] ?? null) : null
 
   function update(change: Partial<SavedMock>) {
     onChange({ ...exam, ...change })
@@ -171,14 +180,31 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
 
   return (
     // One column for everything (run bar + item), narrow enough for comfortable reading lines.
-    <div className="mx-auto max-w-3xl space-y-6">
+    // A Full Board paper: the app's primary color becomes the subject's color for this whole screen, so Next, the
+    // chosen answer, its letter key and the focus rings all match the run bar (the theme reads var(--primary)
+    // directly: @theme inline in index.css).
+    <div
+      className="mx-auto max-w-3xl space-y-6"
+      style={
+        paperColor
+          ? ({
+              '--primary': paperColor,
+              '--primary-deep': `color-mix(in srgb, ${paperColor} 75%, black)`,
+              '--ring': paperColor,
+            } as CSSProperties)
+          : undefined
+      }
+    >
       {/* ---------- The run bar: always in view (sticky), the one dark area on this screen ----------
-          Last 5 minutes: the whole bar turns red and the light blinks, a stronger warning than a red number. */}
+          Teal for a mock on her book, the subject's color for a Full Board paper (see paperColor).
+          Last 5 minutes: the light blinks and says LOW TIME; the bar turns red (teal bar) or the clock turns into a
+          white pill with red numbers (subject bar, since BBIS is red already). */}
       <header
         className={cn(
           'sticky top-[calc(0.5rem+env(safe-area-inset-top))] z-20 space-y-2.5 rounded-2xl px-3 pt-2.5 pb-3 text-white shadow-[0_16px_32px_-20px_rgb(7_71_94/0.8)] transition-colors duration-500 sm:px-4',
-          low ? 'bg-wrong' : 'bg-primary-deep',
+          !paperColor && (low ? 'bg-wrong' : 'bg-primary-deep'),
         )}
+        style={paperColor ? { background: paperColor } : undefined}
       >
         <div className="flex items-center gap-2 sm:gap-3">
           <ExitButton onClick={() => setOpen('leave')} tone="dark" />
@@ -186,13 +212,13 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
             <span className={cn('size-2.5 shrink-0 rounded-full shadow-[0_0_10px_2px_rgb(255_255_255/0.25)] ring-2 ring-white/20', low ? 'led-blink bg-white' : LED_ON)} aria-hidden />
             <span className="truncate">
               {low ? 'Low time' : 'Running'}
-              <span className="hidden font-semibold text-white/70 md:inline"> · {exam.label}</span>
+              <span className={cn('hidden font-semibold md:inline', paperColor ? 'text-white/90' : 'text-white/70')}> · {exam.label}</span>
             </span>
           </p>
-          <p className="hidden font-mono text-sm font-bold text-white/80 tabular-nums sm:block">
+          <p className={cn('hidden font-mono text-sm font-bold tabular-nums sm:block', paperColor ? 'text-white/90' : 'text-white/80')}>
             Item <span className="text-white">{i + 1}</span>/{questions.length}
           </p>
-          <Clock left={left} className="text-xl sm:text-2xl" />
+          <Clock left={left} alert={low && paperColor !== null} className="text-xl sm:text-2xl" />
           {/* Review opens only when she asks (also with R), so nothing sits beside the question while she reads.
               The gold badge says there are flagged items to come back to, without opening it. */}
           <button
@@ -222,9 +248,13 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
             aria-valuemax={questions.length}
             aria-valuenow={answered}
           >
-            <div className="h-full rounded-full bg-highlight transition-[width] duration-300" style={{ width: `${(answered / questions.length) * 100}%` }} />
+            {/* gold on the teal bar; white on a subject's color (gold would clash with CC's brown) */}
+            <div
+              className={cn('h-full rounded-full transition-[width] duration-300', paperColor ? 'bg-white' : 'bg-highlight')}
+              style={{ width: `${(answered / questions.length) * 100}%` }}
+            />
           </div>
-          <p className="shrink-0 text-xs text-white/75 tabular-nums">
+          <p className={cn('shrink-0 text-xs tabular-nums', paperColor ? 'text-white/90' : 'text-white/75')}>
             <span className="font-bold text-white">{answered}</span> of {questions.length} answered
           </p>
         </div>
@@ -236,7 +266,10 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
         <article key={i} className="animate-in fade-in space-y-2 duration-200">
           <p className="text-sm text-muted-foreground">
             <span className="font-mono font-bold text-foreground tabular-nums sm:hidden">Item {i + 1} · </span>
-            <span className="font-heading font-bold text-primary">{subject.code ?? '—'}</span>
+            {/* the subject in its own color (each item's own subject, so a mixed mock on her book shows each one's) */}
+            <span className="font-heading font-bold text-primary" style={subject.code && SUBJECT_COLOR[subject.code] ? { color: SUBJECT_COLOR[subject.code] } : undefined}>
+              {subject.code ?? '—'}
+            </span>
             {subject.topicName && <> · {subject.topicName}</>}
           </p>
           <p className="text-xl leading-snug font-bold sm:text-2xl">{question.stem}</p>

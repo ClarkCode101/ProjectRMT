@@ -27,6 +27,8 @@ type Props = {
   durationSec: number
   timedOut: boolean
   onNewExam: () => void
+  /** A paper of a Full Board run: the gold button says this (e.g. "Next paper · HEMA") instead of "New mock exam". */
+  nextLabel?: string
   /** a personal note from src/data/encouragements.ts, if there is one */
   note: string | null
 }
@@ -82,12 +84,12 @@ function ReviewItem({ number, question, answer, flagged }: { number: number; que
 // - "See all topics" and the review list stay closed until she asks (so the screen isn't overwhelming)
 
 /** A dashed rule across the paper, between sections (like a thermal printout). */
-function PaperRule() {
+export function PaperRule() {
   return <hr aria-hidden className="border-t border-dashed border-foreground/20" />
 }
 
 /** One result row: the test (with a 75% bar under it), the score, and the L flag when it's low. */
-function ResultRow({ name, code, correct, total }: { name: string; code?: string; correct: number; total: number }) {
+export function ResultRow({ name, code, correct, total }: { name: string; code?: string; correct: number; total: number }) {
   const rate = correct / total
   const low = rate < PASSING_RATE
   return (
@@ -113,7 +115,7 @@ function ResultRow({ name, code, correct, total }: { name: string; code?: string
 }
 
 /** A results table on the printout. */
-function ResultTable({ title, children }: { title: string; children: ReactNode }) {
+export function ResultTable({ title, children }: { title: string; children: ReactNode }) {
   return (
     <table className="w-full table-fixed text-sm">
       <caption className="pb-1 text-left text-xs font-bold tracking-widest text-muted-foreground uppercase">{title}</caption>
@@ -183,7 +185,7 @@ function Reading({ label, value, bad = false, children }: { label: string; value
 /** "Focus on" lists at most this many topics below 75% (the rest are under "See all topics"). */
 const FOCUS_TOPICS_SHOWN = 3
 
-export function MockResults({ label, sessionId, scope, questions, answers, flags, score, durationSec, timedOut, onNewExam, note }: Props) {
+export function MockResults({ label, sessionId, scope, questions, answers, flags, score, durationSec, timedOut, onNewExam, nextLabel, note }: Props) {
   // Answers are saved on the device first (the outbox) and sent when there's internet.
   const online = useOnline()
   const topics = useTopics()
@@ -246,8 +248,17 @@ export function MockResults({ label, sessionId, scope, questions, answers, flags
             </h1>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
               <button type="button" className={heroButtonClass} onClick={onNewExam}>
-                <RotateCcw className="size-5" aria-hidden />
-                New mock exam
+                {nextLabel ? (
+                  <>
+                    {nextLabel}
+                    <ChevronRight className="size-5" aria-hidden />
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="size-5" aria-hidden />
+                    New mock exam
+                  </>
+                )}
               </button>
               {/* Secondary: same height and shape as the gold button so the pair looks balanced,
                   but a see-through fill so it never competes with it. */}

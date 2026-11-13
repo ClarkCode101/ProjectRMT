@@ -67,6 +67,7 @@ That's why the dashboard tracks scores per subject. In the app (all in `lib/quiz
 ### Phase 3 — Study modes
 - [x] **Question Source selector** used by every mode (see §6)
 - [x] **Mock exam mode**: timed, 100 items per subject, no feedback until submit, review screen afterwards; results add readiness signals (pace, blanks, flagged-right, trend vs her last mock) (see §6 "Results")
+- [x] **Full Board** (decided 2026-11-13): Mock exam is now ONLY the full board, like the real MTLE: six papers (one subject each, 10 / 25 / 100 items per paper), always from all questions (no ⚙: her own books rarely cover all six subjects), taken one at a time, the run saved on the device in between (`lib/boardRun.ts`, key `projectrmt:board-run`). After the sixth paper, the board's result: weighted general average + PASSED / NOT YET + the three rules of §2 with ✓/✗ (`BoardResults.tsx`). The page shows ONE big exam paper (the next paper: number, subject, weight, items, time) with a small strip of six chips under it for the whole run (score once taken, gold = current), the same idea as Practice and Flashcards (one hero, then Start). She takes the papers in any order: tap the paper (it lifts aside and tucks in at the back of the pile while the next one not taken comes up; the same move every time, since left/right in turns read as going back) or tap a chip; the cover is a test booklet (barcode, NAME and DATE filled in, the topics it covers, lowest score first in red or green with her score in each, labeled "your scores" (not "weakest": too negative), her Practice score in it, and "Tap to pick what's first"). Dropped along the way: the analyzer rotor (looked turnable but picked nothing) and six equal booklets (no focal point). A per-subject mock was dropped (it was the same as Practice with a timer); a mock on one of her own books stays (`/mock?book=ID`, `MockSetup.tsx`), and subject books no longer offer "Mock exam" in Study. The run lives only on the device (not in Supabase); each paper's answers and session are saved as before.
 - [x] **Flashcards** with FSRS spaced repetition (Again / Hard / Good / Easy)
 - [x] **Smart anti-repeat selection** (see §6)
 - [x] **Shuffle choices** every time
@@ -443,7 +444,7 @@ mtle-reviewer/
 | `/login` | Login |
 | `/` | Home: countdown, streak, today's target, quick start buttons |
 | `/practice` | Source selector → practice quiz; also the per-subject / per-topic scores (the old `/dashboard` redirects here) |
-| `/mock` | Mock exam setup → exam → results (score, readings, trend) + review |
+| `/mock` | Full Board: six papers one at a time → each paper's results (score, readings, trend) + review → the board's result. `/mock?book=ID`: a timed mock on one of her books |
 | `/flashcards` | Due cards (FSRS) |
 | `/games` | Games: pick Board Review or Last Card from a row of cards you can swipe (§16) |
 | `/board` | Board Review: snakes and ladders, answer right to move (§14) |

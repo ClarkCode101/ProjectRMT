@@ -211,4 +211,11 @@ describe('parseSavedMock scope', () => {
     expect(parsed).not.toBeNull()
     expect(parsed && 'scope' in parsed).toBe(false)
   })
+
+  it('keeps the link to its Full Board paper, and drops a broken one but keeps the exam', () => {
+    expect(parseSavedMock({ ...base, paper: { runId: 'r1', index: 2 } })?.paper).toEqual({ runId: 'r1', index: 2 })
+    const broken = parseSavedMock({ ...base, paper: { runId: 'r1', index: -1 } })
+    expect(broken).not.toBeNull()
+    expect(broken && 'paper' in broken).toBe(false)
+  })
 })
