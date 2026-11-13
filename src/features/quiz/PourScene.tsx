@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { TubeStatus } from './tube'
+import { liquidColors, type TubeStatus } from './tube'
 
 // The short "pour" played inside the subject popup after she presses Start (about 1 second),
 // then the quiz begins: the cap comes off, the tube tips over the flask, the flask fills.
@@ -20,7 +20,26 @@ function shortLabel(text: string) {
   return text.length > 13 ? `${text.slice(0, 12).trimEnd()}…` : text
 }
 
-export function PourScene({ status, level, label }: { status: TubeStatus; level: number; label: string }) {
+/** SVG gradient stops for the liquid, bottom to top: same colors as the tube in the carousel (tube.ts). */
+function liquidStops(code: string) {
+  const colors = liquidColors(code)
+  if (colors.length === 1) {
+    return [
+      <stop key="bottom" offset="0" stopColor={colors[0]} />,
+      <stop key="top" offset="1" stopColor={colors[0]} stopOpacity="0.65" />,
+    ]
+  }
+  // Hard-edged layers (Mix): each color starts where the one below it ends.
+  return colors.flatMap((c, i) => [
+    <stop key={`${i}-from`} offset={i / colors.length} stopColor={c} />,
+    <stop key={`${i}-to`} offset={(i + 1) / colors.length} stopColor={c} />,
+  ])
+}
+
+export function PourScene({ code, status, level, label }: { code: string; status: TubeStatus; level: number; label: string }) {
+  const colors = liquidColors(code)
+  // The stream is one color: the subject's own, or the app blue for Mix.
+  const streamColor = colors.length === 1 ? colors[0] : 'var(--primary)'
   // Show everything upright first, then start pouring on the next frame so the motion plays.
   const [pouring, setPouring] = useState(false)
   useEffect(() => {
@@ -39,8 +58,7 @@ export function PourScene({ status, level, label }: { status: TubeStatus; level:
             <path d={FLASK_PATH} />
           </clipPath>
           <linearGradient id="pour-liquid" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0" stopColor="var(--primary)" />
-            <stop offset="1" stopColor="var(--primary)" stopOpacity="0.65" />
+            {liquidStops(code)}
           </linearGradient>
         </defs>
 
@@ -72,7 +90,7 @@ export function PourScene({ status, level, label }: { status: TubeStatus; level:
           {shortLabel(label)}
         </text>
         {/* the stream */}
-        {pouring && <rect x="208" y="22" width="5" height="150" rx="2.5" fill="var(--primary)" className="pour-stream" />}
+        {pouring && <rect x="208" y="22" width="5" height="150" rx="2.5" fill={streamColor} className="pour-stream" />}
 
         {/* ---------- tube: tips over the flask ---------- */}
         <g

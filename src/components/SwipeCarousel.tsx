@@ -36,6 +36,7 @@ export function SwipeCarousel<T extends CarouselEntry>({
   onOpen,
   renderFigure,
   renderDetail,
+  dotColor,
   label,
   align = 'bottom',
   bench = true,
@@ -52,6 +53,8 @@ export function SwipeCarousel<T extends CarouselEntry>({
   renderFigure: (item: T, state: { centered: boolean }) => ReactNode
   /** shown after the name under the big code, e.g. "Score 72%" */
   renderDetail: (item: T) => ReactNode
+  /** optional: a CSS background for the dot of the item in the middle (e.g. the subject's color); default the app blue */
+  dotColor?: (item: T) => string
   /** for screen readers, e.g. "Subjects" */
   label: string
   /** bottom = figures stand on the bench (tubes); center = they float in the middle (lenses) */
@@ -257,7 +260,10 @@ export function SwipeCarousel<T extends CarouselEntry>({
             aria-current={i === index}
             className="group flex size-6 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
           >
-            <span className={cn('block h-2 rounded-full transition-all duration-300', i === index ? 'w-5 bg-primary' : 'w-2 bg-primary/25 group-hover:bg-primary/50')} />
+            <span
+              className={cn('block h-2 rounded-full transition-all duration-300', i === index ? 'w-5 bg-primary' : 'w-2 bg-primary/25 group-hover:bg-primary/50')}
+              style={i === index && dotColor ? { background: dotColor(it) } : undefined}
+            />
           </button>
         ))}
       </div>

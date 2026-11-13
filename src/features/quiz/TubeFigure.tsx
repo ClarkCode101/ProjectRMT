@@ -1,7 +1,8 @@
 import { cn } from '@/lib/utils'
-import type { TubeStatus } from './tube'
+import { liquidBackground, MIX_CODE, type TubeStatus } from './tube'
 
 // The picture of one specimen tube, used by the Practice subject carousel:
+// - the liquid's color is the subject (its book and Last Card color; Mix = six layers)
 // - the liquid level is her score in that subject
 // - the cap is red below 60%, green when passing, gray when not started
 // - a small tick on the glass marks the 60% passing line
@@ -9,10 +10,13 @@ import type { TubeStatus } from './tube'
 const CAP_COLOR: Record<TubeStatus, string> = { low: 'bg-wrong', passing: 'bg-correct', new: 'bg-border' }
 
 export function TubeFigure({
+  code,
   accuracy,
   status,
   animateFill = true,
 }: {
+  /** subject code (CC, MICRO…) or MIX */
+  code: string
   accuracy: number | null
   status: TubeStatus
   /** true = the liquid rises from empty when the tube appears (tube-fill in index.css) */
@@ -24,7 +28,7 @@ export function TubeFigure({
       <span className={cn('h-4 w-14 shrink-0 rounded-t-md rounded-b-sm md:h-5 md:w-20', CAP_COLOR[status])} />
       <span className="relative h-40 w-11 overflow-hidden rounded-b-full border-[3px] border-t-0 border-primary bg-card shadow-[0_18px_32px_-16px_rgb(7_71_94/0.55)] md:h-60 md:w-16">
         {/* liquid */}
-        <span className={cn('absolute inset-x-0 bottom-0 bg-linear-to-t from-primary to-primary/65', animateFill && 'tube-fill')} style={{ height: `${level}%` }}>
+        <span className={cn('absolute inset-x-0 bottom-0', animateFill && 'tube-fill')} style={{ height: `${level}%`, background: liquidBackground(code) }}>
           <span className="absolute inset-x-0 top-0 h-1.5 bg-white/25" />
         </span>
         {/* 60% passing mark */}
@@ -46,7 +50,7 @@ export function TubeKey() {
   return (
     <span aria-hidden className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
       <span className={item}>
-        <span className={cn(swatch, 'bg-primary')} /> liquid = your score
+        <span className={swatch} style={{ background: liquidBackground(MIX_CODE, 'right') }} /> liquid = subject · level = your score
       </span>
       <span className={item}>
         <span className={cn(swatch, 'bg-wrong')} /> below 60%

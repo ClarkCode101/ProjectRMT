@@ -15,7 +15,7 @@ import { attemptHistoryOptions, DEFAULT_SOURCE, questionPoolOptions, type QuizFi
 import { PourScene } from './PourScene'
 import { SourcePicker } from './SourcePicker'
 import { SubjectCarousel, type CarouselItem } from './SubjectCarousel'
-import { tubeStatus } from './tube'
+import { MIX_CODE, tubeStatus } from './tube'
 import { TubeKey } from './TubeFigure'
 
 const ITEM_COUNTS = [10, 20, 50]
@@ -65,7 +65,7 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
   const overall = overallStats(summary)
   const items: CarouselItem[] = [
     ...summary.map((s) => ({ key: String(s.subjectId), code: s.code, name: s.name, accuracy: s.accuracy, belowPassing: s.belowPassing })),
-    { key: MIX_KEY, code: 'MIX', name: 'All six subjects', accuracy: overall.accuracy, belowPassing: overall.accuracy !== null && overall.accuracy < 0.6 },
+    { key: MIX_KEY, code: MIX_CODE, name: 'All six subjects', accuracy: overall.accuracy, belowPassing: overall.accuracy !== null && overall.accuracy < 0.6 },
   ]
   const indexOf = (key: string | null) => items.findIndex((p) => p.key === key)
   const focusIndex = Math.max(0, indexOf(focusKey ?? (pick ? String(pick.subjectId) : null)))
@@ -265,7 +265,7 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
       {/* ---------- After Start: the pour scene over the page for a moment, then the quiz ---------- */}
       {pouring && current && (
         <div aria-hidden className="animate-in fade-in fixed inset-0 z-50 grid place-items-center bg-background/90 backdrop-blur-[2px] duration-150">
-          <PourScene status={tubeStatus(current.accuracy, current.belowPassing)} level={current.accuracy ?? 0} label={chosenTopic?.name ?? (current.key === MIX_KEY ? 'Mix' : current.code)} />
+          <PourScene code={current.code} status={tubeStatus(current.accuracy, current.belowPassing)} level={current.accuracy ?? 0} label={chosenTopic?.name ?? (current.key === MIX_KEY ? 'Mix' : current.code)} />
         </div>
       )}
 
