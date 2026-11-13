@@ -198,6 +198,9 @@ describe('rematch (Play again)', () => {
   })
   it('says so when the next game started without her', () => {
     expect(rematchChoice({ ...lobby, status: 'playing' }, 'me')).toEqual({ kind: 'started', hostName: 'Ana' })
+    // a Last Card game in progress is 'live'
+    expect(rematchChoice({ ...lobby, status: 'live' }, 'me')).toEqual({ kind: 'started', hostName: 'Ana' })
+    expect(rematchChoice({ ...lobby, status: 'live', players: [ana, ben] }, 'ben')).toEqual({ kind: 'back', roomId: 'next' })
   })
 
   it('lists who wants to play again, without me', () => {
@@ -212,6 +215,7 @@ describe('rematch (Play again)', () => {
 
   it('marks who is playing again, until the next game is over or cancelled', () => {
     expect([...playingAgainIds({ ...lobby, players: [ana, ben] })]).toEqual(['host', 'ben'])
+    expect(playingAgainIds({ ...lobby, status: 'live', players: [ana, ben] }).size).toBe(2)
     expect(playingAgainIds({ ...lobby, status: 'cancelled' }).size).toBe(0)
     expect(playingAgainIds(null).size).toBe(0)
   })

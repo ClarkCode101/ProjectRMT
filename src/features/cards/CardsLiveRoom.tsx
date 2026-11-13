@@ -7,8 +7,9 @@ import { FullPageMessage } from '@/components/FullPageMessage'
 import { Button } from '@/components/ui/button'
 import type { RoomChat as RoomChatState } from '@/features/board/chatApi'
 import { ChatSheet, PopupChatRow } from '@/features/board/RoomChat'
-import { FinishChip, GameFinish } from '@/features/games/GameFinish'
-import { playerColor, type TeamRoom } from '@/lib/boardTeam'
+import { teamActions, teamRoomPath, useRefreshTeam } from '@/features/board/teamApi'
+import { FinishChip, GameFinish, type PlayAgain } from '@/features/games/GameFinish'
+import { playAgainLine, playerColor, rematchChoice, type TeamRoom } from '@/lib/boardTeam'
 import { CARD_SUBJECTS, movesFromLog } from '@/lib/cards'
 import type { LiveReveal, LiveView } from '@/lib/cardsLive'
 import { devAnswerLetter } from '@/lib/cardsDev'
@@ -195,10 +196,16 @@ export function CardsLiveRoom({ room, chat }: { room: TeamRoom; chat: RoomChatSt
   if (view.isError || !v || !table) return <FullPageMessage>{view.error?.message ?? 'This game isn’t available.'}</FullPageMessage>
 
   if (finished && showFinish) {
-    return <LiveFinish view={v} practiceHref={(code) => {
-      const id = subjects.data?.find((s) => s.code === code)?.id
-      return id ? `/practice?subject=${id}` : '/practice'
-    }} />
+    return (
+      <LiveFinish
+        view={v}
+        room={room}
+        practiceHref={(code) => {
+          const id = subjects.data?.find((s) => s.code === code)?.id
+          return id ? `/practice?subject=${id}` : '/practice'
+        }}
+      />
+    )
   }
 
   const hand = handState(table.game, pickedId, shown !== null)
@@ -325,8 +332,78 @@ export function CardsLiveRoom({ room, chat }: { room: TeamRoom; chat: RoomChatSt
   )
 }
 
-/** The finish screen of a live game: who won, everyone's cards left, her own answers. */
-function LiveFinish({ view, practiceHref }: { view: LiveView; practiceHref: (code: string) => string }) {
+/**
+ * Play again for the group (§15 step 4), as in Board Review: tapping it is the vote. The first to tap makes the next
+ * Last Card lobby (and hosts it); everyone else from this game gets an invite and taps the same button to join.
+ * Back to Games = "I'm done", so a later Play again doesn't invite her.
+ */
+function usePlayAgain(room: TeamRoom) {
+  const navigate = useNavigate()
+  const refresh = useRefreshTeam()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const choice = rematchChoice(room.rematch, room.me)
+  const wantsLine = playAgainLine(room.rematch, room.me)
+
+  async function playAgain() {
+    setBusy(true)
+    setError(null)
+    try {
+      const nextRoomId = await teamActions.rematch(room.id)
+      if (!nextRoomId) throw new Error('Something went wrong. Try again.')
+      refresh()
+      navigate(teamRoomPath('cards', nextRoomId))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.')
+      refresh(room.id)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function imDone() {
+    setBusy(true)
+    if (choice.kind !== 'back') await teamActions.rematchDone(room.id).catch(() => undefined)
+    refresh()
+    navigate('/games')
+  }
+
+  const gold: PlayAgain | undefined =
+    choice.kind === 'back'
+      ? { label: 'Back to the next game', to: teamRoomPath('cards', choice.roomId) }
+      : choice.kind === 'started'
+        ? undefined
+        : { label: busy ? 'One moment…' : choice.kind === 'join' ? 'Join the next game' : 'Play again', onClick: playAgain, disabled: busy }
+
+  const line =
+    choice.kind === 'started'
+      ? `${choice.hostName}’s next game already started.`
+      : wantsLine
+        ? `${wantsLine}.`
+        : choice.kind === 'start'
+          ? 'You’ll host the next game. Everyone here gets an invite.'
+          : choice.kind === 'join'
+            ? `${choice.hostName} is hosting the next game.`
+            : null
+
+  const below = (
+    <>
+      <p className={cn('text-center text-sm', wantsLine ? 'font-semibold text-correct' : 'text-muted-foreground')} aria-live="polite">
+        {line}
+      </p>
+      {error && (
+        <p role="alert" className="rounded-md border border-wrong/40 bg-wrong-soft px-3 py-2 text-sm">
+          {error}
+        </p>
+      )}
+    </>
+  )
+  return { gold, onBack: imDone, below }
+}
+
+/** The finish screen of a live game: who won, everyone's cards left, her own answers, and Play again. */
+function LiveFinish({ view, room, practiceHref }: { view: LiveView; room: TeamRoom; practiceHref: (code: string) => string }) {
+  const playAgain = usePlayAgain(room)
   const me = view.seat
   const winnerName = view.winner === null ? null : view.winner === me ? 'You' : view.seats[view.winner]?.name
   const headline =
@@ -360,6 +437,9 @@ function LiveFinish({ view, practiceHref }: { view: LiveView; practiceHref: (cod
       answered={stats?.answered ?? 0}
       notes={stats && stats.drawnForMistakes > 0 ? [`${stats.drawnForMistakes} ${stats.drawnForMistakes === 1 ? 'card' : 'cards'} drawn for wrong answers`] : []}
       bySubject={codes.map((code) => ({ code, ...stats!.bySubject[code], practiceHref: practiceHref(code) }))}
+      playAgain={playAgain.gold}
+      onBack={playAgain.onBack}
+      below={playAgain.below}
     />
   )
 }

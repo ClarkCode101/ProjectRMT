@@ -1,4 +1,4 @@
-import { Flag, RotateCcw, Trophy } from 'lucide-react'
+import { Flag, Play, RotateCcw, Trophy } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { HeroPanel, heroButtonClass, RangeBar, REFERENCE_RANGE } from '@/components/report'
@@ -31,11 +31,31 @@ type Props = {
   notes?: readonly string[]
   /** her answers per subject, in exam order */
   bySubject: readonly SubjectResult[]
-  /** the gold Play again; without it only Back to Games shows (live Last Card, until Play again is built: §15 step 4) */
+  /** the gold Play again (solo games); for team games use `playAgain` */
   onPlayAgain?: () => void
+  /** team games: the gold button can say something else ("Join Ana's game"), be a link back to the next lobby, or wait */
+  playAgain?: PlayAgain
+  /** team games: Back to Games first says "I'm done" (so a later Play again doesn't invite her), then goes */
+  onBack?: () => void
+  /** a line under the two buttons, e.g. "Ana wants to play again." */
+  below?: ReactNode
 }
 
-export function GameFinish({ won, headline, subline, details, correct, answered, notes = [], bySubject, onPlayAgain }: Props) {
+export type PlayAgain = {
+  label: string
+  /** a button… */
+  onClick?: () => void
+  /** …or a link (back to the next lobby she's already in) */
+  to?: string
+  disabled?: boolean
+}
+
+const backClass =
+  'flex h-12 items-center justify-center rounded-lg border-2 border-primary/25 bg-card px-4 font-heading text-lg font-bold text-primary-deep outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px disabled:opacity-60'
+const playAgainClass = cn(heroButtonClass, 'w-full focus-visible:ring-ring/50 sm:flex sm:w-full')
+
+export function GameFinish({ won, headline, subline, details, correct, answered, notes = [], bySubject, onPlayAgain, playAgain, onBack, below }: Props) {
+  const gold: PlayAgain | null = playAgain ?? (onPlayAgain ? { label: 'Play again', onClick: onPlayAgain } : null)
   const rate = answered > 0 ? correct / answered : null
   const toReview = bySubject.filter((s) => s.answered > 0 && s.correct / s.answered < PASSING_RATE)
   const Icon = won ? Trophy : Flag
@@ -112,19 +132,30 @@ export function GameFinish({ won, headline, subline, details, correct, answered,
       )}
 
       {/* ---------- 4. Two buttons of the same size ---------- */}
-      <div className={cn('grid gap-3 pt-2', onPlayAgain && 'grid-cols-2')}>
-        <Link
-          to="/games"
-          className="flex h-12 items-center justify-center rounded-lg border-2 border-primary/25 bg-card px-4 font-heading text-lg font-bold text-primary-deep outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px"
-        >
-          Back to Games
-        </Link>
-        {onPlayAgain && (
-          <button type="button" className={cn(heroButtonClass, 'w-full focus-visible:ring-ring/50 sm:flex sm:w-full')} onClick={onPlayAgain}>
-            <RotateCcw className="size-5" aria-hidden />
-            Play again
-          </button>
-        )}
+      <div className="space-y-2 pt-2">
+        <div className={cn('grid gap-3', gold && 'grid-cols-2')}>
+          {onBack ? (
+            <button type="button" className={backClass} onClick={onBack}>
+              Back to Games
+            </button>
+          ) : (
+            <Link to="/games" className={backClass}>
+              Back to Games
+            </Link>
+          )}
+          {gold?.to ? (
+            <Link to={gold.to} className={playAgainClass}>
+              <Play className="size-5 fill-current" aria-hidden />
+              {gold.label}
+            </Link>
+          ) : gold ? (
+            <button type="button" className={playAgainClass} onClick={gold.onClick} disabled={gold.disabled}>
+              <RotateCcw className="size-5" aria-hidden />
+              {gold.label}
+            </button>
+          ) : null}
+        </div>
+        {below}
       </div>
     </div>
   )

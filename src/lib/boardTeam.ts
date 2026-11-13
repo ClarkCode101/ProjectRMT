@@ -278,13 +278,13 @@ export function rematchChoice(rematch: TeamRematch | null, me: string): RematchC
   if (!rematch || rematch.status === 'cancelled' || rematch.status === 'finished') return { kind: 'start' }
   const inIt = rematch.players.some((p) => p.userId === me)
   if (inIt) return { kind: 'back', roomId: rematch.roomId }
-  if (rematch.status === 'playing') return { kind: 'started', hostName: rematch.hostName }
+  if (rematch.status === 'playing' || rematch.status === 'live') return { kind: 'started', hostName: rematch.hostName }
   return { kind: 'join', roomId: rematch.roomId, hostName: rematch.hostName }
 }
 
 /** Who tapped Play again (they're in the next lobby): their badge in the standings. Empty once it's over or cancelled. */
 export function playingAgainIds(rematch: TeamRematch | null): Set<string> {
-  if (!rematch || (rematch.status !== 'lobby' && rematch.status !== 'playing')) return new Set()
+  if (!rematch || (rematch.status !== 'lobby' && rematch.status !== 'playing' && rematch.status !== 'live')) return new Set()
   return new Set(rematch.players.map((p) => p.userId))
 }
 
