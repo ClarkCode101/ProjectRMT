@@ -31,7 +31,8 @@ type Props = {
   notes?: readonly string[]
   /** her answers per subject, in exam order */
   bySubject: readonly SubjectResult[]
-  onPlayAgain: () => void
+  /** the gold Play again; without it only Back to Games shows (live Last Card, until Play again is built: §15 step 4) */
+  onPlayAgain?: () => void
 }
 
 export function GameFinish({ won, headline, subline, details, correct, answered, notes = [], bySubject, onPlayAgain }: Props) {
@@ -111,17 +112,19 @@ export function GameFinish({ won, headline, subline, details, correct, answered,
       )}
 
       {/* ---------- 4. Two buttons of the same size ---------- */}
-      <div className="grid grid-cols-2 gap-3 pt-2">
+      <div className={cn('grid gap-3 pt-2', onPlayAgain && 'grid-cols-2')}>
         <Link
           to="/games"
           className="flex h-12 items-center justify-center rounded-lg border-2 border-primary/25 bg-card px-4 font-heading text-lg font-bold text-primary-deep outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px"
         >
           Back to Games
         </Link>
-        <button type="button" className={cn(heroButtonClass, 'w-full focus-visible:ring-ring/50 sm:flex sm:w-full')} onClick={onPlayAgain}>
-          <RotateCcw className="size-5" aria-hidden />
-          Play again
-        </button>
+        {onPlayAgain && (
+          <button type="button" className={cn(heroButtonClass, 'w-full focus-visible:ring-ring/50 sm:flex sm:w-full')} onClick={onPlayAgain}>
+            <RotateCcw className="size-5" aria-hidden />
+            Play again
+          </button>
+        )}
       </div>
     </div>
   )

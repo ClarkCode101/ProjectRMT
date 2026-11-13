@@ -16,6 +16,8 @@
 //   answer   answer the question up now                         { selectedIndex }
 //   timeout  anyone in the room, once the 90-second clock has run out
 //   leave    leave the game (a computer player takes the seat)
+//   dev      DEV ONLY (npm run dev's panel): test shortcuts { op, devKey }; refused without the dev key (VITE_DEV_KEY,
+//            matching board_dev_keys) unless the account is in board_dev_testers. op "answer" only reads the answer.
 //
 // SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY are filled in by Supabase itself.
 
@@ -87,6 +89,13 @@ Deno.serve(async (req) => {
         )
       case 'leave':
         return reply(await move(server, roomId, userId, (live) => ({ ok: true, live: rules.liveLeave(live, userId, Math.random, now()) })))
+      case 'dev': {
+        await checkDevKey(server, userId, body.devKey)
+        const op = String(body.op ?? '')
+        if (op === 'answer') return reply(await devAnswer(server, roomId, userId))
+        if (!(rules.LIVE_DEV_OPS as readonly string[]).includes(op)) throw new PlayerError('Unknown DEV action.')
+        return reply(await move(server, roomId, userId, (live) => rules.liveDev(live, userId, op as (typeof rules.LIVE_DEV_OPS)[number], now())))
+      }
       default:
         throw new PlayerError('Unknown action.')
     }
@@ -171,6 +180,29 @@ async function move(server: SupabaseClient, roomId: string, userId: string, appl
     // Someone else's move was saved first: read the game again and try this move on top of it.
   }
   throw new PlayerError('Lots happening at once. Try again.')
+}
+
+// ---------- DEV ----------
+
+/** DEV actions only with the dev key (as board_dev_finish, migration 0027), or for accounts in board_dev_testers. */
+async function checkDevKey(server: SupabaseClient, userId: string, key: unknown) {
+  const { data: tester } = await server.from('board_dev_testers').select('user_id').eq('user_id', userId).maybeSingle()
+  if (tester) return
+  if (typeof key === 'string' && key.length >= 24) {
+    const { data: match } = await server.from('board_dev_keys').select('key').eq('key', key).maybeSingle()
+    if (match) return
+  }
+  throw new PlayerError('Dev key missing or wrong. Check VITE_DEV_KEY in .env.local and board_dev_keys.')
+}
+
+/** DEV: the answer to the question up now, for the dev panel's "Show answers" (nothing is saved). */
+async function devAnswer(server: SupabaseClient, roomId: string, userId: string) {
+  const { data: member } = await server.from('board_room_players').select('user_id').eq('room_id', roomId).eq('user_id', userId).maybeSingle()
+  if (!member) throw new PlayerError('You’re not in this game.')
+  const { data: row } = await server.from('card_games').select('state').eq('room_id', roomId).maybeSingle()
+  if (!row) throw new PlayerError('This game hasn’t started.')
+  const live = row.state as LiveGame
+  return { view: rules.liveView(live, userId), devAnswer: rules.liveDevAnswer(live) }
 }
 
 // ---------- Helpers ----------

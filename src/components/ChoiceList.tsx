@@ -20,6 +20,8 @@ type Props = {
   ruledOut?: readonly number[]
   /** Board Review Second chance: her wrong first pick, crossed out in red while she picks again */
   firstWrong?: number | null
+  /** the label on the picked choice after the answer (default "Your answer"; e.g. "Ana’s answer" when watching) */
+  answerLabel?: string
 }
 
 /** The answer buttons of a multiple-choice question (Practice and Board Review). */
@@ -34,6 +36,7 @@ export function ChoiceList({
   disabled = false,
   ruledOut = [],
   firstWrong = null,
+  answerLabel = 'Your answer',
 }: Props) {
   const answered = selectedIndex !== undefined
   return (
@@ -81,7 +84,7 @@ export function ChoiceList({
                       : 'bg-secondary text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-disabled:group-hover:bg-secondary group-disabled:group-hover:text-foreground',
               )}
             >
-              {showCorrect ? <Check className="size-4" aria-label="Correct answer" /> : showWrong ? <X className="size-4" aria-label={isFirstWrong ? 'Your first pick, incorrect' : 'Your answer, incorrect'} /> : CHOICE_LETTERS[displayPos]}
+              {showCorrect ? <Check className="size-4" aria-label="Correct answer" /> : showWrong ? <X className="size-4" aria-label={isFirstWrong ? 'Your first pick, incorrect' : `${answerLabel}, incorrect`} /> : CHOICE_LETTERS[displayPos]}
             </span>
             <span className="min-w-0 flex-1">
               <span className={cn('block', note && 'pt-1', isOther && 'text-muted-foreground', isRuledOut && 'line-through')}>{choices[originalIndex]}</span>
@@ -92,7 +95,7 @@ export function ChoiceList({
                 aria-hidden // the icon's label already says this to screen readers
                 className={cn('shrink-0', note && 'pt-1.5', 'font-heading text-[11px] font-bold tracking-wide uppercase', showCorrect ? 'text-correct' : 'text-wrong')}
               >
-                {showCorrect ? (isSelected ? 'Your answer' : 'Correct') : isFirstWrong ? 'First pick' : 'Your answer'}
+                {showCorrect ? (isSelected ? answerLabel : 'Correct') : isFirstWrong ? 'First pick' : answerLabel}
               </span>
             )}
           </button>

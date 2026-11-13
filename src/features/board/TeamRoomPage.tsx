@@ -104,7 +104,7 @@ function TeamRoomScreen({ roomId }: { roomId: string | undefined }) {
   }
 
   // Last Card: its own live table (and, for now, its own finish), read from her card view (step 2–3)
-  if (cards) return <CardsLiveRoom roomId={room.id} />
+  if (cards) return <CardsLiveRoom room={room} chat={chat} />
 
   if (room.status === 'finished') return <TeamResults room={room} />
 

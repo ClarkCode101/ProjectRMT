@@ -5,9 +5,9 @@ import type { CardSubject } from '@/lib/cards'
 import type { LiveView } from '@/lib/cardsLive'
 import { supabase } from '@/lib/supabase'
 
-/** Calls the Edge Function and gives back her view; a refused move throws its message (e.g. "It's not your turn."). */
-async function cardsGame(body: Record<string, unknown>): Promise<LiveView> {
-  const { data, error } = await supabase.functions.invoke<{ view: LiveView }>('cards-game', { body })
+/** Calls the Edge Function; a refused move throws its message (e.g. "It's not your turn."). */
+export async function invokeCards<T extends { view: LiveView }>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke<T>('cards-game', { body })
   if (error) {
     // The function answers a refused move with { error: "…" } (written to be shown as is).
     if (error instanceof FunctionsHttpError) {
@@ -18,7 +18,12 @@ async function cardsGame(body: Record<string, unknown>): Promise<LiveView> {
     throw new Error('Couldn’t reach the game. Check your internet connection and try again.')
   }
   if (!data?.view) throw new Error('Something went wrong. Try again.')
-  return data.view
+  return data
+}
+
+/** A move: gives back her new view. */
+export async function cardsGame(body: Record<string, unknown>): Promise<LiveView> {
+  return (await invokeCards<{ view: LiveView }>(body)).view
 }
 
 export const cardsLive = {
@@ -32,4 +37,5 @@ export const cardsLive = {
   /** Anyone in the room, once the clock has run out (the server checks the time). */
   timeout: (roomId: string) => cardsGame({ action: 'timeout', roomId }),
   leave: (roomId: string) => cardsGame({ action: 'leave', roomId }),
+
 }

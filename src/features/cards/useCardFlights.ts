@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { cardMoves, type Card, type CardGame } from '@/lib/cards'
+import { cardById, cardMoves, type Card, type CardGame, type CardMove } from '@/lib/cards'
 
 // Flying cards on the Last Card table (PROJECT_PLAN.md §15): a drawn card flies from the draw pile into a hand,
 // a played card flies from a hand onto the pile. This hook works out what moved and where from / to;
@@ -83,7 +83,12 @@ function centeredBox(rect: DOMRect, scale: number): FlightBox {
 
 const DRAW_PILE_SCALE = 84 / FLIGHT_CARD_WIDTH // the draw pile shows 'md' card backs
 
-export function useCardFlights(game: CardGame) {
+/**
+ * `movesOf` says what moved between two moments of the game: solo compares the two tables (cardMoves); live games read
+ * the move log (movesFromLog), since one update can hold several moves and the others' cards are hidden.
+ * Moves fly one after another, in order: a draw starts as the play before it lands, a play waits for the one before.
+ */
+export function useCardFlights(game: CardGame, movesOf: (before: CardGame, after: CardGame) => CardMove[] = cardMoves) {
   const before = useRef<{ game: CardGame; spots: Map<string, DOMRect> } | null>(null)
   const [flights, setFlights] = useState<Flight[]>([])
 
@@ -93,13 +98,14 @@ export function useCardFlights(game: CardGame) {
     before.current = { game, spots }
     if (!previous || previous.game === game || prefersReducedMotion()) return
 
-    const moves = cardMoves(previous.game, game)
-    const plays = moves.filter((m) => m.kind === 'play')
-    const findCard = (id: string) => game.players.flatMap((p) => p.hand).find((c) => c.id === id) ?? game.discard.find((c) => c.id === id)
+    const moves = movesOf(previous.game, game)
+    // A card in a hand or on the pile (incl. the face-down stand-ins for cards she can't see), else any card by its id.
+    const findCard = (id: string) => game.players.flatMap((p) => p.hand).find((c) => c.id === id) ?? game.discard.find((c) => c.id === id) ?? cardById(id)
     const next: Flight[] = []
-    let drawDelay = plays.length > 0 ? DRAW_AFTER_PLAY_MS : 0
+    let clock = 0 // when the next move starts (ms)
 
-    for (const move of moves) {
+    for (const [i, move] of moves.entries()) {
+      const followedByDraw = moves[i + 1]?.kind === 'draw'
       const card = findCard(move.cardId)
       if (!card) continue
       const key = `${game.moveCount ?? 0}-${move.kind}-${move.cardId}-${Date.now()}`
@@ -114,13 +120,15 @@ export function useCardFlights(game: CardGame) {
           card,
           from: herCard ? cardBox(fromRect) : centeredBox(fromRect, SEAT_SCALE),
           to: cardBox(toRect),
-          delay: 0,
+          delay: clock,
           duration: PLAY_MS,
           backAtStart: !herCard, // a computer player's card turns face up on the way
           backAtEnd: false,
           hideHandCard: null,
           hideTop: true,
         })
+        // its draws start as it lands; another play waits until it's down
+        clock += followedByDraw ? DRAW_AFTER_PLAY_MS : PLAY_MS + 60
       } else {
         const fromRect = previous.spots.get('draw-pile') ?? spots.get('draw-pile')
         const toRect = herCard ? spots.get(`card:${move.cardId}`) : spots.get(`seat:${move.player}`)
@@ -130,20 +138,20 @@ export function useCardFlights(game: CardGame) {
           card,
           from: centeredBox(fromRect, DRAW_PILE_SCALE),
           to: herCard ? cardBox(toRect) : centeredBox(toRect, SEAT_SCALE),
-          delay: drawDelay,
+          delay: clock,
           duration: DRAW_MS,
           backAtStart: true,
           backAtEnd: !herCard, // hers turns face up as it lands; a computer player's stays face down
           hideHandCard: herCard ? move.cardId : null,
           hideTop: false,
         })
-        drawDelay += DRAW_STAGGER_MS
+        clock += DRAW_STAGGER_MS
       }
     }
     // Setting state here re-renders before the screen is painted, so the landing spots are hidden from the start.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (next.length > 0) setFlights((current) => [...current, ...next])
-  }, [game])
+  }, [game, movesOf])
 
   const land = (key: string) => setFlights((current) => current.filter((f) => f.key !== key))
   const hiddenIds = new Set(flights.flatMap((f) => (f.hideHandCard ? [f.hideHandCard] : [])))

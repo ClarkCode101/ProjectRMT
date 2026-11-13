@@ -1,6 +1,8 @@
 // DEV ONLY (npm run dev): shortcuts that set up a Last Card table for testing (PROJECT_PLAN.md §15).
 // Used only behind `import.meta.env.DEV`, so `npm run build` leaves the panel that calls these out of the deployed app.
 //
+// The same shortcuts work in live games (cardsLiveDev.ts): `seat` is the player they're for (her seat in solo is 0).
+//
 // They never make up cards: every card is taken from wherever it is (the draw pile, a hand, or under the top of
 // the pile), so the game always keeps exactly the 78 real cards and still loads as a saved game.
 import { canPlay, topCard, type Card, type CardGame } from './cards'
@@ -32,7 +34,8 @@ function toBottomOfDrawPile(g: CardGame, cards: Card[]) {
 
 /**
  * Leaves `playerIndex` with ONE card that fits right now (a number card if there is one), so the next right answer
- * wins. Her: it becomes her move. A computer player: it wins on its turn (if its "answer" is right).
+ * wins. A person (her, or a classmate in a live game): it becomes their move. A computer player: it wins on its turn
+ * (if its "answer" is right).
  */
 export function devLeaveOneCard(game: CardGame, playerIndex: number): CardGame {
   const g = structuredClone(game)
@@ -43,31 +46,31 @@ export function devLeaveOneCard(game: CardGame, playerIndex: number): CardGame {
   toBottomOfDrawPile(g, others)
   const card = keep ?? takeCard(g, (c) => c.kind === 'number' && canPlay(c, g)) ?? takeCard(g, (c) => canPlay(c, g))
   if (card) g.players[playerIndex].hand = [card]
-  if (playerIndex === 0) {
-    g.turn = 0
+  if (g.players[playerIndex].isHuman) {
+    g.turn = playerIndex
     g.pending = null
   }
   return g
 }
 
-/** Gives her a Skip, Reverse and Draw 2 of the subject in play, and a Wild, then it's her move. */
-export function devGiveActionCards(game: CardGame): CardGame {
+/** Gives the player in `seat` a Skip, Reverse and Draw 2 of the subject in play, and a Wild, then it's their move. */
+export function devGiveActionCards(game: CardGame, seat = 0): CardGame {
   const g = structuredClone(game)
   const top = topCard(g)
   for (const kind of ['skip', 'reverse', 'draw2'] as const) {
-    const card = takeCard(g, (c) => c.kind === kind && c.subject === g.subject && c.id !== top.id, 0)
-    if (card) g.players[0].hand.push(card)
+    const card = takeCard(g, (c) => c.kind === kind && c.subject === g.subject && c.id !== top.id, seat)
+    if (card) g.players[seat].hand.push(card)
   }
-  const wild = takeCard(g, (c) => c.kind === 'wild', 0)
-  if (wild) g.players[0].hand.push(wild)
-  g.turn = 0
+  const wild = takeCard(g, (c) => c.kind === 'wild', seat)
+  if (wild) g.players[seat].hand.push(wild)
+  g.turn = seat
   g.pending = null
   return g
 }
 
-/** As if a computer player just played a Draw 2 on her: two questions from the subject in play. */
-export function devDraw2OnMe(game: CardGame): CardGame {
-  return { ...structuredClone(game), turn: 0, pending: { kind: 'draw2', subject: game.subject, left: 2 } }
+/** As if someone just played a Draw 2 on the player in `seat`: two questions from the subject in play. */
+export function devDraw2OnMe(game: CardGame, seat = 0): CardGame {
+  return { ...structuredClone(game), turn: seat, pending: { kind: 'draw2', subject: game.subject, left: 2 } }
 }
 
 /** Moves the whole draw pile under the top card, so the next draw has to shuffle the pile back in. */
@@ -90,10 +93,10 @@ export function devFinish(game: CardGame, winner: number): CardGame {
   return g
 }
 
-/** The computer player who goes after her (the one "Next computer: 1 card left" sets up). */
-export function devNextBot(game: CardGame): number {
+/** The player who goes after `seat` (the one "Next computer: 1 card left" sets up). */
+export function devNextBot(game: CardGame, seat = 0): number {
   const count = game.players.length
-  return (((0 + game.direction) % count) + count) % count
+  return (((seat + game.direction) % count) + count) % count
 }
 
 /** For the DEV answer line: the letter the right answer has on screen (A, B, …). */

@@ -27,3 +27,6 @@ dist-ssr
 # Name them pdf_<name>.json; npm run seed:sql then writes 02_questions_pdf_<name>.sql, also ignored.
 supabase/seed/questions/pdf_*.json
 supabase/seed/02_questions_pdf_*.sql
+
+# The Edge Function in one file, for pasting into the Supabase Dashboard (npm run build:cards-rules makes it).
+deploy/

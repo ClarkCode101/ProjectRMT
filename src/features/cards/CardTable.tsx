@@ -19,6 +19,9 @@ function initials(name: string): string {
     .toUpperCase()
 }
 
+/** live games: the time left, e.g. { text: '0:42', low: false }; low = the last 15 seconds (shown in red) */
+export type SeatClock = { text: string; low: boolean }
+
 /**
  * A computer player's cards, face down and fanned in a curve like a hand of cards held up (not a straight row).
  * At most 8 are drawn; the more cards, the tighter the fan, so it never gets wider than about 50 degrees.
@@ -44,7 +47,7 @@ function FannedBacks({ count }: { count: number }) {
 }
 
 /** One computer player: avatar, name plate with the card count, their cards face down, and the Last card banner. */
-function Seat({ player, seat, active, compact = false }: { player: CardPlayer; seat: number; active: boolean; compact?: boolean }) {
+function Seat({ player, seat, active, clock, compact = false }: { player: CardPlayer; seat: number; active: boolean; clock?: SeatClock; compact?: boolean }) {
   const count = player.hand.length
   return (
     // data-seat: where a computer player's cards fly from and to (useCardFlights)
@@ -69,9 +72,18 @@ function Seat({ player, seat, active, compact = false }: { player: CardPlayer; s
           <span className={cn('block font-semibold', compact ? 'text-xs' : 'text-sm')}>{player.name}</span>
           <span className="block text-xs text-muted-foreground tabular-nums">
             {count} {count === 1 ? 'card' : 'cards'}
+            {/* live games: a computer player in this seat */}
+            {player.isComputer && <span> · computer</span>}
             {active && <span className="sr-only">, playing now</span>}
           </span>
         </span>
+        {/* live games: the clock of the person whose turn it is (red in the last 15 seconds) */}
+        {active && clock && (
+          <span className={cn('ml-1.5 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums', clock.low ? 'bg-wrong-soft text-wrong' : 'bg-secondary text-foreground')}>
+            <span className="sr-only">Time left </span>
+            {clock.text}
+          </span>
+        )}
       </div>
       {!compact && <FannedBacks count={count} />}
       {count === 1 && (
@@ -84,6 +96,8 @@ function Seat({ player, seat, active, compact = false }: { player: CardPlayer; s
 type Props = {
   /** the top card is flying onto the pile right now: hidden until it lands */
   hideTop?: boolean
+  /** live games: the clock of the person whose turn it is, shown on their seat */
+  clock?: SeatClock
   game: CardGame
 }
 
@@ -143,7 +157,7 @@ function Middle({ game, hideTop = false }: Props) {
   )
 }
 
-export function CardTable({ game, hideTop = false }: Props) {
+export function CardTable({ game, hideTop = false, clock }: Props) {
   const [, left, across, right] = game.players
   const active = (seat: number) => !game.finished && game.turn === seat
   return (
@@ -157,14 +171,14 @@ export function CardTable({ game, hideTop = false }: Props) {
 
       {/* From 700px (every iPad): around the oval, one on each side and one across. */}
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] grid-rows-[auto_auto] content-center items-center gap-x-4 gap-y-5 max-[699px]:grid-cols-1 max-[699px]:grid-rows-1">
-        <div className="col-start-2 hidden justify-center min-[700px]:flex">{across && <Seat player={across} seat={2} active={active(2)} />}</div>
-        <div className="row-start-2 hidden justify-end min-[700px]:flex">{left && <Seat player={left} seat={1} active={active(1)} />}</div>
+        <div className="col-start-2 hidden justify-center min-[700px]:flex">{across && <Seat player={across} seat={2} active={active(2)} clock={clock} />}</div>
+        <div className="row-start-2 hidden justify-end min-[700px]:flex">{left && <Seat player={left} seat={1} active={active(1)} clock={clock} />}</div>
         {/* The oval: a fixed size that follows the screen, never its contents (a long subject name or the direction
             word used to make it grow and shrink during a game). */}
         <div className="row-start-2 flex items-center justify-center rounded-[50%] border bg-card px-6 py-6 shadow-[0_10px_30px_rgb(23_34_44/0.08),inset_0_0_0_12px_#F6F9FA] max-[699px]:row-start-1 min-[700px]:col-start-2 min-[700px]:h-[18rem] min-[700px]:w-[clamp(26rem,52vw,36rem)] min-[700px]:px-0 min-[700px]:py-0">
           <Middle game={game} hideTop={hideTop} />
         </div>
-        <div className="row-start-2 hidden justify-start min-[700px]:col-start-3 min-[700px]:flex">{right && <Seat player={right} seat={3} active={active(3)} />}</div>
+        <div className="row-start-2 hidden justify-start min-[700px]:col-start-3 min-[700px]:flex">{right && <Seat player={right} seat={3} active={active(3)} clock={clock} />}</div>
       </div>
     </section>
   )

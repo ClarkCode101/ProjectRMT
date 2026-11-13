@@ -56,8 +56,10 @@ export function cardLabel(card: Card): string {
 
 export type CardPlayer = {
   name: string
-  /** false = a computer player */
+  /** false = a computer player (live games: false for everyone but her, see cardsLiveTable.ts) */
   isHuman: boolean
+  /** live games: a computer player (filling an empty seat, or taking over from someone who left) */
+  isComputer?: boolean
   hand: Card[]
 }
 
@@ -250,6 +252,44 @@ export function cardMoves(before: CardGame, after: CardGame): CardMove[] {
     if (added.length === 0 || added.length > MAX_DRAWS_TO_ANIMATE || added.some((c) => wasInHand.has(c.id))) return
     added.forEach((c) => moves.push({ kind: 'draw', player: i, cardId: c.id }))
   })
+  return moves
+}
+
+const CARD_BY_ID = new Map(buildDeck().map((card) => [card.id, card]))
+
+/** The card with this id ("HEMA-7", "CC-skip", "wild-2"), or undefined for an unknown id. */
+export function cardById(id: string): Card | undefined {
+  return CARD_BY_ID.get(id)
+}
+
+/**
+ * What moved from `before` to `after`, read from the move log, in the order it happened: for live games, where one
+ * update can hold several moves (computer players play right after a person), and the other players' cards aren't
+ * known (only how many they hold).
+ * - a play: the card is in the log
+ * - a draw into seat 0 (her): her new cards (she can see them)
+ * - a draw into another seat: that seat's new (hidden) cards, one move each
+ * A different game (new deal) gives no moves.
+ */
+export function movesFromLog(before: CardGame, after: CardGame): CardMove[] {
+  if (before.startedAt !== after.startedAt) return []
+  const since = before.moveCount ?? 0
+  const events = after.log.filter((e) => (e.move ?? 0) > since)
+  // Each seat's new cards, handed out to its draw events in order.
+  const newCards = after.players.map((p, i) => {
+    const had = new Set(before.players[i]?.hand.map((c) => c.id) ?? [])
+    return p.hand.filter((c) => !had.has(c.id)).map((c) => c.id)
+  })
+  const moves: CardMove[] = []
+  for (const e of events) {
+    if (e.kind === 'play') moves.push({ kind: 'play', player: e.player, cardId: e.cardId })
+    else if (e.kind === 'draw') {
+      for (let k = 0; k < e.count; k++) {
+        const cardId = newCards[e.player]?.shift()
+        if (cardId) moves.push({ kind: 'draw', player: e.player, cardId })
+      }
+    }
+  }
   return moves
 }
 

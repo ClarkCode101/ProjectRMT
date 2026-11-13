@@ -1,11 +1,11 @@
 import { CircleHelp, CloudOff, Layers, Play } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { ExitButton } from '@/components/ExitButton'
-import { describeMove, type CardGame } from '@/lib/cards'
+import { describeMove, type CardGame, type CardMove } from '@/lib/cards'
 import type { HandState } from './handState'
 import { cn } from '@/lib/utils'
 import { CardFlights } from './CardFlights'
-import { CardTable } from './CardTable'
+import { CardTable, type SeatClock } from './CardTable'
 import { Hand } from './Hand'
 import { useCardFlights } from './useCardFlights'
 
@@ -30,13 +30,20 @@ type Props = {
   paused?: boolean
   /** npm run dev only: the DEV test panel, next to Exit */
   devTools?: ReactNode
+  /** live games: what moved between two updates (read from the move log); solo compares the tables */
+  movesOf?: (before: CardGame, after: CardGame) => CardMove[]
+  /** live games: the turn's clock (on the seat of whoever's turn it is; on her turn, next to the hint) */
+  clock?: SeatClock
+  /** live games: more buttons at the top right, before How to play (the chat) */
+  topRight?: ReactNode
   /** the popups (question, subject picker) */
   children?: ReactNode
 }
 
-export function CardsGameView({ game, hand, online, message, onExit, onHelp, onPick, onDraw, onAnswerToPlay, paused = false, devTools, children }: Props) {
+export function CardsGameView({ game, hand, online, message, onExit, onHelp, onPick, onDraw, onAnswerToPlay, paused = false, devTools, movesOf, clock, topRight, children }: Props) {
   // Cards flying from the draw pile into a hand, and from a hand onto the pile.
-  const flights = useCardFlights(game)
+  const flights = useCardFlights(game, movesOf)
+  const myClock = clock && game.turn === 0 && !game.finished ? clock : undefined
   const lastMove = describeMove(game.log, game.players)
   const yourTurn = game.turn === 0 && !game.finished
   const cardsLeft = game.players[0].hand.length
@@ -51,13 +58,14 @@ export function CardsGameView({ game, hand, online, message, onExit, onHelp, onP
         </div>
         {/* What just happened (screen readers hear it too) */}
         <p aria-live="polite" className="min-w-0 truncate rounded-full border bg-card px-3 py-1 text-center font-semibold text-muted-foreground">
-          {lastMove ?? 'Cards dealt. You go first.'}
+          {lastMove ?? (game.turn === 0 ? 'Cards dealt. You go first.' : `Cards dealt. ${game.players[game.turn]?.name ?? 'Someone'} goes first.`)}
         </p>
         {/* The score and How to play on the right, away from Exit (side by side, a tap meant for ? could hit Exit). */}
         <div className="flex shrink-0 items-center gap-3">
           <p className="text-right text-muted-foreground tabular-nums">
             {game.correct} of {game.answered} correct
           </p>
+          {topRight}
           <button
             type="button"
             onClick={onHelp}
@@ -76,7 +84,7 @@ export function CardsGameView({ game, hand, online, message, onExit, onHelp, onP
         </p>
       )}
 
-      <CardTable game={game} hideTop={flights.hideTop} />
+      <CardTable game={game} hideTop={flights.hideTop} clock={clock} />
 
       {!online && (
         <p role="status" className="flex shrink-0 items-center justify-center gap-1.5 text-sm text-muted-foreground">
@@ -124,6 +132,12 @@ export function CardsGameView({ game, hand, online, message, onExit, onHelp, onP
         <div className="order-1 w-full min-w-0 lg:order-2 lg:w-auto lg:flex-1">
           <p className="text-center text-sm font-semibold text-muted-foreground" aria-live="polite">
             {hand.hint}
+            {myClock && (
+              <span className={cn('ml-2 rounded-full px-2 py-0.5 font-bold tabular-nums', myClock.low ? 'bg-wrong-soft text-wrong' : 'bg-secondary text-foreground')}>
+                <span className="sr-only">Time left </span>
+                {myClock.text}
+              </span>
+            )}
           </p>
           <Hand cards={game.players[0].hand} playableIds={hand.playableIds} selectedId={hand.picked} onSelect={onPick} hiddenIds={flights.hiddenIds} />
         </div>
