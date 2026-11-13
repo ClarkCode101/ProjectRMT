@@ -10,7 +10,7 @@ import { DEFAULT_SOURCE, questionPoolOptions, type QuizFilters, type SourceChoic
 import { SourcePicker } from '@/features/quiz/SourcePicker'
 import { tubeStatus } from '@/features/quiz/tube'
 import { formatClock, MOCK_ITEM_COUNTS, secondsLeft, timeLimitSec, type SavedMock } from '@/lib/mockExam'
-import { formatPercent, overallStats, summarizePerformance } from '@/lib/quiz'
+import { formatPercent, overallStats, PASSING_LABEL, summarizePerformance } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import type { Book } from '@/features/questions/booksApi'
@@ -49,7 +49,7 @@ const RULES = [
   { icon: Timer, text: 'Auto-submits at 0:00' },
   { icon: EyeOff, text: 'Answers after you submit' },
   { icon: Flag, text: 'Flag items, come back later' },
-  { icon: Target, text: 'Pass: 60% or higher' },
+  { icon: Target, text: `Pass: ${PASSING_LABEL} or higher` },
 ]
 
 export function MockSetup({ onStart, starting, saved, onResume, onDiscard, initialSubjectId = null, book = null, onLeaveBook }: Props) {
@@ -118,7 +118,7 @@ export function MockSetup({ onStart, starting, saved, onResume, onDiscard, initi
 
   // ---------- The name plate under the rotor ----------
   const plateAccuracy = chosen ? chosen.accuracy : overall.accuracy
-  const plateStatus = chosen ? tubeStatus(chosen.accuracy, chosen.belowPassing) : tubeStatus(overall.accuracy, overall.accuracy !== null && overall.accuracy < 0.6)
+  const plateStatus = chosen ? tubeStatus(chosen.accuracy, chosen.belowPassing) : tubeStatus(overall.accuracy, overall.passes === false)
   const plateColor = plateStatus === 'low' ? 'text-wrong' : plateStatus === 'passing' ? 'text-correct' : 'text-muted-foreground'
 
   return (

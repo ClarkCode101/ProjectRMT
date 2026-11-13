@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { PASSING_RATE } from '@/lib/quiz'
+import { PASSING_LABEL, PASSING_RATE } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
 
 // Shared pieces of the "lab report" look. Scores read like a results sheet:
@@ -13,7 +13,7 @@ export const REFERENCE_RANGE = `${Math.round(PASSING_RATE * 100)}–100`
 export function LowFlag() {
   return (
     <abbr
-      title="Low: below 60%"
+      title={`Low: below ${PASSING_LABEL}`}
       className="inline-block min-w-5 rounded-[3px] bg-wrong-soft px-1 text-center text-xs font-extrabold text-wrong no-underline"
     >
       L
@@ -22,7 +22,7 @@ export function LowFlag() {
 }
 
 /**
- * A thin score bar with a tick at 60%.
+ * A thin score bar with a tick at 75%.
  * Blue when passing, red when below; the number next to it says the exact score.
  */
 export function RangeBar({ rate, label }: { rate: number | null; label: string }) {

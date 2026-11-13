@@ -3,7 +3,7 @@ import type { SubjectSummary } from '@/lib/quiz'
 import { changedSince, makeSnapshot, readSnapshot, writeSnapshot } from './snapshot'
 
 function subject(code: string, attempts: number, accuracy: number | null): SubjectSummary {
-  return { subjectId: 1, code, name: code, attempts, accuracy, belowPassing: accuracy !== null && accuracy < 0.6, topics: [] }
+  return { subjectId: 1, code, name: code, attempts, accuracy, belowPassing: accuracy !== null && accuracy < 0.75, belowFloor: accuracy !== null && accuracy < 0.5, topics: [] }
 }
 
 describe('changedSince', () => {

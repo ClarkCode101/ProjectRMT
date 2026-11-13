@@ -2,7 +2,7 @@ import { Check, Flag, Play, RotateCcw, Trophy } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { HeroPanel, heroButtonClass, RangeBar, REFERENCE_RANGE } from '@/components/report'
-import { formatPercent, PASSING_RATE } from '@/lib/quiz'
+import { formatPercent, PASSING_LABEL, PASSING_RATE } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
 
 // The finish screen of every game (PROJECT_PLAN.md §16), so Board Review and Last Card end the same way.
@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 // didn't look like a button). Read top to bottom, on one iPad screen:
 //   1. the result is the star: a big headline ("You won!"), one line why, and a small row with the details
 //   2. how she did: her score next to her score per subject (no tiles repeating the same numbers)
-//   3. Practice links for the subjects under 60%
+//   3. Practice links for the subjects under 75%
 //   4. two buttons of the same size right under it all: Back to Games and the gold Play again
 // The whole block sits in the middle of the screen (pinning the buttons to the very bottom left a big empty gap).
 
@@ -136,7 +136,7 @@ export function GameFinish({ won, headline, subline, details, standings, correct
                 )
               })}
             </ul>
-            <p className="mt-2 text-xs text-muted-foreground">The tick marks 60%, the start of the passing range ({REFERENCE_RANGE}).</p>
+            <p className="mt-2 text-xs text-muted-foreground">The tick marks {PASSING_LABEL}, the start of the passing range ({REFERENCE_RANGE}).</p>
           </div>
         )}
       </section>

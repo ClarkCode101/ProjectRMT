@@ -1,8 +1,24 @@
 // Pure quiz logic: no Supabase or React here, so it is easy to unit test.
 import type { Json } from './database.types'
 
-/** She must get at least 60% in EVERY subject (PROJECT_PLAN.md §2). */
-export const PASSING_RATE = 0.6
+// ---------- The board's passing rule (RA 5527, Sec. 19 "Rating in the Examination"; PROJECT_PLAN.md §2) ----------
+// To pass the MTLE she needs ALL three:
+//   1. a general average of at least 75%, with each subject weighted (SUBJECT_WEIGHTS),
+//   2. no subject below 50%,
+//   3. the subjects she "failed" (below 75%) must weigh less than 60% of the exam.
+
+/** A subject counts as passed at 75%, and the general average must reach 75% too. */
+export const PASSING_RATE = 0.75
+/** Below 50% in ANY subject fails the whole exam, whatever the average. */
+export const SUBJECT_FLOOR = 0.5
+/** Failed subjects (below 75%) must weigh less than this share of the exam. */
+export const FAILED_WEIGHT_LIMIT = 0.6
+/** How much each subject counts in the general average (by subject code). */
+export const SUBJECT_WEIGHTS: Readonly<Record<string, number>> = { CC: 0.2, MICRO: 0.2, HEMA: 0.2, BBIS: 0.2, CM: 0.1, HTMLE: 0.1 }
+/** "75%", for text on the screen. */
+export const PASSING_LABEL = `${Math.round(PASSING_RATE * 100)}%`
+/** "50%", for text on the screen. */
+export const FLOOR_LABEL = `${Math.round(SUBJECT_FLOOR * 100)}%`
 
 export type RandomFn = () => number
 
@@ -101,7 +117,10 @@ export type SubjectSummary = {
   attempts: number
   /** null when she has not answered anything in this subject yet */
   accuracy: number | null
+  /** below 75%: not passed yet */
   belowPassing: boolean
+  /** below 50%: this subject alone would fail the whole exam */
+  belowFloor: boolean
   topics: TopicSummary[]
 }
 
@@ -142,32 +161,77 @@ export function summarizePerformance(
         attempts,
         accuracy,
         belowPassing: accuracy !== null && accuracy < PASSING_RATE,
+        belowFloor: accuracy !== null && accuracy < SUBJECT_FLOOR,
         topics: topicSummaries,
       }
     })
 }
 
 export type OverallStats = {
-  /** all answers across subjects, weighted by attempts; null when nothing answered yet */
+  /**
+   * Her general average, like the board computes it: each subject's score times its weight.
+   * Only subjects she has answered count (their weights are scaled up to 100%), so one untouched subject
+   * doesn't pull it down to 0. null when nothing answered yet.
+   */
   accuracy: number | null
   answered: number
-  /** subjects with answers that are at 60% or higher */
+  /** subjects with answers that are at 75% or higher */
   passingSubjects: number
   totalSubjects: number
-  /** the lowest-scoring subject below 60%, if any */
+  /** the lowest-scoring subject below 75%, if any */
   weakest: SubjectSummary | null
+  /** answered subjects below 50% (each one alone fails the exam) */
+  belowFloor: SubjectSummary[]
+  /** Would these scores pass the board (all three rules)? null when nothing answered yet. */
+  passes: boolean | null
+}
+
+/** A subject's weight in the general average (0 for a code the board doesn't list). */
+export function subjectWeight(code: string): number {
+  return SUBJECT_WEIGHTS[code] ?? 0
 }
 
 /**
- * The subject below 60% that is nearest to passing, and how many percentage points it still needs
+ * The general average of the subjects she has answered, weighted like the board (see OverallStats.accuracy).
+ * If none of them has a board weight (e.g. made-up codes in tests), every answer counts the same instead.
+ */
+export function generalAverage(summary: readonly SubjectSummary[]): number | null {
+  const answered = summary.filter((s) => s.accuracy !== null && s.attempts > 0)
+  if (answered.length === 0) return null
+  const totalWeight = answered.reduce((sum, s) => sum + subjectWeight(s.code), 0)
+  if (totalWeight === 0) {
+    const attempts = answered.reduce((sum, s) => sum + s.attempts, 0)
+    return answered.reduce((sum, s) => sum + s.accuracy! * s.attempts, 0) / attempts
+  }
+  return answered.reduce((sum, s) => sum + s.accuracy! * subjectWeight(s.code), 0) / totalWeight
+}
+
+/**
+ * Would these scores pass the board? All three rules (top of this file), over the subjects she has answered.
+ * null when nothing is answered yet.
+ */
+export function passesBoard(summary: readonly SubjectSummary[]): boolean | null {
+  const average = generalAverage(summary)
+  if (average === null) return null
+  const answered = summary.filter((s) => s.accuracy !== null && s.attempts > 0)
+  const totalWeight = answered.reduce((sum, s) => sum + subjectWeight(s.code), 0)
+  // Without board weights, count each subject the same for the "failed subjects" rule.
+  const weightOf = (s: SubjectSummary) => (totalWeight === 0 ? 1 / answered.length : subjectWeight(s.code) / totalWeight)
+  const failedWeight = answered.filter((s) => s.belowPassing).reduce((sum, s) => sum + weightOf(s), 0)
+  // The small epsilon keeps float noise (0.75 stored as 0.7499999…) from failing an exact 75%.
+  return average >= PASSING_RATE - 1e-9 && !answered.some((s) => s.belowFloor) && failedWeight < FAILED_WEIGHT_LIMIT - 1e-9
+}
+
+/**
+ * The subject below 75% that is nearest to passing, and how many percentage points it still needs
  * (at least 1, rounded up). Home shows it as "Closest to passing", so she sees the nearest win, not every miss.
- * null when no answered subject is below 60%.
+ * null when no answered subject is below 75%.
  */
 export function closestToPassing(summary: readonly SubjectSummary[]): { subject: SubjectSummary; pointsToGo: number } | null {
   const low = summary.filter((s) => s.accuracy !== null && s.belowPassing)
   if (low.length === 0) return null
   const subject = low.reduce((best, s) => (s.accuracy! > best.accuracy! ? s : best))
-  // The small epsilon keeps float noise (e.g. 0.6 - 0.57 = 0.030000000000000027) from rounding 3 up to 4.
+  // The small epsilon keeps float noise (e.g. 0.75 - 0.72 = 0.030000000000000027) from rounding 3 up to 4.
   const pointsToGo = Math.max(1, Math.ceil((PASSING_RATE - subject.accuracy!) * 100 - 1e-9))
   return { subject, pointsToGo }
 }
@@ -175,14 +239,15 @@ export function closestToPassing(summary: readonly SubjectSummary[]): { subject:
 /** Totals for the stat tiles on Home and the header on Practice. */
 export function overallStats(summary: readonly SubjectSummary[]): OverallStats {
   const answered = summary.reduce((sum, s) => sum + s.attempts, 0)
-  const correct = summary.reduce((sum, s) => sum + (s.accuracy ?? 0) * s.attempts, 0)
   const low = summary.filter((s) => s.belowPassing).sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0))
   return {
-    accuracy: answered > 0 ? correct / answered : null,
+    accuracy: generalAverage(summary),
     answered,
     passingSubjects: summary.filter((s) => s.accuracy !== null && !s.belowPassing).length,
     totalSubjects: summary.length,
     weakest: low[0] ?? null,
+    belowFloor: summary.filter((s) => s.belowFloor),
+    passes: passesBoard(summary),
   }
 }
 
@@ -192,7 +257,7 @@ export type SmartPick =
 
 /**
  * "Smart pick" on Practice: the single best thing to study next.
- * 1. The weakest topic below 60% in any subject (more answers wins a tie, since that score is surer).
+ * 1. The weakest topic below 75% in any subject (more answers wins a tie, since that score is surer).
  * 2. Otherwise a subject she hasn't started yet.
  * 3. Otherwise nothing: everything is passing, so she can choose.
  */

@@ -13,7 +13,7 @@ import type { Book } from './booksApi'
 // - Library 1 starts with the six subject books. Their cover art is the subject's Flashcards lens, and the
 //   bars at the bottom are its topics (tall = 10 or more, short = 1 to 9, hollow = none).
 // - Then her own books (migration 0004), in the library she chose for each one.
-// - Stars on each book are her score on it (1★ 60%, 2★ 75%, 3★ 90%). Three stars = a gold, shining book.
+// - Stars on each book are her score on it (1★ 50%, 2★ 75%, 3★ 90%). Three stars = a gold, shining book.
 //   The library's total stars sit under its name, like a world's progress.
 // - Every one of the library's LIBRARY_SLOTS spots is drawn: the next free one is "New book", the rest are
 //   faint outlines, like empty inventory slots.
@@ -646,7 +646,7 @@ function CoverKey() {
   return (
     <p aria-hidden className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
       <span className={item}>
-        <Star className="size-3.5 fill-highlight text-highlight" /> 60% · 75% · 90% score
+        <Star className="size-3.5 fill-highlight text-highlight" /> 50% · 75% · 90% score
       </span>
       <span className={item}>
         Topic bars:

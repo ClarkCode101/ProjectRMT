@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   closestToPassing,
   formatPercent,
+  generalAverage,
   latestMistakes,
   markGameAnswers,
   overallStats,
   parseChoiceNotes,
   parseChoices,
+  passesBoard,
   shuffle,
   shuffledChoiceOrder,
   smartPick,
@@ -167,11 +169,11 @@ describe('summarizePerformance', () => {
     expect(cc.belowPassing).toBe(false)
   })
 
-  it('flags subjects and topics below 60%, weakest topic first', () => {
+  it('flags subjects and topics below 75%, weakest topic first', () => {
     const [cc] = summarizePerformance(
       [
-        { subject_id: 1, topic_id: 10, attempts: 5, accuracy: 0.6 },
-        { subject_id: 1, topic_id: 11, attempts: 5, accuracy: 0.4 },
+        { subject_id: 1, topic_id: 10, attempts: 5, accuracy: 0.75 },
+        { subject_id: 1, topic_id: 11, attempts: 5, accuracy: 0.25 },
       ],
       subjects,
       topics,
@@ -180,7 +182,7 @@ describe('summarizePerformance', () => {
     expect(cc.belowPassing).toBe(true)
     expect(cc.topics.map((t) => [t.name, t.belowPassing])).toEqual([
       ['Lipids', true],
-      ['Enzymes', false], // exactly 60% passes
+      ['Enzymes', false], // exactly 75% passes
     ])
   })
 
@@ -198,20 +200,29 @@ describe('overallStats', () => {
     name: code,
     attempts,
     accuracy,
-    belowPassing: accuracy !== null && accuracy < 0.6,
+    belowPassing: accuracy !== null && accuracy < 0.75,
+    belowFloor: accuracy !== null && accuracy < 0.5,
     topics: [],
   })
 
-  it('weights overall accuracy by attempts and counts passing subjects', () => {
+  it('weights the overall score like the board (by subject, not by attempts) and counts passing subjects', () => {
+    // CC and HEMA weigh 20% each; CM (10%) isn't answered, so it's left out instead of counting as 0.
     const stats = overallStats([subject('CC', 30, 0.8), subject('HEMA', 10, 0.4), subject('CM', 0, null)])
-    expect(stats.accuracy).toBeCloseTo((24 + 4) / 40)
+    expect(stats.accuracy).toBeCloseTo((0.8 * 0.2 + 0.4 * 0.2) / 0.4)
     expect(stats.answered).toBe(40)
     expect(stats.passingSubjects).toBe(1)
     expect(stats.totalSubjects).toBe(3)
     expect(stats.weakest?.code).toBe('HEMA')
+    expect(stats.belowFloor.map((s) => s.code)).toEqual(['HEMA'])
+    expect(stats.passes).toBe(false)
   })
 
-  it('picks the lowest subject below 60% as weakest', () => {
+  it('gives a 20% subject twice the say of a 10% one', () => {
+    const stats = overallStats([subject('CC', 10, 0.9), subject('CM', 50, 0.6)])
+    expect(stats.accuracy).toBeCloseTo((0.9 * 0.2 + 0.6 * 0.1) / 0.3) // 0.8, not the attempts-weighted 0.65
+  })
+
+  it('picks the lowest subject below 75% as weakest', () => {
     const stats = overallStats([subject('CC', 5, 0.5), subject('HEMA', 5, 0.2), subject('BBIS', 5, 0.9)])
     expect(stats.weakest?.code).toBe('HEMA')
   })
@@ -226,6 +237,56 @@ describe('overallStats', () => {
   })
 })
 
+describe('passesBoard (RA 5527: 75% weighted average, no subject below 50%, failed subjects under 60% of the weight)', () => {
+  const subject = (code: string, accuracy: number | null) => ({
+    subjectId: code.length,
+    code,
+    name: code,
+    attempts: accuracy === null ? 0 : 10,
+    accuracy,
+    belowPassing: accuracy !== null && accuracy < 0.75,
+    belowFloor: accuracy !== null && accuracy < 0.5,
+    topics: [],
+  })
+  const all = (cc: number, micro: number, hema: number, bbis: number, cm: number, htmle: number) => [
+    subject('CC', cc),
+    subject('MICRO', micro),
+    subject('HEMA', hema),
+    subject('BBIS', bbis),
+    subject('CM', cm),
+    subject('HTMLE', htmle),
+  ]
+
+  it('passes at exactly 75% in every subject', () => {
+    expect(passesBoard(all(0.75, 0.75, 0.75, 0.75, 0.75, 0.75))).toBe(true)
+  })
+
+  it('fails when the weighted average is under 75%', () => {
+    expect(generalAverage(all(0.74, 0.74, 0.74, 0.74, 0.74, 0.74))).toBeCloseTo(0.74)
+    expect(passesBoard(all(0.74, 0.74, 0.74, 0.74, 0.74, 0.74))).toBe(false)
+  })
+
+  it('fails with one subject below 50%, even with a high average', () => {
+    const scores = all(0.95, 0.95, 0.95, 0.95, 0.95, 0.45)
+    expect(generalAverage(scores)!).toBeGreaterThan(0.75)
+    expect(passesBoard(scores)).toBe(false)
+  })
+
+  it('fails when the subjects below 75% weigh 60% or more', () => {
+    // CC, MICRO, HEMA at 70% (60% of the weight) fail the rule, even though the average is 80.5%.
+    const scores = all(0.7, 0.7, 0.7, 0.95, 0.95, 0.95)
+    expect(generalAverage(scores)!).toBeGreaterThan(0.75)
+    expect(passesBoard(scores)).toBe(false)
+    // Two 20% subjects below 75% is only 40%: passes.
+    expect(passesBoard(all(0.7, 0.7, 0.95, 0.95, 0.95, 0.95))).toBe(true)
+  })
+
+  it('is null with nothing answered', () => {
+    expect(passesBoard([subject('CC', null)])).toBeNull()
+    expect(generalAverage([])).toBeNull()
+  })
+})
+
 describe('closestToPassing', () => {
   const subject = (code: string, accuracy: number | null) => ({
     subjectId: code.length,
@@ -233,26 +294,27 @@ describe('closestToPassing', () => {
     name: code,
     attempts: accuracy === null ? 0 : 10,
     accuracy,
-    belowPassing: accuracy !== null && accuracy < 0.6,
+    belowPassing: accuracy !== null && accuracy < 0.75,
+    belowFloor: accuracy !== null && accuracy < 0.5,
     topics: [],
   })
 
-  it('picks the highest subject that is still below 60%', () => {
-    const result = closestToPassing([subject('CC', 0.4), subject('CM', 0.57), subject('BBIS', 0.63), subject('HEMA', 0.14)])
+  it('picks the highest subject that is still below 75%', () => {
+    const result = closestToPassing([subject('CC', 0.4), subject('CM', 0.72), subject('BBIS', 0.78), subject('HEMA', 0.14)])
     expect(result?.subject.code).toBe('CM')
     expect(result?.pointsToGo).toBe(3)
   })
 
   it('rounds the points to go up, and never says 0', () => {
-    expect(closestToPassing([subject('CC', 0.555)])?.pointsToGo).toBe(5)
-    expect(closestToPassing([subject('CC', 0.5999)])?.pointsToGo).toBe(1)
+    expect(closestToPassing([subject('CC', 0.705)])?.pointsToGo).toBe(5)
+    expect(closestToPassing([subject('CC', 0.7499)])?.pointsToGo).toBe(1)
   })
 
   it('skips subjects with no answers yet', () => {
     expect(closestToPassing([subject('CC', null), subject('HEMA', 0.2)])?.subject.code).toBe('HEMA')
   })
 
-  it('returns null when nothing answered is below 60%', () => {
+  it('returns null when nothing answered is below 75%', () => {
     expect(closestToPassing([subject('CC', 0.8), subject('HEMA', null)])).toBeNull()
     expect(closestToPassing([])).toBeNull()
   })
@@ -267,18 +329,19 @@ describe('formatPercent', () => {
 })
 
 describe('smartPick', () => {
-  const topic = (topicId: number, accuracy: number, attempts = 5) => ({ topicId, name: `T${topicId}`, attempts, accuracy, belowPassing: accuracy < 0.6 })
+  const topic = (topicId: number, accuracy: number, attempts = 5) => ({ topicId, name: `T${topicId}`, attempts, accuracy, belowPassing: accuracy < 0.75 })
   const subject = (subjectId: number, code: string, topics: ReturnType<typeof topic>[], accuracy: number | null = 0.5) => ({
     subjectId,
     code,
     name: code,
     attempts: topics.reduce((sum, t) => sum + t.attempts, 0),
     accuracy,
-    belowPassing: accuracy !== null && accuracy < 0.6,
+    belowPassing: accuracy !== null && accuracy < 0.75,
+    belowFloor: accuracy !== null && accuracy < 0.5,
     topics,
   })
 
-  it('picks the weakest topic below 60% across all subjects', () => {
+  it('picks the weakest topic below 75% across all subjects', () => {
     const pick = smartPick([subject(1, 'CC', [topic(10, 0.4), topic(11, 0.9)]), subject(2, 'HEMA', [topic(20, 0.2)])])
     expect(pick).toEqual({ kind: 'topic', subjectId: 2, subjectCode: 'HEMA', topicId: 20, topicName: 'T20', accuracy: 0.2 })
   })

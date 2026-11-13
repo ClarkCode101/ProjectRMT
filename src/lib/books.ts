@@ -74,8 +74,8 @@ export function roomLeft(slot: number, booksInLibrary: number, subjectCount: num
 
 // ---------- Stars: the "level" of a book, from her score on its questions ----------
 
-/** The score needed for 1, 2 and 3 stars. 60% is the board's passing mark. */
-export const STAR_THRESHOLDS = [0.6, 0.75, 0.9] as const
+/** The score needed for 1, 2 and 3 stars: 50% (clear of the board's below-50% fail line), 75% (the board's passing mark), 90%. */
+export const STAR_THRESHOLDS = [0.5, 0.75, 0.9] as const
 export const MAX_STARS = STAR_THRESHOLDS.length
 
 /** 0–3 stars for a score from 0 to 1. No score yet (not started) = 0. */

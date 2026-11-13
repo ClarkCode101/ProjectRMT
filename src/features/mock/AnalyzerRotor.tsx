@@ -1,12 +1,12 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from 'react'
 import { tubeStatus, type TubeStatus } from '@/features/quiz/tube'
-import { formatPercent, type SubjectSummary } from '@/lib/quiz'
+import { FLOOR_LABEL, formatPercent, PASSING_LABEL, type SubjectSummary } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
 
 // The subject picker on Mock exam: the rotor of an analyzer, seen from above. Works like a game's weapon wheel:
 // - Six slots around the rotor, one tube per subject. The ring around each tube is its cap color:
-//   red when the subject is below 60%, green when passing, gray when not started (same as Practice's tubes).
+//   red when the subject is below 75%, green when passing, gray when not started (same as Practice's tubes).
 // - Drag/swipe sideways and the rotor turns with your finger; let go and it snaps (with a little bounce) so a
 //   slot sits at the top, under the gold marker ("load position"). That subject is the one chosen.
 // - Tap a slot and the rotor turns it to the top. Tap the hub in the middle for ALL (a mixed full-board exam).
@@ -105,7 +105,7 @@ function Slot({
     >
       <input type="radio" name="mock-subject" checked={checked} onChange={onChange} className="sr-only" />
       <span className="sr-only">
-        {subject.name}: {subject.accuracy === null ? 'not started' : `${formatPercent(subject.accuracy)}${subject.belowPassing ? ', below 60%' : ''}`}
+        {subject.name}: {subject.accuracy === null ? 'not started' : `${formatPercent(subject.accuracy)}${subject.belowFloor ? `, below ${FLOOR_LABEL}` : subject.belowPassing ? `, below ${PASSING_LABEL}` : ''}`}
       </span>
       <span aria-hidden className={cn('flex flex-col items-center', turning && TURN_TRANSITION)} style={{ rotate: `${uprightDeg}deg` }}>
         {/* 5-letter codes (HTMLE, MICRO) get a smaller size and tighter letters so they stay inside the ring */}

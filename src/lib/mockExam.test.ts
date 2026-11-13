@@ -68,14 +68,19 @@ describe('scoreMock', () => {
 
   it('counts blanks as wrong and lists the weakest topic first', () => {
     const score = scoreMock(questions, [0, 1, 2, null, 1])
-    expect(score).toMatchObject({ total: 5, answered: 4, correct: 3, rate: 0.6, passed: true })
+    expect(score).toMatchObject({ total: 5, answered: 4, correct: 3, rate: 0.6, passed: false })
     expect(score.byTopic).toEqual([
       { topicId: 2, correct: 1, total: 3 },
       { topicId: 1, correct: 2, total: 2 },
     ])
   })
 
-  it('fails below 60% and handles an empty exam', () => {
+  it('passes at exactly 75%', () => {
+    const four = questions.slice(0, 4)
+    expect(scoreMock(four, [0, 1, 2, null])).toMatchObject({ rate: 0.75, passed: true })
+  })
+
+  it('fails below 75% and handles an empty exam', () => {
     expect(scoreMock(questions, [0, null, null, null, null]).passed).toBe(false)
     expect(scoreMock([], [])).toMatchObject({ total: 0, correct: 0, rate: 0, passed: false, byTopic: [] })
   })

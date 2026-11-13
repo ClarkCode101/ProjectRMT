@@ -9,7 +9,7 @@ import type { QuizQuestion } from '@/features/quiz/api'
 import { formatClock, mockTrend, runStats, SECONDS_PER_ITEM, type MockScope, type MockScore, type MockTrend } from '@/lib/mockExam'
 import { usePreviousMockRate } from './api'
 import { useOnline } from '@/lib/offline/useOfflineSync'
-import { formatPercent, PASSING_RATE } from '@/lib/quiz'
+import { formatPercent, PASSING_LABEL, PASSING_RATE } from '@/lib/quiz'
 import { useSubjectOfTopic, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 
@@ -78,7 +78,7 @@ function ReviewItem({ number, question, answer, flagged }: { number: number; que
 // Results, drawn as the analyzer's printout (the end of rack → analyzer → printout):
 // - the analyzer's head on top: "Run complete", and what to do next (the one dark area here)
 // - a paper slip that feeds out of its slot, with only what she needs to decide what's next:
-//   the score + stamp, up to 3 topics to focus on (L flag = below 60%), and a button to review her misses
+//   the score + stamp, up to 3 topics to focus on (L flag = below 75%), and a button to review her misses
 // - "See all topics" and the review list stay closed until she asks (so the screen isn't overwhelming)
 
 /** A dashed rule across the paper, between sections (like a thermal printout). */
@@ -86,7 +86,7 @@ function PaperRule() {
   return <hr aria-hidden className="border-t border-dashed border-foreground/20" />
 }
 
-/** One result row: the test (with a 60% bar under it), the score, and the L flag when it's low. */
+/** One result row: the test (with a 75% bar under it), the score, and the L flag when it's low. */
 function ResultRow({ name, code, correct, total }: { name: string; code?: string; correct: number; total: number }) {
   const rate = correct / total
   const low = rate < PASSING_RATE
@@ -180,7 +180,7 @@ function Reading({ label, value, bad = false, children }: { label: string; value
   )
 }
 
-/** "Focus on" lists at most this many topics below 60% (the rest are under "See all topics"). */
+/** "Focus on" lists at most this many topics below 75% (the rest are under "See all topics"). */
 const FOCUS_TOPICS_SHOWN = 3
 
 export function MockResults({ label, sessionId, scope, questions, answers, flags, score, durationSec, timedOut, onNewExam, note }: Props) {
@@ -206,7 +206,7 @@ export function MockResults({ label, sessionId, scope, questions, answers, flags
     bySubject.set(code, entry)
   }
   const mixed = bySubject.size > 1
-  // byTopic is weakest first, so the first few below 60% are the ones to focus on.
+  // byTopic is weakest first, so the first few below 75% are the ones to focus on.
   const focusTopics = score.byTopic.filter((t) => t.correct / t.total < PASSING_RATE).slice(0, FOCUS_TOPICS_SHOWN)
 
   // "Missed" = wrong or left blank (both count as wrong).
@@ -313,7 +313,7 @@ export function MockResults({ label, sessionId, scope, questions, answers, flags
               </dl>
               <PaperRule />
 
-              {/* ---------- Focus on: at most a few topics below 60%, weakest first ---------- */}
+              {/* ---------- Focus on: at most a few topics below 75%, weakest first ---------- */}
               {focusTopics.length > 0 ? (
                 <ResultTable title="Focus on">
                   {focusTopics.map((t) => (
@@ -323,7 +323,7 @@ export function MockResults({ label, sessionId, scope, questions, answers, flags
               ) : (
                 <p className="flex items-center gap-2 rounded-lg bg-correct-soft px-3 py-2.5 text-sm font-semibold text-correct">
                   <Check className="size-4.5 shrink-0" aria-hidden />
-                  Every topic is at 60% or higher.
+                  Every topic is at {PASSING_LABEL} or higher.
                 </p>
               )}
 

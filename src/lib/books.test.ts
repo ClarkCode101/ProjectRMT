@@ -106,9 +106,9 @@ describe('starsFor', () => {
     expect(starsFor(null)).toBe(0)
   })
 
-  it('earns each star exactly at its threshold (60%, 75%, 90%)', () => {
-    expect(starsFor(0.59)).toBe(0)
-    expect(starsFor(0.6)).toBe(1)
+  it('earns each star exactly at its threshold (50%, 75%, 90%)', () => {
+    expect(starsFor(0.49)).toBe(0)
+    expect(starsFor(0.5)).toBe(1)
     expect(starsFor(0.749)).toBe(1)
     expect(starsFor(0.75)).toBe(2)
     expect(starsFor(0.9)).toBe(3)

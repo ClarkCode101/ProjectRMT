@@ -3,7 +3,7 @@ import { lazy, Suspense, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Dialog } from '@/components/Dialog'
 import { heroButtonClass } from '@/components/report'
-import { PASSING_RATE, type SubjectSummary } from '@/lib/quiz'
+import { PASSING_LABEL, PASSING_RATE, type SubjectSummary } from '@/lib/quiz'
 import { useCountUp } from '@/lib/useCountUp'
 import { cn } from '@/lib/utils'
 import type { Body3DControls, OrganAnchor } from './Body3D'
@@ -288,7 +288,7 @@ const BAR_COLOR: Record<SubjectStatus, string> = {
 
 /**
  * The card's bar. Getting started: fills with answers toward the 10 a real score needs (matches "2/10").
- * After that: fills with the score, with a marker at 60% (passing), like the readiness bar at the top.
+ * After that: fills with the score, with a marker at 75% (passing), like the readiness bar at the top.
  */
 function ProgressBar({ subject, status }: { subject: SubjectSummary; status: SubjectStatus }) {
   const isReal = status === 'low' || status === 'passing'
@@ -406,8 +406,8 @@ const MAX_STEPS = 20
 /**
  * The middle of the Next up bar: how close this subject is to its next goal.
  * - Getting started (or new): "3/10 answered", "7 more for a real score", the bar filling toward 10, and 10 steps (3 filled).
- * - Below 60%: "33% now", "14 right in a row to reach 60%", the score bar with the 60% line, and 14 empty steps to fill.
- * - Passing: the score in green and "Passing · keep it above 60%".
+ * - Below 75%: "33% now", "14 right in a row to reach 75%", the score bar with the 75% line, and 14 empty steps to fill.
+ * - Passing: the score in green and "Passing · keep it above 75%".
  * The steps make "how many more" something she can see and count, not just read.
  */
 function GoalProgress({ subject, status }: { subject: SubjectSummary; status: SubjectStatus }) {
@@ -430,10 +430,10 @@ function GoalProgress({ subject, status }: { subject: SubjectSummary; status: Su
         </span>
         <span className="text-sm text-muted-foreground">
           {status === 'passing' ? (
-            <span className="font-semibold text-correct">Passing · keep it above 60%</span>
+            <span className="font-semibold text-correct">Passing · keep it above {PASSING_LABEL}</span>
           ) : status === 'low' ? (
             <>
-              <span className="font-bold text-foreground">{steps} right in a row</span> to reach 60%
+              <span className="font-bold text-foreground">{steps} right in a row</span> to reach {PASSING_LABEL}
             </>
           ) : (
             <>
@@ -446,7 +446,7 @@ function GoalProgress({ subject, status }: { subject: SubjectSummary; status: Su
         </span>
       </p>
 
-      {/* The bar: score with the 60% line once it's real, answers toward 10 before that */}
+      {/* The bar: score with the 75% line once it's real, answers toward 10 before that */}
       <div aria-hidden className="relative mt-2 h-2 rounded-full bg-secondary">
         <div className={cn('h-full rounded-full', status === 'passing' ? 'bg-correct' : status === 'low' ? 'bg-highlight' : 'bg-primary')} style={{ width: `${fill * 100}%` }} />
         {isReal && <span className="absolute -top-0.5 -bottom-0.5 w-0.5 rounded-full bg-foreground/50" style={{ left: `${PASSING_RATE * 100}%` }} />}

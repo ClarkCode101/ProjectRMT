@@ -27,7 +27,12 @@ A private, mobile-first PWA (login required; a small group of about 15 classmate
 
 ## 2. Exam Context (for content + mock exam weighting)
 
-Six subjects. **She has to get at least 60% in every subject**, so a single weak subject fails the whole exam. That's why the dashboard tracks scores per subject.
+Six subjects. **Passing rule (RA 5527, Sec. 19 "Rating in the Examination"; checked 2026-11-13):**
+1. a **general average of at least 75%**, each subject weighted as in the table below,
+2. **no subject below 50%** (one very weak subject fails the whole exam),
+3. the subjects she "failed" (below 75%) must weigh **less than 60%** of the exam.
+
+That's why the dashboard tracks scores per subject. In the app (all in `lib/quiz.ts`): a subject is "passing" at 75% (`PASSING_RATE`), "below 50%" is called out on its own (`SUBJECT_FLOOR`), the overall score is the weighted general average of the subjects she has answered (`generalAverage`), and it's green only when all three rules hold (`passesBoard`). Until 2026-11-13 the app used "60% in every subject", which was wrong.
 
 | Code | Subject | Typical weight |
 |---|---|---|
@@ -49,7 +54,7 @@ Six subjects. **She has to get at least 60% in every subject**, so a single weak
 - [x] **Question bank**: multiple choice (4 options), tagged by subject → topic
 - [x] **Practice quiz**: filter by subject/topic/source; instant feedback + explanation after each answer; results show what she learned (new, cleared, to review), not pass/fail (see §6 "Results")
 - [x] **Mistake notebook**: wrong answers are collected automatically and quizzed again from "Review again" on Practice (the list page was removed: answer first, then see why). Only Practice, Mock exam and Flashcard answers count: game answers (Board Review, Last Card) neither add a mistake nor clear one, since they are rushed and often guesses. They still count in the scores and streak (GAME_MODES in lib/quiz.ts).
-- [x] **Weak-area dashboard**: score per subject and per topic; anything below 60% is highlighted
+- [x] **Weak-area dashboard**: score per subject and per topic; anything below 75% is highlighted (below 50% is called out too, see §2)
 - [x] **Built-in seed content import** (JSON → Supabase)
 
 ### Phase 2 — Content feeding

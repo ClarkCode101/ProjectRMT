@@ -294,7 +294,8 @@ describe('weakestTopic', () => {
     attempts: 0,
     accuracy: null,
     belowPassing: false,
-    topics: topics.map((t) => ({ ...t, name: `T${t.topicId}`, belowPassing: t.accuracy < 0.6 })),
+    belowFloor: false,
+    topics: topics.map((t) => ({ ...t, name: `T${t.topicId}`, belowPassing: t.accuracy < 0.75 })),
   })
 
   it('picks the lowest accuracy from any subject', () => {

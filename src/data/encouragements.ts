@@ -1,7 +1,7 @@
 // 💌 Notes for her, written by you. Edit, add or remove lines freely, then push.
 //
 // When each kind shows up:
-//   'mock_passed'  after a mock exam she passed (60%+)
+//   'mock_passed'  after a mock exam she passed (75%+)
 //   'mock_done'    after a mock exam she didn't pass yet
 //   'streak'       on Home, the day her streak reaches 3, 7, 14, 30, 50 or 100 days
 //   'random'       now and then after a practice session (and as a backup for the others)

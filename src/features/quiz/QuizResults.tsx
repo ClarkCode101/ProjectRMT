@@ -7,7 +7,7 @@ import { NOTES } from '@/data/encouragements'
 import { pickNote, shouldShowRandomNote } from '@/lib/planner'
 import { practiceMessage, practiceReport, type PracticeMode, type PriorHistory } from '@/lib/practiceReport'
 import { HeroPanel, heroButtonClass, RangeBar, REFERENCE_RANGE, SampleRun } from '@/components/report'
-import { PASSING_RATE } from '@/lib/quiz'
+import { PASSING_LABEL, PASSING_RATE } from '@/lib/quiz'
 import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
 import type { QuizQuestion } from './api'
@@ -157,7 +157,7 @@ export function QuizResults({ answers, mode, prior, label, onRestart, onReviewLe
               )
             })}
           </ul>
-          <p className="text-xs text-muted-foreground">The tick on each bar marks 60%, the start of the passing range ({REFERENCE_RANGE}).</p>
+          <p className="text-xs text-muted-foreground">The tick on each bar marks {PASSING_LABEL}, the start of the passing range ({REFERENCE_RANGE}).</p>
         </section>
       )}
 

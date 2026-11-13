@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { PASSING_RATE, type SubjectSummary } from '@/lib/quiz'
+import { FLOOR_LABEL, PASSING_LABEL, PASSING_RATE, type SubjectSummary } from '@/lib/quiz'
 
 // Each board subject lives in the body part a MedTech links it to.
 export type Organ = {
@@ -119,7 +119,7 @@ export const ORGANS: Record<string, Organ> = {
 /**
  * How far along she is in a subject:
  * new = nothing answered; starting = fewer than MIN_ANSWERED (too few for a real score, so no "low" yet);
- * low = below 60% with enough answers; passing = 60% or more with enough answers.
+ * low = below 75% with enough answers; passing = 75% or more with enough answers.
  */
 export type SubjectStatus = 'new' | 'starting' | 'low' | 'passing'
 
@@ -132,9 +132,9 @@ export function subjectStatus(s: SubjectSummary): SubjectStatus {
   return s.belowPassing ? 'low' : 'passing'
 }
 
-export const STATUS_TEXT: Record<SubjectStatus, string> = { new: 'Not started', starting: 'Getting started', low: 'Below 60%', passing: 'Passing' }
+export const STATUS_TEXT: Record<SubjectStatus, string> = { new: 'Not started', starting: 'Getting started', low: `Below ${PASSING_LABEL}`, passing: 'Passing' }
 
-/** Text color of the status. Amber (not red) for "below 60%": it's a next step, not an alarm. */
+/** Text color of the status. Amber (not red) for "below 75%": it's a next step, not an alarm. */
 export const STATUS_COLOR: Record<SubjectStatus, string> = {
   new: 'text-muted-foreground',
   starting: 'text-primary-deep',
@@ -142,17 +142,23 @@ export const STATUS_COLOR: Record<SubjectStatus, string> = {
   passing: 'text-correct',
 }
 
-/** The small line under the big number. */
+/** The small line under the big number. Below 50% says so: that one subject alone would fail the exam. */
 export function scoreCaption(s: SubjectSummary): string {
   const status = subjectStatus(s)
+  if (status === 'low' && s.belowFloor) return `Below ${FLOOR_LABEL}`
   return status === 'starting' ? 'answered' : STATUS_TEXT[status]
 }
 
-/** Home's overall line, told as distance to the goal ("32% to go to passing"), which pulls harder than "you're at 28%". */
-export function readinessGoal(rate: number): string {
+/**
+ * Home's overall line, told as distance to the goal ("32% to go to passing"), which pulls harder than "you're at 28%".
+ * `floorCodes`: answered subjects below 50%. Even with the average at 75%, any of them fails the exam, so that comes first.
+ */
+export function readinessGoal(rate: number, floorCodes: readonly string[] = []): string {
   const pct = Math.round(rate * 100)
   const toGo = Math.round(PASSING_RATE * 100) - pct
-  return toGo > 0 ? `${toGo}% to go to passing` : 'Passing · keep it above 60%'
+  if (toGo > 0) return `${toGo}% to go to passing`
+  if (floorCodes.length > 0) return `Get ${floorCodes.join(', ')} above ${FLOOR_LABEL}`
+  return `Passing · keep it above ${PASSING_LABEL}`
 }
 
 /** The next small win on a subject card: what to do to reach the next step. */
@@ -173,8 +179,8 @@ export function correctCount(s: SubjectSummary): number {
 }
 
 /**
- * How many more correct answers in a row would bring the score to 60%.
- * Solves (correct + k) / (attempts + k) ≥ 0.6 for the smallest whole k.
+ * How many more correct answers in a row would bring the score to 75%.
+ * Solves (correct + k) / (attempts + k) ≥ 0.75 for the smallest whole k.
  */
 export function correctToPass(s: SubjectSummary): number {
   const k = (PASSING_RATE * s.attempts - correctCount(s)) / (1 - PASSING_RATE)

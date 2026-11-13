@@ -12,7 +12,7 @@ import { DEFAULT_DAILY_TARGET, useStudySettings } from '@/features/settings/api'
 import { currentStreak, dailyActivity, type DayActivity } from '@/lib/activity'
 import { firstName, needsWelcome } from '@/lib/profile'
 import { countdownLabel, daysUntil, milestoneKey, milestoneReached, pickNote } from '@/lib/planner'
-import { overallStats, PASSING_RATE, summarizePerformance, type SubjectSummary } from '@/lib/quiz'
+import { overallStats, PASSING_LABEL, PASSING_RATE, summarizePerformance, type SubjectSummary } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
 import { useCountUp } from '@/lib/useCountUp'
 import { cn } from '@/lib/utils'
@@ -28,7 +28,7 @@ function greeting(hour: number) {
   return 'Good evening'
 }
 
-/** The subject to show first: the weakest one below 60%, else one not tried yet, else the lowest score. */
+/** The subject to show first: the weakest one below 75%, else one not tried yet, else the lowest score. */
 function pickFocus(summary: SubjectSummary[]): SubjectSummary | undefined {
   const byScore = (a: SubjectSummary, b: SubjectSummary) => (a.accuracy ?? 0) - (b.accuracy ?? 0)
   return (
@@ -213,7 +213,7 @@ export default function HomePage() {
         previous={changed}
         onSelect={setSelectedId}
         celebrate={celebrate}
-        readout={<ReadinessLine rate={stats.accuracy} from={readinessFrom} countdown={countdown} />}
+        readout={<ReadinessLine rate={stats.accuracy} passes={stats.passes === true} floorCodes={stats.belowFloor.map((s) => s.code)} from={readinessFrom} countdown={countdown} />}
         today={<TodayLine days={days} target={target} />}
       />
 
@@ -295,15 +295,28 @@ function TodayLine({ days, target }: { days: DayActivity[]; target: number }) {
 
 /**
  * The overall score as the body's "scan readout" (it sits under the body, bottom right of the stage):
- * the score, the distance to the goal ("32% to go to passing"), a bar with a marker at the 60% passing line,
- * and the days left once the exam date is set.
+ * her general average (weighted like the board), the distance to the goal ("32% to go to passing"),
+ * a bar with a marker at the 75% passing line, and the days left once the exam date is set.
  * "Overall", not "board-ready": with only a few answers per subject, it's a score, not a verdict.
- * `from`: last visit's score, so it counts up to today's (same as the subject cards).
+ * `passes`: all three board rules hold (an average of 75% with a subject below 50% is still not passing).
+ * `floorCodes`: subjects below 50%. `from`: last visit's score, so it counts up to today's (same as the subject cards).
  */
-function ReadinessLine({ rate, from, countdown }: { rate: number | null; from: number | null; countdown: string | null }) {
+function ReadinessLine({
+  rate,
+  passes,
+  floorCodes,
+  from,
+  countdown,
+}: {
+  rate: number | null
+  passes: boolean
+  floorCodes: string[]
+  from: number | null
+  countdown: string | null
+}) {
   const pct = rate === null ? 0 : Math.min(100, Math.round(rate * 100))
   const shown = useCountUp(from === null ? pct : Math.min(100, Math.round(from * 100)), pct)
-  const isPassing = rate !== null && rate >= PASSING_RATE
+  const isPassing = rate !== null && passes
 
   if (rate === null) {
     return <p className="text-sm text-muted-foreground">Answer a few questions to see your overall score.</p>
@@ -315,23 +328,23 @@ function ReadinessLine({ rate, from, countdown }: { rate: number | null; from: n
           <span className={cn('font-heading text-2xl font-bold tabular-nums', isPassing ? 'text-correct' : STATUS_COLOR.low)}>{shown}%</span>{' '}
           <span className="text-sm text-muted-foreground">overall</span>
         </span>
-        <span className={cn('text-right text-xs font-semibold', isPassing ? 'text-correct' : 'text-foreground')}>{readinessGoal(rate)}</span>
+        <span className={cn('text-right text-xs font-semibold', isPassing ? 'text-correct' : 'text-foreground')}>{readinessGoal(rate, floorCodes)}</span>
       </p>
 
-      {/* The bar (fills along with the counting number), with a labelled marker at the 60% passing line */}
+      {/* The bar (fills along with the counting number), with a labelled marker at the 75% passing line */}
       <div
         role="meter"
         aria-label="Overall score"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}
-        aria-valuetext={`${pct}%, passing is 60%`}
+        aria-valuetext={`${pct}%, passing is ${PASSING_LABEL}`}
         className="relative mt-1.5 h-2 rounded-full bg-secondary"
       >
         <div className={cn('h-full rounded-full', isPassing ? 'bg-correct' : 'bg-highlight')} style={{ width: `${shown}%` }} />
         <span aria-hidden className="absolute -top-0.5 -bottom-0.5 w-0.5 rounded-full bg-foreground/60" style={{ left: `${PASSING_RATE * 100}%` }} />
         <span aria-hidden className="absolute top-full mt-1 -translate-x-1/2 text-[10px] leading-none font-semibold text-muted-foreground" style={{ left: `${PASSING_RATE * 100}%` }}>
-          60%
+          {PASSING_LABEL}
         </span>
       </div>
 

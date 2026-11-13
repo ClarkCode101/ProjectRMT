@@ -66,7 +66,8 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
   const overall = overallStats(summary)
   const items: CarouselItem[] = [
     ...summary.map((s) => ({ key: String(s.subjectId), code: s.code, name: s.name, accuracy: s.accuracy, belowPassing: s.belowPassing })),
-    { key: MIX_KEY, code: MIX_CODE, name: 'All six subjects', accuracy: overall.accuracy, belowPassing: overall.accuracy !== null && overall.accuracy < 0.6 },
+    // The mix tube shows her general average; it's red until all three board rules pass.
+    { key: MIX_KEY, code: MIX_CODE, name: 'All six subjects', accuracy: overall.accuracy, belowPassing: overall.passes === false },
   ]
   const indexOf = (key: string | null) => items.findIndex((p) => p.key === key)
   const focusIndex = Math.max(0, indexOf(focusKey ?? (pick ? String(pick.subjectId) : null)))
@@ -154,7 +155,7 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
                 {overall.accuracy !== null && (
                   <>
                     {' · '}Overall{' '}
-                    <span className={cn('font-bold tabular-nums', overall.accuracy < 0.6 ? 'text-wrong' : 'text-correct')}>{formatPercent(overall.accuracy)}</span>
+                    <span className={cn('font-bold tabular-nums', overall.passes ? 'text-correct' : 'text-wrong')}>{formatPercent(overall.accuracy)}</span>
                   </>
                 )}
                 .

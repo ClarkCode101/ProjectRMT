@@ -1,11 +1,12 @@
+import { PASSING_LABEL, PASSING_RATE } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
 import { liquidBackground, MIX_CODE, type TubeStatus } from './tube'
 
 // The picture of one specimen tube, used by the Practice subject carousel:
 // - the liquid's color is the subject (its book and Last Card color; Mix = six layers)
 // - the liquid level is her score in that subject
-// - the cap is red below 60%, green when passing, gray when not started
-// - a small tick on the glass marks the 60% passing line
+// - the cap is red below 75%, green when passing, gray when not started
+// - a small tick on the glass marks the 75% passing line
 
 const CAP_COLOR: Record<TubeStatus, string> = { low: 'bg-wrong', passing: 'bg-correct', new: 'bg-border' }
 
@@ -31,8 +32,8 @@ export function TubeFigure({
         <span className={cn('absolute inset-x-0 bottom-0', animateFill && 'tube-fill')} style={{ height: `${level}%`, background: liquidBackground(code) }}>
           <span className="absolute inset-x-0 top-0 h-1.5 bg-white/25" />
         </span>
-        {/* 60% passing mark */}
-        <span className="absolute right-0 h-0.5 w-4 rounded-l-full bg-foreground/50 md:w-6" style={{ bottom: '60%' }} />
+        {/* 75% passing mark */}
+        <span className="absolute right-0 h-0.5 w-4 rounded-l-full bg-foreground/50 md:w-6" style={{ bottom: `${PASSING_RATE * 100}%` }} />
         {/* glass shine */}
         <span className="absolute top-2 bottom-4 left-1.5 w-1.5 rounded-full bg-white/55 md:left-2.5" />
       </span>
@@ -53,7 +54,7 @@ export function TubeKey() {
         <span className={swatch} style={{ background: liquidBackground(MIX_CODE, 'right') }} /> liquid = subject · level = your score
       </span>
       <span className={item}>
-        <span className={cn(swatch, 'bg-wrong')} /> below 60%
+        <span className={cn(swatch, 'bg-wrong')} /> below {PASSING_LABEL}
       </span>
       <span className={item}>
         <span className={cn(swatch, 'bg-correct')} /> passing
