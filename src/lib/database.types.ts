@@ -370,6 +370,8 @@ export type Database = {
       board_rematch_done: { Args: { p_room: string }; Returns: undefined }
       // migrations 0026–0027: dev testing only (a dev key from .env.local, or test accounts in board_dev_testers)
       board_dev_finish: { Args: { p_room: string; p_key?: string | null }; Returns: undefined }
+      // migration 0045: DEV test shortcuts for team games
+      board_dev_action: { Args: { p_room: string; p_key: string | null; p_op: string }; Returns: undefined }
       // migration 0029: room chat (messages clear after 5 hours)
       board_room_messages: {
         Args: { p_room: string }

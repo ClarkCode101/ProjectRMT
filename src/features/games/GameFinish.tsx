@@ -1,4 +1,4 @@
-import { Flag, Play, RotateCcw, Trophy } from 'lucide-react'
+import { Check, Flag, Play, RotateCcw, Trophy } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { HeroPanel, heroButtonClass, RangeBar, REFERENCE_RANGE } from '@/components/report'
@@ -16,6 +16,31 @@ import { cn } from '@/lib/utils'
 
 export type SubjectResult = { code: string; correct: number; answered: number; practiceHref: string }
 
+/** One badge at most per player, the same in every game. */
+export type StandingBadge = 'again' | 'done' | 'left' | 'timedOut'
+
+/** One row of the standings (team games and Last Card), already in finish order. */
+export type Standing = {
+  key: string
+  name: string
+  /** her own row: "You", in bold */
+  isMe: boolean
+  won: boolean
+  /** the player's color (Board Review tokens, Last Card seats) */
+  color: string
+  /** a computer player: "· computer" after the name, no score */
+  isComputer?: boolean
+  badge?: StandingBadge | null
+  /** Board Review: how far along the 60 squares (a bar) */
+  progress?: { value: number; max: number; label: string }
+  /** the number that decides the order, e.g. "3 cards" or "42" (a square) */
+  metric: string
+  /** e.g. lifeline icons */
+  extra?: ReactNode
+  /** "4/6" correct; left out for computer players */
+  score?: { correct: number; answered: number }
+}
+
 type Props = {
   /** a win shows a trophy; anything else (a loss, a tie) a flag */
   won: boolean
@@ -23,8 +48,10 @@ type Props = {
   headline: string
   /** one line under it, e.g. "You ran out of cards first." */
   subline: string
-  /** a small row of details under the headline (standings, rolls…) */
+  /** a small row of details under the headline (rolls, ladders… in the solo Board Review) */
   details?: ReactNode
+  /** everyone in the game, in finish order (team games and Last Card) */
+  standings?: readonly Standing[]
   correct: number
   answered: number
   /** extra lines under her score, e.g. "11 cards drawn for wrong answers" */
@@ -54,7 +81,7 @@ const backClass =
   'flex h-12 items-center justify-center rounded-lg border-2 border-primary/25 bg-card px-4 font-heading text-lg font-bold text-primary-deep outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px disabled:opacity-60'
 const playAgainClass = cn(heroButtonClass, 'w-full focus-visible:ring-ring/50 sm:flex sm:w-full')
 
-export function GameFinish({ won, headline, subline, details, correct, answered, notes = [], bySubject, onPlayAgain, playAgain, onBack, below }: Props) {
+export function GameFinish({ won, headline, subline, details, standings, correct, answered, notes = [], bySubject, onPlayAgain, playAgain, onBack, below }: Props) {
   const gold: PlayAgain | null = playAgain ?? (onPlayAgain ? { label: 'Play again', onClick: onPlayAgain } : null)
   const rate = answered > 0 ? correct / answered : null
   const toReview = bySubject.filter((s) => s.answered > 0 && s.correct / s.answered < PASSING_RATE)
@@ -77,6 +104,7 @@ export function GameFinish({ won, headline, subline, details, correct, answered,
           </div>
         </div>
         {details && <div className="flex flex-wrap gap-2">{details}</div>}
+        {standings && standings.length > 0 && <Standings rows={standings} />}
       </HeroPanel>
 
       {/* ---------- 2. How she did: her score | per subject ---------- */}
@@ -158,6 +186,80 @@ export function GameFinish({ won, headline, subline, details, correct, answered,
         {below}
       </div>
     </div>
+  )
+}
+
+const PLACES = ['1st', '2nd', '3rd', '4th']
+
+const BADGE: Record<StandingBadge, { text: string; className: string }> = {
+  again: { text: 'Playing again', className: 'bg-correct text-white' },
+  done: { text: 'Done', className: 'bg-white/15 text-white/85' },
+  left: { text: 'Left', className: 'bg-white/10 text-white/70' },
+  timedOut: { text: 'Timed out', className: 'bg-white/10 text-white/70' },
+}
+
+/**
+ * Everyone in the game, one row each, in finish order: place, color, name and badge | how far (Board Review's bar) |
+ * the number that decides it, and correct answers. The same rows in Board Review and Last Card.
+ */
+function Standings({ rows }: { rows: readonly Standing[] }) {
+  const anyProgress = rows.some((r) => r.progress)
+  return (
+    <section aria-labelledby="finish-standings-heading" className="space-y-2">
+      <h2 id="finish-standings-heading" className="text-[11px] font-bold tracking-widest text-white/70 uppercase">
+        Standings
+      </h2>
+      <ol className="space-y-2.5">
+        {rows.map((r, i) => (
+          <li
+            key={r.key}
+            className={cn(
+              'grid items-center gap-x-3',
+              anyProgress ? 'grid-cols-[minmax(0,9rem)_minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]',
+            )}
+          >
+            <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span className="w-7 shrink-0 text-xs font-bold text-white/60 tabular-nums">{PLACES[i] ?? `${i + 1}th`}</span>
+              <span className="size-3.5 shrink-0 rounded-full border-2 border-white/80" style={{ backgroundColor: r.color }} aria-hidden />
+              <span className={cn('min-w-0 truncate', r.isMe ? 'font-bold' : 'font-semibold')}>
+                {r.isMe ? 'You' : r.name}
+                {r.isComputer && <span className="font-normal text-white/60"> · computer</span>}
+              </span>
+              {r.badge && (
+                <span className={cn('flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold', BADGE[r.badge].className)}>
+                  {r.badge === 'again' && <Check className="size-3" aria-hidden />}
+                  {BADGE[r.badge].text}
+                </span>
+              )}
+            </span>
+            {anyProgress &&
+              (r.progress ? (
+                <span className="relative h-3 overflow-hidden rounded-full bg-white/15" role="img" aria-label={r.progress.label}>
+                  <span
+                    className="absolute inset-y-0 left-0 rounded-full"
+                    style={{ width: `${Math.max(3, (r.progress.value / r.progress.max) * 100)}%`, backgroundColor: r.color }}
+                  />
+                </span>
+              ) : (
+                <span />
+              ))}
+            <span className="flex items-center justify-end gap-2 text-right text-sm tabular-nums">
+              {r.extra}
+              {r.won && <Trophy className="size-4 text-highlight" aria-label="Winner" />}
+              <span className="font-heading font-bold">{r.metric}</span>
+              <span className="w-10 text-white/70">
+                {r.score ? (
+                  <>
+                    {r.score.correct}/{r.score.answered}
+                    <span className="sr-only"> correct</span>
+                  </>
+                ) : null}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 

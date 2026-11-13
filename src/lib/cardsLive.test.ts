@@ -243,6 +243,13 @@ describe('liveView: what each person sees', () => {
     const left = liveLeave(table(), 'u-ben', seeded(1), T0)
     expect(liveView(left, 'u-ben')).toMatchObject({ seat: -1, hand: [] })
   })
+
+  it('…but still knows the seat they played in (their score on the finish screen), and who sits where', () => {
+    const left = liveLeave(table(), 'u-ben', seeded(1), T0)
+    expect(liveView(left, 'u-ben').playedSeat).toBe(1)
+    expect(liveView(left, 'u-stranger').playedSeat).toBe(-1)
+    expect(liveView(left, 'u-ana').seats.map((s) => s.userId)).toEqual(['u-ana', 'u-ben', null, null])
+  })
 })
 
 describe('whole live games', () => {

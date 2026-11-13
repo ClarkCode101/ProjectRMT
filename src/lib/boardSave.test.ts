@@ -41,4 +41,20 @@ describe('parseSavedBoard', () => {
     expect(bad({ usedQuestionIds: [1] })).toBeNull()
     expect(bad({ bySubject: { CC: { answered: 'x', correct: 0 } } })).toBeNull()
   })
+
+  it('keeps the question up now (with its lifelines), so leaving can’t skip it', () => {
+    const asked: SavedBoard = {
+      ...saved,
+      question: { id: 'q7', lifelines: { ruledOut: [1, 3], secondChance: true, firstWrong: 0, shield: false }, weakTopicName: 'Coagulation' },
+    }
+    expect(parseSavedBoard(JSON.stringify(asked))).toEqual(asked)
+  })
+
+  it('drops a question that isn’t shaped right, or with nothing waiting, but keeps the game', () => {
+    const withQ = (question: unknown, game = saved.game) => parseSavedBoard(JSON.stringify({ ...saved, game, question }))
+    expect(withQ({ id: 'q7', lifelines: { ruledOut: ['x'], secondChance: false, firstWrong: null, shield: false } })).toEqual(saved)
+    expect(withQ({ id: '' })).toEqual(saved)
+    const good = { id: 'q7', lifelines: { ruledOut: [], secondChance: false, firstWrong: null, shield: false }, weakTopicName: null }
+    expect(withQ(good, { ...saved.game, pending: null })?.question).toBeUndefined()
+  })
 })

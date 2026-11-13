@@ -7,9 +7,9 @@ import { FullPageMessage } from '@/components/FullPageMessage'
 import { Button } from '@/components/ui/button'
 import type { RoomChat as RoomChatState } from '@/features/board/chatApi'
 import { ChatSheet, PopupChatRow } from '@/features/board/RoomChat'
-import { teamActions, teamRoomPath, useRefreshTeam } from '@/features/board/teamApi'
-import { FinishChip, GameFinish, type PlayAgain } from '@/features/games/GameFinish'
-import { playAgainLine, playerColor, rematchChoice, type TeamRoom } from '@/lib/boardTeam'
+import { usePlayAgain } from '@/features/games/usePlayAgain'
+import { GameFinish, type Standing, type StandingBadge } from '@/features/games/GameFinish'
+import { playerColor, playingAgainIds, TOKEN_COLORS, type TeamRoom } from '@/lib/boardTeam'
 import { CARD_SUBJECTS, movesFromLog } from '@/lib/cards'
 import type { LiveReveal, LiveView } from '@/lib/cardsLive'
 import { devAnswerLetter } from '@/lib/cardsDev'
@@ -332,78 +332,9 @@ export function CardsLiveRoom({ room, chat }: { room: TeamRoom; chat: RoomChatSt
   )
 }
 
-/**
- * Play again for the group (§15 step 4), as in Board Review: tapping it is the vote. The first to tap makes the next
- * Last Card lobby (and hosts it); everyone else from this game gets an invite and taps the same button to join.
- * Back to Games = "I'm done", so a later Play again doesn't invite her.
- */
-function usePlayAgain(room: TeamRoom) {
-  const navigate = useNavigate()
-  const refresh = useRefreshTeam()
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const choice = rematchChoice(room.rematch, room.me)
-  const wantsLine = playAgainLine(room.rematch, room.me)
-
-  async function playAgain() {
-    setBusy(true)
-    setError(null)
-    try {
-      const nextRoomId = await teamActions.rematch(room.id)
-      if (!nextRoomId) throw new Error('Something went wrong. Try again.')
-      refresh()
-      navigate(teamRoomPath('cards', nextRoomId))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.')
-      refresh(room.id)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function imDone() {
-    setBusy(true)
-    if (choice.kind !== 'back') await teamActions.rematchDone(room.id).catch(() => undefined)
-    refresh()
-    navigate('/games')
-  }
-
-  const gold: PlayAgain | undefined =
-    choice.kind === 'back'
-      ? { label: 'Back to the next game', to: teamRoomPath('cards', choice.roomId) }
-      : choice.kind === 'started'
-        ? undefined
-        : { label: busy ? 'One moment…' : choice.kind === 'join' ? 'Join the next game' : 'Play again', onClick: playAgain, disabled: busy }
-
-  const line =
-    choice.kind === 'started'
-      ? `${choice.hostName}’s next game already started.`
-      : wantsLine
-        ? `${wantsLine}.`
-        : choice.kind === 'start'
-          ? 'You’ll host the next game. Everyone here gets an invite.'
-          : choice.kind === 'join'
-            ? `${choice.hostName} is hosting the next game.`
-            : null
-
-  const below = (
-    <>
-      <p className={cn('text-center text-sm', wantsLine ? 'font-semibold text-correct' : 'text-muted-foreground')} aria-live="polite">
-        {line}
-      </p>
-      {error && (
-        <p role="alert" className="rounded-md border border-wrong/40 bg-wrong-soft px-3 py-2 text-sm">
-          {error}
-        </p>
-      )}
-    </>
-  )
-  return { gold, onBack: imDone, below }
-}
-
 /** The finish screen of a live game: who won, everyone's cards left, her own answers, and Play again. */
 function LiveFinish({ view, room, practiceHref }: { view: LiveView; room: TeamRoom; practiceHref: (code: string) => string }) {
-  const playAgain = usePlayAgain(room)
+  const playAgain = usePlayAgain(room, 'cards')
   const me = view.seat
   const winnerName = view.winner === null ? null : view.winner === me ? 'You' : view.seats[view.winner]?.name
   const headline =
@@ -417,9 +348,38 @@ function LiveFinish({ view, room, practiceHref }: { view: LiveView; room: TeamRo
           ? 'You ran out of cards first.'
           : `${winnerName} ran out of cards first.`
   // Her score: her own seat's (if she left, the seat she had: the stats still hold it).
-  const mySeat = me >= 0 ? me : -1
+  const mySeat = view.playedSeat ?? me
   const stats = mySeat >= 0 ? view.stats[mySeat] : undefined
-  const ranking = view.seats.map((s, i) => ({ ...s, i })).sort((a, b) => a.cards - b.cards)
+  // The winner first, then fewest cards left. People who left keep their name (a computer played on for them).
+  const again = playingAgainIds(room.rematch)
+  const standings: Standing[] = view.seats
+    .map((s, i) => ({ ...s, i }))
+    .sort((a, b) => Number(b.i === view.winner) - Number(a.i === view.winner) || a.cards - b.cards)
+    .map((s) => {
+      const person = s.userId ? room.players.find((p) => p.userId === s.userId) : undefined
+      const badge: StandingBadge | null = !s.userId
+        ? null
+        : again.has(s.userId)
+          ? 'again'
+          : person?.rematchDone
+            ? 'done'
+            : s.gone
+              ? person?.status === 'removed'
+                ? 'timedOut'
+                : 'left'
+              : null
+      return {
+        key: String(s.i),
+        name: s.name,
+        isMe: s.i === mySeat,
+        won: s.i === view.winner,
+        color: TOKEN_COLORS[s.i % TOKEN_COLORS.length],
+        isComputer: !s.userId,
+        badge,
+        metric: `${s.cards} ${s.cards === 1 ? 'card' : 'cards'}`,
+        score: s.userId ? { correct: view.stats[s.i].correct, answered: view.stats[s.i].answered } : undefined,
+      }
+    })
   const codes = [...CARD_SUBJECTS, ...Object.keys(stats?.bySubject ?? {}).filter((c) => !(CARD_SUBJECTS as readonly string[]).includes(c))].filter((c) => stats?.bySubject[c])
 
   return (
@@ -427,12 +387,7 @@ function LiveFinish({ view, room, practiceHref }: { view: LiveView; room: TeamRo
       won={view.winner !== null && view.winner === me}
       headline={headline}
       subline={subline}
-      details={ranking.map((s) => (
-        <FinishChip key={s.i} strong={s.i === me}>
-          {s.i === me ? 'You' : s.name}
-          {s.isComputer ? ' (computer)' : ''} · {s.cards} {s.cards === 1 ? 'card' : 'cards'}
-        </FinishChip>
-      ))}
+      standings={standings}
       correct={stats?.correct ?? 0}
       answered={stats?.answered ?? 0}
       notes={stats && stats.drawnForMistakes > 0 ? [`${stats.drawnForMistakes} ${stats.drawnForMistakes === 1 ? 'card' : 'cards'} drawn for wrong answers`] : []}

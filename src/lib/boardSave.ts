@@ -1,13 +1,26 @@
 // The Board Review game in progress, saved on the device after every turn (PROJECT_PLAN.md §14).
 // One game per account. If it gets lost (e.g. iOS clears storage), only the board position is gone:
 // her answers were already saved as attempts.
-import { BOARD_SIZE, LAYOUTS, LIFELINE_IDS, type BoardGame, type LifelineId, type Pending } from './board'
+import { BOARD_SIZE, LAYOUTS, LIFELINE_IDS, type BoardGame, type LifelineId, type Pending, type QuestionLifelines } from './board'
 
 export type SavedBoard = {
   version: 1
   /** the quiz session (mode 'board') her answers in this game belong to */
   sessionId: string
   game: BoardGame
+  /**
+   * The question up now for what's waiting on the board (the roll, a ladder, a snake), with the lifelines already
+   * used on it. Leaving and coming back shows the SAME question, so she can't skip a hard one (fixed 2026-11-13,
+   * like Last Card's). Cleared once she answers.
+   */
+  question?: SavedQuestion
+}
+
+export type SavedQuestion = {
+  id: string
+  lifelines: QuestionLifelines
+  /** the snake's rescue question came from her weakest topic (shown on the question) */
+  weakTopicName: string | null
 }
 
 const keyFor = (userId: string) => `projectrmt:board:${userId}`
@@ -47,6 +60,23 @@ function isGame(value: unknown): value is BoardGame {
   )
 }
 
+const isIndex = (value: unknown) => isCount(value) && (value as number) < 10
+
+function parseSavedQuestion(value: unknown): SavedQuestion | null {
+  if (typeof value !== 'object' || value === null) return null
+  const q = value as Record<string, unknown>
+  const l = (typeof q.lifelines === 'object' && q.lifelines !== null ? q.lifelines : {}) as Record<string, unknown>
+  if (typeof q.id !== 'string' || q.id === '') return null
+  if (!Array.isArray(l.ruledOut) || !l.ruledOut.every(isIndex)) return null
+  if (typeof l.secondChance !== 'boolean' || typeof l.shield !== 'boolean') return null
+  if (l.firstWrong !== null && !isIndex(l.firstWrong)) return null
+  return {
+    id: q.id,
+    lifelines: { ruledOut: l.ruledOut as number[], secondChance: l.secondChance, firstWrong: l.firstWrong as number | null, shield: l.shield },
+    weakTopicName: typeof q.weakTopicName === 'string' ? q.weakTopicName : null,
+  }
+}
+
 /** Reads a saved game. Anything missing or not shaped right gives null ("no game"), never a crash. */
 export function parseSavedBoard(raw: string | null): SavedBoard | null {
   if (!raw) return null
@@ -59,7 +89,9 @@ export function parseSavedBoard(raw: string | null): SavedBoard | null {
     // Games saved before lifelines (migration 0032) have spent none.
     const game = { layoutId: LAYOUTS[0].id, lifelinesUsed: [], ...saved.game }
     if (!isGame(game)) return null
-    return { version: 1, sessionId: saved.sessionId, game }
+    // A question that isn't shaped right is dropped (a new one is picked), the game is kept.
+    const question = game.pending ? parseSavedQuestion(saved.question) : null
+    return { version: 1, sessionId: saved.sessionId, game, ...(question ? { question } : {}) }
   } catch {
     return null
   }

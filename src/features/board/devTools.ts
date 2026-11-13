@@ -12,3 +12,12 @@ export async function devFinishGame(roomId: string) {
   const { error } = await supabase.rpc('board_dev_finish', { p_room: roomId, p_key: key ?? null })
   if (error) throw new Error(teamErrorMessage(error))
 }
+
+/** The team game's test shortcuts (migration 0045), same lock as devFinishGame. */
+export type BoardDevOp = 'my_turn' | 'ladder' | 'snake' | 'near_end' | 'time_up' | 'lifelines' | 'finish_me'
+
+export async function devBoardAction(roomId: string, op: BoardDevOp) {
+  const key = import.meta.env.VITE_DEV_KEY as string | undefined
+  const { error } = await supabase.rpc('board_dev_action', { p_room: roomId, p_key: key ?? null, p_op: op })
+  if (error) throw new Error(teamErrorMessage(error))
+}

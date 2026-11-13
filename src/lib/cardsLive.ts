@@ -237,7 +237,13 @@ export type LiveQuestionView = { id: string; stem: string; choices: string[]; su
 export type LiveView = {
   /** this person's seat (-1: watching only, e.g. they left) */
   seat: number
-  seats: { name: string; isComputer: boolean; gone: boolean; cards: number }[]
+  /**
+   * The seat this person played in, even after leaving (-1: never played). Their score on the finish screen comes
+   * from it. Missing in views saved before 2026-11-13: use `seat`.
+   */
+  playedSeat?: number
+  /** `userId` is null for computer players (it matches the room's players, for the "Playing again" badges) */
+  seats: { name: string; isComputer: boolean; gone: boolean; cards: number; userId?: string | null }[]
   /** this person's own cards; nobody else's */
   hand: Card[]
   drawPileCount: number
@@ -267,7 +273,14 @@ export function liveView(live: LiveGame, userId: string): LiveView {
   const q = live.question
   return {
     seat,
-    seats: live.seats.map((s, i) => ({ name: s.name, isComputer: s.userId === null || s.gone, gone: s.gone, cards: g.players[i].hand.length })),
+    playedSeat: live.seats.findIndex((s) => s.userId === userId),
+    seats: live.seats.map((s, i) => ({
+      name: s.name,
+      isComputer: s.userId === null || s.gone,
+      gone: s.gone,
+      cards: g.players[i].hand.length,
+      userId: s.userId,
+    })),
     hand: seat === -1 ? [] : g.players[seat].hand,
     drawPileCount: g.drawPile.length,
     discard: g.discard.slice(-3),

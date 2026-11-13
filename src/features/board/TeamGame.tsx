@@ -1,6 +1,7 @@
 import { CloudOff, Dices, MessageCircle } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Dialog } from '@/components/Dialog'
+import { DevPanel } from '@/components/DevPanel'
 import { ExitButton } from '@/components/ExitButton'
 import { heroButtonClass } from '@/components/report'
 import { Button } from '@/components/ui/button'
@@ -16,7 +17,7 @@ import { BoardGrid, type BoardToken } from './BoardGrid'
 import { useNewMessageBubble, type RoomChat as RoomChatState } from './chatApi'
 import { ChatBubble, ChatSheet, PopupChatRow } from './RoomChat'
 import { DevAnswerHint } from './DevAnswerHint'
-import { devFinishGame } from './devTools'
+import { devBoardAction, devFinishGame } from './devTools'
 
 /**
  * The answer reveal closes by itself after this many seconds, so every screen moves on together.
@@ -237,6 +238,8 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props)
   )
 
   const [confirmLeave, setConfirmLeave] = useState(false)
+  /** DEV ONLY (npm run dev): show the right answer under the question (on by default, as before the panel) */
+  const [devShowAnswers, setDevShowAnswers] = useState(true)
   const out = me && me.status !== 'joined'
   const canRoll = myTurn && room.phase === 'roll' && !dice && !reveal && !showOrder && room.status === 'playing'
   const line = eventLine(event, room.me)
@@ -261,15 +264,23 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props)
       {/* ---------- Top: Exit, and the players in turn order (whose turn it is, with the clock) ---------- */}
       <div className="mx-auto flex w-full max-w-5xl shrink-0 items-center gap-3">
         <ExitButton onClick={() => (out ? onLeft() : setConfirmLeave(true))} />
-        {/* npm run dev only: end the game now (the database allows test accounts only; migration 0026) */}
+        {/* npm run dev only: test shortcuts on the database (dev key; migrations 0026, 0027, 0045) */}
         {import.meta.env.DEV && (
-          <button
-            type="button"
-            onClick={() => void act(() => devFinishGame(room.id))}
-            className="h-9 shrink-0 rounded-md border border-dashed border-wrong/60 bg-wrong-soft px-3 font-mono text-xs font-bold"
-          >
-            DEV · Finish game
-          </button>
+          <DevPanel
+            where="team game (database, dev key)"
+            showAnswers={devShowAnswers}
+            onShowAnswers={setDevShowAnswers}
+            actions={[
+              { label: 'My turn now', onClick: () => void act(() => devBoardAction(room.id, 'my_turn')) },
+              { label: 'Me on a ladder (answer right)', onClick: () => void act(() => devBoardAction(room.id, 'ladder')) },
+              { label: 'Me on a snake (answer wrong)', onClick: () => void act(() => devBoardAction(room.id, 'snake')) },
+              { label: 'Me on square 54, my turn', onClick: () => void act(() => devBoardAction(room.id, 'near_end')) },
+              { label: 'Time’s up now (pass this turn)', onClick: () => void act(() => devBoardAction(room.id, 'time_up')) },
+              { label: 'Get all my lifelines back', onClick: () => void act(() => devBoardAction(room.id, 'lifelines')) },
+              { label: 'Finish: I win', onClick: () => void act(() => devBoardAction(room.id, 'finish_me')) },
+              { label: 'Finish: furthest ahead wins', onClick: () => void act(() => devFinishGame(room.id)) },
+            ]}
+          />
         )}
         <ol className="flex min-w-0 flex-1 flex-wrap justify-end gap-1.5" aria-label="Players in turn order">
           {order.map((p) => {
@@ -448,7 +459,7 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props)
           />
         ) : null}
         {/* npm run dev only: the right answer, for live testing (removed from the deployed build) */}
-        {import.meta.env.DEV && current && room.pending && !reveal && !showOrder && (
+        {import.meta.env.DEV && devShowAnswers && current && room.pending && !reveal && !showOrder && (
           <DevAnswerHint questionId={current.id} order={orderFor(current.id, current.choices.length)} />
         )}
       </Dialog>

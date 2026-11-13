@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { CloudOff, Dices } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Dialog } from '@/components/Dialog'
+import { DevAnswerNote, DevPanel } from '@/components/DevPanel'
 import { ExitButton } from '@/components/ExitButton'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { useFocusMode } from '@/components/layoutContext'
@@ -33,6 +34,7 @@ import {
   type Pending,
   type QuestionLifelines,
 } from '@/lib/board'
+import { devBoardAnswerLetter, devFinishBoard, devLifelinesBack, devNearEnd, devRollOnto } from '@/lib/boardDev'
 import { clearBoard, loadBoard, saveBoard, type SavedBoard } from '@/lib/boardSave'
 import { keyToPosition } from '@/lib/choiceKeys'
 import { useOnline } from '@/lib/offline/useOfflineSync'
@@ -62,6 +64,11 @@ type Turn = {
   selectedIndex?: number
   /** Rule out 2, Second chance and Snake shield on this question */
   lifelines: QuestionLifelines
+}
+
+/** The saved game with the question on screen (so leaving and coming back shows the same one). */
+function withQuestion(saved: SavedBoard, turn: Turn): SavedBoard {
+  return { ...saved, question: { id: turn.question.id, lifelines: turn.lifelines, weakTopicName: turn.weakTopicName } }
 }
 
 /** All questions in the subjects (built-in + hers), the same pool as Practice with "All" chosen. */
@@ -113,6 +120,8 @@ export default function BoardPage() {
   const [message, setMessage] = useState<string | null>(null)
   /** bumped to re-open the question popup if the browser closes it early */
   const [dialogKey, setDialogKey] = useState(0)
+  /** DEV ONLY (npm run dev): show the right answer under the question */
+  const [devShowAnswers, setDevShowAnswers] = useState(false)
 
   const game = saved?.game ?? null
   // While the answer shows in the popup, the token waits on its old square; it walks (or climbs, or slides)
@@ -139,6 +148,19 @@ export default function BoardPage() {
     const pending = g.pending
     if (!pending || !pool.data) return null
     const all = pool.data
+    // Coming back to a question she already saw (she left mid-question): the same one, with its lifelines.
+    const again = saved?.question ? all.find((q) => q.id === saved.question?.id) : undefined
+    if (again && saved?.question) {
+      return {
+        purpose: pending,
+        question: again,
+        order: shuffledChoiceOrder(again.choices.length),
+        positionBefore: g.position,
+        weakTopicName: saved.question.weakTopicName,
+        shownAt: Date.now(),
+        lifelines: saved.question.lifelines,
+      }
+    }
     const attempts = history.data ?? []
     const questionHistory = buildHistory(attempts)
     // Questions whose LATEST answer was wrong (same rule as the Mistake notebook).
@@ -181,8 +203,11 @@ export default function BoardPage() {
   useEffect(() => {
     if (!playing || !ready || turn || !game?.pending || game.finished) return
     const next = prepareTurn(game)
-    if (next) setTurn(next)
-    else setMessage('No questions to ask yet. Add some on the Questions page, or go online once to load them.')
+    if (next) {
+      setTurn(next)
+      // saved with the game, so leaving and coming back shows this same question
+      if (saved) persist(withQuestion(saved, next))
+    } else setMessage('No questions to ask yet. Add some on the Questions page, or go online once to load them.')
     // prepareTurn reads the latest data on purpose; it only needs to run when these change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, ready, turn, game?.pending, game?.finished])
@@ -227,9 +252,8 @@ export default function BoardPage() {
     if (!saved || !game || !turn || turn.selectedIndex !== undefined) return
     const block = lifelineBlock(id, { used: game.lifelinesUsed, pendingKind: turn.purpose.kind, choiceCount: turn.question.choices.length, current: turn.lifelines })
     if (block) return
-    persist({ ...saved, game: spendLifeline(game, id) })
     const l = turn.lifelines
-    setTurn({
+    const nextTurn: Turn = {
       ...turn,
       lifelines:
         id === 'rule_out'
@@ -237,7 +261,9 @@ export default function BoardPage() {
           : id === 'second_chance'
             ? { ...l, secondChance: true }
             : { ...l, shield: true },
-    })
+    }
+    persist(withQuestion({ ...saved, game: spendLifeline(game, id) }, nextTurn))
+    setTurn(nextTurn)
   }
 
   function choose(originalIndex: number) {
@@ -246,7 +272,9 @@ export default function BoardPage() {
     if (outcome === 'ignore') return
     // Second chance: the wrong first pick only gets crossed out (nothing saved yet), and she picks once more.
     if (outcome === 'retry') {
-      setTurn({ ...turn, lifelines: { ...turn.lifelines, firstWrong: originalIndex } })
+      const nextTurn: Turn = { ...turn, lifelines: { ...turn.lifelines, firstWrong: originalIndex } }
+      setTurn(nextTurn)
+      persist(withQuestion(saved, nextTurn)) // leaving now and coming back still has the first pick crossed out
       return
     }
     const isCorrect = originalIndex === turn.question.correct_index
@@ -266,7 +294,7 @@ export default function BoardPage() {
       isCorrect,
       shielded: turn.lifelines.shield,
     })
-    persist({ ...saved, game: next })
+    persist({ version: 1, sessionId: saved.sessionId, game: next }) // answered: no question waiting any more
     setTurn({ ...turn, selectedIndex: originalIndex })
     if (next.finished) {
       const seconds = Math.round((Date.now() - Date.parse(next.startedAt)) / 1000)
@@ -277,6 +305,20 @@ export default function BoardPage() {
   function continueTurn() {
     // A ladder or snake waiting: the effect above asks its question next. Otherwise back to the Roll button.
     setTurn(null)
+  }
+
+  /** DEV ONLY: a test shortcut changes the game; any question on screen goes (the next one is picked fresh). */
+  function devApply(change: (g: BoardGame) => BoardGame) {
+    if (!saved) return
+    setTurn(null)
+    setDice(null)
+    setMessage(null)
+    const next = change(saved.game)
+    persist({ version: 1, sessionId: saved.sessionId, game: next })
+    if (next.finished && !saved.game.finished) {
+      const seconds = Math.round((Date.now() - Date.parse(next.startedAt)) / 1000)
+      queueSessionFinish(saved.sessionId, next.correct, Math.max(0, seconds))
+    }
   }
 
   function playAgain() {
@@ -331,12 +373,29 @@ export default function BoardPage() {
     <div className="fixed inset-0 z-20 flex flex-col gap-3 bg-background px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))] md:px-6">
       <h1 className="sr-only">Board Review</h1>
       <div className="mx-auto flex w-full max-w-5xl shrink-0 items-center justify-between gap-3 text-sm">
-        <ExitButton
-          onClick={() => {
-            setPlaying(false)
-            setTurn(null)
-          }}
-        />
+        <div className="flex items-center gap-2">
+          <ExitButton
+            onClick={() => {
+              setPlaying(false)
+              setTurn(null)
+            }}
+          />
+          {/* npm run dev only: test shortcuts (left out of the deployed app) */}
+          {import.meta.env.DEV && (
+            <DevPanel
+              where="solo game (this device)"
+              showAnswers={devShowAnswers}
+              onShowAnswers={setDevShowAnswers}
+              actions={[
+                { label: 'Land on a ladder (answer right)', onClick: () => devApply((g) => devRollOnto(g, 'ladder')) },
+                { label: 'Land on a snake (answer right)', onClick: () => devApply((g) => devRollOnto(g, 'snake')) },
+                { label: 'Go to square 54 (near the end)', onClick: () => devApply(devNearEnd) },
+                { label: 'Get all lifelines back', onClick: () => devApply(devLifelinesBack) },
+                { label: 'Finish: board complete', onClick: () => devApply(devFinishBoard) },
+              ]}
+            />
+          )}
+        </div>
         {/* Follows the token as it walks. */}
         <p className="font-heading font-semibold text-muted-foreground tabular-nums">
           Square <span className="text-foreground">{token}</span> of {BOARD_SIZE} · <span className="text-foreground">{zoneOf(token)}</span>
@@ -425,6 +484,12 @@ export default function BoardPage() {
             onContinue={continueTurn}
             lifelines={turn.lifelines}
             lifelineBar={{ used: game.lifelinesUsed, onUse: applyLifeline }}
+          />
+        )}
+        {/* npm run dev only: the right answer, to answer right or wrong on purpose */}
+        {import.meta.env.DEV && devShowAnswers && turn && turn.selectedIndex === undefined && (
+          <DevAnswerNote
+            text={`Answer: ${devBoardAnswerLetter(turn.question.correct_index, turn.order)}. ${turn.question.choices[turn.question.correct_index] ?? ''}`}
           />
         )}
       </Dialog>

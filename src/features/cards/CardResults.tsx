@@ -1,6 +1,10 @@
+import { TOKEN_COLORS } from '@/lib/boardTeam'
 import { CARD_SUBJECTS, ranking, type CardGame } from '@/lib/cards'
 import { useSubjects } from '@/lib/referenceData'
-import { FinishChip, GameFinish } from '@/features/games/GameFinish'
+import { GameFinish } from '@/features/games/GameFinish'
+
+/** "1 card", "3 cards" (the standings' number in Last Card). */
+const cardsLeft = (count: number) => `${count} ${count === 1 ? 'card' : 'cards'}`
 
 type Props = { game: CardGame; onPlayAgain: () => void }
 
@@ -32,18 +36,20 @@ export function CardResults({ game, onPlayAgain }: Props) {
       won={game.winner === 0}
       headline={headline(game)}
       subline={subline(game)}
-      details={[
-        // Everyone's cards left, fewest first (hers in gold).
-        ...ranking(game).map((seat) => {
-          const player = game.players[seat]
-          const count = player.hand.length
-          return (
-            <FinishChip key={seat} strong={player.isHuman}>
-              {player.isHuman ? 'You' : player.name} · {count} {count === 1 ? 'card' : 'cards'}
-            </FinishChip>
-          )
-        }),
-      ]}
+      // Everyone's cards left, fewest first.
+      standings={ranking(game).map((seat) => {
+        const player = game.players[seat]
+        return {
+          key: String(seat),
+          name: player.name,
+          isMe: player.isHuman,
+          won: game.winner === seat,
+          color: TOKEN_COLORS[seat % TOKEN_COLORS.length],
+          isComputer: !player.isHuman,
+          metric: cardsLeft(player.hand.length),
+          score: player.isHuman ? { correct: game.correct, answered: game.answered } : undefined,
+        }
+      })}
       correct={game.correct}
       answered={game.answered}
       notes={game.drawnForMistakes > 0 ? [`${game.drawnForMistakes} ${game.drawnForMistakes === 1 ? 'card' : 'cards'} drawn for wrong answers`] : []}
