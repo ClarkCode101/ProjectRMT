@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarClock, House, Microscope, SlidersHorizontal, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { CountPicker } from '@/components/CountPicker'
 import { Dialog } from '@/components/Dialog'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { PageHeader } from '@/components/dashboard'
@@ -268,7 +269,7 @@ export default function FlashcardsPage() {
       />
       )}
 
-      {/* ---------- Start: ⚙, new cards each time, and the gold Look button, centered under the lenses ---------- */}
+      {/* ---------- Start: ⚙, the count chip (new cards each time), and the gold Look button, centered under the lenses ---------- */}
       <section aria-label="Start" className="flex shrink-0 flex-col items-center gap-1.5">
         <div className="flex flex-wrap items-center justify-center gap-2">
           <button
@@ -280,30 +281,16 @@ export default function FlashcardsPage() {
             <SlidersHorizontal className="size-5" aria-hidden />
             {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
           </button>
-          {/* How many NEW cards each time she looks (due ones always come): physical-looking keys like Items on Mock exam; the chosen one is pressed in. */}
-          <fieldset disabled={looking} className="flex items-center gap-2">
-            <legend className="sr-only">New cards each time</legend>
-            {/* One word, like "Items" on Mock exam. Not "Items": it's only the NEW cards; due ones are added on top. */}
-            <span aria-hidden title="New cards each time" className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
-              New
-            </span>
-            <div className="flex gap-1.5">
-              {NEW_PER_DAY_CHOICES.map((n) => (
-                <label
-                  key={n}
-                  className={cn(
-                    'flex h-12 min-w-12 cursor-pointer items-center justify-center rounded-lg border font-mono font-bold tabular-nums transition-[translate,box-shadow,background-color] has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
-                    settings.newPerDay === n
-                      ? 'translate-y-0.5 border-primary-deep bg-primary text-white shadow-[inset_0_2px_3px_rgb(0_0_0/0.25)]'
-                      : 'border-primary/20 bg-card text-foreground shadow-[0_3px_0_rgb(7_71_94/0.18)] hover:border-primary/50',
-                  )}
-                >
-                  <input type="radio" name="new-per-day" checked={settings.newPerDay === n} onChange={() => updateSettings({ newPerDay: n })} className="sr-only" />
-                  {n}
-                </label>
-              ))}
-            </div>
-          </fieldset>
+          {/* How many NEW cards each time she looks (due ones always come): the same count chip as Practice and Mock exam.
+              The word is "new", not "items": due cards are added on top. */}
+          <CountPicker
+            value={settings.newPerDay}
+            options={NEW_PER_DAY_CHOICES}
+            onChange={(n) => updateSettings({ newPerDay: n })}
+            unit="new"
+            label="New cards each time"
+            disabled={looking}
+          />
           <button
             type="button"
             className={cn(heroButtonClass, 'w-auto px-7 focus-visible:ring-ring/50')}

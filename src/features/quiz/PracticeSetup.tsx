@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Play, RotateCcw, SlidersHorizontal, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
+import { CountPicker } from '@/components/CountPicker'
 import { Dialog } from '@/components/Dialog'
 import { PageHeader } from '@/components/dashboard'
 import { heroButtonClass } from '@/components/report'
@@ -132,7 +133,7 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
   const busy = starting || pouring
 
   return (
-    // Header, the carousel, Items + Start under it (+ Review again), then one quiet line at the bottom.
+    // Header, the carousel, ⚙ + count chip + Start under it (+ Review again), then one quiet line at the bottom.
     // One screen tall, no scrolling (like Home): the carousel takes whatever height is left.
     // Phone: minus the top bar (3.5rem), main's padding (0.5 + 1.5rem) and the bottom nav (5.5rem).
     // Tablet/computer: minus main's padding (pt-5 + pb-5 = 2.5rem). min-h: on a very short screen it scrolls instead of squashing.
@@ -187,47 +188,25 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
           </button>
         )}
 
-        {/* Items and Start: one row on laptops, stacked on phones (too narrow). */}
-        <div className="flex flex-col items-center gap-3 lg:flex-row lg:gap-6">
-          <fieldset disabled={busy} className="flex items-center gap-3">
-            <legend className="sr-only">Items</legend>
-            <span aria-hidden className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
-              Items
-            </span>
-            <div className="flex gap-2">
-              {ITEM_COUNTS.map((n) => (
-                <label
-                  key={n}
-                  className={cn(
-                    'flex h-10 min-w-14 cursor-pointer items-center justify-center rounded-lg border font-mono font-bold tabular-nums transition-[translate,box-shadow,background-color] has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
-                    itemCount === n
-                      ? 'translate-y-0.5 border-primary-deep bg-primary text-white shadow-[inset_0_2px_3px_rgb(0_0_0/0.25)]'
-                      : 'border-primary/20 bg-card text-foreground shadow-[0_3px_0_rgb(7_71_94/0.18)] hover:border-primary/50',
-                  )}
-                >
-                  <input type="radio" name="practice-count" checked={itemCount === n} onChange={() => setItemCount(n)} className="sr-only" />
-                  {n}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setOptionsOpen(true)}
-              disabled={busy}
-              aria-label={optionsChanged ? 'Question options (changed)' : 'Question options'}
-              className="relative flex size-12 shrink-0 items-center justify-center rounded-lg border bg-card text-muted-foreground outline-none hover:border-primary/50 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
-            >
-              <SlidersHorizontal className="size-5" aria-hidden />
-              {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
-            </button>
-            <button type="submit" disabled={!ready || busy || total === 0} className={cn(heroButtonClass, 'w-auto max-w-full px-7 focus-visible:ring-ring/50')}>
-              <Play className="size-5 shrink-0 fill-current" aria-hidden />
-              <span className="truncate">{busy ? 'Starting…' : `Start ${current?.code ?? ''} · ${sessionItems}`}</span>
-            </button>
-          </div>
+        {/* Same row on Practice, Mock exam and Flashcards: [⚙ options] [count chip] [Start].
+            The chip sits next to Start because it says how many Start will give. */}
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => setOptionsOpen(true)}
+            disabled={busy}
+            aria-label={optionsChanged ? 'Question options (changed)' : 'Question options'}
+            className="relative flex size-12 shrink-0 items-center justify-center rounded-lg border bg-card text-muted-foreground outline-none hover:border-primary/50 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
+            <SlidersHorizontal className="size-5" aria-hidden />
+            {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
+          </button>
+          <CountPicker value={itemCount} options={ITEM_COUNTS} onChange={setItemCount} unit="items" label="Items" disabled={busy} />
+          <button type="submit" disabled={!ready || busy || total === 0} className={cn(heroButtonClass, 'w-auto max-w-full px-7 focus-visible:ring-ring/50')}>
+            <Play className="size-5 shrink-0 fill-current" aria-hidden />
+            {/* The count is in the chip; Start shows it only when there are fewer questions than she picked. */}
+            <span className="truncate">{busy ? 'Starting…' : `Start ${current?.code ?? ''}${sessionItems < itemCount ? ` · ${sessionItems}` : ''}`}</span>
+          </button>
         </div>
 
         {/* What this session is: ALWAYS one line, so the carousel above doesn't grow and shrink. */}
