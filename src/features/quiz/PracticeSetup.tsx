@@ -203,10 +203,24 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
             {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
           </button>
           <CountPicker value={itemCount} options={ITEM_COUNTS} onChange={setItemCount} unit="items" label="Items" disabled={busy} />
-          <button type="submit" disabled={!ready || busy || total === 0} className={cn(heroButtonClass, 'w-auto max-w-full px-7 focus-visible:ring-ring/50')}>
+          {/* On a phone just "Start" (the tube above says which subject), same as Mock exam. */}
+          <button
+            type="submit"
+            disabled={!ready || busy || total === 0}
+            aria-label={busy ? undefined : `Start ${current?.code ?? ''}`}
+            className={cn(heroButtonClass, 'w-auto max-w-full px-5 whitespace-nowrap focus-visible:ring-ring/50 sm:px-7')}
+          >
             <Play className="size-5 shrink-0 fill-current" aria-hidden />
-            {/* The count is in the chip; Start shows it only when there are fewer questions than she picked. */}
-            <span className="truncate">{busy ? 'Starting…' : `Start ${current?.code ?? ''}${sessionItems < itemCount ? ` · ${sessionItems}` : ''}`}</span>
+            {/* The count is in the chip; Start shows it only when there are fewer questions than she picked (computer/tablet only). */}
+            <span className="truncate">
+              {busy ? (
+                'Starting…'
+              ) : (
+                <>
+                  Start<span className="max-sm:hidden">{` ${current?.code ?? ''}${sessionItems < itemCount ? ` · ${sessionItems}` : ''}`}</span>
+                </>
+              )}
+            </span>
           </button>
         </div>
 

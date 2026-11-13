@@ -293,12 +293,22 @@ export default function FlashcardsPage() {
           />
           <button
             type="button"
-            className={cn(heroButtonClass, 'w-auto px-7 focus-visible:ring-ring/50')}
+            className={cn(heroButtonClass, 'w-auto px-5 whitespace-nowrap focus-visible:ring-ring/50 sm:px-7')}
             disabled={total === 0 || looking}
             onClick={look}
+            aria-label={looking || total === 0 ? undefined : `Look · ${plural(total, 'card')}`}
           >
             <Microscope className="size-5" aria-hidden />
-            {looking ? 'Focusing…' : total === 0 ? 'Nothing to look at' : `Look · ${plural(total, 'card')}`}
+            {/* On a phone just "Look" (the count chip beside it already says how many). */}
+            {looking ? (
+              'Focusing…'
+            ) : total === 0 ? (
+              'Nothing to look at'
+            ) : (
+              <span>
+                Look<span className="max-sm:hidden">{` · ${plural(total, 'card')}`}</span>
+              </span>
+            )}
           </button>
         </div>
         {/* always one line (h-4), so the lenses above don't change size */}
