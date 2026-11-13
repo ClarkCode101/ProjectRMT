@@ -226,23 +226,31 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
   const sheetsBehind = pausedOther || complete ? 0 : Math.min(2, papers.length - done - 1)
 
   return (
-    // At least one screen tall (same as Practice): the big paper takes whatever height is left.
+    // One screen tall, no scrolling (same as Practice): the big paper takes whatever height is left.
     // Phone: minus the top bar (3.5rem), main's padding (0.5 + 1.5rem) and the bottom nav (5.5rem).
-    // Tablet/computer: minus main's padding (pt-5 + pb-5 = 2.5rem).
-    // min-h, not h (fixed 2026-11-13): the cover is as tall as its content, so on a short phone a fixed height made it
-    // spill over the title and the paper chips. Now the page grows and scrolls a little instead; nothing overlaps.
+    // Tablet/computer: minus main's padding (pt-5 + pb-5 = 2.5rem). min-h: on a very short screen it scrolls instead of squashing.
     <form
       onSubmit={handleSubmit}
-      className="mx-auto flex min-h-[max(34rem,calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom)))] max-w-5xl flex-col gap-3 md:min-h-[max(36rem,calc(100dvh-2.5rem))]"
+      className="mx-auto flex h-[calc(100dvh-11rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] min-h-88 max-w-5xl flex-col gap-3 md:h-[calc(100dvh-2.5rem)] md:min-h-144"
     >
-      <PageHeader title="Mock exam" subtitle="The full board: six papers, one subject each. Timed like the real exam." />
+      {/* a phone gets a shorter subtitle: one line instead of two */}
+      <PageHeader
+        title="Mock exam"
+        subtitle={
+          <>
+            <span className="max-sm:hidden">The full board: six papers, one subject each. Timed like the real exam.</span>
+            <span className="sm:hidden">Six papers, timed like the real board.</span>
+          </>
+        }
+      />
 
       {/* ---------- The hero: the paper she takes next, as one big exam paper ---------- */}
-      {/* overflow-x-clip: the paper sliding out goes past the edge without making the page scroll sideways */}
-      {/* No min-h-0 here: the section is never shorter than the cover, so the cover can't spill over its neighbors. */}
-      <section aria-label="Next paper" aria-live="polite" className="flex flex-1 items-center justify-center overflow-x-clip px-3 py-3 sm:px-6">
-        {/* The cover's height comes from its content (so nothing gets cut off); the plain paper is a fixed size. */}
-        <div className={cn('relative w-full', showCover ? 'max-w-sm md:max-w-md' : 'h-80 max-w-xs md:h-104 md:max-w-sm')}>
+      {/* overflow-x-clip: the paper sliding out goes past the edge without making the page scroll sideways.
+          [container-type:size]: the cover reads how tall this room is and leaves out what doesn't fit (PaperCover),
+          so it never spills over the title or the chips (fixed 2026-11-13: on phones it did). */}
+      <section aria-label="Next paper" aria-live="polite" className="flex min-h-0 flex-1 items-center justify-center overflow-x-clip px-3 py-3 [container-type:size] sm:px-6">
+        {/* The cover's height comes from its content (it drops parts to fit); the plain paper fills the room. */}
+        <div className={cn('relative w-full', showCover ? 'max-w-sm md:max-w-md' : 'h-full max-h-104 max-w-xs md:max-w-sm')}>
           {/* the papers still to come, peeking out behind */}
           {sheetsBehind >= 2 && <span aria-hidden className="absolute inset-0 rotate-3 rounded-xl border border-primary/10 bg-card/70 shadow-sm" />}
           {sheetsBehind >= 1 && <span aria-hidden className="absolute inset-0 -rotate-2 rounded-xl border border-primary/15 bg-card/90 shadow-sm" />}
@@ -400,6 +408,8 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
                 options={BOARD_ITEM_COUNTS}
                 onChange={setPerSubject}
                 unit="per paper"
+                // narrow phones (iPhone SE, small Androids): no "per paper", so the chip and Start share one row
+                unitClassName="max-[380px]:hidden"
                 label="Items per paper"
                 detail={(n) => formatClock(timeLimitSec(n))}
                 detailIcon={Timer}
@@ -412,19 +422,28 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
                 See board result
               </button>
             ) : (
+              // On a phone just "Start" (the paper above says which subject), so it fits next to the count chip.
               <button
                 type="submit"
-                className={cn(heroButtonClass, 'w-auto px-7 whitespace-nowrap focus-visible:ring-ring/50')}
+                aria-label={busy ? undefined : `Start ${top?.code ?? ''}`}
+                className={cn(heroButtonClass, 'w-auto px-5 whitespace-nowrap focus-visible:ring-ring/50 sm:px-7')}
                 disabled={busy || available === 0 || top === null}
               >
                 <Play className="size-5 fill-current" aria-hidden />
-                {busy ? 'Starting…' : `Start ${top?.code ?? ''}`}
+                {busy ? (
+                  'Starting…'
+                ) : (
+                  <span>
+                    Start<span className="max-sm:hidden"> {top?.code ?? ''}</span>
+                  </span>
+                )}
               </button>
             )}
           </div>
-          {/* ALWAYS one line (h-4), so the paper above doesn't move. Only what isn't shown anywhere else:
-              during a run, the items and time (the chip is gone then); and a warning when a subject has too few questions. */}
-          <p className="flex h-4 items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
+          {/* ALWAYS one line (h-4), so the paper above doesn't move (on a phone it's left out while empty: room is short).
+              Only what isn't shown anywhere else: during a run, the items and time (the chip is gone then);
+              and a warning when a subject has too few questions. */}
+          <p className="flex h-4 items-center gap-1.5 text-xs text-muted-foreground tabular-nums max-sm:empty:hidden">
             {!complete && (
               <>
                 {available !== null && available < items && <Info className="size-3.5 shrink-0 text-[#9A5B00]" aria-hidden />}
@@ -441,7 +460,8 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
       )}
 
       {/* ---------- The run's rules: one quiet line under it all (plain text, not things to tap) ---------- */}
-      <div className="w-full shrink-0 border-t border-dashed pt-3">
+      {/* Not on a phone: there it took two lines the paper needs (the result screen spells out the passing rule). */}
+      <div className="w-full shrink-0 border-t border-dashed pt-3 max-sm:hidden">
         <h2 className="sr-only">Run protocol</h2>
         <ul className="flex flex-wrap justify-center gap-x-6 gap-y-1.5 text-xs text-muted-foreground sm:text-sm">
           {RULES.map(({ icon: Icon, text }) => (

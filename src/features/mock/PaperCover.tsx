@@ -18,6 +18,17 @@ const TOPICS_SHOWN = 4
 /** On a phone (below `sm`), only this many: one line, so the cover fits the screen with the chips and Start under it. */
 const TOPICS_SHOWN_PHONE = 2
 
+// When the room is short, the cover leaves parts out, least needed first (the page never scrolls; see BoardSetup).
+// These read the height of the room the cover sits in (its section is a size container), not the screen's.
+/** below this room height: no COVERS topics */
+const FIT_NO_TOPICS = '[@container(max-height:24rem)]:hidden'
+/** below this: no NAME / DATE line either */
+const FIT_NO_NAME = '[@container(max-height:20rem)]:hidden'
+/** below this: no "Tap to pick what's first" either (the chips under the paper still switch papers) */
+const FIT_NO_HINT = '[@container(max-height:16rem)]:hidden'
+/** below this: no barcode or weight line either (an iPhone SE in Safari) */
+const FIT_NO_BARCODE = '[@container(max-height:13rem)]:hidden'
+
 /** A made-up barcode: bar widths come from the text, so the same booklet always gets the same bars. */
 function Barcode({ text, className }: { text: string; className?: string }) {
   let hash = 0
@@ -97,20 +108,20 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
       <div className="flex shrink-0 items-start justify-between gap-3 px-4 pt-3 sm:px-5">
         <div className="min-w-0">
           <p className="text-[11px] font-bold tracking-widest uppercase">MTLE Mock · Full Board</p>
-          <Barcode text={`${code}-${number}`} className="mt-1.5 h-5 w-28 text-foreground/70" />
+          <Barcode text={`${code}-${number}`} className={cn('mt-1.5 h-5 w-28 text-foreground/70', FIT_NO_BARCODE)} />
         </div>
         <div className="shrink-0 text-right">
           <p className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
             Booklet <span className="text-foreground tabular-nums">{number}</span>/{total}
           </p>
-          <p className="mt-1.5 text-[11px] font-bold tracking-widest text-muted-foreground uppercase tabular-nums" title={`${weight}% of the general average`}>
+          <p className={cn('mt-1.5 text-[11px] font-bold tracking-widest text-muted-foreground uppercase tabular-nums', FIT_NO_BARCODE)} title={`${weight}% of the general average`}>
             {weight}% weight
           </p>
         </div>
       </div>
 
       {/* ---------- Name and date, already filled in ---------- */}
-      <div className="mx-4 mt-2.5 flex shrink-0 gap-4 border-y border-dashed border-foreground/15 py-2 sm:mx-5 sm:mt-3 sm:py-2.5">
+      <div className={cn('mx-4 mt-2.5 flex shrink-0 gap-4 border-y border-dashed border-foreground/15 py-2 sm:mx-5 sm:mt-3 sm:py-2.5', FIT_NO_NAME)}>
         <Field label="Name" className="flex-1">
           {studentName ?? ' '}
         </Field>
@@ -132,7 +143,7 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
         </div>
 
         {shown.length > 0 && (
-          <div>
+          <div className={FIT_NO_TOPICS}>
             <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
               Covers{anyTried && <span className="font-semibold normal-case tracking-normal"> · your scores</span>}
             </p>
@@ -171,7 +182,7 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
 
         {/* On an iPad there's no hover, so say it: the paper itself is what you tap to switch. */}
         {tapHint && (
-          <p aria-hidden className="flex items-center justify-end gap-1 text-xs font-semibold text-primary">
+          <p aria-hidden className={cn('flex items-center justify-end gap-1 text-xs font-semibold text-primary', FIT_NO_HINT)}>
             <Hand className="size-3.5" />
             Tap to pick what's first
           </p>

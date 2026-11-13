@@ -10,6 +10,8 @@ type Props = {
   onChange: (n: number) => void
   /** The word after the number: "items", "new". */
   unit: string
+  /** Extra classes for that word in the chip, e.g. to hide it on a narrow phone (screen readers still get `label`). */
+  unitClassName?: string
   /** What the number is, for screen readers: "Items", "New cards each time". */
   label: string
   /** Extra info after the number, in the chip and in each choice (e.g. Mock exam's time limit "1:00:00"). */
@@ -25,7 +27,7 @@ type Props = {
  * [⚙ options] [count chip] [Start].
  * The menu opens UPWARD, because the row sits near the bottom of the screen.
  */
-export function CountPicker({ value, options, onChange, unit, label, detail, detailIcon: DetailIcon, disabled = false }: Props) {
+export function CountPicker({ value, options, onChange, unit, unitClassName, label, detail, detailIcon: DetailIcon, disabled = false }: Props) {
   const [open, setOpen] = useState(false)
   const chipRef = useRef<HTMLButtonElement>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -71,7 +73,7 @@ export function CountPicker({ value, options, onChange, unit, label, detail, det
         )}
       >
         <span className="font-mono text-lg font-bold tabular-nums">{value}</span>
-        <span className="text-muted-foreground">{unit}</span>
+        <span className={cn('text-muted-foreground', unitClassName)}>{unit}</span>
         {detail && (
           <>
             <span aria-hidden className="h-5 w-px bg-border" />
