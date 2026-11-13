@@ -1,23 +1,78 @@
 import { describe, expect, it } from 'vitest'
 import { newCardGame, type Card, type CardGame } from '@/lib/cards'
-import { CARD_WIDTH, cardStep, handState } from './handState'
+import { CARD_WIDTH, handLayout, handState, SMALL_CARD_WIDTH, TAP_MIN_MOUSE, TAP_MIN_TOUCH, TAP_STEP, TIGHT_STEP } from './handState'
 
-describe('cardStep', () => {
+/** n cards; the ones at `tap` can be tapped */
+const hand = (n: number, tap: number[] = []) => Array.from({ length: n }, (_, i) => tap.includes(i))
+const total = (steps: number[]) => steps.reduce((a, b) => a + b, 0)
+
+describe('handLayout', () => {
   it('a few cards sit side by side with a small gap', () => {
-    expect(cardStep(3, 800)).toEqual({ step: CARD_WIDTH + 8, fits: true })
-    expect(cardStep(1, 0)).toEqual({ step: CARD_WIDTH + 8, fits: true })
+    expect(handLayout(hand(3), 800)).toEqual({ size: 'lg', cardWidth: CARD_WIDTH, steps: [0, CARD_WIDTH + 8, CARD_WIDTH + 8], fits: true })
+    expect(handLayout(hand(1), 0).steps).toEqual([0])
   })
 
-  it('more cards overlap just enough to fit the width', () => {
-    const { step, fits } = cardStep(8, 540)
+  it('a phone gets the smaller cards', () => {
+    expect(handLayout(hand(5), 350)).toMatchObject({ size: 'md', cardWidth: SMALL_CARD_WIDTH })
+    expect(handLayout(hand(5), 700)).toMatchObject({ size: 'lg', cardWidth: CARD_WIDTH })
+  })
+
+  it('with nothing to tap, the cards overlap evenly, just enough to fit the width', () => {
+    const { steps, fits, cardWidth } = handLayout(hand(8), 600)
     expect(fits).toBe(true)
-    expect(step).toBeLessThan(CARD_WIDTH)
+    expect(new Set(steps.slice(1)).size).toBe(1)
     // the last card's right edge (plus room for the tilt) lands inside the width
-    expect(24 + CARD_WIDTH + 7 * step).toBeCloseTo(540)
+    expect(24 + cardWidth + total(steps)).toBeCloseTo(600)
   })
 
-  it('past the tightest overlap the row scrolls instead', () => {
-    expect(cardStep(20, 400)).toEqual({ step: 32, fits: false })
+  it('on a phone, the cards she can tap keep a thumb-sized strip and the others squeeze up', () => {
+    // 10 cards on a 350px phone hand: evenly that's under 27px each, too thin to tap
+    const { steps, fits, cardWidth } = handLayout(hand(10, [2, 6]), 350)
+    expect(fits).toBe(true)
+    expect(steps[3]).toBeGreaterThanOrEqual(TAP_STEP) // card 2 shows steps[3]
+    expect(steps[7]).toBeGreaterThanOrEqual(TAP_STEP) // card 6
+    expect(steps[1]).toBeGreaterThanOrEqual(TIGHT_STEP)
+    expect(steps[1]).toBeLessThan(TAP_STEP)
+    expect(24 + cardWidth + total(steps)).toBeCloseTo(350)
+  })
+
+  it('a tappable last card needs no extra room (it already shows whole)', () => {
+    const { steps } = handLayout(hand(10, [9]), 350)
+    expect(new Set(steps.slice(1)).size).toBe(1)
+  })
+
+  it('when there is room for everyone, nothing changes on her turn', () => {
+    expect(handLayout(hand(6, [1]), 900)).toEqual(handLayout(hand(6), 900))
+  })
+
+  it('a crowded laptop hand squeezes instead of scrolling (18 cards, 12 that fit)', () => {
+    const tap = [0, 2, 3, 4, 5, 7, 10, 11, 12, 13, 15, 16]
+    const mouse = handLayout(hand(18, tap), 800, false)
+    expect(mouse.fits).toBe(true)
+    expect(Math.min(...tap.map((i) => mouse.steps[i + 1]))).toBeGreaterThanOrEqual(TAP_MIN_MOUSE)
+    expect(mouse.steps[2]).toBeGreaterThanOrEqual(TIGHT_STEP) // card 1 doesn't fit: squeezed, number still shows
+    expect(24 + mouse.cardWidth + total(mouse.steps)).toBeCloseTo(800)
+  })
+
+  it('a finger keeps a wider strip than a mouse on the cards it can tap', () => {
+    const tap = [0, 2, 3, 4, 5, 7, 10, 11, 12, 13, 15, 16]
+    const finger = handLayout(hand(18, tap), 900, true)
+    expect(finger.fits).toBe(true)
+    expect(Math.min(...tap.map((i) => finger.steps[i + 1]))).toBeGreaterThanOrEqual(TAP_MIN_TOUCH)
+  })
+
+  it("someone else's turn: a big hand squeezes all the way instead of scrolling", () => {
+    const { steps, fits } = handLayout(hand(25), 700)
+    expect(fits).toBe(true)
+    expect(steps[1]).toBeGreaterThanOrEqual(TIGHT_STEP)
+  })
+
+  it('only when even that is too wide does the row scroll (20 cards on a phone)', () => {
+    expect(handLayout(hand(20), 400)).toMatchObject({ fits: false })
+    const crowded = handLayout(hand(20, [0, 5]), 400)
+    expect(crowded.fits).toBe(false)
+    expect(crowded.steps[1]).toBe(TAP_MIN_TOUCH) // still big enough to tap while scrolling
+    expect(crowded.steps[2]).toBe(TIGHT_STEP)
   })
 })
 
