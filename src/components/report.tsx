@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { PASSING_LABEL, PASSING_RATE } from '@/lib/quiz'
 import { cn } from '@/lib/utils'
 
@@ -94,22 +94,51 @@ export const heroButtonClass =
   'flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-highlight px-6 font-heading text-lg font-bold text-foreground outline-none hover:brightness-105 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px disabled:opacity-60 sm:inline-flex sm:w-auto'
 
 /**
- * The ProjectRMT mark: a results sheet with a gold "passed" check, on the deep blue tile.
+ * The ProjectRMT mark: a cyan slime mascot with lab goggles pushed up on its forehead, wearing a lab coat
+ * with a gold RMT ID badge, on the deep blue rounded tile.
  * Same drawing as public/favicon.svg and the three SVGs in public/icons/ that the app icon PNGs are made from:
- * app-icon.svg (icon-192 / icon-512), app-icon-maskable.svg (Android cuts its own shape, so it's drawn smaller,
- * inside the safe zone) and app-icon-apple.svg (apple-touch-icon: a full square, iOS rounds the corners itself).
- * Keep them in sync, and re-export the PNGs when the drawing changes.
+ * app-icon.svg (icon-192 / icon-512), app-icon-maskable.svg (Android cuts its own shape, so the slime is drawn
+ * smaller, keeping goggles and face inside the safe zone) and app-icon-apple.svg (apple-touch-icon: a full square,
+ * iOS rounds the corners itself). Keep them in sync, and re-export the PNGs when the drawing changes.
  */
 export function Logo({ className }: { className?: string }) {
+  // Each Logo needs its own clip id, or two logos on one page would share (and fight over) one.
+  const clipId = useId()
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={cn('size-8 shrink-0', className)}>
-      <rect width="32" height="32" rx="8" fill="#07475E" />
-      <rect x="7.5" y="5.5" width="15" height="20" rx="2.5" fill="#FFFFFF" />
-      <rect x="10.5" y="10" width="9" height="2.2" rx="1.1" fill="#0B6382" />
-      <rect x="10.5" y="14.5" width="6" height="1.8" rx="0.9" fill="#B4C0CA" />
-      <rect x="10.5" y="18.5" width="4.5" height="1.8" rx="0.9" fill="#B4C0CA" />
-      <circle cx="22.5" cy="22.5" r="6" fill="#E9A23B" stroke="#07475E" strokeWidth="2" />
-      <path d="M19.8 22.6l1.8 1.8 3.4-3.7" fill="none" stroke="#17222C" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 512 512" aria-hidden className={cn('size-8 shrink-0', className)}>
+      <clipPath id={clipId}>
+        <rect width="512" height="512" rx="128" />
+      </clipPath>
+      <g clipPath={`url(#${clipId})`}>
+        <rect width="512" height="512" fill="#07475E" />
+        {/* slime body + right-side shade */}
+        <path d="M92 540C70 360 130 140 256 136C382 140 442 360 420 540Z" fill="#4FC1D6" />
+        <path d="M364 214C404 280 426 400 420 540H384C392 420 386 300 364 214Z" fill="#3AA8BF" />
+        {/* safety goggles on the forehead */}
+        <path d="M104 236C170 206 342 206 408 236L404 262C340 236 172 236 108 262Z" fill="#0E3445" />
+        <rect x="160" y="196" width="84" height="64" rx="26" fill="#0E3445" />
+        <rect x="268" y="196" width="84" height="64" rx="26" fill="#0E3445" />
+        <rect x="170" y="206" width="64" height="44" rx="18" fill="#BFEFF8" />
+        <rect x="278" y="206" width="64" height="44" rx="18" fill="#BFEFF8" />
+        <path d="M184 220L198 212M292 220L306 212" stroke="#FFFFFF" strokeWidth="7" strokeLinecap="round" />
+        <rect x="240" y="218" width="32" height="14" rx="5" fill="#0E3445" />
+        {/* face */}
+        <ellipse cx="220" cy="314" rx="16" ry="21" fill="#0E3445" />
+        <ellipse cx="292" cy="314" rx="16" ry="21" fill="#0E3445" />
+        <circle cx="225" cy="306" r="5.5" fill="#FFFFFF" />
+        <circle cx="297" cy="306" r="5.5" fill="#FFFFFF" />
+        <path d="M240 350Q256 364 272 350" fill="none" stroke="#0E3445" strokeWidth="8" strokeLinecap="round" />
+        {/* lab coat with folded collar */}
+        <path d="M40 540C48 450 104 404 184 392L236 460L230 540Z" fill="#FFFFFF" />
+        <path d="M472 540C464 450 408 404 328 392L276 460L282 540Z" fill="#FFFFFF" />
+        <path d="M184 392L160 356L234 424L236 460Z" fill="#DCE6EC" />
+        <path d="M328 392L352 356L278 424L276 460Z" fill="#DCE6EC" />
+        {/* gold RMT ID badge */}
+        <rect x="330" y="440" width="62" height="40" rx="7" fill="#E9A23B" />
+        <rect x="338" y="450" width="22" height="20" rx="3" fill="#FFFFFF" />
+        <rect x="366" y="452" width="18" height="5" rx="2.5" fill="#FFFFFF" />
+        <rect x="366" y="463" width="12" height="5" rx="2.5" fill="#FFFFFF" />
+      </g>
     </svg>
   )
 }
