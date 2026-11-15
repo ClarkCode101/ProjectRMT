@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AppLayout } from '@/components/AppLayout'
 import { FullPageMessage } from '@/components/FullPageMessage'
+import { RouteError } from '@/components/RouteError'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 
 // Each page is its own download (lazy), so the first load stays small on mobile data.
@@ -23,9 +24,11 @@ const QuestionEditorPage = lazy(() => import('@/features/questions/QuestionEdito
 const QuestionUploadPage = lazy(() => import('@/features/questions/QuestionUploadPage'))
 const CommunityPage = lazy(() => import('@/features/community/CommunityPage'))
 
+// errorElement: our own "ProjectRMT was updated / Reload" screen instead of the router's plain error page.
 export const router = createBrowserRouter([
   {
     path: '/login',
+    errorElement: <RouteError />,
     element: (
       <Suspense fallback={<FullPageMessage>Loading…</FullPageMessage>}>
         <LoginPage />
@@ -35,6 +38,7 @@ export const router = createBrowserRouter([
   {
     // Public, no login: Google needs a privacy policy link for "Continue with Google".
     path: '/privacy',
+    errorElement: <RouteError />,
     element: (
       <Suspense fallback={<FullPageMessage>Loading…</FullPageMessage>}>
         <PrivacyPage />
@@ -43,6 +47,7 @@ export const router = createBrowserRouter([
   },
   {
     // Everything inside here needs a logged-in user.
+    errorElement: <RouteError />,
     element: (
       <RequireAuth>
         <AppLayout />

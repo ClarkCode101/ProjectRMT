@@ -12,6 +12,7 @@ const CHECK_EVERY_MS = 60 * 60 * 1000
 
 let ready = false
 let updateWorker: ((reloadPage?: boolean) => Promise<void>) | null = null
+let workerRegistration: ServiceWorkerRegistration | undefined
 const listeners = new Set<() => void>()
 
 function setReady(value: boolean) {
@@ -32,6 +33,7 @@ export function startAppUpdates() {
     },
     onRegisteredSW(_url, registration) {
       if (!registration) return
+      workerRegistration = registration
       const check = () => {
         if (navigator.onLine) registration.update().catch(() => {}) // offline or server hiccup: try again later
       }
@@ -45,12 +47,27 @@ export function startAppUpdates() {
   })
 }
 
+/**
+ * Reload into the newest version. If a new version is downloaded and waiting, switch to it first:
+ * a plain reload would open the OLD version again (the waiting one only starts when told to, or on a full close).
+ * Used by the banner's Refresh, by the auto-reload when a screen's file is missing, and by the error page.
+ */
+export function switchToNewVersion() {
+  if (workerRegistration?.waiting && updateWorker) {
+    void updateWorker(true) // tells it to take over, then reloads
+    // Safety net: if the switch never reports back, reload anyway.
+    setTimeout(() => window.location.reload(), 3000)
+  } else {
+    window.location.reload()
+  }
+}
+
 /** ready = a new version is downloaded and waiting. refresh() switches to it (the page reloads). later() hides the banner. */
 export function useAppUpdate() {
   const isReady = useSyncExternalStore(subscribe, () => ready)
   return {
     ready: isReady,
-    refresh: () => updateWorker?.(true),
+    refresh: switchToNewVersion,
     later: () => setReady(false),
   }
 }

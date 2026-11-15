@@ -18,6 +18,15 @@ export function shouldReload(lastReloadAt: number | null, now: number, online: b
   return lastReloadAt === null || now - lastReloadAt > RELOAD_COOLDOWN_MS
 }
 
+/**
+ * A screen's file couldn't be downloaded. Almost always: a new version was pushed while this page was open,
+ * and the old file it asked for is gone. Chrome, Safari and Firefox each word it differently.
+ */
+export function isMissingFileError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? '')
+  return /dynamically imported module|importing a module script failed|unable to preload/i.test(message)
+}
+
 function readLastReload(): number | null {
   try {
     const value = Number(sessionStorage.getItem(LAST_RELOAD_KEY))
@@ -27,8 +36,11 @@ function readLastReload(): number | null {
   }
 }
 
-/** Call once at startup. */
-export function reloadOnNewVersion() {
+/**
+ * Call once at startup. `reload` should open the NEWEST version (main.tsx passes switchToNewVersion,
+ * which first switches to a downloaded-and-waiting version; a plain reload would reopen the old one).
+ */
+export function reloadOnNewVersion(reload: () => void = () => window.location.reload()) {
   // Vite fires this when a screen's file can't be downloaded.
   window.addEventListener('vite:preloadError', (event) => {
     const now = Date.now()
@@ -39,6 +51,6 @@ export function reloadOnNewVersion() {
     } catch {
       // Storage blocked: still reload. The worst case is one extra reload.
     }
-    window.location.reload()
+    reload()
   })
 }
