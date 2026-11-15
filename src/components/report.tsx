@@ -97,9 +97,10 @@ export const heroButtonClass =
  * The ProjectRMT mark: a cyan slime mascot with lab goggles pushed up on its forehead, wearing a lab coat
  * with a gold RMT ID badge, on the deep blue rounded tile.
  * Same drawing as public/favicon.svg and the three SVGs in public/icons/ that the app icon PNGs are made from:
- * app-icon.svg (icon-192 / icon-512), app-icon-maskable.svg (Android cuts its own shape, so the slime is drawn
+ * app-icon.svg (icon-192-v2 / icon-512-v2), app-icon-maskable.svg (Android cuts its own shape, so the slime is drawn
  * smaller, keeping goggles and face inside the safe zone) and app-icon-apple.svg (apple-touch-icon: a full square,
- * iOS rounds the corners itself). Keep them in sync, and re-export the PNGs when the drawing changes.
+ * iOS rounds the corners itself). Keep them in sync. When the drawing changes, re-export the PNGs under a new -vN name (and update
+ * vite.config.ts, index.html, push-sw.js) so phones that already installed the app fetch the new icon.
  */
 export function Logo({ className }: { className?: string }) {
   // Each Logo needs its own clip id, or two logos on one page would share (and fight over) one.

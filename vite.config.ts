@@ -13,7 +13,7 @@ export default defineConfig({
     VitePWA({
       // A new version is picked up by itself the next time the app is opened.
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
+      includeAssets: ['favicon.svg', 'icons/apple-touch-icon-v2.png'],
       manifest: {
         name: 'ProjectRMT',
         short_name: 'ProjectRMT',
@@ -24,10 +24,10 @@ export default defineConfig({
         background_color: '#F3F6F8',
         theme_color: '#0B6382',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icons/icon-192-v2.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icons/icon-512-v2.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
           // Android cuts its own shape (circle, squircle…) out of this one, so its drawing is smaller, inside the safe zone.
-          { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: '/icons/icon-maskable-512-v2.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

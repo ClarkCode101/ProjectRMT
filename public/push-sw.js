@@ -14,8 +14,8 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(message.title, {
       body: message.body,
       tag: message.tag, // the same request twice replaces itself instead of stacking
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      icon: '/icons/icon-192-v2.png',
+      badge: '/icons/icon-192-v2.png',
       data: { url: message.url },
     }),
   )
