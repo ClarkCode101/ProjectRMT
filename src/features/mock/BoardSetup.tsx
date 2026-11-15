@@ -422,7 +422,7 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
                 See board result
               </button>
             ) : (
-              // On a phone just "Start" (the paper above says which subject), so it fits next to the count chip.
+              // Just "Start" on every screen (the paper above says which subject), same as Practice and Flashcards.
               <button
                 type="submit"
                 aria-label={busy ? undefined : `Start ${top?.code ?? ''}`}
@@ -430,13 +430,7 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
                 disabled={busy || available === 0 || top === null}
               >
                 <Play className="size-5 fill-current" aria-hidden />
-                {busy ? (
-                  'Starting…'
-                ) : (
-                  <span>
-                    Start<span className="max-sm:hidden"> {top?.code ?? ''}</span>
-                  </span>
-                )}
+                {busy ? 'Starting…' : 'Start'}
               </button>
             )}
           </div>

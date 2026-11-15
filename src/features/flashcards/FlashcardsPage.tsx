@@ -299,16 +299,8 @@ export default function FlashcardsPage() {
             aria-label={looking || total === 0 ? undefined : `Look · ${plural(total, 'card')}`}
           >
             <Microscope className="size-5" aria-hidden />
-            {/* On a phone just "Look" (the count chip beside it already says how many). */}
-            {looking ? (
-              'Focusing…'
-            ) : total === 0 ? (
-              'Nothing to look at'
-            ) : (
-              <span>
-                Look<span className="max-sm:hidden">{` · ${plural(total, 'card')}`}</span>
-              </span>
-            )}
+            {/* Just "Look" on every screen: the count chip beside it already says how many. */}
+            {looking ? 'Focusing…' : total === 0 ? 'Nothing to look at' : 'Look'}
           </button>
         </div>
         {/* always one line (h-4), so the lenses above don't change size */}

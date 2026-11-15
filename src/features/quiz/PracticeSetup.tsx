@@ -95,7 +95,6 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
   const total = candidates?.length ?? null
   const mix = candidates && attempts.data ? sessionMix(candidates, history, itemCount) : null
   const unseen = candidates && attempts.data ? countUnseen(candidates, history) : null
-  const sessionItems = total === null ? itemCount : Math.min(itemCount, total)
 
   // If starting fails (e.g. no internet), stop the pour scene so the error message on the page can be seen.
   const wasStarting = useRef(starting)
@@ -203,7 +202,8 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
             {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
           </button>
           <CountPicker value={itemCount} options={ITEM_COUNTS} onChange={setItemCount} unit="items" label="Items" disabled={busy} />
-          {/* On a phone just "Start" (the tube above says which subject), same as Mock exam. */}
+          {/* Just "Start" on every screen: the tube's name above says which subject, the chip and the line below say how many.
+              Screen readers still hear the subject. */}
           <button
             type="submit"
             disabled={!ready || busy || total === 0}
@@ -211,16 +211,7 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
             className={cn(heroButtonClass, 'w-auto max-w-full px-5 whitespace-nowrap focus-visible:ring-ring/50 sm:px-7')}
           >
             <Play className="size-5 shrink-0 fill-current" aria-hidden />
-            {/* The count is in the chip; Start shows it only when there are fewer questions than she picked (computer/tablet only). */}
-            <span className="truncate">
-              {busy ? (
-                'Starting…'
-              ) : (
-                <>
-                  Start<span className="max-sm:hidden">{` ${current?.code ?? ''}${sessionItems < itemCount ? ` · ${sessionItems}` : ''}`}</span>
-                </>
-              )}
-            </span>
+            {busy ? 'Starting…' : 'Start'}
           </button>
         </div>
 
