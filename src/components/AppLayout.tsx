@@ -17,6 +17,7 @@ import { Suspense, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { useAuth } from '@/features/auth/authContext'
 import { leaveLobbyBeforeLogout, useBoardAlert } from '@/features/board/teamApi'
+import { useAppUpdate } from '@/lib/appUpdate'
 import { forgetBank } from '@/lib/offline/bank'
 import { useOfflineSync } from '@/lib/offline/useOfflineSync'
 import { useAnnouncePresence } from '@/lib/presence'
@@ -27,6 +28,7 @@ import { FullPageMessage } from './FullPageMessage'
 import { InstallHint } from './InstallHint'
 import type { LayoutContext } from './layoutContext'
 import { Brand, Logo } from './report'
+import { UpdateBanner } from './UpdateBanner'
 
 /** alsoFor: other addresses that light this item up (e.g. a game opened from the Games page) */
 type NavItem = { to: string; label: string; icon: LucideIcon; alsoFor?: string[] }
@@ -124,6 +126,8 @@ export function AppLayout() {
   const boardAlert = useBoardAlert(session?.user.id ?? null)
   // "I have the app open": the Board Review invite list shows only classmates who are online.
   useAnnouncePresence(session?.user.id ?? null)
+  // A new version was pushed and is downloaded: the "New version ready" banner.
+  const appUpdate = useAppUpdate()
 
   const email = session?.user.email ?? ''
   const displayName = email.split('@')[0] || 'Reviewer'
@@ -235,8 +239,9 @@ export function AppLayout() {
             </div>
           </div>
 
-          {/* "Add to Home Screen" tip. Only in the browser, never during a quiz (this whole block hides in focus mode). */}
-          <InstallHint />
+          {/* Never during a quiz (this whole block hides in focus mode), so the update banner waits until she's done.
+              The banner and the "Add to Home Screen" tip share the top spot on phones, so only one shows: the update first. */}
+          {appUpdate.ready ? <UpdateBanner onRefresh={appUpdate.refresh} onLater={appUpdate.later} /> : <InstallHint />}
         </>
       )}
 

@@ -11,8 +11,10 @@ export default defineConfig({
     tailwindcss(),
     // Makes the app installable ("Add to Home Screen") and lets it open offline.
     VitePWA({
-      // A new version is picked up by itself the next time the app is opened.
-      registerType: 'autoUpdate',
+      // A new version downloads in the background and waits: the "New version ready" banner
+      // (src/lib/appUpdate.ts) switches to it when she taps Refresh, or it starts on her next full open.
+      // Never reloads by itself, so a quiz in progress isn't cut off.
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon-v2.png'],
       manifest: {
         name: 'ProjectRMT',
