@@ -162,14 +162,14 @@ export function SwipeCarousel<T extends CarouselEntry>({
   const next = items[(index + 1) % count]
 
   const arrowClass =
-    'z-20 flex size-11 shrink-0 items-center justify-center rounded-full border bg-card shadow-sm outline-none transition-colors hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-40'
+    'z-20 flex size-11 shrink-0 items-center justify-center rounded-full border-[2.5px] border-ink bg-card shadow-toon-sm outline-none transition-[transform,box-shadow,background-color] duration-75 hover:bg-secondary/60 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-[3px] active:shadow-none disabled:opacity-40'
 
   return (
     // Fills the room the page gives it: the stage takes whatever height is left after the name plate and dots.
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="relative flex min-h-0 flex-1 items-center">
         <button type="button" onClick={() => goTo(index - 1)} disabled={disabled} aria-label={`Previous: ${prev.name}`} className={cn(arrowClass, 'absolute left-0 md:left-4')}>
-          <ChevronLeft className="size-5" aria-hidden />
+          <ChevronLeft className="size-5" strokeWidth={2.6} aria-hidden />
         </button>
 
         {/* ---------- The stage: every figure is placed by how far it is from the middle ---------- */}
@@ -226,7 +226,7 @@ export function SwipeCarousel<T extends CarouselEntry>({
         </div>
 
         <button type="button" onClick={() => goTo(index + 1)} disabled={disabled} aria-label={`Next: ${next.name}`} className={cn(arrowClass, 'absolute right-0 md:right-4')}>
-          <ChevronRight className="size-5" aria-hidden />
+          <ChevronRight className="size-5" strokeWidth={2.6} aria-hidden />
         </button>
       </div>
 
@@ -235,7 +235,7 @@ export function SwipeCarousel<T extends CarouselEntry>({
         <p
           key={item.key}
           className={cn(
-            'animate-in fade-in slide-in-from-bottom-2 truncate px-4 font-heading leading-none font-black tracking-wide duration-300',
+            'animate-in fade-in slide-in-from-bottom-2 truncate px-4 font-heading leading-none font-bold tracking-wide duration-300',
             compact ? 'text-xl' : 'text-4xl md:text-5xl',
           )}
         >
@@ -261,7 +261,7 @@ export function SwipeCarousel<T extends CarouselEntry>({
             className="group flex size-6 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             <span
-              className={cn('block h-2 rounded-full transition-all duration-300', i === index ? 'w-5 bg-primary' : 'w-2 bg-primary/25 group-hover:bg-primary/50')}
+              className={cn('block h-2.5 rounded-full border-2 border-ink transition-all duration-300', i === index ? 'w-6 bg-primary' : 'w-2.5 bg-secondary group-hover:bg-primary/40')}
               style={i === index && dotColor ? { background: dotColor(it) } : undefined}
             />
           </button>

@@ -11,11 +11,12 @@ export function LabBench({ className }: { className?: string }) {
     <div
       aria-hidden
       className={cn(
-        'pointer-events-none absolute inset-x-0 bottom-0 rounded-b-3xl border-t border-primary/15 bg-linear-to-b from-primary/[0.09] to-transparent [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]',
+        'pointer-events-none absolute inset-x-0 bottom-0 rounded-b-3xl bg-linear-to-b from-primary/[0.07] to-transparent [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]',
         className,
       )}
     >
-      <div className="absolute inset-x-[20%] -top-2.5 h-5 rounded-[50%] bg-primary-deep/20 blur-md" />
+      {/* the flat cartoon shadow right under the figures */}
+      <div className="absolute inset-x-[18%] -top-3 h-6 rounded-[50%] bg-ink/12" />
     </div>
   )
 }

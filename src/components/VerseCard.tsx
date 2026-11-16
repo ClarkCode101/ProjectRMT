@@ -12,7 +12,7 @@ export function VerseCard({ className }: { className?: string }) {
   // Read the date once, so the verse doesn't change if she keeps the page open past midnight.
   const [verse] = useState(() => verseOfTheDay(new Date()))
   return (
-    <figure className={cn('rounded-xl border bg-card px-4 py-3.5', className)}>
+    <figure className={cn('rounded-2xl border-[2.5px] border-ink bg-card px-4 py-3.5 shadow-toon', className)}>
       <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         <BookOpen className="size-3.5" aria-hidden />
         Verse of the day

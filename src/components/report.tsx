@@ -14,7 +14,7 @@ export function LowFlag() {
   return (
     <abbr
       title={`Low: below ${PASSING_LABEL}`}
-      className="inline-block min-w-5 rounded-[3px] bg-wrong-soft px-1 text-center text-xs font-extrabold text-wrong no-underline"
+      className="inline-block min-w-5 rounded-md border-[1.5px] border-ink bg-wrong px-1 text-center text-xs font-extrabold text-white no-underline"
     >
       L
     </abbr>
@@ -28,7 +28,7 @@ export function LowFlag() {
 export function RangeBar({ rate, label }: { rate: number | null; label: string }) {
   const low = rate !== null && rate < PASSING_RATE
   return (
-    <div className="relative h-1.5 rounded-full bg-secondary" role="img" aria-label={label} title={label}>
+    <div className="relative h-3 rounded-full border-2 border-ink bg-secondary" role="img" aria-label={label} title={label}>
       {rate !== null && (
         <div
           className={cn('absolute inset-y-0 left-0 rounded-full', low ? 'bg-wrong' : 'bg-primary')}
@@ -36,7 +36,7 @@ export function RangeBar({ rate, label }: { rate: number | null; label: string }
           aria-hidden
         />
       )}
-      <div className="absolute -inset-y-1 w-0.5 rounded-full bg-foreground/35" style={{ left: `${PASSING_RATE * 100}%` }} aria-hidden />
+      <div className="absolute -inset-y-1.5 w-[3px] rounded-full bg-ink" style={{ left: `${PASSING_RATE * 100}%` }} aria-hidden />
     </div>
   )
 }
@@ -49,15 +49,19 @@ export type SampleState = 'pending' | 'current' | 'correct' | 'wrong'
  * Screen readers get the "Item x of y" text instead.
  */
 export function SampleRun({ samples }: { samples: SampleState[] }) {
+  // Up to 30 items, each segment gets the cartoon ink outline. A 100-item mock exam would be mostly outline,
+  // so long runs keep plain, thin segments.
+  const outlined = samples.length <= 30
   return (
-    <div aria-hidden className="flex gap-0.5">
+    <div aria-hidden className={cn('flex', outlined ? 'gap-1' : 'gap-0.5')}>
       {samples.map((state, i) => (
         <span
           key={i}
           className={cn(
-            'h-1.5 min-w-0 flex-1 rounded-full transition-colors duration-300',
+            'min-w-0 flex-1 rounded-full transition-colors duration-300',
+            outlined ? 'h-3 border-2 border-ink' : 'h-1.5',
             state === 'pending' && 'bg-secondary',
-            state === 'current' && 'bg-primary',
+            state === 'current' && (outlined ? 'bg-highlight' : 'bg-primary'),
             state === 'correct' && 'bg-correct',
             state === 'wrong' && 'bg-wrong',
           )}
@@ -80,18 +84,19 @@ export function HeroPanel({
   className?: string
 }) {
   return (
-    <section aria-labelledby={labelledBy} className={cn('rounded-xl bg-primary-deep p-5 text-white sm:p-6', className)}>
+    <section aria-labelledby={labelledBy} className={cn('rounded-3xl border-[2.5px] border-ink bg-primary-deep p-5 text-white shadow-toon sm:p-6', className)}>
       {children}
     </section>
   )
 }
 
 /**
- * Classes for the gold main button inside a HeroPanel. Put them on a <Link> or a <button>.
+ * Classes for the gold main button (Start, Practice). Put them on a <Link> or a <button>.
+ * A "sticker" button: ink outline and a hard shadow; pressing it pushes it down onto the shadow.
  * Full width on phones; from small tablets up it sizes to its text.
  */
 export const heroButtonClass =
-  'flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-highlight px-6 font-heading text-lg font-bold text-foreground outline-none hover:brightness-105 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px disabled:opacity-60 sm:inline-flex sm:w-auto'
+  'flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-[2.5px] border-ink bg-highlight px-6 font-heading text-lg font-semibold text-foreground shadow-toon outline-none transition-[transform,box-shadow] duration-75 hover:brightness-105 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-1 active:shadow-none disabled:opacity-60 sm:inline-flex sm:w-auto'
 
 /**
  * The ProjectRMT mark: a cyan slime mascot with lab goggles pushed up on its forehead, wearing a lab coat

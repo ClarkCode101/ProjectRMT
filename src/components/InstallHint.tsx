@@ -35,7 +35,7 @@ export function InstallHint() {
     <aside
       aria-label="Install ProjectRMT"
       className={cn(
-        'animate-in fade-in slide-in-from-top-2 fixed inset-x-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-30 flex items-start gap-3 rounded-2xl border bg-card py-3 pr-2 pl-3.5 shadow-[0_16px_36px_-18px_rgb(7_71_94/0.55)] duration-300',
+        'animate-in fade-in slide-in-from-top-2 fixed inset-x-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-30 flex items-start gap-3 rounded-2xl border-[2.5px] border-ink bg-card py-3 pr-2 pl-3.5 shadow-toon duration-300',
         'md:top-4 md:right-4 md:left-auto md:w-[22rem]',
       )}
     >
@@ -59,7 +59,7 @@ export function InstallHint() {
             <button
               type="button"
               onClick={promptInstall}
-              className="mt-2 h-10 rounded-lg bg-primary px-4 font-heading text-sm font-bold text-primary-foreground outline-none hover:bg-primary/85 focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="mt-2 h-10 rounded-xl border-2 border-ink bg-primary px-4 font-heading text-sm font-semibold text-primary-foreground shadow-toon-sm outline-none hover:bg-primary/85 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-[3px] active:shadow-none"
             >
               Install app
             </button>

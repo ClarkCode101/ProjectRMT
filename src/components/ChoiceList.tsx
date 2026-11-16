@@ -63,28 +63,30 @@ export function ChoiceList({
             aria-keyshortcuts={CHOICE_LETTERS[displayPos]}
             aria-label={isRuledOut ? `${CHOICE_LETTERS[displayPos]}, ruled out: ${choices[originalIndex]}` : undefined}
             className={cn(
-              'group flex min-h-14 w-full items-center gap-3 rounded-xl border bg-card px-3 py-3 text-left text-base transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
+              // A "sticker" button: ink outline and a hard shadow. Pressing pushes it down onto the shadow.
+              'group flex min-h-14 w-full items-center gap-3 rounded-2xl border-[2.5px] border-ink bg-card px-3 py-3 text-left text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
               note && 'items-start',
-              !answered && !disabled && !isRuledOut && !isFirstWrong && 'hover:border-primary active:bg-secondary',
-              showCorrect && 'border-correct bg-correct-soft ring-1 ring-correct',
-              showWrong && 'border-wrong bg-wrong-soft ring-1 ring-wrong',
-              isOther && 'border-border/60 bg-muted/40',
-              isRuledOut && 'border-dashed bg-transparent opacity-45',
+              !answered && !disabled && !isRuledOut && !isFirstWrong && 'shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-[#F1FAFC]',
+              showCorrect && 'bg-correct-soft font-semibold shadow-toon-sm',
+              showWrong && 'bg-wrong-soft shadow-toon-sm',
+              // The other two: flat (no shadow) and faded, so the right and wrong ones stand out.
+              isOther && 'border-ink/30 bg-card/60',
+              isRuledOut && 'border-dashed border-ink/40 bg-transparent opacity-45',
             )}
           >
             <span
               className={cn(
-                'flex size-8 shrink-0 items-center justify-center rounded-lg font-heading text-sm font-bold transition-colors',
+                'flex size-8 shrink-0 items-center justify-center rounded-[10px] border-2 font-heading text-sm font-bold transition-colors',
                 showCorrect
-                  ? 'bg-correct text-white'
+                  ? 'border-ink bg-correct text-white'
                   : showWrong
-                    ? 'bg-wrong text-white'
+                    ? 'border-ink bg-wrong text-white'
                     : isOther
-                      ? 'bg-secondary text-muted-foreground'
-                      : 'bg-secondary text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-disabled:group-hover:bg-secondary group-disabled:group-hover:text-foreground',
+                      ? 'border-ink/30 bg-secondary text-muted-foreground'
+                      : 'border-ink bg-[#D5F1F6] text-foreground group-hover:bg-primary group-hover:text-primary-foreground group-disabled:group-hover:bg-[#D5F1F6] group-disabled:group-hover:text-foreground',
               )}
             >
-              {showCorrect ? <Check className="size-4" aria-label="Correct answer" /> : showWrong ? <X className="size-4" aria-label={isFirstWrong ? 'Your first pick, incorrect' : `${answerLabel}, incorrect`} /> : CHOICE_LETTERS[displayPos]}
+              {showCorrect ? <Check className="size-4" strokeWidth={3} aria-label="Correct answer" /> : showWrong ? <X className="size-4" strokeWidth={3} aria-label={isFirstWrong ? 'Your first pick, incorrect' : `${answerLabel}, incorrect`} /> : CHOICE_LETTERS[displayPos]}
             </span>
             <span className="min-w-0 flex-1">
               <span className={cn('block', note && 'pt-1', isOther && 'text-muted-foreground', isRuledOut && 'line-through')}>{choices[originalIndex]}</span>

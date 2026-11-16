@@ -13,14 +13,14 @@ export function ExitButton({ onClick, tone = 'light', className }: { onClick: ()
       type="button"
       onClick={onClick}
       className={cn(
-        'flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold outline-none transition-colors active:translate-y-px',
+        'flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-3 font-heading text-sm font-semibold outline-none',
         tone === 'light'
-          ? 'border bg-card text-foreground shadow-[0_2px_0_rgb(7_71_94/0.08)] hover:border-wrong/50 hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40'
+          ? 'border-2 border-ink bg-card text-foreground shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40'
           : 'border border-white/20 bg-white/10 text-white hover:bg-white/20 focus-visible:ring-3 focus-visible:ring-white/60',
         className,
       )}
     >
-      <X className="size-4" aria-hidden />
+      <X className="size-4" strokeWidth={2.6} aria-hidden />
       Exit
     </button>
   )

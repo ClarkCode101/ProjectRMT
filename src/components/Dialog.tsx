@@ -58,12 +58,13 @@ export function Dialog({
         if (closeOnBackdrop && event.target === ref.current) onClose()
       }}
       className={cn(
-        'animate-in fade-in border bg-card p-0 text-foreground backdrop:bg-foreground/45 duration-150',
-        variant === 'center' && 'm-auto w-[min(26rem,calc(100%-2rem))] rounded-lg zoom-in-95',
+        // Sticker style: ink outline and a hard shadow (the popups are cards too).
+        'animate-in fade-in border-[2.5px] border-ink bg-card p-0 text-foreground shadow-toon backdrop:bg-ink/45 duration-150',
+        variant === 'center' && 'm-auto w-[min(26rem,calc(100%-2rem))] rounded-3xl zoom-in-95',
         variant === 'sheet' &&
-          'mx-auto mt-auto mb-0 w-full max-w-none rounded-t-xl pb-[env(safe-area-inset-bottom)] slide-in-from-bottom-4 md:m-auto md:w-[min(26rem,calc(100%-2rem))] md:rounded-lg md:pb-0',
+          'mx-auto mt-auto mb-0 w-full max-w-none rounded-t-3xl border-b-0 pb-[env(safe-area-inset-bottom)] shadow-none slide-in-from-bottom-4 md:m-auto md:w-[min(26rem,calc(100%-2rem))] md:rounded-3xl md:border-b-[2.5px] md:pb-0 md:shadow-toon',
         variant === 'bottom' &&
-          'mx-auto mt-auto mb-0 max-h-[88dvh] w-full max-w-none overflow-y-auto rounded-t-2xl border-b-0 pb-[env(safe-area-inset-bottom)] slide-in-from-bottom-6 md:w-[min(44rem,calc(100%-3rem))]',
+          'mx-auto mt-auto mb-0 max-h-[88dvh] w-full max-w-none overflow-y-auto rounded-t-3xl border-b-0 pb-[env(safe-area-inset-bottom)] shadow-none slide-in-from-bottom-6 md:w-[min(44rem,calc(100%-3rem))]',
         size === 'lg' && variant !== 'bottom' && 'md:w-[min(40rem,calc(100%-2rem))]',
         size === 'lg' && variant === 'center' && 'w-[min(40rem,calc(100%-2rem))]',
         size === 'xl' && 'md:w-[min(54rem,calc(100%-3rem))] md:zoom-in-90',

@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
  */
 export function NoteCard({ message, className }: { message: string; className?: string }) {
   return (
-    <figure className={cn('relative rounded-xl border border-highlight/50 bg-highlight-soft px-4 py-3.5 pl-11', className)}>
+    <figure className={cn('relative rounded-2xl border-[2.5px] border-ink bg-highlight-soft px-4 py-3.5 pl-11 shadow-toon', className)}>
       <Heart className="absolute top-4 left-4 size-4.5 fill-wrong text-wrong" aria-hidden />
       <blockquote className="leading-relaxed text-pretty">{message}</blockquote>
       {SIGNED_BY && <figcaption className="mt-1.5 text-right text-sm font-semibold text-[#8A5200]">— {SIGNED_BY}</figcaption>}

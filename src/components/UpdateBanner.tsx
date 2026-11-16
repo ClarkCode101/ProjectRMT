@@ -21,7 +21,7 @@ export function UpdateBanner({ onRefresh, onLater }: { onRefresh: () => void; on
       role="status"
       aria-label="App update"
       className={cn(
-        'animate-in fade-in slide-in-from-top-2 fixed inset-x-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-40 flex items-center gap-2.5 rounded-full border bg-card py-1.5 pr-1.5 pl-4 shadow-[0_16px_36px_-18px_rgb(7_71_94/0.55)] duration-300',
+        'animate-in fade-in slide-in-from-top-2 fixed inset-x-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-40 flex items-center gap-2.5 rounded-full border-[2.5px] border-ink bg-card py-1.5 pr-1.5 pl-4 shadow-toon duration-300',
         'md:inset-x-auto md:top-4 md:left-1/2 md:w-[29rem] md:-translate-x-1/2 md:gap-3 md:rounded-2xl md:py-2.5 md:pl-3',
       )}
     >
@@ -38,7 +38,7 @@ export function UpdateBanner({ onRefresh, onLater }: { onRefresh: () => void; on
         type="button"
         onClick={refresh}
         disabled={refreshing}
-        className="h-10 shrink-0 rounded-full bg-primary px-4 font-heading text-sm font-bold text-primary-foreground outline-none hover:bg-primary/85 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-70 md:rounded-lg"
+        className="h-10 shrink-0 rounded-full border-2 border-ink bg-primary px-4 font-heading text-sm font-semibold text-primary-foreground shadow-toon-sm outline-none hover:bg-primary/85 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-[3px] active:shadow-none disabled:opacity-70 md:rounded-xl"
       >
         {refreshing ? 'Refreshing…' : 'Refresh'}
       </button>

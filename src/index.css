@@ -1,23 +1,23 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@fontsource-variable/atkinson-hyperlegible-next";
-@import "@fontsource/ibm-plex-sans-condensed/latin-600.css";
-@import "@fontsource/ibm-plex-sans-condensed/latin-700.css";
+@import "@fontsource-variable/fredoka";
 
 /* tall: screens with room to spare in height (big laptops, iPad portrait). Home uses it to grow cards. */
 @custom-variant tall (@media (min-height: 820px));
 
 /*
-  Visual idea: "lab report".
-  - Scores read like a printed results sheet: Result, reference range 60–100, and an L flag when low.
-  - Quiz items read like a request form: labelled Subject / Topic rows above the question.
-  - Headings use a condensed face like report headers; body stays Atkinson for easy reading.
-  - Analyzer-screen blue is the one accent. Red is only for flags and wrong answers.
+  Visual idea: "cartoon lab" (the lab report, drawn as a cartoon).
+  - Things you can tap look like stickers: a dark "ink" outline and a hard shadow under them
+    (classes: border-[2.5px] border-ink shadow-toon). Pressing one pushes it down onto its shadow.
+  - Headings use the round Fredoka; questions, choices and explanations stay Atkinson for easy reading.
+  - Scores still read like a results sheet: Result, reference range, and an L flag when low.
+  - Analyzer-screen blue is the one accent. Red is only for flags and wrong answers. Gold is for wins and Start.
 */
 
 @theme inline {
     --font-sans: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
-    --font-heading: 'IBM Plex Sans Condensed', 'Arial Narrow', system-ui, sans-serif;
+    --font-heading: 'Fredoka Variable', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -46,6 +46,11 @@
     --color-highlight: var(--highlight);
     --color-highlight-soft: var(--highlight-soft);
     --color-primary-deep: var(--primary-deep);
+    --color-ink: var(--ink);
+
+    /* The hard "sticker" shadow under cards and buttons (sm = small buttons and chips) */
+    --shadow-toon: 0 4px 0 var(--ink);
+    --shadow-toon-sm: 0 3px 0 var(--ink);
 
     --radius-sm: calc(var(--radius) * 0.5);
     --radius-md: calc(var(--radius) * 0.75);
@@ -54,34 +59,35 @@
 }
 
 :root {
-    --background: #F3F6F8;        /* report paper tray */
-    --foreground: #17222C;        /* printer ink */
-    --card: #FFFFFF;              /* the printed sheet */
-    --card-foreground: #17222C;
+    --ink: #0E3445;               /* the outline color: same dark navy as the logo's goggles */
+    --background: #E4F4F8;        /* pale lab blue */
+    --foreground: #0E3445;
+    --card: #FFFFFF;
+    --card-foreground: #0E3445;
     --popover: #FFFFFF;
-    --popover-foreground: #17222C;
-    --primary: #0B6382;           /* analyzer-screen blue */
+    --popover-foreground: #0E3445;
+    --primary: #0B7FA3;           /* analyzer-screen blue, a bit brighter */
     --primary-foreground: #FFFFFF;
-    --secondary: #E6ECF0;
-    --secondary-foreground: #17222C;
-    --muted: #E6ECF0;
-    --muted-foreground: #5A6875;
-    --accent: #E6ECF0;
-    --accent-foreground: #17222C;
+    --secondary: #D3E6EC;
+    --secondary-foreground: #0E3445;
+    --muted: #D3E6EC;
+    --muted-foreground: #4D6573;
+    --accent: #D3E6EC;
+    --accent-foreground: #0E3445;
     --destructive: #C2283A;
-    --border: #D6DEE5;            /* table rules */
-    --input: #B4C0CA;
-    --ring: #0B6382;
-    --radius: 0.5rem;
+    --border: #B9D6DF;            /* thin dividers; outlines of tappable things use --ink */
+    --input: #8FB3BF;
+    --ring: #0B7FA3;
+    --radius: 0.75rem;
 
     --correct: #1E7348;
-    --correct-soft: #E2F2E8;
+    --correct-soft: #DDF5E6;
     --wrong: #C2283A;             /* also the L flag */
-    --wrong-soft: #FBE7E9;
+    --wrong-soft: #FDE4E5;
 
-    --primary-deep: #07475E;      /* darker analyzer blue for the readiness card */
-    --highlight: #E9A23B;         /* warm gold for streaks and wins, used sparingly */
-    --highlight-soft: #FDF1DC;
+    --primary-deep: #07475E;      /* darker analyzer blue */
+    --highlight: #F7B538;         /* gold for streaks, wins and the Start button */
+    --highlight-soft: #FFF1CF;
 }
 
 @layer base {
@@ -372,6 +378,46 @@
   .game-pick,
   .game-float,
   .game-shadow {
+    animation: none;
+  }
+}
+
+/* Home's cartoon body (BodyCartoon.tsx): it breathes slowly, the chosen organ has a ring that keeps pulsing,
+   and the whole body hops and sways once when the daily goal is reached. */
+@keyframes toon-breathe {
+  50% { transform: scale(1.012, 0.988) translateY(2px); }
+}
+.toon-breathe {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: toon-breathe 3.4s ease-in-out infinite;
+}
+@keyframes toon-ring {
+  from { transform: scale(0.75); opacity: 0.95; }
+  to   { transform: scale(1.5); opacity: 0; }
+}
+.toon-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: toon-ring 1.6s ease-out infinite;
+}
+@keyframes toon-dance {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  15%      { transform: translateY(-16px) rotate(-5deg); }
+  30%      { transform: translateY(0) rotate(4deg); }
+  45%      { transform: translateY(-16px) rotate(5deg); }
+  60%      { transform: translateY(0) rotate(-4deg); }
+  80%      { transform: translateY(-8px) rotate(0); }
+}
+.toon-dance {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: toon-dance 1.5s ease-in-out 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toon-breathe,
+  .toon-ring,
+  .toon-dance {
     animation: none;
   }
 }
