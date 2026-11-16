@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { CountPicker } from '@/components/CountPicker'
 import { Dialog } from '@/components/Dialog'
+import { Slime } from '@/components/Slime'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { PageHeader } from '@/components/dashboard'
 import { SwipeCarousel } from '@/components/SwipeCarousel'
@@ -158,9 +159,8 @@ export default function FlashcardsPage() {
     return (
       <div className="mx-auto max-w-xl space-y-4 sm:pt-6">
         <HeroPanel labelledBy="done-heading" className="space-y-4">
-          <span className="flex size-12 items-center justify-center rounded-full bg-white/15">
-            <Microscope className="size-6" aria-hidden />
-          </span>
+          {/* the slime cheers: every slide read */}
+          <Slime mood="cheer" className="w-20" />
           <div>
             <h1 id="done-heading" className="font-heading text-3xl font-bold">
               All slides read
@@ -170,7 +170,7 @@ export default function FlashcardsPage() {
               {stage.stats.newStudied > 0 && <>, {stage.stats.newStudied} of them new</>}. Each one is scheduled to come back right before you’d forget it.
             </p>
           </div>
-          {reviewStates.isSuccess && <p className="rounded-md bg-white/10 px-3 py-2 text-sm">{plural(tomorrow, 'card')} due by the end of tomorrow.</p>}
+          {reviewStates.isSuccess && <p className="rounded-xl border-2 border-white/25 bg-white/10 px-3 py-2 text-sm">{plural(tomorrow, 'card')} due by the end of tomorrow.</p>}
           {/* Same pair as the mock exam results: gold main button + a see-through secondary one of the same size. */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             <Link to="/" className={heroButtonClass}>
@@ -180,7 +180,7 @@ export default function FlashcardsPage() {
             <button
               type="button"
               onClick={() => setStage({ name: 'setup' })}
-              className="flex h-12 items-center justify-center gap-2 rounded-lg bg-white/10 px-5 font-heading text-base font-bold text-white outline-none hover:bg-white/15 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px"
+              className="flex h-12 items-center justify-center gap-2 rounded-2xl border-[2.5px] border-white/35 bg-white/10 px-5 font-heading text-base font-semibold text-white outline-none hover:bg-white/15 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px"
             >
               Back to the slides
             </button>
@@ -223,7 +223,7 @@ export default function FlashcardsPage() {
             <FieldOfView code="All" looking={looking} />
           </button>
           <div className="text-center">
-            <p className="truncate px-4 font-heading text-4xl leading-none font-black tracking-wide md:text-5xl">{book.title}</p>
+            <p className="truncate px-4 font-heading text-4xl leading-none font-bold tracking-wide md:text-5xl">{book.title}</p>
             <p className="mt-2 text-sm text-muted-foreground">
               Your book ·{' '}
               {total === 0 ? (
@@ -276,10 +276,10 @@ export default function FlashcardsPage() {
             type="button"
             onClick={() => setOptionsOpen(true)}
             aria-label={optionsChanged ? 'Flashcard options (changed)' : 'Flashcard options'}
-            className="relative flex size-12 shrink-0 items-center justify-center rounded-lg border bg-card text-muted-foreground outline-none hover:border-primary/50 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl border-[2.5px] border-ink bg-card shadow-toon-sm outline-none transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-ring/40"
           >
-            <SlidersHorizontal className="size-5" aria-hidden />
-            {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
+            <SlidersHorizontal className="size-5" strokeWidth={2.4} aria-hidden />
+            {optionsChanged && <span className="absolute -top-1.5 -right-1.5 size-3.5 rounded-full border-2 border-ink bg-highlight" aria-hidden />}
           </button>
           {/* How many NEW cards each time she looks (due ones always come): the same count chip as Practice and Mock exam.
               The word is "new", not "items": due cards are added on top. */}
@@ -313,7 +313,7 @@ export default function FlashcardsPage() {
 
       {/* Why the intervals may look shorter near the exam, or a nudge to set the date so they can. One quiet line at the bottom. */}
       {study.isSuccess && (
-        <p className="shrink-0 border-t border-dashed pt-3 text-center text-sm text-muted-foreground">
+        <p className="shrink-0 border-t-2 border-dashed border-input/70 pt-3 text-center text-sm text-muted-foreground">
           <CalendarClock className="mr-1 inline size-4 align-[-3px] text-primary" aria-hidden />
           {maxIntervalDays !== undefined ? (
             <>
@@ -357,7 +357,7 @@ export default function FlashcardsPage() {
           <button
             type="button"
             onClick={() => setOptionsOpen(false)}
-            className="h-11 w-full rounded-lg bg-primary font-heading font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="h-11 w-full rounded-2xl border-[2.5px] border-ink bg-primary font-heading font-semibold text-primary-foreground shadow-toon-sm outline-none transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             Done
           </button>

@@ -23,12 +23,12 @@ type Props = {
   maxIntervalDays?: number
 }
 
-// Quiet rating buttons: neutral, except Again (light red: it comes right back) and Good (the usual choice, light blue).
+// Rating buttons (sticker style): white, except Again (light red: it comes right back) and Good (the usual choice, light blue).
 const GRADE_LOOK: Record<Grade, { label: string; key: string; className: string }> = {
-  [Rating.Again]: { label: 'Again', key: '1', className: 'border-wrong/35 bg-card text-wrong hover:border-wrong hover:bg-wrong-soft' },
-  [Rating.Hard]: { label: 'Hard', key: '2', className: 'border-border bg-card text-foreground hover:border-primary/50' },
-  [Rating.Good]: { label: 'Good', key: '3', className: 'border-primary/40 bg-primary/[0.06] text-primary hover:border-primary' },
-  [Rating.Easy]: { label: 'Easy', key: '4', className: 'border-border bg-card text-foreground hover:border-primary/50' },
+  [Rating.Again]: { label: 'Again', key: '1', className: 'bg-wrong-soft text-wrong hover:brightness-[0.98]' },
+  [Rating.Hard]: { label: 'Hard', key: '2', className: 'bg-card text-foreground hover:bg-secondary/40' },
+  [Rating.Good]: { label: 'Good', key: '3', className: 'bg-[#D5F1F6] text-primary-deep hover:brightness-[0.98]' },
+  [Rating.Easy]: { label: 'Easy', key: '4', className: 'bg-card text-foreground hover:bg-secondary/40' },
 }
 
 /** The current time. Only called from click / key handlers and the first setup, never while drawing. */
@@ -114,7 +114,7 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
       <div className="flex items-center gap-3 text-sm">
         <ExitButton onClick={() => onExit(stats)} />
         <div
-          className="h-1.5 flex-1 overflow-hidden rounded-full bg-secondary"
+          className="h-3 flex-1 overflow-hidden rounded-full border-2 border-ink bg-secondary"
           role="progressbar"
           aria-label="Cards done"
           aria-valuemin={0}
@@ -133,14 +133,14 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
           key: each card mounts out of focus, so the next answer never shows sharp for a moment. */}
       <article
         key={`${question.id}-${stats.reviewed}`}
-        className="animate-in fade-in overflow-hidden rounded-2xl border bg-card shadow-[0_18px_40px_-28px_rgb(7_71_94/0.55)] duration-200"
+        className="animate-in fade-in overflow-hidden rounded-3xl border-[2.5px] border-ink bg-card shadow-toon duration-200"
       >
         {/* the slide's frosted label end */}
-        <p className="flex items-center gap-2 border-b border-primary/10 bg-secondary/70 px-5 py-2.5 text-sm text-muted-foreground sm:px-7">
-          <span aria-hidden className="h-3.5 w-5 shrink-0 rounded-[3px] border border-primary/25 bg-card" />
+        <p className="flex items-center gap-2 border-b-[2.5px] border-ink bg-secondary/70 px-5 py-2.5 text-sm text-muted-foreground sm:px-7">
+          <span aria-hidden className="h-3.5 w-5 shrink-0 rounded-[4px] border-2 border-ink bg-card" />
           <span className="font-heading font-bold text-primary">{subject?.code ?? '—'}</span>
           {subject?.topicName && <span className="truncate">· {subject.topicName}</span>}
-          {stateGroup(card) === 'new' && <span className="ml-auto shrink-0 rounded-[4px] bg-primary/10 px-1.5 text-xs font-bold text-primary">NEW</span>}
+          {stateGroup(card) === 'new' && <span className="ml-auto shrink-0 rounded-md border-2 border-ink bg-highlight px-1.5 font-heading text-xs font-bold text-foreground">NEW</span>}
         </p>
 
         <div className="space-y-5 px-5 py-6 sm:px-7 sm:py-8">
@@ -152,7 +152,7 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
               aria-hidden={!revealed}
               className={cn('space-y-3 transition-[filter,opacity] duration-500 ease-out', !revealed && 'pointer-events-none opacity-60 blur-[10px] select-none')}
             >
-              <div className="rounded-xl bg-correct-soft px-4 py-3">
+              <div className="rounded-2xl border-[2.5px] border-ink bg-correct-soft px-4 py-3">
                 <p className="text-xs font-bold tracking-wide text-correct uppercase">Answer</p>
                 {answer.kind === 'plain' ? (
                   <p className="font-heading text-xl font-bold text-correct sm:text-2xl">{answer.text}</p>
@@ -179,7 +179,7 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
             </div>
             {!revealed && (
               <p className="absolute inset-0 flex items-center justify-center">
-                <span className="rounded-full bg-card/90 px-3 py-1 text-xs font-semibold text-muted-foreground shadow-sm">Out of focus. Think of the answer first.</span>
+                <span className="rounded-full border-2 border-ink bg-card px-3 py-1 text-xs font-semibold text-muted-foreground shadow-toon-sm">Out of focus. Think of the answer first.</span>
               </p>
             )}
           </div>
@@ -191,7 +191,7 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
           type="button"
           onClick={() => setRevealed(true)}
           autoFocus
-          className="flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-primary font-heading text-lg font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="flex h-13 w-full items-center justify-center gap-2 rounded-2xl border-[2.5px] border-ink bg-primary font-heading text-lg font-semibold text-primary-foreground shadow-toon outline-none transition-[transform,box-shadow] duration-75 hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-1 active:shadow-none"
         >
           <Microscope className="size-5" aria-hidden />
           Focus
@@ -211,11 +211,11 @@ export function FlashcardSession({ deck, states, onNewStudied, onDone, onExit, m
                   aria-keyshortcuts={look.key}
                   aria-label={`${look.label}, comes back in ${formatInterval(intervals[g])}`}
                   className={cn(
-                    'flex h-16 flex-col items-center justify-center rounded-xl border-2 font-heading outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50',
+                    'flex h-16 flex-col items-center justify-center rounded-2xl border-[2.5px] border-ink font-heading shadow-toon-sm outline-none transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none focus-visible:ring-3 focus-visible:ring-ring/50',
                     look.className,
                   )}
                 >
-                  <span className="text-base font-bold">{look.label}</span>
+                  <span className="text-base font-semibold">{look.label}</span>
                   <span className="text-xs font-semibold opacity-80 tabular-nums">{formatInterval(intervals[g])}</span>
                 </button>
               )

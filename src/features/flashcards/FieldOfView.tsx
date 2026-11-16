@@ -177,7 +177,7 @@ export function FieldOfView({ code, label, looking = false }: { code: string; la
   const id = `fov${useId().replace(/[^a-zA-Z0-9]/g, '')}`
   return (
     <div className={looking ? 'lens-look relative' : 'relative'}>
-      <svg viewBox="0 0 200 200" className="w-full drop-shadow-[0_18px_28px_rgb(7_71_94/0.35)]" aria-hidden>
+      <svg viewBox="0 0 200 200" className="w-full overflow-visible drop-shadow-[0_5px_0_var(--ink)]" aria-hidden>
         <defs>
           <clipPath id={`${id}-clip`}>
             <circle cx="100" cy="100" r="94" />
@@ -196,12 +196,15 @@ export function FieldOfView({ code, label, looking = false }: { code: string; la
           </g>
           <rect width="200" height="200" fill={`url(#${id}-vignette)`} />
         </g>
-        {/* the eyepiece rim */}
-        <circle cx="100" cy="100" r="95" fill="none" stroke="var(--primary-deep)" strokeWidth="8" />
+        {/* the eyepiece rim: blue metal with an ink outline on both edges (cartoon style) */}
+        <circle cx="100" cy="100" r="95" fill="none" stroke="var(--ink)" strokeWidth="13" />
+        <circle cx="100" cy="100" r="95" fill="none" stroke="var(--primary-deep)" strokeWidth="7" />
+        {/* a shine on the rim, top left */}
+        <path d="M38 52a76 76 0 0 1 30-26" fill="none" stroke="#FFFFFF" strokeOpacity="0.75" strokeWidth="5" strokeLinecap="round" />
       </svg>
       {label && (
         <p className="absolute inset-x-0 bottom-[8%] flex justify-center">
-          <span className="rounded-full bg-primary-deep px-3 py-1 text-base font-bold whitespace-nowrap text-white tabular-nums shadow-md">{label}</span>
+          <span className="rounded-full border-[2.5px] border-ink bg-primary-deep px-3 py-1 font-heading text-base font-semibold whitespace-nowrap text-white tabular-nums shadow-toon-sm">{label}</span>
         </p>
       )}
     </div>
