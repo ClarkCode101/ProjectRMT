@@ -78,8 +78,8 @@ function ItemGroup({
               aria-current={index === current ? 'step' : undefined}
               aria-label={`Go to item ${index + 1}`}
               className={cn(
-                'flex h-10 min-w-10 items-center justify-center rounded-full border-2 px-2 font-mono text-sm font-bold tabular-nums outline-none hover:border-primary focus-visible:ring-3 focus-visible:ring-ring/40',
-                kind === 'flagged' ? 'border-highlight bg-highlight-soft' : 'border-transparent bg-secondary shadow-[inset_0_2px_3px_rgb(7_71_94/0.18)]',
+                'flex h-10 min-w-10 items-center justify-center rounded-full border-2 border-ink px-2 font-heading text-sm font-bold tabular-nums shadow-toon-sm outline-none transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none focus-visible:ring-3 focus-visible:ring-ring/40',
+                kind === 'flagged' ? 'bg-highlight-soft' : 'bg-card',
                 index === current && 'ring-2 ring-foreground ring-offset-2 ring-offset-card',
               )}
             >
@@ -201,7 +201,7 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
           white pill with red numbers (subject bar, since BBIS is red already). */}
       <header
         className={cn(
-          'sticky top-[calc(0.5rem+env(safe-area-inset-top))] z-20 space-y-2.5 rounded-2xl px-3 pt-2.5 pb-3 text-white shadow-[0_16px_32px_-20px_rgb(7_71_94/0.8)] transition-colors duration-500 sm:px-4',
+          'sticky top-[calc(0.5rem+env(safe-area-inset-top))] z-20 space-y-2.5 rounded-3xl border-[2.5px] border-ink px-3 pt-2.5 pb-3 text-white shadow-toon transition-colors duration-500 sm:px-4',
           !paperColor && (low ? 'bg-wrong' : 'bg-primary-deep'),
         )}
         style={paperColor ? { background: paperColor } : undefined}
@@ -227,12 +227,12 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
             aria-haspopup="dialog"
             aria-keyshortcuts="R"
             aria-label={`Review${flaggedItems.length > 0 ? `, ${flaggedItems.length} flagged` : ''}`}
-            className="relative flex h-10 shrink-0 items-center gap-2 rounded-lg bg-white/10 px-2.5 text-sm font-semibold outline-none hover:bg-white/15 focus-visible:ring-3 focus-visible:ring-white/60 sm:px-3"
+            className="relative flex h-10 shrink-0 items-center gap-2 rounded-xl border-2 border-white/35 bg-white/10 px-2.5 font-heading text-sm font-semibold outline-none hover:bg-white/15 focus-visible:ring-3 focus-visible:ring-white/60 sm:px-3"
           >
             <ListChecks className="size-4.5" aria-hidden />
             <span className="hidden sm:inline">Review</span>
             {flaggedItems.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-highlight px-1 text-xs font-bold text-foreground tabular-nums" aria-hidden>
+              <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-ink bg-highlight px-1 text-xs font-bold text-foreground tabular-nums" aria-hidden>
                 {flaggedItems.length}
               </span>
             )}
@@ -241,7 +241,7 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
         {/* progress: how many items have an answer */}
         <div className="flex items-center gap-3">
           <div
-            className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/15"
+            className="h-3 flex-1 overflow-hidden rounded-full border-2 border-ink/60 bg-white/20"
             role="progressbar"
             aria-label="Answered"
             aria-valuemin={0}
@@ -267,7 +267,7 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
           <p className="text-sm text-muted-foreground">
             <span className="font-mono font-bold text-foreground tabular-nums sm:hidden">Item {i + 1} · </span>
             {/* the subject in its own color (each item's own subject, so a mixed mock on her book shows each one's) */}
-            <span className="font-heading font-bold text-primary" style={subject.code && SUBJECT_COLOR[subject.code] ? { color: SUBJECT_COLOR[subject.code] } : undefined}>
+            <span className="rounded-md border-2 border-ink bg-card px-1.5 font-heading text-xs font-bold text-primary" style={subject.code && SUBJECT_COLOR[subject.code] ? { color: SUBJECT_COLOR[subject.code] } : undefined}>
               {subject.code ?? '—'}
             </span>
             {subject.topicName && <> · {subject.topicName}</>}
@@ -288,15 +288,16 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
                 onClick={() => choose(originalIndex)}
                 aria-keyshortcuts={LETTERS[displayPos]}
                 className={cn(
-                  'group flex min-h-14 w-full items-center gap-3 rounded-xl border bg-card px-3 py-3 text-left text-base transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
-                  isSelected ? 'border-primary bg-primary/[0.06] ring-1 ring-primary' : 'hover:border-primary/60',
+                  // A sticker button (same as Practice's choices). The picked one is tinted and pressed down onto its shadow.
+                  'group flex min-h-14 w-full items-center gap-3 rounded-2xl border-[2.5px] border-ink px-3 py-3 text-left text-base outline-none transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none focus-visible:ring-3 focus-visible:ring-ring/40',
+                  isSelected ? 'translate-y-[3px] bg-[color-mix(in_srgb,var(--primary)_12%,white)] font-semibold' : 'bg-card shadow-toon-sm hover:bg-[#F1FAFC]',
                 )}
               >
                 {/* A keycap, so it's clear the letter key picks this choice. */}
                 <span
                   className={cn(
-                    'flex size-8 shrink-0 items-center justify-center rounded-md border border-b-[3px] font-mono text-sm font-bold transition-colors',
-                    isSelected ? 'border-primary-deep bg-primary text-white' : 'border-border bg-card text-foreground group-hover:border-primary/50',
+                    'flex size-8 shrink-0 items-center justify-center rounded-[10px] border-2 border-b-4 border-ink font-heading text-sm font-bold transition-colors',
+                    isSelected ? 'bg-primary text-white' : 'bg-[#D5F1F6] text-foreground',
                   )}
                 >
                   {LETTERS[displayPos]}
@@ -308,14 +309,14 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="h-12 rounded-xl px-4" onClick={() => go(i - 1)} disabled={i === 0}>
+          <Button variant="outline" className="h-12 rounded-2xl px-4" onClick={() => go(i - 1)} disabled={i === 0}>
             <ChevronLeft className="size-5" aria-hidden />
             <span className="hidden sm:inline">Previous</span>
             <span className="sr-only sm:hidden">Previous item</span>
           </Button>
           <Button
             variant="outline"
-            className={cn('h-12 rounded-xl px-4', exam.flags[i] && 'border-highlight bg-highlight-soft hover:bg-highlight-soft')}
+            className={cn('h-12 rounded-2xl px-4 font-heading text-base', exam.flags[i] && 'bg-highlight-soft hover:bg-highlight-soft')}
             onClick={toggleFlag}
             aria-pressed={exam.flags[i]}
           >
@@ -323,11 +324,11 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
             {exam.flags[i] ? 'Flagged' : 'Flag'}
           </Button>
           {isLast ? (
-            <Button className="ml-auto h-12 flex-1 rounded-xl font-heading text-base font-bold sm:flex-none sm:px-6" onClick={() => setOpen('review')}>
+            <Button className="ml-auto h-12 flex-1 rounded-2xl font-heading text-base font-semibold sm:flex-none sm:px-6" onClick={() => setOpen('review')}>
               Review & submit
             </Button>
           ) : (
-            <Button className="ml-auto h-12 flex-1 rounded-xl font-heading text-base font-bold sm:flex-none sm:px-6" onClick={() => go(i + 1)}>
+            <Button className="ml-auto h-12 flex-1 rounded-2xl font-heading text-base font-semibold sm:flex-none sm:px-6" onClick={() => go(i + 1)}>
               Next
               <ChevronRight className="size-5" aria-hidden />
             </Button>
@@ -351,7 +352,7 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
           </div>
 
           {flaggedItems.length === 0 && blankItems.length === 0 ? (
-            <p className="flex items-center gap-2 rounded-xl bg-correct-soft px-3.5 py-3 text-sm font-semibold text-correct">
+            <p className="flex items-center gap-2 rounded-2xl border-2 border-ink bg-correct-soft px-3.5 py-3 text-sm font-semibold text-correct">
               <Check className="size-4.5 shrink-0" aria-hidden />
               Every item has an answer, and nothing is flagged.
             </p>
@@ -386,10 +387,10 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
 
           {/* "Keep answering" first, so the safe choice comes before Submit. */}
           <div className="grid gap-2 sm:grid-cols-2">
-            <Button variant="outline" className="h-11 rounded-lg text-base" onClick={() => setOpen('none')}>
+            <Button variant="outline" className="h-11 rounded-2xl font-heading text-base" onClick={() => setOpen('none')}>
               Keep answering
             </Button>
-            <Button className="h-11 rounded-lg font-heading text-base font-bold" onClick={submitNow}>
+            <Button className="h-11 rounded-2xl font-heading text-base font-semibold" onClick={submitNow}>
               Submit exam
             </Button>
           </div>
@@ -405,10 +406,10 @@ export function MockRunner({ exam, questions, onChange, onSubmit, onLeave }: Pro
             <p className="text-muted-foreground">Your answers are saved on this device, and you can resume from the Mock exam page. The timer keeps running, like the real exam.</p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
-            <Button className="h-11 rounded-lg text-base font-bold sm:order-2" onClick={() => setOpen('none')}>
+            <Button className="h-11 rounded-2xl font-heading text-base font-semibold sm:order-2" onClick={() => setOpen('none')}>
               Keep going
             </Button>
-            <Button variant="outline" className="h-11 rounded-lg text-base sm:order-1" onClick={onLeave}>
+            <Button variant="outline" className="h-11 rounded-2xl font-heading text-base sm:order-1" onClick={onLeave}>
               Leave for now
             </Button>
           </div>

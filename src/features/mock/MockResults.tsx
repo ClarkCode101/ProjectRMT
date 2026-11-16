@@ -51,7 +51,7 @@ function ReviewItem({ number, question, answer, flagged }: { number: number; que
         <summary className="flex cursor-pointer list-none items-start gap-3 px-4 py-3.5 outline-none hover:bg-secondary/50 focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset sm:px-5 [&::-webkit-details-marker]:hidden">
           <span
             className={cn(
-              'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md text-white',
+              'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-[9px] border-2 border-ink text-white',
               status === 'right' ? 'bg-correct' : status === 'wrong' ? 'bg-wrong' : 'bg-muted-foreground/50',
             )}
           >
@@ -264,7 +264,7 @@ export function MockResults({ label, sessionId, scope, questions, answers, flags
                   but a see-through fill so it never competes with it. */}
               <Link
                 to="/"
-                className="flex h-12 items-center justify-center gap-2 rounded-lg bg-white/10 px-5 font-heading text-base font-bold text-white outline-none hover:bg-white/15 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px"
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl border-[2.5px] border-white/35 bg-white/10 px-5 font-heading text-base font-semibold text-white outline-none hover:bg-white/15 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px"
               >
                 <House className="size-5" aria-hidden />
                 Back to Home
@@ -279,9 +279,9 @@ export function MockResults({ label, sessionId, scope, questions, answers, flags
         <div className="-mt-3 overflow-hidden px-6 pb-6 sm:px-9">
           <article
             aria-label="Printout"
-            className="printout-feed drop-shadow-[0_14px_18px_rgb(7_71_94/0.18)]"
+            className="printout-feed drop-shadow-[0_4px_0_var(--ink)]"
           >
-            <div className="space-y-4 bg-card px-4 pt-6 pb-5 sm:px-6">
+            <div className="space-y-4 border-x-[2.5px] border-ink bg-card px-4 pt-6 pb-5 sm:px-6">
               {/* Only what helps her decide what to do next: the score, what to focus on, and the way to review.
                   Everything else is one tap away ("See all topics", the review list). */}
               <p className="text-center font-mono text-xs tracking-widest text-muted-foreground uppercase">Mock exam report</p>
@@ -299,7 +299,7 @@ export function MockResults({ label, sessionId, scope, questions, answers, flags
                 </div>
                 <p
                   className={cn(
-                    'stamp shrink-0 rounded-md border-[3px] px-3 py-1.5 text-center font-heading text-lg leading-none font-bold sm:text-xl',
+                    'stamp shrink-0 rounded-xl border-4 bg-card/80 px-3.5 py-1.5 text-center font-heading text-xl leading-none font-bold tracking-wider sm:text-2xl',
                     score.passed ? 'border-correct text-correct' : 'border-wrong text-wrong',
                   )}
                 >
@@ -332,7 +332,7 @@ export function MockResults({ label, sessionId, scope, questions, answers, flags
                   ))}
                 </ResultTable>
               ) : (
-                <p className="flex items-center gap-2 rounded-lg bg-correct-soft px-3 py-2.5 text-sm font-semibold text-correct">
+                <p className="flex items-center gap-2 rounded-xl border-2 border-ink bg-correct-soft px-3 py-2.5 text-sm font-semibold text-correct">
                   <Check className="size-4.5 shrink-0" aria-hidden />
                   Every topic is at {PASSING_LABEL} or higher.
                 </p>
@@ -368,7 +368,7 @@ export function MockResults({ label, sessionId, scope, questions, answers, flags
                 onClick={openReview}
                 aria-expanded={reviewOpen}
                 aria-controls="review-section"
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary font-heading text-base font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-[2.5px] border-ink bg-primary font-heading text-base font-semibold text-primary-foreground shadow-toon-sm outline-none transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40"
               >
                 {counts.missed > 0 ? `Review ${counts.missed} missed ${counts.missed === 1 ? 'item' : 'items'}` : 'See all answers'}
                 <ChevronDown className="size-5" aria-hidden />
@@ -405,8 +405,8 @@ export function MockResults({ label, sessionId, scope, questions, answers, flags
                   onClick={() => setFilter(f.value)}
                   aria-pressed={filter === f.value}
                   className={cn(
-                    'inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
-                    filter === f.value ? 'border-primary bg-primary text-white' : 'bg-card hover:border-primary/50',
+                    'inline-flex h-9 items-center gap-1.5 rounded-full border-2 border-ink px-3 font-heading text-sm font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
+                    filter === f.value ? 'translate-y-[3px] bg-primary text-white' : 'bg-card shadow-toon-sm hover:bg-secondary/40',
                   )}
                 >
                   {f.label}
@@ -416,9 +416,9 @@ export function MockResults({ label, sessionId, scope, questions, answers, flags
             </div>
           </div>
           {shown.length === 0 ? (
-            <p className="rounded-xl border bg-card px-4 py-6 text-center text-muted-foreground">Nothing here.</p>
+            <p className="rounded-2xl border-[2.5px] border-ink bg-card px-4 py-6 text-center text-muted-foreground shadow-toon">Nothing here.</p>
           ) : (
-            <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+            <ul className="divide-y-2 divide-dashed divide-border overflow-hidden rounded-2xl border-[2.5px] border-ink bg-card shadow-toon">
               {shown.map(({ question, i }) => (
                 <ReviewItem key={question.id} number={i + 1} question={question} answer={answers[i]} flagged={flags[i]} />
               ))}

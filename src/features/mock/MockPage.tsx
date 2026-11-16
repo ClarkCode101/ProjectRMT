@@ -292,7 +292,7 @@ export default function MockPage() {
   return (
     <div className="space-y-4">
       {message && (
-        <p role="status" className="mx-auto flex max-w-5xl items-start gap-2 rounded-md border border-highlight/50 bg-highlight-soft p-3">
+        <p role="status" className="mx-auto flex max-w-5xl items-start gap-2 rounded-2xl border-2 border-ink bg-highlight-soft p-3">
           <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
           {message}
         </p>

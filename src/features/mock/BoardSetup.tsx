@@ -37,10 +37,10 @@ function PaperChip({ paper, state, onPick }: { paper: SubjectSummary; state: Chi
   const low = paper.accuracy !== null && paper.belowPassing
   const className = cn(
     // px-2 on a phone: all six fit on one line (from 360px wide), so the strip doesn't take two rows
-    'flex h-9 items-center gap-1.5 rounded-full border px-2 text-xs sm:px-3 font-bold whitespace-nowrap tabular-nums',
-    state === 'current' && 'border-highlight bg-highlight text-foreground',
-    state === 'waiting' && 'border-border bg-transparent text-muted-foreground',
-    state === 'done' && (low ? 'border-wrong/30 bg-wrong-soft text-wrong' : 'border-correct/30 bg-correct-soft text-correct'),
+    'flex h-9 items-center gap-1.5 rounded-full border-2 px-2 text-xs sm:px-3 font-bold whitespace-nowrap tabular-nums',
+    state === 'current' && 'border-ink bg-highlight text-foreground shadow-toon-sm',
+    state === 'waiting' && 'border-ink/30 bg-card/60 text-muted-foreground',
+    state === 'done' && (low ? 'border-ink bg-wrong-soft text-wrong' : 'border-ink bg-correct-soft text-correct'),
   )
   const content = (
     <>
@@ -58,7 +58,7 @@ function PaperChip({ paper, state, onPick }: { paper: SubjectSummary; state: Chi
           onClick={onPick}
           aria-pressed={state === 'current'}
           aria-label={`${paper.code}: take this paper ${state === 'current' ? '(chosen)' : 'next'}`}
-          className={cn(className, 'outline-none focus-visible:ring-3 focus-visible:ring-ring/40', state === 'waiting' && 'hover:border-primary/50 hover:text-foreground')}
+          className={cn(className, 'outline-none focus-visible:ring-3 focus-visible:ring-ring/40', state === 'waiting' && 'hover:border-ink hover:text-foreground')}
         >
           {content}
         </button>
@@ -252,8 +252,8 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
         {/* The cover's height comes from its content (it drops parts to fit); the plain paper fills the room. */}
         <div className={cn('relative w-full', showCover ? 'max-w-sm md:max-w-md' : 'h-full max-h-104 max-w-xs md:max-w-sm')}>
           {/* the papers still to come, peeking out behind */}
-          {sheetsBehind >= 2 && <span aria-hidden className="absolute inset-0 rotate-3 rounded-xl border border-primary/10 bg-card/70 shadow-sm" />}
-          {sheetsBehind >= 1 && <span aria-hidden className="absolute inset-0 -rotate-2 rounded-xl border border-primary/15 bg-card/90 shadow-sm" />}
+          {sheetsBehind >= 2 && <span aria-hidden className="absolute inset-0 rotate-3 rounded-2xl border-[2.5px] border-ink/40 bg-card/80" />}
+          {sheetsBehind >= 1 && <span aria-hidden className="absolute inset-0 -rotate-2 rounded-2xl border-[2.5px] border-ink/60 bg-card" />}
 
           {showCover && top && topIndex !== null ? (
             <>
@@ -291,15 +291,15 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
                   type="button"
                   onClick={tapPaper}
                   aria-label={`${top.code}. Tap for another subject.`}
-                  className="absolute inset-0 z-20 cursor-pointer rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="absolute inset-0 z-20 cursor-pointer rounded-2xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 />
               )}
             </>
           ) : (
           // the board is done, or a paused mock on one of her books: a plain paper with just the headline
-          <div className="relative flex h-full flex-col overflow-hidden rounded-xl border border-primary/15 bg-card shadow-[0_22px_36px_-18px_rgb(7_71_94/0.55)]">
+          <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border-[2.5px] border-ink bg-card shadow-toon">
             {/* the paper's header band, in the subject's color */}
-            <span aria-hidden className="h-2.5 shrink-0" style={{ background: paperColor }} />
+            <span aria-hidden className="h-3.5 shrink-0 border-b-[2.5px] border-ink" style={{ background: paperColor }} />
             <p className="flex shrink-0 items-center justify-between gap-3 px-5 pt-3 text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
               <span>{kicker}</span>
               {weight !== null && (
@@ -313,7 +313,7 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
               <p
                 key={title}
                 className={cn(
-                  'animate-in fade-in slide-in-from-bottom-2 max-w-full font-heading leading-none font-black tracking-wide tabular-nums duration-300',
+                  'animate-in fade-in slide-in-from-bottom-2 max-w-full font-heading leading-none font-bold tracking-wide tabular-nums duration-300',
                   title.length > 6 ? 'line-clamp-2 text-3xl md:text-4xl' : 'text-6xl md:text-7xl',
                   complete && verdictColor,
                 )}
@@ -325,14 +325,14 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
                 {subtitle}
               </p>
               {complete && (
-                <p className={cn('stamp mt-4 rounded-md border-[3px] px-3 py-1.5 font-heading text-lg leading-none font-bold', verdict?.passed ? 'border-correct text-correct' : 'border-wrong text-wrong')}>
+                <p className={cn('stamp mt-4 rounded-xl border-4 px-3.5 py-1.5 font-heading text-xl leading-none font-bold tracking-wider', verdict?.passed ? 'border-correct text-correct' : 'border-wrong text-wrong')}>
                   {verdict?.passed ? 'PASSED' : 'NOT YET'}
                 </p>
               )}
             </div>
 
             {/* the bottom line of the paper: how long it is, or where she left off */}
-            <p className="flex shrink-0 items-center justify-center gap-1.5 border-t border-dashed border-foreground/15 px-5 py-3 text-sm font-semibold tabular-nums">
+            <p className="flex shrink-0 items-center justify-center gap-1.5 border-t-2 border-dashed border-border px-5 py-3 text-sm font-semibold tabular-nums">
               {saved ? (
                 <>
                   <Pause className="size-4 fill-current text-[#9A5B00]" aria-hidden />
@@ -379,7 +379,7 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
             <button
               type="button"
               onClick={onDiscard}
-              className="flex h-12 items-center rounded-lg border bg-card px-5 font-heading font-bold outline-none hover:border-wrong/60 hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="flex h-12 items-center rounded-2xl border-[2.5px] border-ink bg-card px-5 font-heading font-semibold shadow-toon-sm outline-none transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               Discard
             </button>
@@ -398,7 +398,7 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
                 type="button"
                 onClick={() => setConfirmEnd(true)}
                 disabled={busy}
-                className="flex h-12 items-center rounded-lg border bg-card px-5 font-heading font-bold outline-none hover:border-wrong/60 hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40"
+                className="flex h-12 items-center rounded-2xl border-[2.5px] border-ink bg-card px-5 font-heading font-semibold shadow-toon-sm outline-none transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40"
               >
                 {complete ? 'New run' : 'End run'}
               </button>
@@ -455,7 +455,7 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
 
       {/* ---------- The run's rules: one quiet line under it all (plain text, not things to tap) ---------- */}
       {/* Not on a phone: there it took two lines the paper needs (the result screen spells out the passing rule). */}
-      <div className="w-full shrink-0 border-t border-dashed pt-3 max-sm:hidden">
+      <div className="w-full shrink-0 border-t-2 border-dashed border-input/70 pt-3 max-sm:hidden">
         <h2 className="sr-only">Run protocol</h2>
         <ul className="flex flex-wrap justify-center gap-x-6 gap-y-1.5 text-xs text-muted-foreground sm:text-sm">
           {RULES.map(({ icon: Icon, text }) => (
@@ -482,7 +482,7 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
             <button
               type="button"
               onClick={() => setConfirmEnd(false)}
-              className="h-11 flex-1 rounded-lg border bg-card font-heading font-bold outline-none hover:border-primary/50 focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="h-11 flex-1 rounded-2xl border-[2.5px] border-ink bg-card font-heading font-semibold shadow-toon-sm outline-none transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               {complete ? 'Cancel' : 'Keep going'}
             </button>
@@ -493,7 +493,7 @@ export function BoardSetup({ run, saved, starting, onStartRun, onStartPaper, onR
                 setConfirmEnd(false)
                 onEndRun()
               }}
-              className="h-11 flex-1 rounded-lg bg-wrong font-heading font-bold text-white outline-none hover:bg-wrong/90 focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="h-11 flex-1 rounded-2xl border-[2.5px] border-ink bg-wrong font-heading font-semibold text-white shadow-toon-sm outline-none transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-wrong/90 focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               {complete ? 'New run' : 'End run'}
             </button>

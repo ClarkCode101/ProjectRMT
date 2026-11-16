@@ -55,7 +55,7 @@ function Field({ label, children, className }: { label: string; children: ReactN
   return (
     <span className={cn('flex min-w-0 items-baseline gap-2', className)}>
       <span className="shrink-0 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">{label}</span>
-      <span className="min-w-0 flex-1 truncate border-b border-dashed border-foreground/25 pb-0.5 font-semibold">{children}</span>
+      <span className="min-w-0 flex-1 truncate border-b-2 border-dashed border-input pb-0.5 font-semibold">{children}</span>
     </span>
   )
 }
@@ -85,8 +85,8 @@ type Props = {
 
 /** A topic chip's colors: red below 75%, green at 75% or more, plain when she hasn't tried it. */
 function topicTone(accuracy: number | null): string {
-  if (accuracy === null) return 'border-border bg-secondary/50 text-muted-foreground'
-  return accuracy < PASSING_RATE ? 'border-wrong/30 bg-wrong-soft text-wrong' : 'border-correct/30 bg-correct-soft text-correct'
+  if (accuracy === null) return 'border-ink/30 bg-secondary/50 text-muted-foreground'
+  return accuracy < PASSING_RATE ? 'border-ink bg-wrong-soft text-wrong' : 'border-ink bg-correct-soft text-correct'
 }
 
 export function PaperCover({ number, total, code, name, color, weight, studentName, topics, practiceScore, tapHint = false, footer }: Props) {
@@ -100,9 +100,9 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
 
   return (
     // Its height comes from what's on it (not the room around it), so nothing on the cover can be cut off.
-    <div className="relative flex flex-col overflow-hidden rounded-xl border border-primary/15 bg-card text-sm shadow-[0_22px_36px_-18px_rgb(7_71_94/0.55)]">
+    <div className="relative flex flex-col overflow-hidden rounded-2xl border-[2.5px] border-ink bg-card text-sm shadow-toon">
       {/* the subject's color band */}
-      <span aria-hidden className="h-2.5 shrink-0" style={{ background: color }} />
+      <span aria-hidden className="h-3.5 shrink-0 border-b-[2.5px] border-ink" style={{ background: color }} />
 
       {/* ---------- The booklet's header: what it is, which booklet, a barcode, the weight ---------- */}
       <div className="flex shrink-0 items-start justify-between gap-3 px-4 pt-3 sm:px-5">
@@ -121,7 +121,7 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
       </div>
 
       {/* ---------- Name and date, already filled in ---------- */}
-      <div className={cn('mx-4 mt-2.5 flex shrink-0 gap-4 border-y border-dashed border-foreground/15 py-2 sm:mx-5 sm:mt-3 sm:py-2.5', FIT_NO_NAME)}>
+      <div className={cn('mx-4 mt-2.5 flex shrink-0 gap-4 border-y-2 border-dashed border-border py-2 sm:mx-5 sm:mt-3 sm:py-2.5', FIT_NO_NAME)}>
         <Field label="Name" className="flex-1">
           {studentName ?? ' '}
         </Field>
@@ -134,7 +134,7 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
       {/* A phone gets the same cover, a little tighter (smaller code, less space), so it fits above Start. */}
       <div className="flex flex-col gap-2.5 px-4 py-2.5 sm:gap-3 sm:px-5 sm:py-3">
         <div className="text-center">
-          <p className="font-heading text-4xl leading-none font-black tracking-wide sm:text-5xl md:text-6xl" style={{ color }}>
+          <p className="font-heading text-4xl leading-none font-bold tracking-wide sm:text-5xl md:text-6xl" style={{ color }}>
             {code}
           </p>
           <p title={name} className="mt-1.5 truncate text-muted-foreground sm:mt-2">
@@ -152,13 +152,13 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
                 <li
                   key={t.name}
                   className={cn(
-                    'flex max-w-full items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs',
+                    'flex max-w-full items-center gap-1.5 rounded-full border-2 px-2 py-0.5 text-xs',
                     i >= TOPICS_SHOWN_PHONE && 'max-sm:hidden',
                     topicTone(t.accuracy),
                   )}
                 >
                   <span className="truncate text-foreground">{t.name}</span>
-                  {t.accuracy !== null && <span className="shrink-0 font-mono font-bold tabular-nums">{formatPercent(t.accuracy)}</span>}
+                  {t.accuracy !== null && <span className="shrink-0 font-heading font-bold tabular-nums">{formatPercent(t.accuracy)}</span>}
                 </li>
               ))}
               {/* "+N more": counted for the phone (fewer chips shown) and for bigger screens */}
@@ -171,7 +171,7 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
         <div>
           <p className="flex items-baseline justify-between gap-2">
             <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Your practice score</span>
-            <span className={cn('font-mono font-bold tabular-nums', practiceScore === null ? 'text-muted-foreground' : practiceScore < PASSING_RATE ? 'text-wrong' : 'text-correct')}>
+            <span className={cn('font-heading font-bold tabular-nums', practiceScore === null ? 'text-muted-foreground' : practiceScore < PASSING_RATE ? 'text-wrong' : 'text-correct')}>
               {practiceScore === null ? 'Not started' : formatPercent(practiceScore)}
             </span>
           </p>
@@ -191,7 +191,7 @@ export function PaperCover({ number, total, code, name, color, weight, studentNa
 
       {/* ---------- Along the bottom, only when there's something to say (where she left off a paused paper) ---------- */}
       {footer && (
-        <div className="flex shrink-0 items-center justify-center gap-1.5 border-t border-dashed border-foreground/15 px-5 py-3 font-semibold tabular-nums">{footer}</div>
+        <div className="flex shrink-0 items-center justify-center gap-1.5 border-t-2 border-dashed border-border px-5 py-3 font-semibold tabular-nums">{footer}</div>
       )}
     </div>
   )

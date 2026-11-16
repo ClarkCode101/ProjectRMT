@@ -65,11 +65,11 @@ export function MockSetup({ book, onStart, starting, saved, onResume, onDiscard,
       <section aria-label="Your book" className="flex min-h-0 flex-1 items-center justify-center">
         <span
           aria-hidden
-          className="relative flex h-52 w-40 flex-col items-center justify-center gap-3 overflow-hidden rounded-l-[4px] rounded-r-xl border border-primary/15 bg-card pl-5 text-primary-deep shadow-[0_18px_30px_-16px_rgb(7_71_94/0.6)] md:h-64 md:w-48"
+          className="relative flex h-52 w-40 flex-col items-center justify-center gap-3 overflow-hidden rounded-l-md rounded-r-2xl border-[2.5px] border-ink bg-card pl-5 text-primary-deep shadow-toon md:h-64 md:w-48"
         >
-          <span className="absolute inset-y-0 left-0 w-3.5" style={{ background: BOOK_SPINE[book.color] }} />
+          <span className="absolute inset-y-0 left-0 w-4 border-r-[2.5px] border-ink" style={{ background: BOOK_SPINE[book.color] }} />
           <span
-            className="flex size-14 items-center justify-center rounded-full border-2 bg-secondary/60 font-heading text-2xl font-black"
+            className="flex size-14 items-center justify-center rounded-full border-[2.5px] bg-secondary/60 font-heading text-2xl font-bold"
             style={{ borderColor: BOOK_SPINE[book.color], color: BOOK_SPINE[book.color] }}
           >
             {book.title.charAt(0).toUpperCase()}
@@ -82,7 +82,7 @@ export function MockSetup({ book, onStart, starting, saved, onResume, onDiscard,
       <div className="shrink-0 text-center" aria-live="polite">
         {saved ? (
           <>
-            <p className="font-heading text-4xl leading-none font-black tracking-wide md:text-5xl">{saved.label}</p>
+            <p className="font-heading text-4xl leading-none font-bold tracking-wide md:text-5xl">{saved.label}</p>
             <p className="mt-2 text-sm text-muted-foreground tabular-nums">
               <span className="font-bold text-[#9A5B00]">Paused</span> · {savedAnswered}/{saved.answers.length} answered ·{' '}
               {savedLeft > 0 ? `${formatClock(savedLeft)} left` : 'time is up'}
@@ -90,7 +90,7 @@ export function MockSetup({ book, onStart, starting, saved, onResume, onDiscard,
           </>
         ) : (
           <>
-            <p className="truncate px-4 font-heading text-4xl leading-none font-black tracking-wide md:text-5xl">{book.title}</p>
+            <p className="truncate px-4 font-heading text-4xl leading-none font-bold tracking-wide md:text-5xl">{book.title}</p>
             <p className="mt-2 truncate px-4 text-sm text-muted-foreground">
               Your book · {book.questionIds.size} questions ·{' '}
               <button type="button" onClick={onLeaveBook} className="rounded-sm font-semibold text-primary underline underline-offset-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
@@ -108,7 +108,7 @@ export function MockSetup({ book, onStart, starting, saved, onResume, onDiscard,
             <button
               type="button"
               onClick={onDiscard}
-              className="flex h-12 items-center rounded-lg border bg-card px-5 font-heading font-bold outline-none hover:border-wrong/60 hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="flex h-12 items-center rounded-2xl border-[2.5px] border-ink bg-card px-5 font-heading font-semibold shadow-toon-sm outline-none transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               Discard
             </button>
@@ -154,7 +154,7 @@ export function MockSetup({ book, onStart, starting, saved, onResume, onDiscard,
       )}
 
       {/* ---------- The run's rules ---------- */}
-      <div className="w-full shrink-0 border-t border-dashed pt-3">
+      <div className="w-full shrink-0 border-t-2 border-dashed border-input/70 pt-3">
         <h2 className="sr-only">Run protocol</h2>
         <ul className="flex flex-wrap justify-center gap-x-6 gap-y-1.5 text-xs text-muted-foreground sm:text-sm">
           {RULES.map(({ icon: Icon, text }) => (

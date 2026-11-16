@@ -18,7 +18,7 @@ import { PaperRule, ResultRow, ResultTable } from './MockResults'
 function Rule({ ok, children }: { ok: boolean; children: ReactNode }) {
   return (
     <li className="flex items-start gap-2.5">
-      <span className={cn('mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-white', ok ? 'bg-correct' : 'bg-wrong')}>
+      <span className={cn('mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 border-ink text-white', ok ? 'bg-correct' : 'bg-wrong')}>
         {ok ? <Check className="size-3.5" aria-label="Met" /> : <X className="size-3.5" aria-label="Not met" />}
       </span>
       <span className="text-sm">{children}</span>
@@ -50,7 +50,7 @@ export function BoardResults({ run, note, onNewRun }: { run: BoardRun; note: str
               </button>
               <Link
                 to="/"
-                className="flex h-12 items-center justify-center gap-2 rounded-lg bg-white/10 px-5 font-heading text-base font-bold text-white outline-none hover:bg-white/15 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px"
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl border-[2.5px] border-white/35 bg-white/10 px-5 font-heading text-base font-semibold text-white outline-none hover:bg-white/15 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px"
               >
                 <House className="size-5" aria-hidden />
                 Back to Home
@@ -61,8 +61,8 @@ export function BoardResults({ run, note, onNewRun }: { run: BoardRun; note: str
         </HeroPanel>
 
         <div className="-mt-3 overflow-hidden px-6 pb-6 sm:px-9">
-          <article aria-label="Printout" className="printout-feed drop-shadow-[0_14px_18px_rgb(7_71_94/0.18)]">
-            <div className="space-y-4 bg-card px-4 pt-6 pb-5 sm:px-6">
+          <article aria-label="Printout" className="printout-feed drop-shadow-[0_4px_0_var(--ink)]">
+            <div className="space-y-4 border-x-[2.5px] border-ink bg-card px-4 pt-6 pb-5 sm:px-6">
               <p className="text-center font-mono text-xs tracking-widest text-muted-foreground uppercase">Full board report</p>
 
               {/* the general average, with the stamp like a released lab result */}
@@ -79,7 +79,7 @@ export function BoardResults({ run, note, onNewRun }: { run: BoardRun; note: str
                 </div>
                 <p
                   className={cn(
-                    'stamp shrink-0 rounded-md border-[3px] px-3 py-1.5 text-center font-heading text-lg leading-none font-bold sm:text-xl',
+                    'stamp shrink-0 rounded-xl border-4 bg-card/80 px-3.5 py-1.5 text-center font-heading text-xl leading-none font-bold tracking-wider sm:text-2xl',
                     passed ? 'border-correct text-correct' : 'border-wrong text-wrong',
                   )}
                 >
