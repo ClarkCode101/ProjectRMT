@@ -1,9 +1,13 @@
-import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from 'react'
 import * as THREE from 'three'
+import { cn } from '@/lib/utils'
 
-// A stylized see-through 3D body with the six "subject organs" inside.
+// Home's body: a chibi 3D cartoon (big round head, small body) with the six "subject organs" inside.
+// Cartoon look: toon shading (three flat tones instead of smooth shading), an ink outline on every shape,
+// and a little face on each main organ. The organs are drawn on top of the skin, like an x-ray.
 // Built from simple shapes (no model file to download), so it stays light on mobile data.
-// Units are roughly meters: the body is about 1.75 tall, facing the camera (+z).
+// The organ shapes below are built at adult size (about 1.75 tall, from the first 3D body); makeOrgans() fits
+// them into the chibi body (PLACES). Facing the camera is +z.
 
 /** Where an organ is on screen right now, so the page can draw a line to its card. */
 export type OrganAnchor = { code: string; x: number; y: number; /** false when the organ is turned away */ facing: boolean }
@@ -22,6 +26,8 @@ type Props = {
   /** true = do a little dance (Home sets it once a day, when the daily goal is reached) */
   celebrate?: boolean
   className?: string
+  /** shown instead when the device can't draw 3D (Home passes the flat cartoon body) */
+  fallback?: ReactNode
 }
 
 type OrganSpec = {
@@ -68,13 +74,26 @@ function smoothProfile(points: [number, number][], steps = 32): [number, number]
 }
 
 /**
- * The material of an organ part: a little glossy, like a model in an anatomy lab.
+ * Three flat tones of light (shadow, middle, lit) for the toon look, instead of a smooth gradient.
+ * Made once and shared by every cartoon material.
+ */
+const TOON_RAMP = (() => {
+  const ramp = new THREE.DataTexture(new Uint8Array([90, 90, 90, 255, 170, 170, 170, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat)
+  ramp.minFilter = THREE.NearestFilter
+  ramp.magFilter = THREE.NearestFilter
+  ramp.generateMipmaps = false
+  ramp.needsUpdate = true
+  return ramp
+})()
+
+/**
+ * The material of an organ part: cartoon (toon) shading.
  * The color itself is set every frame (grey until the subject is started, then the organ's color), so a part only says
  * how it differs: `tone` above 0 = lighter, below 0 = darker; `own` = its own color instead of the organ's
- * (the blue vessel on the heart, the green gallbladder).
+ * (the blue vessel on the heart, the green gallbladder, the yellow bladder).
  */
 function organMaterial(tone = 0, own?: string) {
-  const material = new THREE.MeshPhysicalMaterial({ roughness: 0.4, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.35 })
+  const material = new THREE.MeshToonMaterial({ gradientMap: TOON_RAMP })
   material.userData = { tone, own: own ? new THREE.Color(own) : null }
   return material
 }
@@ -269,45 +288,6 @@ const ORGAN_SPECS: OrganSpec[] = [
   },
 ]
 
-/**
- * See-through "glass" skin: pale inside with soft shading from one light (so it reads as round, not flat),
- * and a teal rim at the edges (stronger where the surface turns away).
- * Both sides are drawn, so no surface can disappear because of which way its triangles face.
- */
-function skinMaterial() {
-  return new THREE.ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    uniforms: {
-      fillColor: { value: new THREE.Color('#BFE6F2') },
-      rimColor: { value: new THREE.Color('#0B6382') },
-    },
-    vertexShader: /* glsl */ `
-      varying vec3 vNormal;
-      varying vec3 vView;
-      void main() {
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        vNormal = normalize(normalMatrix * normal);
-        vView = normalize(-mv.xyz);
-        gl_Position = projectionMatrix * mv;
-      }`,
-    fragmentShader: /* glsl */ `
-      uniform vec3 fillColor;
-      uniform vec3 rimColor;
-      varying vec3 vNormal;
-      varying vec3 vView;
-      void main() {
-        vec3 n = normalize(vNormal);
-        float facing = abs(dot(n, normalize(vView)));
-        float rim = pow(1.0 - facing, 2.2);
-        // Soft light from the upper right, so the body has a lit side and a shaded side.
-        float light = 0.8 + 0.2 * max(dot(n * sign(dot(n, vView)), normalize(vec3(0.5, 0.7, 0.6))), 0.0);
-        vec3 color = mix(fillColor * light, rimColor, rim);
-        gl_FragColor = vec4(color, 0.12 + rim * 0.72);
-      }`,
-  })
-}
 
 /**
  * A smooth tube along a curve whose thickness changes along the way (thick at the shoulder, thin at the wrist).
@@ -352,83 +332,204 @@ function sweep(points: THREE.Vector3[], radii: number[], material: THREE.Materia
   return new THREE.Mesh(geometry, material)
 }
 
-/** The four joints the body can move at (both skin copies get their own; the scene moves them together). */
-type Limbs = { armL: THREE.Group; armR: THREE.Group; legL: THREE.Group; legR: THREE.Group }
+// ---------- The cartoon pieces: ink outlines and little faces ----------
+
+const INK = '#0E3445'
+const SKIN = '#BFEFF8'
+const inkLine = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide })
 
 /**
- * A joint: a group sitting at `at` (shoulder or hip). Parts added to `.inner` keep their normal positions,
- * but turning the joint swings them around that point, like an arm around the shoulder.
- * (There's no elbow or knee bend: each limb is one smooth piece.)
+ * The ink outline of one mesh ("inverted hull"): a copy pushed out along its normals, drawn inside out in ink,
+ * so only a thin rim shows around the edge. `worldThickness` is how thick the line is in the finished scene;
+ * the mesh's own scale and `outerScale` (how much its organ was scaled up) are divided out, so tiny parts
+ * (a vessel) and big ones (the liver) get the same line.
  */
-function joint(at: THREE.Vector3) {
-  const pivot = new THREE.Group()
-  pivot.position.copy(at)
-  const inner = new THREE.Group()
-  inner.position.copy(at).negate()
-  pivot.add(inner)
-  return { pivot, inner }
+function outlineOf(mesh: THREE.Mesh, worldThickness: number, outerScale = 1) {
+  const s = mesh.scale
+  const t = worldThickness / outerScale / ((Math.abs(s.x) + Math.abs(s.y) + Math.abs(s.z)) / 3)
+  const geometry = mesh.geometry.clone()
+  const position = geometry.attributes.position
+  const normal = geometry.attributes.normal
+  for (let i = 0; i < position.count; i++) {
+    position.setXYZ(i, position.getX(i) + normal.getX(i) * t, position.getY(i) + normal.getY(i) * t, position.getZ(i) + normal.getZ(i) * t)
+  }
+  const hull = new THREE.Mesh(geometry, inkLine)
+  hull.position.copy(mesh.position)
+  hull.rotation.copy(mesh.rotation)
+  hull.scale.copy(mesh.scale)
+  return hull
 }
 
-const SHOULDER = (side: number) => new THREE.Vector3(side * 0.185, 1.425, 0)
-const HIP = (side: number) => new THREE.Vector3(side * 0.09, 0.93, 0)
+/** A mesh with its ink outline, as one group. */
+function outlined(geometry: THREE.BufferGeometry, material: THREE.Material, thickness: number) {
+  const mesh = new THREE.Mesh(geometry, material)
+  return new THREE.Group().add(outlineOf(mesh, thickness), mesh)
+}
 
-function buildSkin(material: THREE.Material) {
-  const body = new THREE.Group()
-  const limbs: Partial<Limbs> = {}
-  const v = (x: number, y: number, z = 0) => new THREE.Vector3(x, y, z)
-  const ball = (radius: [number, number, number], position: THREE.Vector3) => {
-    const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), material)
-    mesh.scale.set(...radius)
-    mesh.position.copy(position)
-    return mesh
-  }
-
-  // Torso: a turned shape from hips to shoulders (hips, waist, chest, shoulders), flattened front-to-back.
-  const torso = lathe(
-    [[0, 0.86], [0.1, 0.865], [0.15, 0.9], [0.165, 0.96], [0.155, 1.03], [0.14, 1.1], [0.145, 1.18], [0.16, 1.27], [0.175, 1.35], [0.18, 1.4], [0.165, 1.44], [0.12, 1.475], [0.06, 1.495], [0, 1.5]],
-    material,
-    48,
-  )
-  torso.scale.set(1, 1, 0.6)
-  body.add(torso)
-
-  // Neck and head
-  body.add(sweep([v(0, 1.46), v(0, 1.52), v(0, 1.59)], [0.047, 0.044, 0.046], material, 8))
-  body.add(ball([0.1, 0.12, 0.11], v(0, 1.665)))
-
+const faceInk = new THREE.MeshBasicMaterial({ color: INK })
+const faceShine = new THREE.MeshBasicMaterial({ color: '#FFFFFF' })
+/** A little face (two eyes with a shine, and a smile), `size` wide, looking out along +z. */
+function face(size: number) {
+  const g = new THREE.Group()
   for (const side of [-1, 1]) {
-    const arm = joint(SHOULDER(side))
-    const leg = joint(HIP(side))
-    body.add(arm.pivot, leg.pivot)
-    if (side < 0) Object.assign(limbs, { armL: arm.pivot, legL: leg.pivot })
-    else Object.assign(limbs, { armR: arm.pivot, legR: leg.pivot })
-
-    // Arm in one piece: from inside the shoulder, over the shoulder, down to the wrist; then the hand.
-    arm.inner.add(
-      sweep(
-        [v(side * 0.11, 1.445), v(side * 0.185, 1.425), v(side * 0.225, 1.32, 0.005), v(side * 0.248, 1.13, 0.012), v(side * 0.265, 1.0, 0.022), v(side * 0.278, 0.875, 0.03)],
-        [0.05, 0.053, 0.046, 0.039, 0.035, 0.029],
-        material,
-      ),
-    )
-    arm.inner.add(ball([0.029, 0.029, 0.029], v(side * 0.278, 0.875, 0.03))) // rounds off the wrist
-    const hand = ball([0.028, 0.055, 0.017], v(side * 0.284, 0.82, 0.034))
-    hand.rotation.z = side * 0.06
-    arm.inner.add(hand)
-
-    // Leg in one piece: hip to ankle, thick thigh, slimmer knee, calf, thin ankle; then the foot.
-    leg.inner.add(
-      sweep(
-        [v(side * 0.085, 0.95), v(side * 0.095, 0.72, 0.01), v(side * 0.1, 0.5, 0.015), v(side * 0.1, 0.3), v(side * 0.103, 0.08, -0.01)],
-        [0.078, 0.066, 0.05, 0.047, 0.034],
-        material,
-      ),
-    )
-    leg.inner.add(ball([0.034, 0.034, 0.034], v(side * 0.103, 0.08, -0.01))) // rounds off the ankle
-    leg.inner.add(ball([0.038, 0.028, 0.085], v(side * 0.105, 0.035, 0.035)))
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(size * 0.15, 16, 12), faceInk)
+    eye.scale.z = 0.5
+    eye.position.set(side * size * 0.3, size * 0.08, 0)
+    const shine = new THREE.Mesh(new THREE.SphereGeometry(size * 0.05, 10, 8), faceShine)
+    shine.position.set(side * size * 0.3 + size * 0.045, size * 0.13, size * 0.05)
+    g.add(eye, shine)
   }
-  body.userData.limbs = limbs as Limbs
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(size * 0.15, size * 0.032, 8, 24, Math.PI), faceInk)
+  smile.rotation.z = Math.PI
+  smile.position.set(0, -size * 0.1, 0)
+  g.add(smile)
+  return g
+}
+
+/** A five-point gold star (a passing subject gets one by its organ), with its ink outline. */
+function star() {
+  const shape = new THREE.Shape()
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 ? 0.024 : 0.055
+    const a = (i / 10) * Math.PI * 2 + Math.PI / 2
+    if (i === 0) shape.moveTo(Math.cos(a) * r, Math.sin(a) * r)
+    else shape.lineTo(Math.cos(a) * r, Math.sin(a) * r)
+  }
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 0.02, bevelEnabled: false })
+  geometry.computeVertexNormals()
+  return outlined(geometry, new THREE.MeshToonMaterial({ color: '#F7B538', gradientMap: TOON_RAMP }), 0.008)
+}
+
+// ---------- The chibi body ----------
+
+/** Where the shoulders and hips are: the arms and legs turn around these when she dances. */
+const SHOULDER = (side: number) => new THREE.Vector3(side * 0.316, 1.16, 0)
+const HIP = (side: number) => new THREE.Vector3(side * 0.15, 0.4, 0)
+const FLOOR_Y = 0.02
+type Limbs = { armL: THREE.Group; armR: THREE.Group; legL: THREE.Group; legR: THREE.Group }
+
+/** A big round head on a small round body, with short arms and legs; every part outlined in ink. */
+function buildSkin() {
+  const body = new THREE.Group()
+  const material = new THREE.MeshToonMaterial({ color: SKIN, gradientMap: TOON_RAMP })
+  const capsule = (r: number, length: number) => new THREE.CapsuleGeometry(r, length, 12, 32)
+  const add = (parent: THREE.Object3D, geometry: THREE.BufferGeometry, at: THREE.Vector3, rotZ = 0, thickness = 0.026) => {
+    const part = outlined(geometry, material, thickness)
+    part.position.copy(at)
+    part.rotation.z = rotZ
+    parent.add(part)
+  }
+  add(body, new THREE.SphereGeometry(0.56, 56, 42), new THREE.Vector3(0, 1.9, 0), 0, 0.028) // head
+  const torso = new THREE.CapsuleGeometry(0.38, 0.3, 12, 32)
+  torso.scale(1, 1, 0.68)
+  torso.computeVertexNormals()
+  add(body, torso, new THREE.Vector3(0, 0.9, 0))
+
+  // Each arm and leg hangs from a pivot at its shoulder or hip, so dancing can swing it.
+  const pivot = (at: THREE.Vector3) => {
+    const p = new THREE.Group()
+    p.position.copy(at)
+    body.add(p)
+    return p
+  }
+  const limbs: Limbs = { armL: pivot(SHOULDER(-1)), armR: pivot(SHOULDER(1)), legL: pivot(HIP(-1)), legR: pivot(HIP(1)) }
+  for (const [arm, side] of [[limbs.armL, -1], [limbs.armR, 1]] as const) {
+    // the arm's middle, measured from the shoulder (it hangs down and out at 0.62 radians)
+    add(arm, capsule(0.1, 0.24), new THREE.Vector3(side * 0.124, -0.18, 0), side * 0.62, 0.024)
+  }
+  for (const leg of [limbs.legL, limbs.legR]) add(leg, capsule(0.13, 0.12), new THREE.Vector3(0, -0.12, 0), 0, 0.024)
+  body.userData.limbs = limbs
   return body
+}
+
+/**
+ * Where each organ goes in the chibi body, and how big (its width, or its height for the tall ones).
+ * BBIS (the blood drop) is held in the hand of the left arm (viewer's left).
+ */
+const PLACES: Record<string, { at: [number, number, number]; width?: number; height?: number }> = {
+  HTMLE: { at: [0, 1.96, 0.14], width: 0.52 },
+  MICRO: { at: [0, 1.21, 0.1], width: 0.58 },
+  HEMA: { at: [0.08, 1.02, 0.24], height: 0.25 },
+  CC: { at: [-0.05, 0.9, 0.2], width: 0.46 },
+  CM: { at: [0, 0.57, 0.14], height: 0.42 },
+  BBIS: { at: [-0.6, 0.76, 0.12], height: 0.22 },
+}
+
+/** The blood drop's outline, bottom to top (top to bottom faced it inward, and its ink outline covered it). */
+const DROP_PROFILE: [number, number][] = [[0, -0.043], [0.013, -0.041], [0.024, -0.03], [0.026, -0.012], [0.017, 0.012], [0.006, 0.04], [0, 0.058]]
+
+type Organ = {
+  code: string
+  color: THREE.Color
+  /** placed in the body; grows a little when chosen */
+  object: THREE.Group
+  /** inside it: breathes (lungs) or beats (heart) */
+  life: THREE.Group
+  /** where its card line ends */
+  anchor: THREE.Object3D
+  /** the gold star shown while the subject is passing */
+  star: THREE.Group
+  /** about how big it is, for the gold ring around the chosen one */
+  size: number
+}
+
+/** The six organs, made cartoon and fitted into the chibi body. */
+function makeOrgans(): Organ[] {
+  return ORGAN_SPECS.map((spec) => {
+    const made = spec.build()
+    if (spec.code === 'BBIS' && made instanceof THREE.Mesh) {
+      made.geometry.dispose()
+      made.geometry = new THREE.LatheGeometry(smoothProfile(DROP_PROFILE).map(([r, y]) => new THREE.Vector2(r, y)), 32)
+    }
+    // An empty group around it first, so every organ (even a bare mesh with its own position) moves the same way.
+    const shape = new THREE.Group().add(made)
+    shape.updateMatrixWorld(true)
+    const box = new THREE.Box3().setFromObject(shape)
+    const center = box.getCenter(new THREE.Vector3())
+    const dims = box.getSize(new THREE.Vector3())
+    const place = PLACES[spec.code]
+    const fit = place.width ? place.width / dims.x : (place.height ?? 0.3) / dims.y
+
+    // An ink outline on every part, and a face on the main ones (not on vessels, the airway, the gallbladder
+    // or the bladder: those are lighter or have their own color). The brain gets one face for both halves.
+    const meshes: THREE.Mesh[] = []
+    made.traverse((o) => o instanceof THREE.Mesh && meshes.push(o))
+    const faceSpots: THREE.Box3[] = []
+    for (const mesh of meshes) {
+      ;(mesh.parent ?? shape).add(outlineOf(mesh, 0.014, fit))
+      const { tone, own } = (mesh.material as THREE.Material).userData as { tone: number; own: THREE.Color | null }
+      if (tone === 0 && !own) faceSpots.push(new THREE.Box3().setFromObject(mesh))
+    }
+    shape.position.sub(center) // its middle at 0,0,0
+
+    const fitted = new THREE.Group()
+    fitted.scale.setScalar(fit)
+    fitted.add(shape)
+    for (const spot of spec.code === 'HTMLE' ? [box] : faceSpots) {
+      const c = spot.getCenter(new THREE.Vector3()).sub(center)
+      const size = spot.getSize(new THREE.Vector3())
+      const f = face(Math.min(size.x, size.y) * (spec.code === 'HTMLE' ? 0.5 : 0.62))
+      f.position.set(c.x, c.y - size.y * (spec.code === 'HTMLE' ? 0.12 : 0.02), spot.max.z - center.z + size.z * 0.02)
+      fitted.add(f)
+    }
+
+    const life = new THREE.Group().add(fitted)
+    const object = new THREE.Group().add(life)
+    object.position.set(...place.at)
+    object.userData.code = spec.code
+    // The card line ends at the given spot (one lung, one kidney: on its card's side), else at the organ's middle.
+    let anchor: THREE.Object3D = object
+    if (spec.anchor) {
+      anchor = new THREE.Object3D()
+      anchor.position.set(...spec.anchor) // in the organ's own (adult-size) units, like its parts
+      shape.add(anchor)
+    }
+    const goldStar = star()
+    goldStar.position.set(dims.x * fit * 0.5, dims.y * fit * 0.45, 0.08)
+    goldStar.visible = false
+    object.add(goldStar)
+    return { code: spec.code, color: new THREE.Color(spec.color), object, life, anchor, star: goldStar, size: Math.max(dims.x, dims.y) * fit }
+  })
 }
 
 /** What the body says when she pokes it (not an organ). */
@@ -446,11 +547,19 @@ function canUseWebGL() {
 }
 
 /** Not started: the organ shows in this grey until she answers something in its subject. */
-const NOT_STARTED_GREY = new THREE.Color('#B8C4CE')
+const NOT_STARTED_GREY = new THREE.Color('#C5D3DA')
 const WHITE = new THREE.Color('#FFFFFF')
 const BLACK = new THREE.Color('#000000')
+const GOLD = new THREE.Color('#F7B538')
 
-export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, className, celebrate = false }: Props) {
+/** Two layers, drawn one after the other: the skin first, then the organs on top of it (like an x-ray). */
+const SKIN_LAYER = 1
+const ORGAN_LAYER = 2
+function putOnLayer(object: THREE.Object3D, layer: number) {
+  object.traverse((o) => o.layers.set(layer))
+}
+
+export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, className, celebrate = false, fallback }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [supported] = useState(canUseWebGL)
   // The little speech bubble when she pokes the body ("Ouch!"); id restarts its pop-in animation.
@@ -478,82 +587,53 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
       return // WebGL said yes but still failed; the cards still work
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.autoClear = false // two passes per frame (skin, then organs), cleared by hand
     container.appendChild(renderer.domElement)
     renderer.domElement.style.touchAction = 'pan-y' // vertical swipes still scroll the page on phones
     renderer.domElement.style.cursor = 'grab'
 
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(26, 1, 0.1, 20)
-    camera.position.set(0, 0.95, 4.1)
-    camera.lookAt(0, 0.88, 0)
-
-    scene.add(new THREE.HemisphereLight('#ffffff', '#9FC3D1', 1.5))
-    const key = new THREE.DirectionalLight('#ffffff', 1.5)
-    key.position.set(1.5, 2.5, 3)
-    scene.add(key)
-    // A soft light from behind, so the organs get a bright edge and look round.
-    const back = new THREE.DirectionalLight('#BFE6F2', 0.9)
-    back.position.set(-2, 1.5, -2.5)
-    scene.add(back)
+    const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 20)
+    // Flat, even light: the toon ramp turns it into the three tones.
+    const ambient = new THREE.AmbientLight('#ffffff', 1.1)
+    const key = new THREE.DirectionalLight('#ffffff', 2.2)
+    key.position.set(-1.5, 2.5, 3)
+    for (const light of [ambient, key]) {
+      light.layers.enableAll()
+      scene.add(light)
+    }
 
     const figure = new THREE.Group()
     scene.add(figure)
-
-    const organs = ORGAN_SPECS.map((spec) => {
-      const shape = spec.build()
-      // Wrap each organ in a group placed at its middle, so it can grow and pulse in place
-      // (and so the card line points at the middle of the organ).
-      const center = new THREE.Box3().setFromObject(shape).getCenter(new THREE.Vector3())
-      shape.position.sub(center)
-      const object = new THREE.Group()
-      object.position.copy(center)
-      object.add(shape)
-      object.userData.code = spec.code
-      figure.add(object)
-      // The card line ends at the fixed anchor, or else at the organ's live position (so it follows a moving arm).
-      const anchor = spec.anchor ? new THREE.Vector3(...spec.anchor) : object.position
-      return { code: spec.code, object, center, anchor, color: new THREE.Color(spec.color) }
-    })
-    // Skin is drawn after the organs so they show through it, in two passes:
-    // 1) an invisible pass that only records the nearest surface, 2) the glass look on that surface only.
-    // Without pass 1, every overlapping part (shoulder, elbow, hip) would show its own outline.
-    const depthOnly = buildSkin(new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide }))
-    depthOnly.traverse((o) => (o.renderOrder = 1))
-    figure.add(depthOnly)
-    const skin = buildSkin(skinMaterial())
-    skin.traverse((o) => (o.renderOrder = 2))
+    const skin = buildSkin()
+    putOnLayer(skin, SKIN_LAYER)
     figure.add(skin)
-    // Both skin copies move together; the blood drop (BBIS) rides on her left arm.
-    const limbSets = [depthOnly.userData.limbs as Limbs, skin.userData.limbs as Limbs]
-    const bloodDrop = organs.find((o) => o.code === 'BBIS')
-    const leftShoulder = SHOULDER(-1)
-    const zAxis = new THREE.Vector3(0, 0, 1)
-    const dropAt = new THREE.Vector3()
+    const limbs = skin.userData.limbs as Limbs
 
-    // A soft shadow under the feet, so the body stands on the floor instead of floating.
-    const shadowCanvas = document.createElement('canvas')
-    shadowCanvas.width = shadowCanvas.height = 128
-    const shadowPaint = shadowCanvas.getContext('2d')
-    if (shadowPaint) {
-      const gradient = shadowPaint.createRadialGradient(64, 64, 0, 64, 64, 64)
-      gradient.addColorStop(0, 'rgba(7, 71, 94, 0.45)')
-      gradient.addColorStop(1, 'rgba(7, 71, 94, 0)')
-      shadowPaint.fillStyle = gradient
-      shadowPaint.fillRect(0, 0, 128, 128)
+    const organs = makeOrgans()
+    for (const o of organs) {
+      // The blood drop is held in the left hand: it rides on that arm (so it swings when she dances).
+      if (o.code === 'BBIS') {
+        o.object.position.sub(SHOULDER(-1))
+        limbs.armL.add(o.object)
+      } else {
+        figure.add(o.object)
+      }
+      putOnLayer(o.object, ORGAN_LAYER)
     }
-    const shadowTexture = new THREE.CanvasTexture(shadowCanvas)
-    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.3), new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false }))
+
+    // A flat cartoon shadow under the feet.
+    const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.62, 48), new THREE.MeshBasicMaterial({ color: INK, transparent: true, opacity: 0.13, depthWrite: false }))
     shadow.rotation.x = -Math.PI / 2
-    shadow.position.y = 0.002
+    shadow.scale.set(1, 0.32, 1)
+    shadow.position.y = FLOOR_Y
+    shadow.layers.set(SKIN_LAYER)
     scene.add(shadow)
 
-    // Platform rings under the feet, like the stand in the picture.
-    const ringMat = new THREE.MeshBasicMaterial({ color: '#0B6382', transparent: true, opacity: 0.35, side: THREE.DoubleSide })
-    for (const [inner, outer] of [[0.3, 0.31], [0.42, 0.425]]) {
-      const ring = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 64), ringMat)
-      ring.rotation.x = -Math.PI / 2
-      scene.add(ring)
-    }
+    // The chosen organ: a gold ring around it, always facing the camera.
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.07, 12, 48), new THREE.MeshBasicMaterial({ color: '#F7B538' }))
+    ring.layers.set(ORGAN_LAYER)
+    scene.add(ring)
 
     // ---- Rotation: drag to turn, with a little glide after letting go ----
     let angle = 0
@@ -623,12 +703,12 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
       }
       if (!reduceMotion) {
         flinchStart = clock.getElapsedTime()
-        // A small ring that spreads out from the spot she touched.
+        // A small ink ring that spreads out from the spot she touched.
         const ripple = new THREE.Mesh(
-          new THREE.RingGeometry(0.012, 0.018, 32),
-          new THREE.MeshBasicMaterial({ color: '#0B6382', transparent: true, opacity: 0.7, depthTest: false, side: THREE.DoubleSide }),
+          new THREE.RingGeometry(0.02, 0.032, 32),
+          new THREE.MeshBasicMaterial({ color: INK, transparent: true, opacity: 0.7, depthTest: false, side: THREE.DoubleSide }),
         )
-        ripple.renderOrder = 3
+        ripple.layers.set(ORGAN_LAYER)
         ripple.position.copy(hit.point)
         ripple.lookAt(camera.position)
         scene.add(ripple)
@@ -647,10 +727,12 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
     }
 
     const raycaster = new THREE.Raycaster()
+    raycaster.layers.enableAll() // it looks at both layers
     function pick(e: PointerEvent): string | null {
       const rect = renderer.domElement.getBoundingClientRect()
       const pointer = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1)
       raycaster.setFromCamera(pointer, camera)
+      // Organs are drawn on top of the skin, so they win even when the skin is nearer.
       const hit = raycaster.intersectObjects(organs.map((o) => o.object), true)[0]
       let node: THREE.Object3D | null = hit?.object ?? null
       while (node && !node.userData.code) node = node.parent
@@ -662,18 +744,26 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
     renderer.domElement.addEventListener('pointerup', onPointerUp)
     renderer.domElement.addEventListener('pointercancel', onPointerUp)
 
-    // ---- Size: follow the container ----
+    // ---- Size: follow the container, and back the camera up until the whole body fits (tall or wide boxes) ----
     let width = 0
     let height = 0
+    const bodyBox = new THREE.Box3().setFromObject(skin)
+    function frameCamera() {
+      const middle = (bodyBox.max.y + FLOOR_Y) / 2
+      const tall = bodyBox.max.y - FLOOR_Y
+      const wide = Math.max(bodyBox.max.x, -bodyBox.min.x, 0.75) * 2 // 0.75: the drop in the hand sticks out
+      const tanHalf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+      const distance = Math.max(tall / 2 / tanHalf, wide / 2 / (tanHalf * camera.aspect)) * 1.12
+      camera.position.set(0, middle + 0.05, distance)
+      camera.lookAt(0, middle - 0.02, 0)
+    }
     const resize = new ResizeObserver(([entry]) => {
       width = entry.contentRect.width
       height = entry.contentRect.height
       renderer.setSize(width, height)
       camera.aspect = width / Math.max(height, 1)
-      // Narrow boxes (phones): back the camera up so the whole body fits.
-      // (The body with arms is about 0.65 wide by 1.8 tall, so it fits down to a 0.4 width-to-height box.)
-      camera.position.z = camera.aspect < 0.4 ? 4.1 * (0.4 / camera.aspect) : 4.1
       camera.updateProjectionMatrix()
+      frameCamera()
     })
     resize.observe(container)
 
@@ -685,6 +775,7 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
     const clock = new THREE.Clock()
     const projected = new THREE.Vector3()
     const worldPos = new THREE.Vector3()
+    const figurePos = new THREE.Vector3()
     const tint = new THREE.Color()
     let frame = 0
     function tick() {
@@ -710,9 +801,9 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
         else {
           const ease = Math.min(1, u / 0.3, (DANCE_SECONDS - u) / 0.3) // fade in and out of the moves
           const beatPhase = u * Math.PI * 2 * 1.8 // about 108 beats a minute
-          bounce = ease * 0.035 * Math.abs(Math.sin(beatPhase))
-          sway = ease * 0.03 * Math.sin(beatPhase / 2)
-          tilt = ease * 0.06 * Math.sin(beatPhase / 2)
+          bounce = ease * 0.06 * Math.abs(Math.sin(beatPhase))
+          sway = ease * 0.05 * Math.sin(beatPhase / 2)
+          tilt = ease * 0.07 * Math.sin(beatPhase / 2)
           // Arms take turns going up; legs take turns with a small kick forward.
           armL = -ease * (0.6 + 0.6 * Math.sin(beatPhase))
           armR = ease * (0.6 - 0.6 * Math.sin(beatPhase))
@@ -729,21 +820,15 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
           squash = 0.03 * k // and a little "oof"
         }
       }
+      // A slow breath for the whole body (about 4 seconds a breath), on top of any dance.
+      const breathe = reduceMotion ? 0 : Math.sin((t * Math.PI * 2) / 4.2)
       figure.position.set(sway, bounce, 0)
       figure.rotation.z = tilt
-      figure.scale.set(1 + squash * 0.6, 1 - squash, 1 + squash * 0.6)
-      for (const limbs of limbSets) {
-        limbs.armL.rotation.z = armL
-        limbs.armR.rotation.z = armR
-        limbs.legL.rotation.x = legL
-        limbs.legR.rotation.x = legR
-      }
-      if (bloodDrop) {
-        // The drop sits on her left arm, so it swings around the shoulder with it.
-        dropAt.copy(bloodDrop.center).sub(leftShoulder).applyAxisAngle(zAxis, armL).add(leftShoulder)
-        bloodDrop.object.position.copy(dropAt)
-        bloodDrop.object.rotation.z = armL
-      }
+      figure.scale.set(1 + squash * 0.6, 1 - squash + breathe * 0.008, 1 + squash * 0.6)
+      limbs.armL.rotation.z = armL
+      limbs.armR.rotation.z = armR
+      limbs.legL.rotation.x = legL
+      limbs.legR.rotation.x = legR
 
       // Poke ripples: spread out and fade, then go away.
       for (let i = ripples.length - 1; i >= 0; i--) {
@@ -761,47 +846,63 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
       }
 
       const { selectedCode: selected, looks: organLooks, onFrame: report } = latest.current
-      // A little life: slow breathing (lungs, about 4 seconds a breath) and a soft heartbeat (about 70 a minute,
-      // "lub-dub"). Applied to the shape inside each organ's group, so the chosen organ's grow-and-pulse still works.
-      const breath = reduceMotion ? 0 : (Math.sin((t * Math.PI * 2) / 4.2) + 1) / 2
+      // A little life: the lungs breathe and the heart beats (about 70 a minute, "lub-dub").
+      const breath = reduceMotion ? 0 : (breathe + 1) / 2
       const phase = (t % 0.86) / 0.86
       const beat = reduceMotion ? 0 : Math.exp(-(((phase - 0.05) / 0.045) ** 2)) + 0.6 * Math.exp(-(((phase - 0.22) / 0.045) ** 2))
       for (const o of organs) {
-        const inner = o.object.children[0]
-        if (o.code === 'MICRO') inner.scale.set(1 + 0.035 * breath, 1 + 0.02 * breath, 1 + 0.035 * breath)
-        if (o.code === 'HEMA') inner.scale.setScalar(1 + 0.06 * beat)
+        if (o.code === 'MICRO') o.life.scale.set(1 + 0.04 * breath, 1 + 0.025 * breath, 1 + 0.04 * breath)
+        if (o.code === 'HEMA') o.life.scale.setScalar(1 + 0.09 * beat)
 
         const isSelected = o.code === selected
-        const pulse = isSelected && !reduceMotion ? 1 + Math.sin(t * 4) * 0.06 : 1
-        o.object.scale.setScalar(isSelected ? 1.12 * pulse : 1)
-        // Grey until she starts the subject, then its own color; a passing subject glows a little.
+        const pulse = isSelected && !reduceMotion ? 1 + Math.sin(t * 4) * 0.05 : 1
+        o.object.scale.setScalar(isSelected ? 1.1 * pulse : 1)
+        // Grey until she starts the subject, then its own color; a passing subject gets a gold star and a warm glow.
         // (No look given, e.g. scores still loading: its color.)
         const look = organLooks?.[o.code] ?? 'color'
+        o.star.visible = look === 'glow'
+        if (o.star.visible && !reduceMotion) o.star.rotation.y = Math.sin(t * 2) * 0.5
         o.object.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+          if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshToonMaterial && child.material.userData.tone !== undefined) {
             // Each part starts from grey (not started), its own color, or the organ's color,
             // then goes a little lighter or darker (its tone).
             const { tone, own } = child.material.userData as { tone: number; own: THREE.Color | null }
             tint.copy(look === 'grey' ? NOT_STARTED_GREY : (own ?? o.color))
-            if (tone > 0) tint.lerp(WHITE, tone)
+            if (tone > 0) tint.lerp(WHITE, tone * 0.8)
             else if (tone < 0) tint.lerp(BLACK, -tone)
-            // Organs stay solid (see-through organs would hide behind the skin's first pass); the chosen one glows most.
             child.material.color.copy(tint)
-            child.material.emissive.copy(tint)
-            child.material.emissiveIntensity = isSelected ? 0.6 : look === 'glow' ? 0.35 : 0.1
+            child.material.emissive.copy(GOLD)
+            child.material.emissiveIntensity = look === 'glow' ? 0.12 : 0
           }
         })
       }
 
+      // The gold ring around the chosen organ.
+      const chosen = organs.find((o) => o.code === selected)
+      ring.visible = chosen !== undefined
+      figure.updateMatrixWorld()
+      if (chosen) {
+        chosen.object.getWorldPosition(worldPos)
+        ring.position.copy(worldPos)
+        ring.scale.setScalar(chosen.size * 0.62 * (reduceMotion ? 1 : 1 + Math.sin(t * 4) * 0.05))
+        ring.quaternion.copy(camera.quaternion)
+      }
+
+      // Two passes: the skin, then the organs on top of it.
+      renderer.clear()
+      camera.layers.set(SKIN_LAYER)
+      renderer.render(scene, camera)
+      renderer.clearDepth()
+      camera.layers.set(ORGAN_LAYER)
       renderer.render(scene, camera)
 
       if (report) {
-        figure.updateMatrixWorld()
+        figure.getWorldPosition(figurePos)
         report(
           organs.map((o) => {
-            worldPos.copy(o.anchor).applyMatrix4(figure.matrixWorld)
+            o.anchor.getWorldPosition(worldPos)
             // Facing us when the organ is on the camera side of the body (kidneys sit a bit behind).
-            const facing = worldPos.z > -0.07
+            const facing = worldPos.z - figurePos.z > -0.05
             projected.copy(worldPos).project(camera)
             return { code: o.code, x: (projected.x * 0.5 + 0.5) * width, y: (-projected.y * 0.5 + 0.5) * height, facing }
           }),
@@ -828,7 +929,6 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
           materials.forEach((m) => m.dispose())
         }
       })
-      shadowTexture.dispose()
       renderer.dispose()
       renderer.domElement.remove()
     }
@@ -841,14 +941,16 @@ export default function Body3D({ selectedCode, looks, onPick, onFrame, ref, clas
     return () => window.clearTimeout(id)
   }, [celebrate])
 
+  // No 3D on this device: the flat cartoon body instead (the page passes it in).
+  if (!supported) return <>{fallback}</>
   return (
-    <div ref={containerRef} className={className} style={{ position: 'relative' }} aria-hidden>
-      {!supported && <p className="grid h-full place-items-center p-4 text-center text-sm text-muted-foreground">The 3D body can’t be shown on this device. Use the subject cards instead.</p>}
+    // relative by default (for the "Ouch!" bubble); the page may make it absolute to fill its box (cn keeps the later one)
+    <div ref={containerRef} className={cn('relative', className)} aria-hidden>
       {/* "Ouch!": pops up just above where she poked */}
       {bubble && (
         <span
           key={bubble.id}
-          className="animate-in fade-in zoom-in-75 pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-full bg-card px-3 py-1 font-heading text-sm font-bold whitespace-nowrap text-primary-deep shadow-md ring-1 ring-border duration-150"
+          className="animate-in fade-in zoom-in-75 pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-full border-2 border-ink bg-card px-3 py-1 font-heading text-sm font-bold whitespace-nowrap text-primary-deep shadow-toon-sm duration-150"
           style={{ left: bubble.x, top: bubble.y - 10 }}
         >
           {bubble.text}

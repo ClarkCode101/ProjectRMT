@@ -7,20 +7,22 @@ import { PASSING_LABEL, PASSING_RATE, type SubjectSummary } from '@/lib/quiz'
 import { useCountUp } from '@/lib/useCountUp'
 import { cn } from '@/lib/utils'
 import type { Body3DControls, OrganAnchor } from './Body3D'
+import { BodyCartoon } from './BodyCartoon'
 import { WarmupCard } from './HomeCards'
 import { OrganIcon } from './OrganIcon'
 import type { ScoreSnapshot } from './snapshot'
 import { correctCount, correctToPass, MIN_ANSWERED, nextMilestone, ORGANS, organLook, scoreCaption, STATUS_COLOR, subjectStatus, type SubjectStatus } from './organs'
 
-// three.js is big, so the 3D body downloads separately, after the rest of Home shows.
+// three.js is big, so the 3D body downloads separately, after the rest of Home shows (the flat body shows meanwhile).
 const Body3D = lazy(() => import('./Body3D'))
 
 /**
- * The centerpiece of Home: a 3D body you can turn, with a card for each subject around it.
+ * The centerpiece of Home: a chibi 3D cartoon body you can turn, with a card for each subject around it.
+ * While the 3D part downloads (and on devices that can't draw 3D) the flat cartoon body stands in.
  * Laptops: cards in two columns beside the body, each joined to its organ by a faint line (like a labelled diagram).
  * Tablets and phones: the cards sit in a grid under the body.
  * From tablet size up, the stage stretches to fill the height it is given, so Home fits without scrolling.
- * The cards are the keyboard / screen-reader way to choose; the 3D body is extra.
+ * The cards are the keyboard / screen-reader way to choose; tapping an organ on the body is extra.
  *
  * Tapping a card (or its organ) only CHOOSES the subject: the Next up bar below then points its Practice button at it.
  */
@@ -47,16 +49,16 @@ export function BodyStage({
   celebrate?: boolean
 }) {
   const mapped = summary.filter((s) => ORGANS[s.code])
-  const controls = useRef<Body3DControls | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
+  const controls = useRef<Body3DControls | null>(null)
   const canvasBoxRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef(new Map<string, HTMLElement>())
   const lineRefs = useRef(new Map<string, SVGGElement>())
   // The card she's pointing at or tabbed to (its line shows too); null = none.
   const [pointedCode, setPointedCode] = useState<string | null>(null)
 
-  // Runs every frame: move each dashed line so it joins its card to the organ, wherever the body has turned.
-  // Done directly on the SVG (not through React state) so turning stays smooth.
+  // Runs when the body is drawn or changes size: move each dashed line so it joins its card to the organ.
+  // Done directly on the SVG (not through React state), so it never causes a re-render.
   function drawLines(anchors: OrganAnchor[]) {
     const stage = stageRef.current
     const canvasBox = canvasBoxRef.current
@@ -79,6 +81,12 @@ export function BodyStage({
       line.querySelector('circle')?.setAttribute('cy', String(y2))
       line.style.opacity = a.facing ? '1' : '0.25'
     }
+  }
+
+  /** Tapping an organ (on the flat or the 3D body) chooses its subject. */
+  function pickOrgan(code: string) {
+    const subject = mapped.find((s) => s.code === code)
+    if (subject) onSelect(subject.subjectId)
   }
 
   // How each organ looks on the body: grey (not started), its color, or glowing (passing).
@@ -110,22 +118,21 @@ export function BodyStage({
         onFocus={() => setPointedCode(s.code)}
         onBlur={() => setPointedCode(null)}
         className={cn(
-          // A small "lab result" card: white, thin border, light shadow (the box says "you can tap me").
-          // It never moves: hover and the chosen state only change the border and shadow, so tapping feels steady.
+          // A small "sticker" card: white, ink outline, hard shadow (the box says "you can tap me").
+          // It never moves: hover and the chosen state only change its color, so tapping feels steady.
           // Laptops: as wide as its column allows (up to 20rem), so the full subject name fits.
           // @container: the card shows more (the correct count) when it has the room.
-          '@container relative flex w-full min-w-0 flex-col gap-2 rounded-2xl border bg-card px-3 py-2.5 text-left shadow-[0_6px_18px_-12px_rgb(7_71_94/0.45)] outline-none transition-[box-shadow,border-color] focus-visible:ring-3 focus-visible:ring-ring/40 lg:max-w-80 lg:px-3.5',
-          isSelected
-            ? 'border-primary bg-primary/4 shadow-[0_10px_28px_-16px_rgb(7_71_94/0.6)] ring-1 ring-primary'
-            : 'hover:border-primary/40 hover:shadow-[0_12px_28px_-14px_rgb(7_71_94/0.5)]',
+          '@container relative flex w-full min-w-0 flex-col gap-2 rounded-2xl border-[2.5px] border-ink px-3 py-2.5 text-left shadow-toon outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 lg:max-w-80 lg:px-3.5',
+          // The chosen one turns gold (the same gold as its ring on the body and the Practice button).
+          isSelected ? 'bg-highlight-soft' : 'bg-card hover:bg-[#F1FAFC]',
           // Just practiced this one: a soft gold flash while its number counts up.
           before && 'score-bump',
         )}
       >
         {/* Top row: the organ (icon on a tint of its own color, like on the body), the subject, the number */}
         <span className="flex items-center gap-2">
-          <span className="grid size-8 shrink-0 place-items-center rounded-full lg:size-9" style={{ backgroundColor: `${organ.color}26` }}>
-            <OrganIcon code={s.code} className="size-4.5 lg:size-5" />
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg border-2 border-ink lg:size-11 lg:rounded-xl" style={{ backgroundColor: `${organ.color}33` }}>
+            <OrganIcon code={s.code} className="size-5 overflow-visible lg:size-8" />
           </span>
           {/* Small screens: just the code (the cards are narrow). Laptops: the full name, with the code under it. */}
           <span className="min-w-0 flex-1">
@@ -179,32 +186,40 @@ export function BodyStage({
           Laptops: one stage with the body in the middle and a column of cards on each side. */}
       <div ref={stageRef} className="relative flex flex-col md:min-h-0 md:flex-1 lg:block">
         {/* Soft spotlight behind the body */}
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[6%] mx-auto aspect-square w-[70%] max-w-104 rounded-full bg-[radial-gradient(circle,rgb(11_99_130/0.12),transparent_65%)]" />
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[6%] mx-auto aspect-square w-[70%] max-w-104 rounded-full bg-[radial-gradient(circle,rgb(255_255_255/0.75),transparent_65%)]" />
 
         <div
           ref={canvasBoxRef}
           className="relative order-1 mx-auto h-96 w-full max-w-88 md:h-auto md:min-h-48 md:max-w-none md:flex-1 lg:absolute lg:w-auto lg:inset-x-28 lg:top-0 lg:bottom-11 xl:inset-x-32"
         >
-          <Suspense fallback={<div className="grid h-full place-items-center text-sm text-muted-foreground">Loading 3D body…</div>}>
-            <Body3D
-              selectedCode={selected?.code}
-              looks={looks}
-              onPick={(code) => {
-                const subject = mapped.find((s) => s.code === code)
-                if (subject) onSelect(subject.subjectId)
-              }}
-              onFrame={drawLines}
-              ref={controls}
-              celebrate={celebrate}
-              className="size-full"
-            />
-          </Suspense>
+          {/* The flat body: shown while the 3D one downloads, and instead of it on devices without 3D. */}
+          {(() => {
+            const flat = (
+              <BodyCartoon selectedCode={selected?.code} looks={looks} onPick={pickOrgan} onFrame={drawLines} celebrate={celebrate} className="absolute inset-0" />
+            )
+            return (
+              <Suspense fallback={flat}>
+                <Body3D
+                  selectedCode={selected?.code}
+                  looks={looks}
+                  onPick={pickOrgan}
+                  onFrame={drawLines}
+                  ref={controls}
+                  celebrate={celebrate}
+                  // absolute, not size-full: on iPad portrait this box gets its height from the flex layout,
+                  // where a 100% height doesn't work (the canvas stayed 150px tall)
+                  className="absolute inset-0"
+                  fallback={flat}
+                />
+              </Suspense>
+            )
+          })()}
         </div>
 
         {/* Leader lines (laptops only, where the cards sit beside the body): every card is joined to its organ,
             like a labelled diagram, so "this card = this organ" is clear at a glance.
             Thin, dotted and faint, so they stay in the background; pointing at a card makes its line stronger;
-            the chosen subject's line is solid blue. */}
+            the chosen subject's line is solid ink. */}
         <svg aria-hidden className="pointer-events-none absolute inset-0 hidden size-full overflow-visible lg:block">
           {mapped.map((s) => {
             const isSelected = s.subjectId === selected?.subjectId
@@ -220,43 +235,44 @@ export function BodyStage({
               >
                 <polyline
                   fill="none"
-                  stroke={isSelected ? 'var(--primary)' : 'var(--muted-foreground)'}
+                  stroke={isSelected ? 'var(--ink)' : 'var(--muted-foreground)'}
                   strokeOpacity={isSelected ? 1 : isPointed ? 0.8 : 0.35}
-                  strokeWidth={isSelected ? 2 : 1.25}
+                  strokeWidth={isSelected ? 2.5 : 1.5}
                   strokeDasharray={isSelected ? undefined : '2 4'}
                   strokeLinecap="round"
                 />
-                <circle r={isSelected ? 3.5 : 2.5} fill={isSelected ? 'var(--primary)' : 'var(--muted-foreground)'} fillOpacity={isSelected ? 1 : isPointed ? 0.8 : 0.5} />
+                <circle r={isSelected ? 3.5 : 2.5} fill={isSelected ? 'var(--ink)' : 'var(--muted-foreground)'} fillOpacity={isSelected ? 1 : isPointed ? 0.8 : 0.5} />
               </g>
             )
           })}
         </svg>
 
-        {/* Subject cards. "contents" lets the same cards be one grid (small screens) or two side columns (laptops). */}
-        <div role="group" aria-label="Choose a subject" className="order-3 mt-3 grid shrink-0 grid-cols-3 gap-2 lg:contents">
+        {/* Turn handle under the feet, like a turntable (a sticker pill: ‹ Turn ›) */}
+        <div className="relative order-2 mt-1 flex shrink-0 justify-center lg:absolute lg:inset-x-0 lg:bottom-0 lg:mt-0">
+          <div className="flex w-full max-w-64 items-center">
+            <span aria-hidden className="h-0.5 flex-1 rounded-full bg-linear-to-r from-transparent to-ink/30" />
+            <span className="flex items-center rounded-full border-2 border-ink bg-primary p-0.5 text-primary-foreground shadow-toon-sm">
+              <button type="button" aria-label="Turn the body left" onClick={() => controls.current?.rotateBy(-Math.PI / 4)} className="flex size-8 items-center justify-center rounded-full outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white active:scale-90">
+                <ChevronLeft className="size-4" strokeWidth={2.8} aria-hidden />
+              </button>
+              {/* Says what the arrows do (they turn the body, they don't change page). */}
+              <span aria-hidden className="px-1 font-heading text-xs font-bold whitespace-nowrap">
+                Turn
+              </span>
+              <button type="button" aria-label="Turn the body right" onClick={() => controls.current?.rotateBy(Math.PI / 4)} className="flex size-8 items-center justify-center rounded-full outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white active:scale-90">
+                <ChevronRight className="size-4" strokeWidth={2.8} aria-hidden />
+              </button>
+            </span>
+            <span aria-hidden className="h-0.5 flex-1 rounded-full bg-linear-to-l from-transparent to-ink/30" />
+          </div>
+        </div>
+
+        {/* Subject cards. "contents" lets the same cards be one grid (small screens) or two side columns (laptops).
+            Phones: two across (three cut the codes off, e.g. "MIC…"); tablets: three across. */}
+        <div role="group" aria-label="Choose a subject" className="order-3 mt-3 grid shrink-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:contents">
           {/* Left column sits a little lower and the right a little higher, like the picture. */}
           <div className={cn('contents lg:items-end lg:pt-[8%]', leftOfBody, column)}>{left.map(card)}</div>
           <div className={cn('contents lg:items-start lg:pb-[8%]', rightOfBody, column)}>{right.map(card)}</div>
-        </div>
-
-        {/* Turn handle under the feet, like a turntable */}
-        <div className="relative order-2 mt-1 flex shrink-0 justify-center lg:absolute lg:inset-x-0 lg:bottom-0 lg:mt-0">
-          <div className="flex w-full max-w-64 items-center">
-            <span aria-hidden className="h-px flex-1 bg-linear-to-r from-transparent to-foreground/30" />
-            <span className="flex items-center rounded-full bg-primary p-0.5 text-primary-foreground shadow-sm">
-              <button type="button" aria-label="Turn the body left" onClick={() => controls.current?.rotateBy(-Math.PI / 4)} className="flex size-8 items-center justify-center rounded-full outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white">
-                <ChevronLeft className="size-4" aria-hidden />
-              </button>
-              {/* Says what the arrows do (they turn the body, they don't change page). */}
-              <span aria-hidden className="px-1 text-xs font-bold whitespace-nowrap">
-                Turn
-              </span>
-              <button type="button" aria-label="Turn the body right" onClick={() => controls.current?.rotateBy(Math.PI / 4)} className="flex size-8 items-center justify-center rounded-full outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white">
-                <ChevronRight className="size-4" aria-hidden />
-              </button>
-            </span>
-            <span aria-hidden className="h-px flex-1 bg-linear-to-l from-transparent to-foreground/30" />
-          </div>
         </div>
 
         {/* The overall score: the body's "scan readout". Laptops: under the right-hand cards (same distance from the body). */}
@@ -294,9 +310,9 @@ function ProgressBar({ subject, status }: { subject: SubjectSummary; status: Sub
   const isReal = status === 'low' || status === 'passing'
   const fill = Math.min(1, isReal ? (subject.accuracy ?? 0) : subject.attempts / MIN_ANSWERED)
   return (
-    <span aria-hidden className="relative block h-1.5 rounded-full bg-secondary">
+    <span aria-hidden className="relative block h-3 rounded-full border-2 border-ink bg-secondary">
       <span className={cn('block h-full rounded-full', BAR_COLOR[status])} style={{ width: `${fill * 100}%` }} />
-      {isReal && <span className="absolute -top-0.5 -bottom-0.5 w-0.5 rounded-full bg-foreground/50" style={{ left: `${PASSING_RATE * 100}%` }} />}
+      {isReal && <span className="absolute -top-1 -bottom-1 w-[3px] rounded-full bg-ink" style={{ left: `${PASSING_RATE * 100}%` }} />}
     </span>
   )
 }
@@ -334,14 +350,14 @@ export function NextUpBar({ subject, subjectTopicIds }: { subject: SubjectSummar
   const status = subjectStatus(subject)
   const [warmupOpen, setWarmupOpen] = useState(false)
   return (
-    <section aria-labelledby="next-up-heading" className="@container shrink-0 rounded-2xl border bg-card p-3 shadow-[0_12px_32px_-24px_rgb(7_71_94/0.45)] lg:px-5">
+    <section aria-labelledby="next-up-heading" className="@container shrink-0 rounded-3xl border-[2.5px] border-ink bg-card p-3 shadow-toon lg:px-5">
       {/* No entrance animation and a fixed height (one-line title, steps row always there): switching subjects
           only swaps the words and numbers, so nothing on Home shifts or flickers when she taps a card. */}
       <div className="flex flex-col gap-3 @3xl:flex-row @3xl:items-center @3xl:gap-6">
         {/* Who: the organ on a tint of its own color (same as its card), the subject, and the correct count */}
         <div className="flex min-w-0 items-center gap-3 @3xl:w-60 @3xl:shrink-0">
-          <span className="grid size-12 shrink-0 place-items-center rounded-full" style={{ backgroundColor: `${organ?.color ?? '#0B6382'}26` }}>
-            <OrganIcon code={subject.code} className="size-7" />
+          <span className="grid size-14 shrink-0 place-items-center rounded-2xl border-2 border-ink" style={{ backgroundColor: `${organ?.color ?? '#0B7FA3'}33` }}>
+            <OrganIcon code={subject.code} className="size-10 overflow-visible" />
           </span>
           <div className="min-w-0">
             <p className="text-xs font-bold tracking-wide text-primary uppercase">Next up</p>
@@ -367,7 +383,7 @@ export function NextUpBar({ subject, subjectTopicIds }: { subject: SubjectSummar
             type="button"
             onClick={() => setWarmupOpen(true)}
             aria-haspopup="dialog"
-            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-primary/8 px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px"
+            className="flex h-11 items-center justify-center gap-2 rounded-2xl border-2 border-ink bg-card px-4 font-heading text-base font-semibold shadow-toon-sm outline-none transition-[transform,box-shadow] duration-75 hover:bg-secondary/60 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-[3px] active:shadow-none"
           >
             <Dices className="size-4 shrink-0" aria-hidden />
             Warm-up
@@ -447,9 +463,9 @@ function GoalProgress({ subject, status }: { subject: SubjectSummary; status: Su
       </p>
 
       {/* The bar: score with the 75% line once it's real, answers toward 10 before that */}
-      <div aria-hidden className="relative mt-2 h-2 rounded-full bg-secondary">
+      <div aria-hidden className="relative mt-2 h-3 rounded-full border-2 border-ink bg-secondary">
         <div className={cn('h-full rounded-full', status === 'passing' ? 'bg-correct' : status === 'low' ? 'bg-highlight' : 'bg-primary')} style={{ width: `${fill * 100}%` }} />
-        {isReal && <span className="absolute -top-0.5 -bottom-0.5 w-0.5 rounded-full bg-foreground/50" style={{ left: `${PASSING_RATE * 100}%` }} />}
+        {isReal && <span className="absolute -top-1 -bottom-1 w-[3px] rounded-full bg-ink" style={{ left: `${PASSING_RATE * 100}%` }} />}
       </div>
 
       {/* The steps still to take (filled ones are already done). The row is always there (empty when passing),

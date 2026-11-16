@@ -276,7 +276,7 @@ function TodayLine({ days, target }: { days: DayActivity[]; target: number }) {
           const fill = target > 0 ? Math.min(1, d.answered / target) : 0
           return (
             <span key={d.date} className="flex-1">
-              <span className="block h-2 overflow-hidden rounded-full bg-secondary">
+              <span className="block h-3 overflow-hidden rounded-full border-2 border-ink bg-secondary">
                 <span className={cn('block h-full rounded-full', fill >= 1 ? 'bg-correct' : 'bg-primary')} style={{ width: `${fill * 100}%` }} />
               </span>
               <span className={cn('mt-1 block text-center text-[10px] leading-none font-semibold', isToday ? 'text-foreground' : 'text-muted-foreground')}>
@@ -339,10 +339,10 @@ function ReadinessLine({
         aria-valuemax={100}
         aria-valuenow={pct}
         aria-valuetext={`${pct}%, passing is ${PASSING_LABEL}`}
-        className="relative mt-1.5 h-2 rounded-full bg-secondary"
+        className="relative mt-1.5 h-3 rounded-full border-2 border-ink bg-secondary"
       >
         <div className={cn('h-full rounded-full', isPassing ? 'bg-correct' : 'bg-highlight')} style={{ width: `${shown}%` }} />
-        <span aria-hidden className="absolute -top-0.5 -bottom-0.5 w-0.5 rounded-full bg-foreground/60" style={{ left: `${PASSING_RATE * 100}%` }} />
+        <span aria-hidden className="absolute -top-1 -bottom-1 w-[3px] rounded-full bg-ink" style={{ left: `${PASSING_RATE * 100}%` }} />
         <span aria-hidden className="absolute top-full mt-1 -translate-x-1/2 text-[10px] leading-none font-semibold text-muted-foreground" style={{ left: `${PASSING_RATE * 100}%` }}>
           {PASSING_LABEL}
         </span>
