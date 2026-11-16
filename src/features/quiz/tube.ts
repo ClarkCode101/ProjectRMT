@@ -23,11 +23,11 @@ export function liquidColors(code: string): string[] {
 
 /**
  * A CSS background for the liquid. `to` = which way it runs ('top' in a tube, 'right' for a flat swatch).
- * One color: solid at the bottom, a little lighter at the surface. Several: hard-edged layers.
+ * One color: solid at the bottom, a little lighter (not see-through) at the surface, so it reads as a flat cartoon fill. Several: hard-edged layers.
  */
 export function liquidBackground(code: string, to: 'top' | 'right' = 'top'): string {
   const colors = liquidColors(code)
-  if (colors.length === 1) return `linear-gradient(to ${to}, ${colors[0]}, color-mix(in srgb, ${colors[0]} 65%, transparent))`
+  if (colors.length === 1) return `linear-gradient(to ${to}, ${colors[0]}, color-mix(in srgb, ${colors[0]} 82%, white))`
   const step = 100 / colors.length
   return `linear-gradient(to ${to}, ${colors.map((c, i) => `${c} ${i * step}% ${(i + 1) * step}%`).join(', ')})`
 }

@@ -33,9 +33,9 @@ type Props = {
   initialTopicId?: number | null
 }
 
-/** The small secondary button under Start (tinted, not gold; same as the ones on Home's subject card). */
+/** The small secondary button under Start (a pale blue sticker, not gold, so Start stays the main one). */
 const smallButtonClass =
-  'flex h-10 items-center justify-center gap-2 rounded-lg bg-primary/8 px-4 text-sm font-bold text-primary outline-none transition-colors hover:bg-primary/15 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px'
+  'flex h-10 items-center justify-center gap-2 rounded-xl border-2 border-ink bg-[#D5F1F6] px-4 font-heading font-semibold text-primary-deep shadow-toon-sm outline-none transition-[transform,box-shadow] duration-75 hover:brightness-[0.98] focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-[3px] active:shadow-none'
 
 /**
  * Practice: swipe the tubes to a subject (or the mix), then Start, right on the page, the same way as Mock exam
@@ -181,7 +181,7 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
             onClick={() => setTopicId(null)}
             disabled={busy}
             aria-label={`Only ${chosenTopic.name}. Remove to practice all of ${current?.code ?? 'the subject'}`}
-            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-primary px-3 text-sm font-semibold text-white outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full border-2 border-ink bg-primary px-3 text-sm font-semibold text-white outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             {chosenTopic.name}
             <X className="size-4" aria-hidden />
@@ -196,10 +196,10 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
             onClick={() => setOptionsOpen(true)}
             disabled={busy}
             aria-label={optionsChanged ? 'Question options (changed)' : 'Question options'}
-            className="relative flex size-12 shrink-0 items-center justify-center rounded-lg border bg-card text-muted-foreground outline-none hover:border-primary/50 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl border-[2.5px] border-ink bg-card shadow-toon-sm outline-none transition-[transform,box-shadow] duration-75 hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-[3px] active:shadow-none"
           >
-            <SlidersHorizontal className="size-5" aria-hidden />
-            {optionsChanged && <span className="absolute top-2.5 right-2.5 size-2 rounded-full bg-highlight" aria-hidden />}
+            <SlidersHorizontal className="size-5" strokeWidth={2.4} aria-hidden />
+            {optionsChanged && <span className="absolute -top-1.5 -right-1.5 size-3.5 rounded-full border-2 border-ink bg-highlight" aria-hidden />}
           </button>
           <CountPicker value={itemCount} options={ITEM_COUNTS} onChange={setItemCount} unit="items" label="Items" disabled={busy} />
           {/* Just "Start" on every screen: the tube's name above says which subject, the chip and the line below say how many.
@@ -237,13 +237,13 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
           <Link to="/practice?from=mistakes" className={smallButtonClass}>
             <RotateCcw className="size-4" aria-hidden />
             Review again
-            <span className="rounded-full bg-wrong px-1.5 text-xs font-bold text-white tabular-nums">{mistakeCount}</span>
+            <span className="rounded-full border-[1.5px] border-ink bg-wrong px-1.5 text-xs font-bold text-white tabular-nums">{mistakeCount}</span>
           </Link>
         )}
       </form>
 
       {/* ---------- How to read the tubes: one quiet line at the bottom (like the run protocol on Mock exam) ---------- */}
-      <div className="shrink-0 border-t border-dashed pt-3">
+      <div className="shrink-0 border-t-2 border-dashed border-input/70 pt-3">
         <TubeKey />
       </div>
 
@@ -273,7 +273,7 @@ export function PracticeSetup({ onStart, starting, initialSubjectId = null, init
           <button
             type="button"
             onClick={() => setOptionsOpen(false)}
-            className="h-11 w-full rounded-lg bg-primary font-heading font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="h-11 w-full rounded-2xl border-[2.5px] border-ink bg-primary font-heading font-semibold text-primary-foreground shadow-toon-sm outline-none transition-[transform,box-shadow] duration-75 hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-[3px] active:shadow-none"
           >
             Done
           </button>

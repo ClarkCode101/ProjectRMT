@@ -7,6 +7,7 @@ import { NOTES } from '@/data/encouragements'
 import { pickNote, shouldShowRandomNote } from '@/lib/planner'
 import { practiceMessage, practiceReport, type PracticeMode, type PriorHistory } from '@/lib/practiceReport'
 import { HeroPanel, heroButtonClass, RangeBar, REFERENCE_RANGE, SampleRun } from '@/components/report'
+import { Slime } from '@/components/Slime'
 import { PASSING_LABEL, PASSING_RATE } from '@/lib/quiz'
 import { useSubjectOfTopic } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
@@ -73,12 +74,14 @@ export function QuizResults({ answers, mode, prior, label, onRestart, onReviewLe
       {/* The ONE colored thing on this screen: what she learned and what to do next. */}
       <HeroPanel labelledBy="result-heading" className="space-y-3.5">
         <div className="flex items-center justify-between gap-3">
-          <h1 id="result-heading" className="text-sm font-semibold text-white/70">
+          {/* The slime cheers for a good run (passing range or better) and smiles otherwise: practice is for learning. */}
+          <Slime mood={report.total > 0 && report.correct / report.total >= PASSING_RATE ? 'cheer' : 'happy'} className="-my-2 w-16 sm:w-20" />
+          <h1 id="result-heading" className="mr-auto text-sm font-semibold text-white/70">
             {review ? 'Review again done' : 'Practice done'}{' '}
             <span className="font-normal text-white/55">· {review ? `${report.total} ${report.total === 1 ? 'mistake' : 'mistakes'}` : sessionLabel}</span>
           </h1>
           {report.bestStreak >= STREAK_BADGE_FROM && (
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-highlight-soft px-2.5 py-0.5 text-sm font-bold text-foreground tabular-nums">
+            <span className="flex shrink-0 items-center gap-1 rounded-full border-2 border-ink bg-highlight-soft px-2.5 py-0.5 font-heading text-sm font-bold text-foreground tabular-nums">
               <Flame className="size-4 text-highlight" aria-hidden />
               Best streak {report.bestStreak}
             </span>
@@ -127,7 +130,7 @@ export function QuizResults({ answers, mode, prior, label, onRestart, onReviewLe
           )}
           <Link
             to="/"
-            className="flex h-12 items-center justify-center gap-2 rounded-lg bg-white/10 px-5 font-heading text-lg font-bold text-white outline-none hover:bg-white/15 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px"
+            className="flex h-12 items-center justify-center gap-2 rounded-2xl border-[2.5px] border-white/35 bg-white/10 px-5 font-heading text-lg font-semibold text-white outline-none hover:bg-white/15 focus-visible:ring-4 focus-visible:ring-white/60 active:translate-y-px"
           >
             <House className="size-5" aria-hidden />
             Back to Home
@@ -143,7 +146,7 @@ export function QuizResults({ answers, mode, prior, label, onRestart, onReviewLe
           <h2 id="by-subject-heading" className="text-lg font-bold">
             By subject
           </h2>
-          <ul className="divide-y rounded-xl border bg-card">
+          <ul className="divide-y-2 divide-dashed divide-border overflow-hidden rounded-2xl border-[2.5px] border-ink bg-card shadow-toon">
             {[...bySubject].map(([code, { correct, total }]) => {
               const subjectRate = correct / total
               return (
@@ -177,7 +180,7 @@ export function QuizResults({ answers, mode, prior, label, onRestart, onReviewLe
               </button>
             )}
           </div>
-          <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+          <ul className="divide-y-2 divide-dashed divide-border overflow-hidden rounded-2xl border-[2.5px] border-ink bg-card shadow-toon">
             {wrong.map(({ question, selectedIndex }) => (
               <MistakeItem
                 key={question.id}

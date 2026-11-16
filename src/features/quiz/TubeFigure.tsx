@@ -7,6 +7,7 @@ import { liquidBackground, MIX_CODE, type TubeStatus } from './tube'
 // - the liquid level is her score in that subject
 // - the cap is red below 75%, green when passing, gray when not started
 // - a small tick on the glass marks the 75% passing line
+// Cartoon look: ink outline, a hard shadow, and a little face near the bottom (like the organs on Home).
 
 const CAP_COLOR: Record<TubeStatus, string> = { low: 'bg-wrong', passing: 'bg-correct', new: 'bg-border' }
 
@@ -26,16 +27,23 @@ export function TubeFigure({
   const level = accuracy === null ? 0 : Math.round(accuracy * 100)
   return (
     <span aria-hidden className="flex flex-col items-center">
-      <span className={cn('h-4 w-14 shrink-0 rounded-t-md rounded-b-sm md:h-5 md:w-20', CAP_COLOR[status])} />
-      <span className="relative h-40 w-11 overflow-hidden rounded-b-full border-[3px] border-t-0 border-primary bg-card shadow-[0_18px_32px_-16px_rgb(7_71_94/0.55)] md:h-60 md:w-16">
+      {/* -mb: the cap overlaps the glass a little, so the two outlines meet as one */}
+      <span className={cn('relative z-10 -mb-0.5 h-5 w-14 shrink-0 rounded-lg border-[3px] border-ink md:h-6 md:w-20', CAP_COLOR[status])} />
+      <span className="relative h-40 w-11 overflow-hidden rounded-b-full border-[3px] border-ink bg-card shadow-toon md:h-60 md:w-16">
         {/* liquid */}
         <span className={cn('absolute inset-x-0 bottom-0', animateFill && 'tube-fill')} style={{ height: `${level}%`, background: liquidBackground(code) }}>
           <span className="absolute inset-x-0 top-0 h-1.5 bg-white/25" />
         </span>
         {/* 75% passing mark */}
-        <span className="absolute right-0 h-0.5 w-4 rounded-l-full bg-foreground/50 md:w-6" style={{ bottom: `${PASSING_RATE * 100}%` }} />
+        <span className="absolute right-0 h-[3px] w-4 rounded-l-full bg-ink md:w-6" style={{ bottom: `${PASSING_RATE * 100}%` }} />
         {/* glass shine */}
-        <span className="absolute top-2 bottom-4 left-1.5 w-1.5 rounded-full bg-white/55 md:left-2.5" />
+        <span className="absolute top-2 bottom-12 left-1.5 w-1.5 rounded-full bg-white/70 md:left-2.5" />
+        {/* the face: two eyes and a smile, near the round bottom */}
+        <svg viewBox="0 0 24 14" className="absolute inset-x-0 bottom-4 mx-auto w-6 md:bottom-6 md:w-8">
+          <circle cx="7" cy="4" r="2.2" fill="var(--ink)" />
+          <circle cx="17" cy="4" r="2.2" fill="var(--ink)" />
+          <path d="M9 8.5q3 3.2 6 0" fill="none" stroke="var(--ink)" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
       </span>
     </span>
   )
@@ -47,7 +55,7 @@ export function TubeFigure({
  */
 export function TubeKey() {
   const item = 'inline-flex items-center gap-1.5'
-  const swatch = 'h-2 w-3.5 rounded-sm'
+  const swatch = 'h-2.5 w-4 rounded-[4px] border-[1.5px] border-ink'
   return (
     <span aria-hidden className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
       <span className={item}>

@@ -26,7 +26,7 @@ function liquidStops(code: string) {
   if (colors.length === 1) {
     return [
       <stop key="bottom" offset="0" stopColor={colors[0]} />,
-      <stop key="top" offset="1" stopColor={colors[0]} stopOpacity="0.65" />,
+      <stop key="top" offset="1" stopColor={colors[0]} stopOpacity="0.85" />,
     ]
   }
   // Hard-edged layers (Mix): each color starts where the one below it ends.
@@ -62,7 +62,8 @@ export function PourScene({ code, status, level, label }: { code: string; status
           </linearGradient>
         </defs>
 
-        <line x1="10" x2="290" y1="204" y2="204" stroke="var(--border)" strokeWidth="2" strokeLinecap="round" />
+        {/* the bench: a flat cartoon shadow */}
+        <ellipse cx="150" cy="204" rx="140" ry="7" fill="var(--ink)" opacity="0.12" />
 
         {/* ---------- flask ---------- */}
         <path d={FLASK_PATH} fill="var(--card)" />
@@ -82,10 +83,10 @@ export function PourScene({ code, status, level, label }: { code: string; status
             }}
           />
         </g>
-        <path d={FLASK_PATH} fill="none" stroke="var(--primary)" strokeOpacity="0.4" strokeWidth="2.5" strokeLinejoin="round" />
-        <rect x="192" y="34" width="36" height="8" rx="2" fill="var(--card)" stroke="var(--primary)" strokeOpacity="0.4" strokeWidth="2" />
+        <path d={FLASK_PATH} fill="none" stroke="var(--ink)" strokeWidth="3" strokeLinejoin="round" />
+        <rect x="192" y="32" width="36" height="10" rx="4" fill="var(--card)" stroke="var(--ink)" strokeWidth="3" />
         {/* label sticker with the topic */}
-        <rect x="174" y="146" width="72" height="26" rx="4" fill="var(--card)" stroke="var(--border)" strokeWidth="1.5" />
+        <rect x="174" y="146" width="72" height="26" rx="6" fill="var(--card)" stroke="var(--ink)" strokeWidth="2" />
         <text x="210" y="163" textAnchor="middle" className="fill-foreground font-heading text-[10px] font-bold">
           {shortLabel(label)}
         </text>
@@ -107,8 +108,10 @@ export function PourScene({ code, status, level, label }: { code: string; status
             y={TUBE.top - 12}
             width={TUBE.width + 8}
             height="12"
-            rx="3"
+            rx="5"
             fill={CAP_FILL[status]}
+            stroke="var(--ink)"
+            strokeWidth="3"
             style={{ opacity: pouring ? 0 : 1, transition: 'opacity 150ms' }}
           />
           <path d={TUBE_PATH} fill="var(--card)" />
@@ -127,7 +130,7 @@ export function PourScene({ code, status, level, label }: { code: string; status
               }}
             />
           </g>
-          <path d={TUBE_PATH} fill="none" stroke="var(--primary)" strokeWidth="2.5" />
+          <path d={TUBE_PATH} fill="none" stroke="var(--ink)" strokeWidth="3" strokeLinejoin="round" />
         </g>
       </svg>
       <p role="status" className="font-heading text-lg font-bold">

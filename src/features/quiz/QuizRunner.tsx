@@ -4,6 +4,7 @@ import { ChoiceList } from '@/components/ChoiceList'
 import { keyToPosition } from '@/lib/choiceKeys'
 import { Dialog } from '@/components/Dialog'
 import { SampleRun, type SampleState } from '@/components/report'
+import { Slime } from '@/components/Slime'
 import { Button } from '@/components/ui/button'
 import { ExitButton } from '@/components/ExitButton'
 import { shuffledChoiceOrder } from '@/lib/quiz'
@@ -141,7 +142,7 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
           {/* Only shows up when there is a streak worth celebrating. */}
           <span className="flex min-w-16 justify-end">
             {streak >= 3 && (
-              <span className="flex items-center gap-1 rounded-full bg-highlight-soft px-2.5 py-0.5 font-bold">
+              <span className="flex items-center gap-1 rounded-full border-2 border-ink bg-highlight-soft px-2.5 py-0.5 font-heading font-bold">
                 <Flame className="size-4 text-highlight" aria-hidden />
                 {streak}
                 <span className="sr-only"> correct in a row</span>
@@ -155,9 +156,9 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
       {/* key={current} remounts the question per item so it gets a fresh entrance. */}
       <article key={current} className="animate-in fade-in space-y-2 duration-200">
         <p className="text-sm text-muted-foreground">
-          <span className="font-heading font-bold text-primary">{subject.code ?? '—'}</span>
+          <span className="mr-1 rounded-md border-2 border-ink bg-card px-1.5 font-heading text-xs font-bold text-foreground">{subject.code ?? '—'}</span>
           {subject.topicName && <> {subject.topicName}</>}
-          {question.source !== 'builtin' && <span className="ml-2 rounded-[4px] bg-secondary px-1.5 text-xs font-semibold text-foreground">Mine</span>}
+          {question.source !== 'builtin' && <span className="ml-2 rounded-md border-[1.5px] border-ink/40 bg-secondary px-1.5 text-xs font-semibold text-foreground">Mine</span>}
         </p>
         <p className="text-xl leading-snug font-bold sm:text-2xl">{question.stem}</p>
       </article>
@@ -181,14 +182,20 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
         <div
           role="status"
           className={cn(
-            'animate-in fade-in slide-in-from-bottom-1 rounded-xl px-4 py-3.5 duration-200',
+            'animate-in fade-in slide-in-from-bottom-1 rounded-2xl border-[2.5px] border-ink px-4 py-3.5 duration-200',
             answer.isCorrect ? 'bg-correct-soft' : 'bg-wrong-soft',
           )}
         >
-          <p className={cn('font-heading text-lg font-bold', answer.isCorrect ? 'text-correct' : 'text-wrong')}>
-            {answer.isCorrect ? PRAISE[current % PRAISE.length] : ENCOURAGE[current % ENCOURAGE.length]}
-          </p>
-          {!answer.isCorrect && <p className="text-sm text-muted-foreground">It comes back in Review again.</p>}
+          {/* The slime reacts: cheering when she's right, a kind "oops" when she's not. */}
+          <div className="flex items-center gap-3">
+            <Slime mood={answer.isCorrect ? 'cheer' : 'oops'} className="w-16 sm:w-18" />
+            <div className="min-w-0">
+              <p className={cn('font-heading text-lg font-bold', answer.isCorrect ? 'text-correct' : 'text-wrong')}>
+                {answer.isCorrect ? PRAISE[current % PRAISE.length] : ENCOURAGE[current % ENCOURAGE.length]}
+              </p>
+              {!answer.isCorrect && <p className="text-sm text-muted-foreground">It comes back in Review again.</p>}
+            </div>
+          </div>
           {question.explanation && <p className="mt-2 leading-relaxed">{question.explanation}</p>}
           {/* If something looks wrong (answer, explanation, wording), one tap flags it to fix later. Quiet on purpose. */}
           <div className="mt-2.5 flex justify-end">
@@ -220,7 +227,7 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
       )}
 
       {answer && (
-        <Button className="h-13 w-full rounded-xl font-heading text-lg font-bold" onClick={next} autoFocus>
+        <Button className="h-13 w-full rounded-2xl border-[2.5px] font-heading text-lg font-semibold shadow-toon active:not-aria-[haspopup]:translate-y-1" onClick={next} autoFocus>
           {isLast ? 'See results' : 'Next item'}
         </Button>
       )}
