@@ -26,13 +26,14 @@ export function ChipRadio({
     <label
       title={title}
       className={cn(
-        'relative inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
-        checked ? 'border-primary bg-primary text-white' : 'bg-card hover:border-primary/50',
-        disabled ? 'cursor-not-allowed opacity-50 hover:border-border' : 'cursor-pointer',
+        // a sticker pill: the chosen one is blue and pressed down onto its shadow
+        'relative inline-flex min-h-10 items-center gap-1.5 rounded-full border-2 border-ink px-3.5 py-1.5 font-heading text-sm font-semibold transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
+        checked ? 'translate-y-[3px] bg-primary text-white' : 'bg-card shadow-toon-sm hover:bg-secondary/40',
+        disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
       )}
     >
       <input type="radio" name={name} checked={checked} disabled={disabled} onChange={onChange} onClick={onClick} className="sr-only" />
-      {checked && <Check className="-ml-0.5 size-4" aria-hidden />}
+      {checked && <Check className="-ml-0.5 size-4" strokeWidth={3} aria-hidden />}
       {children}
     </label>
   )
@@ -112,7 +113,7 @@ export function TopicPicker({
 
   if (!changing && chosenTopic) {
     return (
-      <div className="flex min-h-12 items-center justify-between gap-3 rounded-lg border bg-card py-1 pr-1 pl-3.5">
+      <div className="flex min-h-12 items-center justify-between gap-3 rounded-xl border-2 border-ink bg-card shadow-toon-sm py-1 pr-1 pl-3.5">
         <p className="min-w-0">
           <span className="font-heading font-bold">{chosenSubject?.name}</span>
           <span aria-hidden className="text-muted-foreground"> · </span>

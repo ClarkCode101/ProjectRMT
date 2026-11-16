@@ -23,7 +23,7 @@ export function DrawerBar({
   share?: { shared: boolean; onClick: () => void }
 }) {
   return (
-    <div className="sticky top-0 z-20 -mx-4 border-b bg-background/95 px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 backdrop-blur md:mx-0 md:px-0">
+    <div className="sticky top-0 z-20 -mx-4 border-b-2 border-ink/15 bg-background/95 px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 backdrop-blur md:mx-0 md:px-0">
       <div className="flex items-center gap-2">
         <Link
           to="/questions"
@@ -42,11 +42,11 @@ export function DrawerBar({
             aria-label={share.shared ? 'Shared to Community. Stop sharing…' : 'Share to Community…'}
             title={share.shared ? 'Shared to Community' : 'Share to Community'}
             className={cn(
-              'flex size-11 shrink-0 items-center justify-center rounded-lg border',
+              'flex size-11 shrink-0 items-center justify-center rounded-xl border-2 border-ink shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none',
               focusRing,
               share.shared
-                ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90'
-                : 'bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground',
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                : 'bg-card text-foreground hover:bg-secondary/40',
             )}
           >
             <Users className="size-4" aria-hidden />
@@ -57,7 +57,7 @@ export function DrawerBar({
           to={uploadTo}
           aria-label="Upload questions from a file"
           title="Upload"
-          className={cn('flex size-11 shrink-0 items-center justify-center rounded-lg border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground', focusRing)}
+          className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl border-2 border-ink bg-card shadow-toon-sm text-muted-foreground hover:text-foreground', focusRing)}
         >
           <Upload className="size-4" aria-hidden />
         </Link>
@@ -65,7 +65,7 @@ export function DrawerBar({
           to={addTo}
           aria-label={addLabel}
           title={addLabel}
-          className={cn('flex h-11 max-w-[40%] min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-highlight font-heading font-bold text-foreground hover:brightness-105 active:translate-y-px md:px-4', focusRing)}
+          className={cn('flex h-11 max-w-[40%] min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border-2 border-ink bg-highlight font-heading font-semibold text-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:brightness-105 active:translate-y-px md:px-4', focusRing)}
         >
           <Plus className="size-5 shrink-0" aria-hidden />
           <span className="truncate max-md:hidden">{addLabel}</span>

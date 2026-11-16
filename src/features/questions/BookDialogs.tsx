@@ -199,7 +199,7 @@ function BookForm({
           <span className="relative line-clamp-2 w-full text-center font-heading text-xs leading-tight font-bold tracking-wide uppercase">{title.trim() || 'Your book'}</span>
           <span className="relative flex flex-1 items-center">
             <span
-              className="flex size-10 items-center justify-center rounded-full border-2 bg-secondary/60 font-heading text-xl font-black transition-colors"
+              className="flex size-10 items-center justify-center rounded-full border-2 bg-secondary/60 font-heading text-xl font-bold transition-colors"
               style={{ borderColor: BOOK_SPINE[color], color: BOOK_SPINE[color] }}
             >
               {(title.trim().charAt(0) || '?').toUpperCase()}
@@ -224,7 +224,7 @@ function BookForm({
           }}
           aria-invalid={Boolean(titleError)}
           aria-describedby={titleError ? 'book-title-error' : undefined}
-          className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-wrong"
+          className="h-11 w-full rounded-xl border-2 border-ink/80 bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-wrong"
         />
         {titleError && (
           <p id="book-title-error" className="text-sm font-semibold text-wrong">
@@ -258,7 +258,7 @@ function BookForm({
                 key={slot}
                 className={cn(
                   'flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
-                  !ok ? 'cursor-not-allowed opacity-50' : library === slot ? 'cursor-pointer border-primary bg-primary text-white' : 'cursor-pointer bg-card hover:border-primary/50',
+                  !ok ? 'cursor-not-allowed opacity-50' : library === slot ? 'cursor-pointer border-primary bg-primary text-white' : 'cursor-pointer bg-card',
                 )}
               >
                 <input type="radio" name="book-library" checked={library === slot} disabled={!ok} onChange={() => setLibrary(slot)} className="sr-only" />
@@ -284,7 +284,7 @@ function BookForm({
       )}
 
       <div className="flex flex-col gap-2 sm:flex-row-reverse">
-        <button type="submit" disabled={busy || noRoomAnywhere} className={cn('h-11 flex-1 rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}>
+        <button type="submit" disabled={busy || noRoomAnywhere} className={cn('h-11 flex-1 rounded-xl border-2 border-ink bg-primary font-heading font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-primary/90 disabled:opacity-60', focusRing)}>
           {busy ? 'Saving…' : book ? 'Save' : 'Put it on the shelf'}
         </button>
         {book && onMergeRequest && (
@@ -507,7 +507,7 @@ function MergeForm({
                   <label
                     className={cn(
                       'flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
-                      targetId === b.id ? 'border-primary bg-primary/5' : 'bg-card hover:border-primary/50',
+                      targetId === b.id ? 'border-primary bg-primary/5' : 'bg-card',
                     )}
                   >
                     <input type="radio" name="merge-target" checked={targetId === b.id} onChange={() => setTargetId(b.id)} className="size-5 shrink-0 accent-primary" />
@@ -530,7 +530,7 @@ function MergeForm({
                     type="button"
                     onClick={() => onPickSubject(s.id)}
                     title={s.name}
-                    className={cn('inline-flex min-h-10 items-center rounded-full border bg-card px-3.5 text-sm font-semibold hover:border-primary/50', focusRing)}
+                    className={cn('inline-flex min-h-10 items-center rounded-full border bg-card px-3.5 text-sm font-semibold', focusRing)}
                   >
                     {s.code}
                     <span className="sr-only">{s.name}</span>
@@ -557,7 +557,7 @@ function MergeForm({
               setTopic(e.target.value)
               setError(null)
             }}
-            className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-11 w-full rounded-xl border-2 border-ink/80 bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50"
           />
           {/* merge_books gives the target's untopiced questions the target's name, so both sides can be split again */}
           {chosen && [...chosen.chapters.values()].some((c) => c === null) && (
@@ -634,7 +634,7 @@ function MergeForm({
         {chosen ? (
           <MergeButton moving={count} source={source} busy={busy} describedBy="merge-summary" />
         ) : (
-          <button type="submit" disabled className={cn('h-11 flex-1 rounded-lg bg-primary font-heading font-bold text-primary-foreground disabled:opacity-60', focusRing)}>
+          <button type="submit" disabled className={cn('h-11 flex-1 rounded-xl border-2 border-ink bg-primary font-heading font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none disabled:opacity-60', focusRing)}>
             Merge books
           </button>
         )}
@@ -663,7 +663,7 @@ export function TopicMenuDialog({
   /** "Move to its own book"; not given when the topic is the whole book */
   onSplit?: () => void
 }) {
-  const item = cn('flex min-h-12 w-full items-center gap-3 rounded-lg border bg-card px-4 text-left font-semibold hover:border-primary/50 hover:bg-primary/5', focusRing)
+  const item = cn('flex min-h-12 w-full items-center gap-3 rounded-xl border-2 border-ink bg-card shadow-toon-sm px-4 text-left font-semibold hover:bg-primary/5', focusRing)
   return (
     <Dialog open={open} onClose={onClose} labelledBy="topic-menu-heading" variant="sheet">
       <div className="space-y-3">
@@ -858,7 +858,7 @@ function SubjectMergeForm({
               setTopic(e.target.value)
               setError(null)
             }}
-            className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="h-11 w-full rounded-xl border-2 border-ink/80 bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50"
           />
           {boardTopic && <p className="text-xs text-muted-foreground">“{boardTopic.name}” is a board topic in {subject.code}: the questions go right into it.</p>}
         </div>
@@ -1054,7 +1054,7 @@ function RenameTopicForm({
           }}
           aria-invalid={Boolean(error)}
           aria-describedby="rename-topic-hint"
-          className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-wrong"
+          className="h-11 w-full rounded-xl border-2 border-ink/80 bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-wrong"
         />
         <p id="rename-topic-hint" className="text-sm text-muted-foreground">
           {board ? (
@@ -1077,7 +1077,7 @@ function RenameTopicForm({
           {error}
         </p>
       )}
-      <button type="submit" disabled={busy} className={cn('h-11 w-full rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}>
+      <button type="submit" disabled={busy} className={cn('h-11 w-full rounded-xl border-2 border-ink bg-primary font-heading font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-primary/90 disabled:opacity-60', focusRing)}>
         {busy ? 'Saving…' : board || joins ? 'Join topics' : 'Save'}
       </button>
     </form>
@@ -1236,7 +1236,7 @@ function SplitForm({
                 key={slot}
                 className={cn(
                   'flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
-                  !ok ? 'cursor-not-allowed opacity-50' : library === slot ? 'cursor-pointer border-primary bg-primary text-white' : 'cursor-pointer bg-card hover:border-primary/50',
+                  !ok ? 'cursor-not-allowed opacity-50' : library === slot ? 'cursor-pointer border-primary bg-primary text-white' : 'cursor-pointer bg-card',
                 )}
               >
                 <input type="radio" name="split-library" checked={library === slot} disabled={!ok || busy} onChange={() => setLibrary(slot)} className="sr-only" />
@@ -1267,7 +1267,7 @@ function SplitForm({
         <button
           type="submit"
           disabled={busy || firstWithRoom === 0}
-          className={cn('h-11 flex-1 rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}
+          className={cn('h-11 flex-1 rounded-xl border-2 border-ink bg-primary font-heading font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-primary/90 disabled:opacity-60', focusRing)}
         >
           {busy ? 'Making the book…' : 'Make the book'}
         </button>
@@ -1466,7 +1466,7 @@ export function AddToBookDialog({
                   const locked = inBook && (isOpenBook || onlyBook)
                   return (
                     <li key={b.id}>
-                      <label className={cn(row, locked ? 'cursor-default' : 'cursor-pointer', inBook ? 'border-primary bg-primary/5' : 'bg-card hover:border-primary/50')}>
+                      <label className={cn(row, locked ? 'cursor-default' : 'cursor-pointer', inBook ? 'border-primary bg-primary/5' : 'bg-card')}>
                         <input type="checkbox" checked={inBook} disabled={saving !== null || locked} onChange={() => toggleBook(b)} className="size-5 shrink-0 accent-primary" />
                         <span aria-hidden className="h-7 w-2.5 shrink-0 rounded-[2px]" style={{ background: BOOK_SPINE[b.color] }} />
                         <span className="min-w-0 flex-1">
@@ -1492,7 +1492,7 @@ export function AddToBookDialog({
               Subject books <span className="font-sans text-[11px] font-semibold tracking-normal normal-case">one only</span>
             </legend>
             {isBuiltin ? (
-              <p className="rounded-lg border bg-card px-3 py-2.5 text-sm">
+              <p className="rounded-xl border-2 border-ink bg-card shadow-toon-sm px-3 py-2.5 text-sm">
                 In{' '}
                 <span className="font-semibold">
                   {subjects.data?.find((s) => s.id === currentTopic?.subject_id)?.code} · {currentTopic?.name}
@@ -1576,7 +1576,7 @@ export function AddToBookDialog({
         )}
 
         <div className="flex flex-col gap-2 sm:flex-row-reverse">
-          <button type="button" onClick={onClose} className={cn('h-11 flex-1 rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90', focusRing)}>
+          <button type="button" onClick={onClose} className={cn('h-11 flex-1 rounded-xl border-2 border-ink bg-primary font-heading font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-primary/90', focusRing)}>
             Done
           </button>
           <Button type="button" variant="outline" className="h-11 flex-1 rounded-lg" onClick={onNewBook}>
@@ -1648,7 +1648,7 @@ function LibraryForm({ slot, name, onClose }: { slot: number; name: string; onCl
           }}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? 'library-name-error' : undefined}
-          className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-wrong"
+          className="h-11 w-full rounded-xl border-2 border-ink/80 bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-wrong"
         />
         {error && (
           <p id="library-name-error" role="alert" className="text-sm font-semibold text-wrong">
@@ -1656,7 +1656,7 @@ function LibraryForm({ slot, name, onClose }: { slot: number; name: string; onCl
           </p>
         )}
       </div>
-      <button type="submit" disabled={busy} className={cn('h-11 w-full rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}>
+      <button type="submit" disabled={busy} className={cn('h-11 w-full rounded-xl border-2 border-ink bg-primary font-heading font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-primary/90 disabled:opacity-60', focusRing)}>
         {busy ? 'Saving…' : 'Save'}
       </button>
     </form>
@@ -1726,7 +1726,7 @@ function ChapterForm({ book, questionId, onClose }: { book: Book; questionId: st
               className={cn(
                 'inline-flex min-h-10 items-center rounded-full border px-3.5 text-sm font-semibold transition-colors',
                 focusRing,
-                c.name === book.chapters.get(questionId) ? 'border-primary bg-primary text-white' : 'bg-card hover:border-primary/50',
+                c.name === book.chapters.get(questionId) ? 'border-primary bg-primary text-white' : 'bg-card',
               )}
             >
               {c.name}
@@ -1750,7 +1750,7 @@ function ChapterForm({ book, questionId, onClose }: { book: Book; questionId: st
             setError(null)
           }}
           aria-invalid={Boolean(error)}
-          className="h-11 w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-wrong"
+          className="h-11 w-full rounded-xl border-2 border-ink/80 bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-wrong"
         />
         {error && (
           <p role="alert" className="text-sm font-semibold text-wrong">
@@ -1758,7 +1758,7 @@ function ChapterForm({ book, questionId, onClose }: { book: Book; questionId: st
           </p>
         )}
       </div>
-      <button type="submit" disabled={busy} className={cn('h-11 w-full rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}>
+      <button type="submit" disabled={busy} className={cn('h-11 w-full rounded-xl border-2 border-ink bg-primary font-heading font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-primary/90 disabled:opacity-60', focusRing)}>
         {busy ? 'Saving…' : 'Save'}
       </button>
     </form>

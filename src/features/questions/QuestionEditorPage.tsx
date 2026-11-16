@@ -18,7 +18,7 @@ import { ChipRadio, CorrectToggle, SubjectChips, TopicPicker } from './QuestionF
 
 // scroll-mb: when the keyboard moves to a box, it stops above the bar stuck to the bottom instead of behind it.
 const fieldClass =
-  'w-full scroll-mb-36 rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-wrong'
+  'w-full scroll-mb-36 rounded-xl border-2 border-ink/80 bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-wrong'
 
 /** What the note under the Question box says after a paste. */
 type PasteNote = { kind: 'filled'; before: QuestionDraft; raw: string } | { kind: 'many'; count: number }

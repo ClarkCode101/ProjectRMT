@@ -105,11 +105,12 @@ function CoverFace({ book }: { book: ShelfBook }) {
       aria-hidden
       className={cn(
         'relative flex size-full flex-col items-center overflow-hidden rounded-l-[3px] rounded-r-lg bg-card px-2 pt-2.5 pb-2 pl-4 text-primary-deep',
-        gold ? 'border-2 border-highlight shadow-[0_0_16px_-2px_rgb(233_162_59/0.7)]' : 'border border-primary/15',
+        // ink outline like every sticker; a three-star book glows gold inside it
+        gold ? 'border-[2.5px] border-ink shadow-[inset_0_0_0_3px_var(--highlight),0_0_16px_-2px_rgb(233_162_59/0.7)]' : 'border-[2.5px] border-ink',
       )}
     >
       {/* the binder's spine: the book's color, with a ring hole near the top and bottom */}
-      <span className="pointer-events-none absolute inset-y-0 left-0 w-2.5" style={{ background: book.color }} />
+      <span className="pointer-events-none absolute inset-y-0 left-0 w-3 border-r-2 border-ink" style={{ background: book.color }} />
       <span className="pointer-events-none absolute top-[18%] left-[3px] size-1 rounded-full bg-card/80" />
       <span className="pointer-events-none absolute bottom-[18%] left-[3px] size-1 rounded-full bg-card/80" />
       {/* three stars: a gold light sweeps across it now and then */}
@@ -125,7 +126,7 @@ function CoverFace({ book }: { book: ShelfBook }) {
 
       {book.flagged > 0 && (
         // a ribbon bookmark hanging from the top edge, with a notched end
-        <span className="absolute top-0 right-2 flex h-6 w-4 items-start justify-center bg-wrong pt-0.5 text-[9px] font-bold text-white tabular-nums shadow-sm [clip-path:polygon(0_0,100%_0,100%_100%,50%_78%,0_100%)]">
+        <span className="absolute top-0 right-2 flex h-6 w-4 items-start justify-center bg-wrong pt-0.5 text-[9px] font-bold text-white tabular-nums [clip-path:polygon(0_0,100%_0,100%_100%,50%_78%,0_100%)]">
           {book.flagged > 9 ? '9+' : book.flagged}
         </span>
       )}
@@ -165,8 +166,8 @@ function Cover({
       className={cn(
         COVER_SIZE,
         'group relative block shrink-0 rounded-l-[3px] rounded-r-lg outline-none [-webkit-touch-callout:none]',
-        // a soft shadow (the app's navy, like the other scenes), and a little hop when pointed at
-        'shadow-[0_8px_16px_-10px_rgb(7_71_94/0.55)] transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-2 hover:-rotate-2 focus-visible:-translate-y-2 focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:ring-offset-2',
+        // a hard sticker shadow, and a little hop when pointed at
+        'shadow-toon transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:-translate-y-2 hover:-rotate-2 focus-visible:-translate-y-2 focus-visible:ring-3 focus-visible:ring-ring/60 focus-visible:ring-offset-2',
         arriving && 'book-arrive',
         // the lifted book leaves a faint gap; the one under it glows gold and leans in, ready to take it
         drag === 'source' && 'scale-95 opacity-35',
@@ -186,11 +187,11 @@ function NewBookSlot({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       className={cn(
         COVER_SIZE,
-        'flex shrink-0 flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-primary/45 bg-card/60 text-primary outline-none transition-[colors,transform] hover:-translate-y-1 hover:border-primary hover:bg-primary/5 focus-visible:ring-3 focus-visible:ring-ring/40',
+        'flex shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl border-[2.5px] border-dashed border-ink/50 bg-card/60 text-primary-deep outline-none transition-[colors,transform] hover:-translate-y-1 hover:border-ink hover:bg-card focus-visible:ring-3 focus-visible:ring-ring/40',
       )}
     >
-      <span className="flex size-9 items-center justify-center rounded-full bg-primary/10">
-        <Plus className="size-5" aria-hidden />
+      <span className="flex size-9 items-center justify-center rounded-full border-2 border-ink bg-highlight text-foreground">
+        <Plus className="size-5" strokeWidth={2.6} aria-hidden />
       </span>
       <span className="font-heading text-sm font-bold">New book</span>
     </button>
@@ -199,7 +200,7 @@ function NewBookSlot({ onClick }: { onClick: () => void }) {
 
 /** A free spot further along: just a faint outline, like an empty inventory slot. */
 function EmptySlot() {
-  return <span aria-hidden className={cn(COVER_SIZE, 'block shrink-0 rounded-lg border-2 border-dashed border-primary/10 bg-card/40')} />
+  return <span aria-hidden className={cn(COVER_SIZE, 'block shrink-0 rounded-xl border-2 border-dashed border-ink/15 bg-card/40')} />
 }
 
 /**
@@ -212,7 +213,7 @@ function LabShelf({ children }: { children: ReactNode }) {
       <div role="list" className="relative flex items-end justify-center gap-3 px-3 sm:gap-5">
         {children}
       </div>
-      <div aria-hidden className="h-3 rounded-[3px] border border-primary/15 bg-secondary shadow-[inset_0_-3px_0_rgb(7_71_94/0.12),0_10px_14px_-10px_rgb(7_71_94/0.5)]" />
+      <div aria-hidden className="h-4 rounded-md border-[2.5px] border-ink bg-[#E8B977] shadow-toon" />
     </div>
   )
 }
@@ -237,7 +238,7 @@ function OpeningBook({ book, rect }: { book: ShelfBook; rect: DOMRect }) {
       <div className="animate-in fade-in absolute inset-0 bg-background/80 backdrop-blur-[2px] duration-300" />
       <div className="book-fly absolute [perspective:900px]" style={style}>
         {/* the first page, under the cover: shows once the cover swings open */}
-        <div className="absolute inset-0 flex flex-col gap-1.5 rounded-r-lg border border-primary/15 bg-card px-3 pt-4 shadow-[0_10px_24px_-10px_rgb(7_71_94/0.5)]">
+        <div className="absolute inset-0 flex flex-col gap-1.5 rounded-r-lg border-[2.5px] border-ink bg-card px-3 pt-4 shadow-toon">
           <span className="font-heading text-[9px] font-bold text-foreground/70">{book.title}</span>
           {Array.from({ length: 7 }, (_, i) => (
             <span key={i} className="h-px bg-foreground/15" style={{ width: `${90 - (i % 3) * 18}%` }} />
@@ -347,7 +348,7 @@ export function Bookshelf({
       art: (
         // her book's emblem: its first letter in a ring
         <span
-          className="flex size-10 items-center justify-center rounded-full border-2 bg-secondary/60 font-heading text-xl font-black sm:size-12 sm:text-2xl"
+          className="flex size-10 items-center justify-center rounded-full border-[2.5px] bg-secondary/60 font-heading text-xl font-bold sm:size-12 sm:text-2xl"
           style={{ borderColor: BOOK_SPINE[b.color], color: BOOK_SPINE[b.color] }}
         >
           {b.title.charAt(0).toUpperCase()}
@@ -512,7 +513,7 @@ export function Bookshelf({
   }
 
   const arrowClass =
-    'flex size-10 shrink-0 items-center justify-center rounded-full border bg-card shadow-sm outline-none transition-colors hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40'
+    'flex size-10 shrink-0 items-center justify-center rounded-full border-[2.5px] border-ink bg-card shadow-toon-sm outline-none transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-ring/40'
 
   return (
     <section aria-labelledby="library-name" className="space-y-3">
@@ -533,7 +534,7 @@ export function Bookshelf({
       </div>
       <div className="flex flex-col items-center gap-2">
         {scoresLoaded && possible > 0 && (
-          <p className="flex items-center gap-1.5 rounded-full bg-highlight-soft px-3 py-0.5 text-sm font-bold tabular-nums">
+          <p className="flex items-center gap-1.5 rounded-full border-2 border-ink bg-highlight-soft px-3 py-0.5 font-heading text-sm font-bold tabular-nums">
             <Star className="size-4 fill-highlight text-highlight" aria-hidden />
             {earned} / {possible}
             <span className="sr-only">stars in {name}</span>
@@ -548,8 +549,8 @@ export function Bookshelf({
               aria-selected={library === i + 1}
               onClick={() => goTo(i + 1, i + 1 > library ? 'right' : 'left')}
               className={cn(
-                'max-w-36 truncate rounded-full px-3 py-1 text-xs font-semibold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
-                library === i + 1 ? 'bg-primary text-white' : 'bg-card text-muted-foreground hover:text-foreground',
+                'max-w-36 truncate rounded-full border-2 px-3 py-1 font-heading text-xs font-semibold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
+                library === i + 1 ? 'border-ink bg-primary text-white' : 'border-ink/30 bg-card text-muted-foreground hover:text-foreground',
               )}
             >
               {n}
@@ -630,7 +631,7 @@ export function Bookshelf({
       {/* The lifted book, following the finger (it can't be pointed at, so the book under it can be found) */}
       {dragging && draggedBook && (
         <div aria-hidden className={cn(COVER_SIZE, 'pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2')} style={{ left: dragging.x, top: dragging.y }}>
-          <div className="size-full scale-110 rotate-6 rounded-r-lg shadow-[0_24px_40px_-14px_rgb(7_71_94/0.7)]">
+          <div className="size-full scale-110 rotate-6 rounded-r-lg shadow-[0_8px_0_var(--ink)]">
             <CoverFace book={draggedBook} />
           </div>
         </div>

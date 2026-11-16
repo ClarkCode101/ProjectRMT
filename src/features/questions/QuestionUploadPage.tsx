@@ -188,7 +188,7 @@ export default function QuestionUploadPage() {
       )}
 
       {pasting ? (
-        <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
+        <div className="flex flex-col gap-3 rounded-2xl border-[2.5px] border-ink bg-card shadow-toon p-4">
           <label htmlFor="paste" className="flex items-center gap-2 font-heading text-lg font-bold">
             <ClipboardPaste className="size-5 text-primary" aria-hidden />
             Paste your questions
@@ -198,7 +198,7 @@ export default function QuestionUploadPage() {
             autoFocus
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
-            className="min-h-56 rounded-lg border border-input bg-background px-3 py-2.5 leading-relaxed outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="min-h-56 rounded-xl border-2 border-ink/80 bg-card px-3 py-2.5 leading-relaxed outline-none focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50"
           />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <button type="button" onClick={() => setPasting(false)} className={smallButtonClass}>
@@ -222,7 +222,7 @@ export default function QuestionUploadPage() {
             onDrop={onDrop}
             className={cn(
               'relative flex min-h-52 w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed bg-card p-6 text-center transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
-              dragging ? 'border-primary bg-primary/5' : 'border-input hover:border-primary',
+              dragging ? 'border-primary bg-primary/5' : 'border-input hover:bg-secondary/40',
               reading && 'pointer-events-none opacity-60',
             )}
           >
@@ -257,7 +257,7 @@ export default function QuestionUploadPage() {
           Your questions should look like this
         </h2>
         <div className="grid gap-4 text-sm md:grid-cols-2">
-          <pre className="overflow-x-auto rounded-lg border bg-card p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap">{EXAMPLE}</pre>
+          <pre className="overflow-x-auto rounded-xl border-2 border-ink bg-card shadow-toon-sm p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap">{EXAMPLE}</pre>
           <ul className="list-disc space-y-1.5 pl-5 text-muted-foreground">
             <li>Each question starts with a number: “1.”, “1)” or “Q1.”</li>
             <li>Choices start with A. to D. (or a), (a)). They can also be on one line.</li>

@@ -46,7 +46,7 @@ export function OpenBinder({ color, pageKey, left, right }: { color: string; pag
       // the cover: the book's color, showing as a rim around the pages.
       // It fills the room the page gives it (one screen, no page scroll): only the questions scroll, inside the right page.
       style={{ background: color }}
-      className="flex min-h-0 flex-1 flex-col rounded-2xl p-1.5 shadow-[0_22px_40px_-26px_rgb(7_71_94/0.7)] sm:p-2 md:grid md:grid-cols-[17rem_3rem_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)] lg:grid-cols-[19rem_3.5rem_minmax(0,1fr)]"
+      className="flex min-h-0 flex-1 flex-col rounded-3xl border-[2.5px] border-ink p-1.5 shadow-toon sm:p-2 md:grid md:grid-cols-[17rem_3rem_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)] lg:grid-cols-[19rem_3.5rem_minmax(0,1fr)]"
     >
       {/* ---------- left page: contents (a long one scrolls on its own) ---------- */}
       <div
@@ -189,18 +189,18 @@ function StudyMenu({ links }: { links: StudyLinks }) {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-controls={panelId}
-        className={cn('flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-highlight px-4 font-heading text-lg font-bold text-foreground hover:brightness-105 active:translate-y-px', focusRing)}
+        className={cn('flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 border-ink bg-highlight px-4 font-heading text-lg font-semibold text-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:brightness-105 active:translate-y-px', focusRing)}
       >
         <Play className="size-4 fill-current" aria-hidden />
         Study
         <ChevronDown className={cn('size-4 transition-transform duration-200', open && 'rotate-180')} aria-hidden />
       </button>
       {open && (
-        <ul id={panelId} className="animate-in fade-in slide-in-from-top-1 mt-1.5 overflow-hidden rounded-lg border border-primary/15 bg-card duration-200">
+        <ul id={panelId} className="animate-in fade-in slide-in-from-top-1 mt-1.5 overflow-hidden rounded-xl border-2 border-ink bg-card duration-200">
           {options.map(({ to, icon: Icon, title, hint, badge }) => (
-            <li key={title} className="border-b border-primary/10 last:border-b-0">
+            <li key={title} className="border-b-2 border-dashed border-border last:border-b-0">
               <Link to={to} className={cn('flex items-center gap-3 px-3 py-2.5 hover:bg-secondary/60', focusRing, 'focus-visible:ring-inset')}>
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/8 text-primary">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-[#D5F1F6] text-primary-deep">
                   <Icon className="size-4" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">
@@ -208,7 +208,7 @@ function StudyMenu({ links }: { links: StudyLinks }) {
                   <span className="block text-xs text-muted-foreground">{hint}</span>
                 </span>
                 {badge !== undefined && badge > 0 && (
-                  <span className="shrink-0 rounded-full bg-highlight-soft px-2 py-0.5 text-xs font-bold tabular-nums">{badge} due</span>
+                  <span className="shrink-0 rounded-full border-2 border-ink bg-highlight-soft px-2 py-0.5 text-xs font-bold tabular-nums">{badge} due</span>
                 )}
               </Link>
             </li>

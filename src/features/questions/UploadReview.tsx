@@ -26,7 +26,7 @@ import { saveUpload } from './uploadApi'
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
 const focusRing = 'outline-none focus-visible:ring-3 focus-visible:ring-ring/40'
 const fieldClass =
-  'w-full rounded-lg border border-input bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
+  'w-full rounded-xl border-2 border-ink/80 bg-card px-3 outline-none placeholder:text-muted-foreground focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50'
 
 type Filter = 'all' | 'ready' | 'fix' | 'duplicates'
 
@@ -303,9 +303,9 @@ export function UploadReview({ target, fileName, skippedText, items, onChange, c
         )}
 
         {shown.length === 0 ? (
-          <p className="rounded-xl border bg-card px-4 py-8 text-center text-muted-foreground">Nothing here.</p>
+          <p className="rounded-2xl border-[2.5px] border-ink bg-card shadow-toon px-4 py-8 text-center text-muted-foreground">Nothing here.</p>
         ) : (
-          <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+          <ul className="divide-y overflow-hidden rounded-2xl border-[2.5px] border-ink bg-card shadow-toon">
             {shown.map((item) => (
               <ReviewRow
                 key={item.key}
@@ -323,7 +323,7 @@ export function UploadReview({ target, fileName, skippedText, items, onChange, c
         )}
 
         {skippedText && (
-          <details className="rounded-xl border bg-card text-sm">
+          <details className="rounded-2xl border-[2.5px] border-ink bg-card shadow-toon text-sm">
             <summary className={cn('cursor-pointer list-none px-4 py-3 text-muted-foreground hover:bg-secondary/50 [&::-webkit-details-marker]:hidden', focusRing)}>
               Text that wasn’t a question ({skippedText.split('\n').length} {skippedText.split('\n').length === 1 ? 'line' : 'lines'})
             </summary>
@@ -393,7 +393,7 @@ function FilterChip({ active, onClick, label, count }: { active: boolean; onClic
       className={cn(
         'flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold',
         focusRing,
-        active ? 'border-foreground bg-foreground text-background' : 'bg-card hover:border-primary',
+        active ? 'border-foreground bg-foreground text-background' : 'bg-card hover:bg-secondary/40',
       )}
     >
       {label}
@@ -518,7 +518,7 @@ function DecisionPicker({ item, disabled, onChange }: { item: ReviewItem; disabl
           <label
             key={o.value}
             className={cn(
-              'flex h-10 cursor-pointer items-center gap-1.5 rounded-lg border bg-card px-3 text-sm font-semibold has-focus-visible:ring-3 has-focus-visible:ring-ring/40 has-disabled:cursor-not-allowed has-disabled:opacity-50',
+              'flex h-10 cursor-pointer items-center gap-1.5 rounded-xl border-2 border-ink bg-card shadow-toon-sm px-3 text-sm font-semibold has-focus-visible:ring-3 has-focus-visible:ring-ring/40 has-disabled:cursor-not-allowed has-disabled:opacity-50',
               item.decision === o.value ? 'border-primary bg-primary/[0.06] ring-1 ring-primary' : 'hover:border-primary/50',
             )}
           >

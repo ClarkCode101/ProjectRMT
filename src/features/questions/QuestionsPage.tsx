@@ -337,7 +337,7 @@ function QuestionBankView({
           {/* The admin's message to everyone (e.g. "more questions coming"), right above the shelves. */}
           <NoticeBoard place="questions" />
           {booksUnavailable && (
-            <p role="status" className="flex items-start gap-2 rounded-md border border-highlight/50 bg-highlight-soft p-3 text-sm">
+            <p role="status" className="flex items-start gap-2 rounded-xl border-2 border-ink bg-highlight-soft p-3 text-sm">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
               Your books couldn’t load. If you just updated the app, run supabase/migrations/0004_books.sql in Supabase first, then refresh.
             </p>
@@ -476,17 +476,17 @@ function QuestionBankView({
                         placeholder={placeholder}
                         value={search}
                         onChange={(e) => updateList({ search: e.target.value })}
-                        className="h-11 w-full rounded-lg border border-input bg-background/60 pr-3 pl-9 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                        className="h-11 w-full rounded-xl border-2 border-ink/80 bg-card pr-3 pl-9 outline-none placeholder:text-muted-foreground focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50"
                       />
                     </div>
                     <button
                       type="button"
                       onClick={() => setOptionsOpen(true)}
                       aria-label={source !== 'all' ? 'Filter options (changed)' : 'Filter options'}
-                      className={cn('relative flex size-11 shrink-0 items-center justify-center rounded-lg border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground', focusRing)}
+                      className={cn('relative flex size-11 shrink-0 items-center justify-center rounded-xl border-2 border-ink bg-card shadow-toon-sm text-muted-foreground hover:text-foreground', focusRing)}
                     >
                       <SlidersHorizontal className="size-5" aria-hidden />
-                      {source !== 'all' && <span className="absolute top-2 right-2 size-2 rounded-full bg-highlight" aria-hidden />}
+                      {source !== 'all' && <span className="absolute -top-1.5 -right-1.5 size-3.5 rounded-full border-2 border-ink bg-highlight" aria-hidden />}
                     </button>
                   </div>
 
@@ -678,7 +678,7 @@ function QuestionBankView({
           <button
             type="button"
             onClick={() => setOptionsOpen(false)}
-            className={cn('h-11 w-full rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90', focusRing)}
+            className={cn('h-11 w-full rounded-xl border-2 border-ink bg-primary font-heading font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-primary/90', focusRing)}
           >
             Done
           </button>
@@ -711,7 +711,7 @@ function QuestionList({
   return (
     <>
       {/* Ruled lines across the page, like a notebook. */}
-      <ol className="page-flip divide-y divide-primary/10 border-y border-primary/10">
+      <ol className="page-flip divide-y-2 divide-dashed divide-border border-y-2 border-dashed border-border">
         {questions.slice(0, shownCount).map((q, i) => (
           <QuestionRow key={q.id} number={i + 1} question={q} books={books} openBook={openBook} showSubject={showSubject} onNewBook={() => onNewBookFor(q.id)} />
         ))}
@@ -830,7 +830,7 @@ function QuestionRow({
             {q.choices.map((choice, i) => {
               const correct = i === q.correct_index
               return (
-                <li key={i} className={cn('flex gap-2 rounded-md px-3 py-2', correct ? 'bg-correct-soft font-bold text-correct' : 'bg-background')}>
+                <li key={i} className={cn('flex gap-2 rounded-xl border-2 px-3 py-2', correct ? 'border-ink bg-correct-soft font-bold text-correct' : 'border-transparent bg-background')}>
                   <span className="w-4 shrink-0 font-heading font-bold">{LETTERS[i]}</span>
                   <span className="min-w-0 flex-1">{choice}</span>
                   {correct && <span className="shrink-0 text-xs">Correct</span>}
@@ -866,7 +866,7 @@ function QuestionRow({
             )}
             <Link
               to={`/questions/${q.id}/edit`}
-              className={cn('inline-flex h-10 items-center gap-2 rounded-lg border bg-card px-3 text-sm font-semibold hover:border-primary', focusRing)}
+              className={cn('inline-flex h-10 items-center gap-2 rounded-xl border-2 border-ink bg-card shadow-toon-sm px-3 text-sm font-semibold hover:bg-secondary/40', focusRing)}
             >
               <Pencil className="size-4" aria-hidden />
               Edit
