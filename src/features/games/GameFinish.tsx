@@ -78,7 +78,7 @@ export type PlayAgain = {
 }
 
 const backClass =
-  'flex h-12 items-center justify-center rounded-lg border-2 border-primary/25 bg-card px-4 font-heading text-lg font-bold text-primary-deep outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px disabled:opacity-60'
+  'flex h-12 items-center justify-center rounded-lg border-2 border-primary/25 bg-card px-4 font-heading text-lg font-bold text-primary-deep outline-none hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px disabled:opacity-60'
 const playAgainClass = cn(heroButtonClass, 'w-full focus-visible:ring-ring/50 sm:flex sm:w-full')
 
 export function GameFinish({ won, headline, subline, details, standings, correct, answered, notes = [], bySubject, onPlayAgain, playAgain, onBack, below }: Props) {
@@ -108,7 +108,7 @@ export function GameFinish({ won, headline, subline, details, standings, correct
       </HeroPanel>
 
       {/* ---------- 2. How she did: her score | per subject ---------- */}
-      <section aria-label="Your answers" className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-6">
+      <section aria-label="Your answers" className="grid gap-4 rounded-2xl border-[2.5px] border-ink bg-card shadow-toon p-5 sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-6">
         <div>
           <h2 className="text-sm font-semibold text-muted-foreground">Your answers</h2>
           <p className="font-heading text-5xl leading-none font-bold tabular-nums">{rate === null ? '—' : formatPercent(rate)}</p>
@@ -151,7 +151,7 @@ export function GameFinish({ won, headline, subline, details, standings, correct
             <Link
               key={s.code}
               to={s.practiceHref}
-              className="inline-flex h-10 items-center rounded-lg border bg-card px-4 font-heading text-sm font-bold outline-none hover:border-primary focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="inline-flex h-10 items-center rounded-xl border-2 border-ink bg-card shadow-toon-sm px-4 font-heading text-sm font-bold outline-none hover:border-primary focus-visible:ring-3 focus-visible:ring-ring/40"
             >
               Practice {s.code}
             </Link>

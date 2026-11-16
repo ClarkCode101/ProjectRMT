@@ -42,7 +42,7 @@ export function SubjectPicker({ headingId, onPick }: Props) {
                 {/* A small card in the subject's color, like the ones in her hand. It rises a little on hover / press. */}
                 <span
                   aria-hidden
-                  className="relative block h-28 w-20 rounded-xl border-4 border-white shadow-[0_4px_12px_rgb(23_34_44/0.22)] transition-transform duration-150 group-hover:-translate-y-1.5 group-active:-translate-y-0.5 motion-reduce:transition-none"
+                  className="relative block h-28 w-20 rounded-xl border-4 border-white shadow-[0_0_0_2.5px_var(--ink),0_4px_0_2.5px_var(--ink)] transition-transform duration-150 group-hover:-translate-y-1.5 group-active:-translate-y-0.5 motion-reduce:transition-none"
                   style={{ background: color }}
                 >
                   <span className="absolute inset-x-2 inset-y-5 flex items-center justify-center rounded-lg bg-white">

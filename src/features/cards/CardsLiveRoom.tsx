@@ -223,7 +223,7 @@ export function CardsLiveRoom({ room, chat }: { room: TeamRoom; chat: RoomChatSt
       }}
       aria-label={chat.unread > 0 ? `Chat, ${chat.unread} new` : 'Chat'}
       title="Chat"
-      className="relative flex size-10 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-[0_1px_3px_rgb(23_34_44/0.08)] outline-none hover:border-primary/60 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+      className="relative flex size-10 items-center justify-center rounded-full border-2 border-ink bg-card text-muted-foreground shadow-toon-sm outline-none hover:bg-secondary/40 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
     >
       <MessageCircle className="size-5" aria-hidden />
       {chat.unread > 0 && (

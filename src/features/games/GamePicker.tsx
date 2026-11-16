@@ -162,7 +162,7 @@ export function GamePicker({ games, initial, onShow, onOpen }: Props) {
   }
 
   const arrowClass =
-    'absolute top-[40%] z-10 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-foreground shadow-[0_8px_20px_-10px_rgb(7_71_94/0.45)] outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-0 md:flex'
+    'absolute top-[40%] z-10 hidden size-12 -translate-y-1/2 items-center justify-center rounded-full border-[2.5px] border-ink bg-card text-foreground shadow-toon-sm outline-none transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-0 md:flex'
 
   return (
     <section aria-roledescription="carousel" aria-label="Games" className="flex flex-col gap-3 md:min-h-0 md:flex-1">
@@ -209,7 +209,7 @@ export function GamePicker({ games, initial, onShow, onOpen }: Props) {
                     <span
                       aria-hidden
                       className={cn(
-                        'absolute bottom-0 h-8 w-[72%] rounded-[50%] bg-[radial-gradient(closest-side,rgb(7_54_74/0.5),rgb(7_54_74/0.2)_55%,transparent)]',
+                        'absolute bottom-0 h-7 w-[64%] rounded-[50%] bg-ink/15',
                         isActive ? 'game-shadow' : 'opacity-40',
                       )}
                     />
@@ -228,7 +228,7 @@ export function GamePicker({ games, initial, onShow, onOpen }: Props) {
                     <span className="flex flex-wrap items-center justify-center gap-2">
                       <span className="font-heading text-3xl font-bold">{game.title}</span>
                       {game.alert && (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-wrong-soft px-2.5 py-0.5 text-xs font-bold text-wrong">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-wrong-soft px-2.5 py-0.5 text-xs font-bold text-wrong">
                           <span className="size-2 rounded-full bg-wrong" aria-hidden />
                           {game.alert}
                         </span>
@@ -266,7 +266,7 @@ export function GamePicker({ games, initial, onShow, onOpen }: Props) {
             aria-current={i === active ? 'true' : undefined}
             className="flex size-8 items-center justify-center rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
           >
-            <span className={cn('block h-2.5 rounded-full transition-all duration-300 motion-reduce:transition-none', i === active ? 'w-7 bg-primary' : 'w-2.5 bg-input')} />
+            <span className={cn('block h-2.5 rounded-full border-2 border-ink transition-all duration-300 motion-reduce:transition-none', i === active ? 'w-7 bg-primary' : 'w-2.5 bg-secondary')} />
           </button>
         ))}
       </div>

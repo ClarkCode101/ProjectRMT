@@ -426,7 +426,7 @@ export default function BoardPage() {
 
       {/* The Roll bar at the bottom (thumb zone). */}
       <div className="mx-auto flex w-full max-w-md shrink-0 items-center gap-3">
-        <div className="flex size-14 shrink-0 items-center justify-center rounded-xl border bg-card">
+        <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border-[2.5px] border-ink bg-card shadow-toon">
           <Dices className="size-9 text-primary-deep" aria-hidden />
         </div>
         {/* The gold main button, with a focus ring that shows on the light page. */}
@@ -443,7 +443,7 @@ export default function BoardPage() {
             <div
               key={dice.landed ? 'landed' : 'tumbling'}
               className={cn(
-                'flex size-36 items-center justify-center rounded-4xl border border-white/80 bg-white shadow-[0_24px_60px_-20px_rgb(7_54_74/0.6)] sm:size-44',
+                'flex size-36 items-center justify-center rounded-4xl border-[3px] border-ink bg-white shadow-[0_6px_0_var(--ink)] sm:size-44',
                 dice.landed ? 'die-land' : 'die-tumble',
               )}
             >

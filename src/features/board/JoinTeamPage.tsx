@@ -34,7 +34,7 @@ export default function JoinTeamPage() {
   if (askName) {
     return (
       <div className="mx-auto max-w-md py-16">
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
+        <div className="rounded-2xl border-[2.5px] border-ink bg-card shadow-toon p-6">
           <TeamNameStep headingId="join-name-heading" onSaved={() => setNameSaved(true)} />
         </div>
       </div>
@@ -45,7 +45,7 @@ export default function JoinTeamPage() {
     <div className="mx-auto max-w-md space-y-4 py-16 text-center">
       <p className="font-heading text-2xl font-bold">Couldn’t join</p>
       <p className="text-muted-foreground">{error}</p>
-      <Link to="/games" className="inline-flex h-11 items-center rounded-lg border bg-card px-5 font-semibold hover:border-primary">
+      <Link to="/games" className="inline-flex h-11 items-center rounded-xl border-2 border-ink bg-card shadow-toon-sm px-5 font-semibold hover:border-primary">
         Back to Games
       </Link>
     </div>

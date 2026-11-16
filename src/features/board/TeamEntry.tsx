@@ -70,7 +70,7 @@ export function TeamEntry({ game = 'board' }: { game?: GameKind }) {
       <button
         type="button"
         onClick={() => navigate(teamRoomPath(room.game, room.roomId))}
-        className="relative flex h-12 items-center gap-2 rounded-lg border bg-card px-4 font-heading font-bold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="relative flex h-12 items-center gap-2 rounded-xl border-2 border-ink bg-card shadow-toon-sm px-4 font-heading font-bold outline-none hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-ring/40"
       >
         <Users className="size-5 text-primary" aria-hidden />
         {room.status === 'lobby' ? 'Back to your team lobby' : room.myTurn ? 'Your turn in your team game' : 'Back to your team game'}
@@ -86,7 +86,7 @@ export function TeamEntry({ game = 'board' }: { game?: GameKind }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="relative flex h-12 items-center gap-2 rounded-lg border bg-card px-4 font-heading font-bold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="relative flex h-12 items-center gap-2 rounded-xl border-2 border-ink bg-card shadow-toon-sm px-4 font-heading font-bold outline-none hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-ring/40"
       >
         <Users className="size-5 text-primary" aria-hidden />
         Play with classmates
@@ -151,7 +151,7 @@ export function TeamEntry({ game = 'board' }: { game?: GameKind }) {
           {/* Invites: only when there are some (an empty "no invites" box would take the top spot for nothing) */}
           {waiting.length > 0 && (
             <section aria-label="Invites">
-              <ul className="divide-y rounded-lg border border-primary/40 bg-card shadow-sm">
+              <ul className="divide-y-2 divide-dashed divide-border rounded-xl border-2 border-ink bg-card shadow-toon-sm">
                 {waiting.map((inv) => (
                   <li key={inv.inviteId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                     <div className="min-w-0">
@@ -167,7 +167,7 @@ export function TeamEntry({ game = 'board' }: { game?: GameKind }) {
                         type="button"
                         disabled={busy}
                         onClick={() => run(() => teamActions.respondInvite(inv.inviteId, false))}
-                        className="h-10 rounded-lg border bg-card px-4 text-sm font-semibold outline-none hover:border-wrong/60 hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-60"
+                        className="h-10 rounded-xl border-2 border-ink bg-card shadow-toon-sm px-4 text-sm font-semibold outline-none hover:border-wrong/60 hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-60"
                       >
                         Decline
                       </button>
@@ -175,7 +175,7 @@ export function TeamEntry({ game = 'board' }: { game?: GameKind }) {
                         type="button"
                         disabled={busy}
                         onClick={() => run(() => teamActions.respondInvite(inv.inviteId, true))}
-                        className="h-10 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-60"
+                        className="h-10 rounded-xl border-2 border-ink bg-primary px-4 text-sm font-heading font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-60"
                       >
                         Join game
                       </button>
@@ -205,7 +205,7 @@ export function TeamEntry({ game = 'board' }: { game?: GameKind }) {
                 autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
-                className="h-12 min-w-0 flex-1 rounded-lg border bg-card px-4 text-center font-mono text-xl font-bold tracking-[0.3em] uppercase outline-none placeholder:font-normal placeholder:text-muted-foreground/40 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring/40"
+                className="h-12 min-w-0 flex-1 rounded-xl border-2 border-ink bg-card shadow-toon-sm px-4 text-center font-mono text-xl font-bold tracking-[0.3em] uppercase outline-none placeholder:font-normal placeholder:text-muted-foreground/40 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring/40"
               />
               {/* outlined until all 6 characters are in, then solid: ready to tap */}
               <button
@@ -232,7 +232,7 @@ export function TeamEntry({ game = 'board' }: { game?: GameKind }) {
             type="button"
             disabled={busy || !online}
             onClick={() => run(() => teamActions.createRoom(game))}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-highlight font-heading text-lg font-bold text-foreground outline-none hover:brightness-105 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px disabled:opacity-60"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-ink bg-highlight font-heading text-lg font-semibold text-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none outline-none hover:brightness-105 focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px disabled:opacity-60"
           >
             <Plus className="size-5" aria-hidden />
             {busy ? 'One moment…' : 'Host a new game'}

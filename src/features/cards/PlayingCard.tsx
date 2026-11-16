@@ -89,7 +89,7 @@ export function CardFace({ card, size = 'lg', className, style }: { card: Card; 
   return (
     <div
       aria-hidden
-      className={cn('relative shrink-0 rounded-xl border-4 border-white shadow-[0_4px_12px_rgb(23_34_44/0.22)]', size === 'sm' && 'rounded-lg border-[3px]', className)}
+      className={cn('relative shrink-0 rounded-xl border-4 border-white shadow-[0_0_0_2.5px_var(--ink),0_4px_0_2.5px_var(--ink)]', size === 'sm' && 'rounded-lg border-[3px]', className)}
       style={{ ...cardBox(size), background: card.kind === 'wild' ? WILD_BACKGROUND : color, ...style }}
     >
       <span className="absolute top-1 left-1.5">
@@ -114,13 +114,13 @@ export function CardBack({ size = 'sm', className, style }: { size?: CardSize; c
     <div
       aria-hidden
       className={cn(
-        'flex shrink-0 items-center justify-center border-white shadow-[0_2px_5px_rgb(23_34_44/0.25)]',
+        'flex shrink-0 items-center justify-center border-white shadow-[0_0_0_2px_var(--ink),0_3px_0_2px_var(--ink)]',
         size === 'xs' ? 'rounded-[5px] border-2' : 'rounded-xl border-4',
         className,
       )}
       style={{ ...cardBox(size), background: 'repeating-linear-gradient(135deg, var(--primary) 0 5px, var(--primary-deep) 5px 10px)', ...style }}
     >
-      {size !== 'xs' && <span className="rounded-md bg-white px-1.5 py-0.5 font-heading text-xs font-extrabold tracking-wide text-primary-deep">RMT</span>}
+      {size !== 'xs' && <span className="rounded-md border-2 border-ink bg-white px-1.5 py-0.5 font-heading text-xs font-bold tracking-wide text-primary-deep">RMT</span>}
     </div>
   )
 }

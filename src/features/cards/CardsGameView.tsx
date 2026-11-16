@@ -57,7 +57,7 @@ export function CardsGameView({ game, hand, online, message, onExit, onHelp, onP
           {devTools}
         </div>
         {/* What just happened (screen readers hear it too) */}
-        <p aria-live="polite" className="min-w-0 truncate rounded-full border bg-card px-3 py-1 text-center font-semibold text-muted-foreground">
+        <p aria-live="polite" className="min-w-0 truncate rounded-full border-2 border-ink bg-card px-3 py-1 text-center font-semibold text-muted-foreground">
           {lastMove ?? (game.turn === 0 ? 'Cards dealt. You go first.' : `Cards dealt. ${game.players[game.turn]?.name ?? 'Someone'} goes first.`)}
         </p>
         {/* The score and How to play on the right, away from Exit (side by side, a tap meant for ? could hit Exit). */}
@@ -71,7 +71,7 @@ export function CardsGameView({ game, hand, online, message, onExit, onHelp, onP
             onClick={onHelp}
             aria-label="How to play"
             title="How to play"
-            className="flex size-10 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-[0_1px_3px_rgb(23_34_44/0.08)] outline-none hover:border-primary/60 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="flex size-10 items-center justify-center rounded-full border-2 border-ink bg-card text-muted-foreground shadow-toon-sm outline-none hover:bg-secondary/40 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             <CircleHelp className="size-5" aria-hidden />
           </button>
@@ -102,13 +102,13 @@ export function CardsGameView({ game, hand, online, message, onExit, onHelp, onP
             <span
               className={cn(
                 'relative z-1 flex size-14 items-center justify-center rounded-full border-3 bg-card font-heading font-bold',
-                yourTurn ? 'border-primary text-primary-deep shadow-[0_0_0_4px_rgb(11_99_130/0.15)]' : 'border-border text-muted-foreground',
+                yourTurn ? 'border-ink bg-highlight text-foreground shadow-toon-sm' : 'border-ink/30 text-muted-foreground',
               )}
               aria-hidden
             >
               You
             </span>
-            <span className="-ml-3 rounded-r-full border border-l-0 bg-card py-1 pr-4 pl-5 leading-tight">
+            <span className="-ml-3 rounded-r-full border-2 border-l-0 border-ink bg-card py-1 pr-4 pl-5 leading-tight">
               <span className="block text-sm font-semibold">{yourTurn ? 'Your turn' : 'Waiting'}</span>
               <span className="block text-xs text-muted-foreground tabular-nums">
                 {cardsLeft} {cardsLeft === 1 ? 'card' : 'cards'}
@@ -116,13 +116,13 @@ export function CardsGameView({ game, hand, online, message, onExit, onHelp, onP
             </span>
           </div>
           {cardsLeft === 1 && !game.finished && (
-            <span className="hidden rounded-full border border-highlight/60 bg-highlight-soft px-2.5 py-0.5 text-xs font-bold text-[#7A4D0C] lg:inline">Last card</span>
+            <span className="hidden rounded-full border-2 border-ink bg-highlight-soft px-2.5 py-0.5 text-xs font-bold text-[#7A4D0C] lg:inline">Last card</span>
           )}
           <button
             type="button"
             onClick={onDraw}
             disabled={!hand.canDraw && !hand.keepingDrawn}
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border bg-card px-4 font-heading font-bold shadow-[0_2px_6px_rgb(23_34_44/0.08)] outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50 lg:w-full lg:flex-none"
+            className="flex h-12 flex-[2] items-center justify-center gap-2 rounded-2xl border-[2.5px] border-ink bg-card px-3 font-heading font-bold whitespace-nowrap shadow-toon-sm outline-none transition-[transform,box-shadow] duration-75 focus-visible:ring-3 focus-visible:ring-ring/40 enabled:hover:bg-secondary/40 enabled:active:translate-y-[3px] enabled:active:shadow-none disabled:border-dashed disabled:border-ink/35 disabled:text-muted-foreground disabled:shadow-none sm:px-4 lg:w-full lg:flex-none"
           >
             <Layers className="size-5" aria-hidden />
             {hand.keepingDrawn ? 'Keep card' : 'Draw a card'}
@@ -146,12 +146,15 @@ export function CardsGameView({ game, hand, online, message, onExit, onHelp, onP
           type="button"
           onClick={onAnswerToPlay}
           disabled={!hand.picked}
-          className="order-3 flex h-16 flex-1 items-center justify-center gap-3 rounded-2xl bg-primary px-5 text-left text-white shadow-[0_8px_20px_rgb(11_99_130/0.33)] outline-none hover:bg-primary-deep focus-visible:ring-4 focus-visible:ring-ring/40 disabled:opacity-45 disabled:shadow-none lg:w-48 lg:flex-none"
+          // Ready (a card is picked): the blue sticker button. Not yet: white with a dashed outline and gray words,
+          // so it plainly reads "not yet" and stays readable (it used to fade to 45%, pale blue with pale words).
+          // The title never wraps: the bar is wider on iPad landscape / computers (w-56), and the words a bit smaller on phones.
+          className="group order-3 flex h-16 flex-[3] items-center justify-center gap-2 rounded-2xl border-[2.5px] border-ink bg-primary px-3 text-left text-white shadow-toon outline-none transition-[transform,box-shadow] duration-75 focus-visible:ring-4 focus-visible:ring-ring/40 enabled:hover:bg-primary-deep enabled:active:translate-y-1 enabled:active:shadow-none disabled:border-dashed disabled:border-ink/35 disabled:bg-card disabled:text-muted-foreground disabled:shadow-none sm:gap-3 sm:px-5 lg:w-56 lg:flex-none"
         >
-          <Play className="size-6 shrink-0 fill-current" aria-hidden />
-          <span className="leading-tight">
-            <span className="block font-heading text-lg font-bold">Answer to play</span>
-            <span className="block text-sm text-white/85">{hand.picked ? '1 question' : 'Pick a card first'}</span>
+          <Play className="size-5 shrink-0 fill-current sm:size-6" aria-hidden />
+          <span className="min-w-0 leading-tight">
+            <span className="block font-heading text-base font-bold whitespace-nowrap sm:text-lg">Answer to play</span>
+            <span className="block truncate text-sm text-white/85 group-disabled:text-muted-foreground">{hand.picked ? '1 question' : 'Pick a card first'}</span>
           </span>
         </button>
       </div>

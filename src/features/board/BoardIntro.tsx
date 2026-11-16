@@ -68,7 +68,7 @@ export function BoardIntro({ inProgress, previewLayoutId, onContinue, onNewGame 
           <button
             type="button"
             onClick={onNewGame}
-            className="flex h-12 items-center rounded-lg border bg-card px-5 font-heading font-bold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="flex h-12 items-center rounded-xl border-2 border-ink bg-card shadow-toon-sm px-5 font-heading font-bold outline-none hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             New game
           </button>

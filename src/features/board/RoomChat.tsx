@@ -156,7 +156,7 @@ export function RoomChat({ chat, me, moment, colorOf, headingId, className, list
             type="button"
             disabled={chat.sending}
             onClick={() => void chat.send(reply)}
-            className="h-9 rounded-full border bg-card px-3.5 text-sm font-semibold outline-none hover:border-primary/60 hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50"
+            className="h-9 rounded-full border-2 border-ink bg-card px-3.5 text-sm font-semibold outline-none hover:bg-secondary/40 hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50"
           >
             {reply}
           </button>
@@ -183,13 +183,13 @@ export function RoomChat({ chat, me, moment, colorOf, headingId, className, list
           enterKeyHint="send"
           autoFocus={autoFocus}
           // 16px text, so iPad and iPhone don't zoom in
-          className="h-11 min-w-0 flex-1 rounded-lg border bg-card px-3.5 text-base outline-none placeholder:text-muted-foreground/60 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring/40"
+          className="h-11 min-w-0 flex-1 rounded-xl border-2 border-ink bg-card shadow-toon-sm px-3.5 text-base outline-none placeholder:text-muted-foreground/60 focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-ring/40"
         />
         <button
           type="submit"
           disabled={!canSendMessage(text) || chat.sending}
           aria-label="Send"
-          className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-40"
+          className="flex size-11 shrink-0 items-center justify-center rounded-xl border-2 border-ink bg-primary text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-40"
         >
           <Send className="size-5" aria-hidden />
         </button>
@@ -310,7 +310,7 @@ export function ChatSheet({
 /** One message as a small bubble (over the board, or inside the question popup). */
 export function ChatBubble({ message, color, className }: { message: ChatMessage; color: string; className?: string }) {
   return (
-    <p className={cn('flex max-w-full items-center gap-2 rounded-full border bg-card px-3.5 py-1.5 text-sm shadow-md', className)} role="status">
+    <p className={cn('flex max-w-full items-center gap-2 rounded-full border-2 border-ink bg-card px-3.5 py-1.5 text-sm shadow-toon-sm', className)} role="status">
       <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} aria-hidden />
       <span className="truncate">
         <span className="font-semibold">{message.name}:</span> {message.body}
@@ -337,7 +337,7 @@ export function PopupChatRow({ chat, me, watching, colorOf }: { chat: RoomChatSt
               type="button"
               disabled={chat.sending}
               onClick={() => void chat.send(reply)}
-              className="h-9 rounded-full border bg-card px-3.5 text-sm font-semibold outline-none hover:border-primary/60 hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50"
+              className="h-9 rounded-full border-2 border-ink bg-card px-3.5 text-sm font-semibold outline-none hover:bg-secondary/40 hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50"
             >
               {reply}
             </button>

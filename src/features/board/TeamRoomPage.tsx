@@ -72,7 +72,7 @@ function TeamRoomScreen({ roomId }: { roomId: string | undefined }) {
       <div className="mx-auto max-w-md space-y-4 py-16 text-center">
         <p className="font-heading text-2xl font-bold">You’re no longer in this lobby</p>
         <p className="text-muted-foreground">The host removed you from the lobby. You can join again if they invite you or send you the code.</p>
-        <Link to={home} className="inline-flex h-11 items-center rounded-lg border bg-card px-5 font-semibold hover:border-primary">
+        <Link to={home} className="inline-flex h-11 items-center rounded-xl border-2 border-ink bg-card shadow-toon-sm px-5 font-semibold hover:border-primary">
           {homeLabel}
         </Link>
       </div>
@@ -83,7 +83,7 @@ function TeamRoomScreen({ roomId }: { roomId: string | undefined }) {
       <div className="mx-auto max-w-md space-y-4 py-16 text-center">
         <p className="font-heading text-2xl font-bold">{room ? 'This game was cancelled.' : 'This game isn’t available.'}</p>
         <p className="text-muted-foreground">{room ? 'The host closed the lobby.' : 'It may have ended, or you’re not one of its players.'}</p>
-        <Link to={home} className="inline-flex h-11 items-center rounded-lg border bg-card px-5 font-semibold hover:border-primary">
+        <Link to={home} className="inline-flex h-11 items-center rounded-xl border-2 border-ink bg-card shadow-toon-sm px-5 font-semibold hover:border-primary">
           {homeLabel}
         </Link>
       </div>

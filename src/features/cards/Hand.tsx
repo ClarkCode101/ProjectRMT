@@ -78,7 +78,7 @@ export function Hand({ cards, playableIds, selectedId, onSelect, hiddenIds }: Pr
               )}
               style={{ transform: `translateY(${drop - (selected ? 28 : playable ? 14 : 0)}px) rotate(${tilt}deg)`, transformOrigin: '50% 120%' }}
             >
-              <CardFace card={card} size={size} className={selected ? 'shadow-[0_0_0_3px_white,0_0_0_6px_var(--primary),0_12px_22px_rgb(23_34_44/0.35)]' : undefined} />
+              <CardFace card={card} size={size} className={selected ? 'shadow-[0_0_0_2.5px_var(--ink),0_0_0_7px_var(--highlight),0_0_0_9.5px_var(--ink),0_10px_0_6px_var(--ink)]' : undefined} />
             </button>
           </li>
         )

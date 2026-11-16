@@ -289,11 +289,11 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props)
               <li
                 key={p.userId}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-full border bg-card py-1 pr-2.5 pl-1 text-sm tabular-nums',
+                  'flex items-center gap-1.5 rounded-full border-2 border-ink bg-card py-1 pr-2.5 pl-1 text-sm tabular-nums',
                   isTurn && 'border-primary ring-2 ring-primary/30',
                 )}
               >
-                <span className="size-5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: playerColor(room.players, p.userId) }} aria-hidden />
+                <span className="size-5 rounded-full border-2 border-ink" style={{ backgroundColor: playerColor(room.players, p.userId) }} aria-hidden />
                 <span className="max-w-24 truncate font-semibold">{p.userId === room.me ? 'You' : p.name}</span>
                 <span className="text-muted-foreground">{p.position}</span>
                 {isTurn && (
@@ -352,7 +352,7 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props)
             onClick={() => setChatWanted(true)}
             disabled={Boolean(dice || popup)}
             aria-label={chat.unread > 0 ? `Chat, ${chat.unread} new ${chat.unread === 1 ? 'message' : 'messages'}` : 'Chat'}
-            className="relative flex size-14 shrink-0 items-center justify-center rounded-xl border bg-card outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl border-[2.5px] border-ink bg-card shadow-toon outline-none hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-ring/40"
           >
             <MessageCircle className="size-8 text-primary-deep" aria-hidden />
             {chat.unread > 0 && (
@@ -375,7 +375,7 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props)
             <div
               key={dice.landed ? 'landed' : 'tumbling'}
               className={cn(
-                'flex size-36 items-center justify-center rounded-4xl border border-white/80 bg-white shadow-[0_24px_60px_-20px_rgb(7_54_74/0.6)] sm:size-44',
+                'flex size-36 items-center justify-center rounded-4xl border-[3px] border-ink bg-white shadow-[0_6px_0_var(--ink)] sm:size-44',
                 dice.landed ? 'die-land' : 'die-tumble',
               )}
             >
@@ -407,7 +407,7 @@ export function TeamGame({ room, fetchedAt, act, message, onLeft, chat }: Props)
               Turn order
             </h2>
             <p className="text-sm text-muted-foreground">Everyone rolled once. Highest goes first.</p>
-            <ol className="divide-y rounded-lg border bg-card">
+            <ol className="divide-y rounded-xl border-2 border-ink bg-card shadow-toon-sm">
               {unseen.order.map((o) => (
                 <li key={o.userId} className="flex items-center gap-3 px-4 py-2.5">
                   <span className="w-9 font-heading font-bold text-muted-foreground">{ORDINALS[o.seat] ?? `${o.seat + 1}th`}</span>

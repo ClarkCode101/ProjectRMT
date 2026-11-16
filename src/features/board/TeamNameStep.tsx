@@ -5,7 +5,7 @@ import { useAuth } from '@/features/auth/authContext'
 import { saveFirstName, suggestedFirstName } from '@/lib/profile'
 
 const INPUT_CLASS =
-  'h-12 w-full rounded-lg border border-input bg-background px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50'
+  'h-12 w-full rounded-xl border-2 border-ink/80 bg-card px-3 text-base outline-none focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50'
 
 type Props = {
   /** after the name is saved: go on to what she was doing (host, join, accept an invite) */

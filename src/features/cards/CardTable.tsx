@@ -57,7 +57,7 @@ function Seat({ player, seat, active, clock, compact = false }: { player: CardPl
           className={cn(
             'relative z-1 flex shrink-0 items-center justify-center rounded-full border-3 bg-card font-heading font-bold text-muted-foreground',
             compact ? 'size-10 text-sm' : 'size-12',
-            active ? 'border-primary text-primary-deep shadow-[0_0_0_4px_rgb(11_99_130/0.15)]' : 'border-border',
+            active ? 'border-ink bg-highlight text-foreground shadow-toon-sm' : 'border-ink/30',
           )}
           aria-hidden
         >
@@ -147,7 +147,7 @@ function Middle({ game, hideTop = false }: Props) {
         {top.kind !== 'wild' && (
           <>
             or
-            <span className="rounded-full border bg-card px-3 py-1 font-semibold text-foreground">
+            <span className="rounded-full border-2 border-ink bg-card px-3 py-1 font-semibold text-foreground">
               any {top.kind === 'number' ? top.number : cardLabel(top).split(' ').slice(1).join(' ')}
             </span>
           </>
@@ -175,7 +175,7 @@ export function CardTable({ game, hideTop = false, clock }: Props) {
         <div className="row-start-2 hidden justify-end min-[700px]:flex">{left && <Seat player={left} seat={1} active={active(1)} clock={clock} />}</div>
         {/* The oval: a fixed size that follows the screen, never its contents (a long subject name or the direction
             word used to make it grow and shrink during a game). */}
-        <div className="row-start-2 flex items-center justify-center rounded-[50%] border bg-card px-6 py-6 shadow-[0_10px_30px_rgb(23_34_44/0.08),inset_0_0_0_12px_#F6F9FA] max-[699px]:row-start-1 min-[700px]:col-start-2 min-[700px]:h-[18rem] min-[700px]:w-[clamp(26rem,52vw,36rem)] min-[700px]:px-0 min-[700px]:py-0">
+        <div className="row-start-2 flex items-center justify-center rounded-[50%] border-[3px] border-ink bg-card px-6 py-6 shadow-[0_6px_0_var(--ink),inset_0_0_0_12px_#EAF6F9] max-[699px]:row-start-1 min-[700px]:col-start-2 min-[700px]:h-[18rem] min-[700px]:w-[clamp(26rem,52vw,36rem)] min-[700px]:px-0 min-[700px]:py-0">
           <Middle game={game} hideTop={hideTop} />
         </div>
         <div className="row-start-2 hidden justify-start min-[700px]:col-start-3 min-[700px]:flex">{right && <Seat player={right} seat={3} active={active(3)} clock={clock} />}</div>

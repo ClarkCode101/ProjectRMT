@@ -66,7 +66,7 @@ export function LifelineBar({ current, used, pendingKind, choiceCount, onUse, bu
               disabled={on || block !== null || busy}
               aria-label={`${label}: ${sub}`}
               className={cn(
-                'flex min-h-14 items-center justify-center gap-2 rounded-xl border bg-card px-2 py-1.5 text-center leading-tight outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
+                'flex min-h-14 items-center justify-center gap-2 rounded-2xl border-[2.5px] border-ink bg-card shadow-toon px-2 py-1.5 text-center leading-tight outline-none focus-visible:ring-3 focus-visible:ring-ring/40',
                 state === null && 'font-bold text-primary hover:border-primary active:bg-secondary',
                 state === 'on' && 'border-2 border-highlight bg-highlight-soft font-bold text-foreground',
                 state === 'used' && 'border-dashed bg-muted/50 text-muted-foreground',

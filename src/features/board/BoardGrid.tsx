@@ -154,7 +154,7 @@ export function BoardGrid({ tokenSquare = 1, tokens, layout, className, style }:
       role="img"
       aria-label={label}
       // The same white card and soft shadow as the nav rail and the other floating cards.
-      className={cn('rounded-xl border bg-card p-1.5 shadow-[0_12px_32px_-16px_rgb(7_71_94/0.35)] sm:p-2', className)}
+      className={cn('rounded-2xl border-[2.5px] border-ink bg-card shadow-toon p-1.5 sm:p-2', className)}
       style={style}
     >
       <div className="relative w-full" style={{ aspectRatio: `${BOARD_COLUMNS} / ${BOARD_ROWS}` }}>
@@ -169,7 +169,7 @@ export function BoardGrid({ tokenSquare = 1, tokens, layout, className, style }:
               // The outer cell has no gap, so the ladders and snakes line up with the squares; the tile sits inside it.
               <div key={square} className="p-[2px]" style={{ gridColumn: column + 1, gridRow: row + 1 }}>
                 <div
-                  className={cn('relative size-full rounded-md border', finish ? 'border-highlight bg-highlight-soft' : light ? 'bg-card' : 'bg-background')}
+                  className={cn('relative size-full rounded-lg border-2', finish ? 'border-ink bg-highlight-soft' : light ? 'border-ink/20 bg-card' : 'border-ink/20 bg-background')}
                   style={finish ? undefined : { borderColor: RULE }}
                 >
                   <span className="absolute top-0.5 left-1 font-heading text-[11px] font-bold tabular-nums sm:top-1 sm:left-1.5 sm:text-sm" style={{ color: INK }}>

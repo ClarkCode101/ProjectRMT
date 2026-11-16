@@ -129,7 +129,7 @@ export function TeamLobby({ room, act, busy, onLeave, chat, game = 'board' }: Pr
               aria-labelledby="lobby-invite-heading"
               className={cn(
                 'flex items-center gap-4 rounded-xl border py-2.5 pr-2.5 pl-4',
-                needPlayers ? 'border-primary/50 bg-card shadow-sm' : 'border-dashed',
+                needPlayers ? 'border-ink bg-card shadow-toon-sm' : 'border-dashed border-ink/40',
               )}
             >
               <div>
@@ -160,7 +160,7 @@ export function TeamLobby({ room, act, busy, onLeave, chat, game = 'board' }: Pr
                 type="button"
                 onClick={copyLink}
                 aria-live="polite"
-                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border bg-card px-3.5 text-sm font-semibold outline-none hover:border-primary/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border-2 border-ink bg-card shadow-toon-sm px-3.5 text-sm font-semibold outline-none hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-ring/40"
               >
                 {linkCopied ? <Check className="size-4 text-correct" aria-hidden /> : <Link2 className="size-4 text-primary" aria-hidden />}
                 {linkCopied ? 'Link copied' : 'Copy link'}
@@ -206,7 +206,7 @@ export function TeamLobby({ room, act, busy, onLeave, chat, game = 'board' }: Pr
                     aria-label="Open seat. Invite a classmate."
                     className={cn(
                       seatClass,
-                      'w-full border-dashed text-left text-muted-foreground outline-none hover:border-primary/60 hover:bg-card hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 lg:h-full',
+                      'w-full border-dashed text-left text-muted-foreground outline-none hover:bg-secondary/40 hover:bg-card hover:text-primary focus-visible:ring-3 focus-visible:ring-ring/40 lg:h-full',
                       firstOpen && 'font-semibold',
                     )}
                   >
@@ -272,7 +272,7 @@ export function TeamLobby({ room, act, busy, onLeave, chat, game = 'board' }: Pr
         moment="lobby"
         colorOf={chatColor}
         headingId="lobby-chat-heading"
-        className="rounded-xl border bg-card p-4 md:min-h-48 md:flex-1"
+        className="rounded-2xl border-[2.5px] border-ink bg-card shadow-toon p-4 md:min-h-48 md:flex-1"
         compactLimit={3}
         onSeeAll={() => setChatSheetOpen(true)}
       />
@@ -292,7 +292,7 @@ export function TeamLobby({ room, act, busy, onLeave, chat, game = 'board' }: Pr
         <button
           type="button"
           onClick={onLeave}
-          className="flex h-12 items-center justify-center gap-2 self-stretch rounded-lg border bg-card px-5 font-semibold text-muted-foreground outline-none hover:border-wrong/60 hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40 sm:self-start"
+          className="flex h-12 items-center justify-center gap-2 self-stretch rounded-xl border-2 border-ink bg-card shadow-toon-sm px-5 font-semibold text-muted-foreground outline-none hover:border-wrong/60 hover:text-wrong focus-visible:ring-3 focus-visible:ring-ring/40 sm:self-start"
         >
           {/* The host alone cancels the lobby; with others in, the host passes to the next player (migration 0031). */}
           {cancels ? <X className="size-5" aria-hidden /> : <LogOut className="size-5" aria-hidden />}
@@ -367,7 +367,7 @@ export function TeamLobby({ room, act, busy, onLeave, chat, game = 'board' }: Pr
           ) : shownClassmates.length === 0 ? (
             <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground">No classmates online right now. Share the code below instead.</p>
           ) : (
-            <ul className="max-h-[50dvh] divide-y overflow-y-auto rounded-lg border bg-card">
+            <ul className="max-h-[50dvh] divide-y overflow-y-auto rounded-xl border-2 border-ink bg-card shadow-toon-sm">
               {shownClassmates.map((c) => {
                 const state = joinedIds.has(c.userId) ? 'in' : invitedIds.has(c.userId) ? 'invited' : 'none'
                 return (
@@ -389,7 +389,7 @@ export function TeamLobby({ room, act, busy, onLeave, chat, game = 'board' }: Pr
                         type="button"
                         disabled={busy || full || invitesFull}
                         onClick={() => inviteClassmate(c.userId)}
-                        className="h-9 shrink-0 rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50"
+                        className="h-9 shrink-0 rounded-xl border-2 border-ink bg-primary px-4 text-sm font-heading font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none outline-none hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/40 disabled:opacity-50"
                       >
                         Invite
                       </button>
