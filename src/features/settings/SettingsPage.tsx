@@ -34,9 +34,9 @@ import { DAILY_TARGET_CHOICES, resetProgress, saveStudySettings, useStudySetting
 type Editing = 'name' | 'exam' | 'password' | null
 
 const INPUT_CLASS =
-  'h-12 w-full rounded-lg border border-input bg-background px-3 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50'
+  'h-12 w-full rounded-xl border-2 border-ink/80 bg-card px-3 text-base outline-none focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/40'
 
-/** A group: small caps heading on the page, then a white sheet with its rows split by gray rules. */
+/** A group: small caps heading on the page, then a white "sticker" sheet (ink outline) with its rows split by dashed rules. */
 function Group({ title, children }: { title: string; children: ReactNode }) {
   const id = useId()
   return (
@@ -44,7 +44,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
       <h2 id={id} className="mb-2 px-1 text-xs font-bold tracking-[0.14em] text-muted-foreground uppercase">
         {title}
       </h2>
-      <div className="divide-y overflow-hidden rounded-2xl border bg-card">{children}</div>
+      <div className="divide-y-2 divide-dashed divide-border overflow-hidden rounded-3xl border-[2.5px] border-ink bg-card shadow-toon">{children}</div>
     </section>
   )
 }
@@ -87,7 +87,7 @@ function RowButton({ className, ...props }: ComponentProps<'button'>) {
     <button
       type="button"
       className={cn(
-        'h-11 rounded-md px-3 font-bold text-primary hover:bg-primary/5 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none disabled:text-muted-foreground disabled:hover:bg-transparent',
+        'h-11 rounded-xl px-3 font-heading font-semibold text-primary hover:bg-primary/5 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none disabled:text-muted-foreground disabled:hover:bg-transparent',
         className,
       )}
       {...props}
@@ -178,7 +178,7 @@ function NameRow({ open, onToggle }: { open: boolean; onToggle: (open: boolean) 
               {SAVE_FAILED}
             </p>
           )}
-          <Button type="submit" className="h-11 rounded-lg px-5 font-heading font-bold" disabled={name.trim() === saved || status === 'saving'}>
+          <Button type="submit" className="h-11 rounded-xl px-5 font-heading font-bold" disabled={name.trim() === saved || status === 'saving'}>
             {status === 'saving' ? 'Saving…' : 'Save'}
           </Button>
         </form>
@@ -336,7 +336,7 @@ function PasswordRow({ open, onToggle }: { open: boolean; onToggle: (open: boole
             </p>
           )}
 
-          <Button type="submit" className="h-11 rounded-lg px-5 font-heading font-bold" disabled={!online || status === 'saving'}>
+          <Button type="submit" className="h-11 rounded-xl px-5 font-heading font-bold" disabled={!online || status === 'saving'}>
             {status === 'saving' ? 'Changing…' : 'Change password'}
           </Button>
         </form>
@@ -429,7 +429,7 @@ function ExamDateRow({ settings, open, onToggle }: { settings: StudySettings; op
                 className={INPUT_CLASS}
               />
               {examDate && (
-                <Button type="button" variant="outline" className="h-12 rounded-lg" onClick={() => setExamDate('')}>
+                <Button type="button" variant="outline" className="h-12 rounded-xl font-heading" onClick={() => setExamDate('')}>
                   Clear
                 </Button>
               )}
@@ -443,7 +443,7 @@ function ExamDateRow({ settings, open, onToggle }: { settings: StudySettings; op
               {SAVE_FAILED}
             </p>
           )}
-          <Button type="submit" className="h-11 rounded-lg px-5 font-heading font-bold" disabled={!dateOk || examDate === saved || status === 'saving'}>
+          <Button type="submit" className="h-11 rounded-xl px-5 font-heading font-bold" disabled={!dateOk || examDate === saved || status === 'saving'}>
             {status === 'saving' ? 'Saving…' : 'Save'}
           </Button>
         </form>
@@ -484,8 +484,9 @@ function DailyGoalRow({ settings }: { settings: StudySettings }) {
               <label
                 key={n}
                 className={cn(
-                  'flex h-11 min-w-14 cursor-pointer items-center justify-center rounded-lg border px-3 font-heading font-bold text-foreground tabular-nums has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
-                  current === n ? 'border-primary bg-primary text-white' : 'bg-card hover:border-primary/50',
+                  'flex h-11 min-w-14 cursor-pointer items-center justify-center rounded-xl border-2 border-ink px-3 font-heading font-bold text-foreground tabular-nums has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
+                  // the chosen one is pressed down (no shadow); the others stand up as stickers
+                  current === n ? 'translate-y-[3px] bg-primary text-white' : 'bg-card shadow-toon-sm hover:bg-secondary/40',
                 )}
               >
                 <input type="radio" name="daily-target" checked={current === n} onChange={() => pick(n)} className="sr-only" />
@@ -652,7 +653,7 @@ function ResetProgress() {
   }
 
   return (
-    <section className="space-y-4 rounded-2xl border border-destructive/40 bg-card px-5 py-4" aria-labelledby="reset-title">
+    <section className="space-y-4 rounded-3xl border-[2.5px] border-ink bg-wrong-soft/60 px-5 py-4 shadow-toon" aria-labelledby="reset-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-0.5">
           <h2 id="reset-title" className="font-semibold text-destructive">
@@ -667,7 +668,7 @@ function ResetProgress() {
           <Button
             type="button"
             variant="outline"
-            className="h-11 rounded-lg border-destructive/50 px-4 font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="h-11 rounded-xl px-4 font-heading font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive"
             onClick={() => {
               setOpen(true)
               setStatus('idle')
@@ -679,7 +680,7 @@ function ResetProgress() {
       </div>
 
       {open && (
-        <form onSubmit={handleReset} className="space-y-3 rounded-xl bg-destructive/5 p-4">
+        <form onSubmit={handleReset} className="space-y-3 rounded-2xl border-2 border-dashed border-destructive/50 bg-card p-4">
           <label htmlFor="reset-confirm" className="block text-sm font-semibold">
             Type {CONFIRM_WORD} to confirm
           </label>
@@ -692,12 +693,12 @@ function ResetProgress() {
             className={cn(INPUT_CLASS, 'max-w-xs')}
           />
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" className="h-11 rounded-lg px-4" onClick={close} disabled={status === 'resetting'}>
+            <Button type="button" variant="outline" className="h-11 rounded-xl font-heading px-4" onClick={close} disabled={status === 'resetting'}>
               Cancel
             </Button>
             <Button
               type="submit"
-              className="h-11 rounded-lg bg-destructive px-4 font-heading font-bold text-white hover:bg-destructive/85"
+              className="h-11 rounded-xl bg-destructive px-4 font-heading font-semibold text-white hover:bg-destructive/85"
               disabled={typed.trim() !== CONFIRM_WORD || status === 'resetting'}
             >
               {status === 'resetting' ? 'Deleting…' : 'Delete all progress'}
@@ -732,7 +733,7 @@ function MemberRow({ member, note, children }: { member: Member; note?: string; 
   const details = [member.name && `Name: ${member.name}`, signInMethod(member.providers), note].filter(Boolean).join(' · ')
   return (
     <div className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2 px-5 py-3 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto]">
-      <span aria-hidden className="grid size-11 place-items-center rounded-full bg-secondary font-heading font-bold text-primary-deep">
+      <span aria-hidden className="grid size-11 place-items-center rounded-full border-2 border-ink bg-[#D5F1F6] font-heading font-bold text-primary-deep">
         {initials(null, member.email)}
       </span>
       <div className="min-w-0">
@@ -752,7 +753,7 @@ function AdminRow({ member, isYou }: { member: Member; isYou: boolean }) {
   const details = [member.name && `Name: ${member.name}`, signInMethod(member.providers)].filter(Boolean).join(' · ')
   return (
     <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-x-3.5 bg-primary/5 px-5 py-3.5">
-      <span aria-hidden className="grid size-11 place-items-center rounded-full bg-primary-deep font-heading font-bold text-white">
+      <span aria-hidden className="grid size-11 place-items-center rounded-full border-2 border-ink bg-highlight font-heading font-bold text-foreground">
         {initials(null, member.email)}
       </span>
       <div className="min-w-0">
@@ -762,7 +763,7 @@ function AdminRow({ member, isYou }: { member: Member; isYou: boolean }) {
         </p>
         <p className="truncate text-sm text-muted-foreground">{details}</p>
       </div>
-      <span className="inline-flex items-center gap-1 rounded-full bg-primary-deep px-2.5 py-0.5 text-xs font-bold tracking-wide text-white">
+      <span className="inline-flex items-center gap-1 rounded-full border-2 border-ink bg-primary-deep px-2.5 py-0.5 text-xs font-bold tracking-wide text-white">
         <ShieldCheck className="size-3.5" aria-hidden />
         ADMIN
       </span>
@@ -848,7 +849,7 @@ function PushRow() {
       {(state.data === 'on' || note) && (
         <div className="flex flex-wrap items-center gap-3">
           {state.data === 'on' && (
-            <Button type="button" variant="outline" className="h-11 gap-1.5 px-4 font-bold" disabled={busy || !online} onClick={test}>
+            <Button type="button" variant="outline" className="h-11 rounded-xl font-heading gap-1.5 px-4 font-bold" disabled={busy || !online} onClick={test}>
               <BellRing className="size-4" aria-hidden />
               Send test
             </Button>
@@ -961,10 +962,10 @@ function AccessGroup() {
       <h2 id={id} className="mb-2 flex items-center gap-2 px-1 text-xs font-bold tracking-[0.14em] text-muted-foreground uppercase">
         Access requests
         {pending.length > 0 && (
-          <span className="rounded-full bg-highlight px-2 py-px tracking-normal text-[#3B2A06]">{pending.length}</span>
+          <span className="rounded-full border-2 border-ink bg-highlight px-2 py-px tracking-normal text-[#3B2A06]">{pending.length}</span>
         )}
       </h2>
-      <div className="divide-y overflow-hidden rounded-2xl border bg-card">
+      <div className="divide-y-2 divide-dashed divide-border overflow-hidden rounded-3xl border-[2.5px] border-ink bg-card shadow-toon">
         {members.isPending && <p className="px-5 py-4 text-muted-foreground">Loading…</p>}
         {members.isError && (
           <p role="alert" className="px-5 py-4 text-sm text-destructive">
@@ -983,7 +984,7 @@ function AccessGroup() {
             </RowButton>
             <Button
               type="button"
-              className="h-11 rounded-md px-5 font-heading text-base font-bold"
+              className="h-11 rounded-xl px-5 font-heading text-base font-bold"
               disabled={locked(member)}
               onClick={() => decide(member, 'approved')}
             >
@@ -1071,10 +1072,10 @@ function AccessGroup() {
             device. After they log in, they have to choose a new password.
           </p>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" autoFocus className="h-11 px-4 font-bold" onClick={() => setResetting(null)}>
+            <Button type="button" variant="outline" autoFocus className="h-11 rounded-xl font-heading px-4 font-bold" onClick={() => setResetting(null)}>
               Cancel
             </Button>
-            <Button type="button" className="h-11 px-4 font-bold" onClick={() => void confirmReset()}>
+            <Button type="button" className="h-11 rounded-xl font-heading px-4 font-bold" onClick={() => void confirmReset()}>
               Reset password
             </Button>
           </div>
@@ -1089,19 +1090,19 @@ function AccessGroup() {
           <p className="text-sm text-muted-foreground">
             For <b className="break-all text-foreground">{temp?.email}</b>. Send it to them in a private message.
           </p>
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-dashed border-primary bg-primary/[0.04] px-4 py-3.5">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-ink bg-[#D5F1F6]/50 px-4 py-3.5">
             <span className="font-mono text-2xl font-bold tracking-wider select-all">{temp?.password}</span>
-            <Button type="button" className="h-10 gap-1.5 px-3.5 font-bold" onClick={() => void copyTemp()}>
+            <Button type="button" className="h-10 rounded-xl font-heading gap-1.5 px-3.5 font-bold" onClick={() => void copyTemp()}>
               {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
               {copied ? 'Copied' : 'Copy'}
             </Button>
           </div>
-          <p className="flex items-start gap-2 rounded-lg bg-highlight-soft px-3 py-2.5 text-sm">
+          <p className="flex items-start gap-2 rounded-xl border-2 border-ink bg-highlight-soft px-3 py-2.5 text-sm">
             <CircleAlert className="mt-0.5 size-4 shrink-0 text-[#9A5B00]" aria-hidden />
             This is the only time you’ll see it. If you lose it, reset again.
           </p>
           <div className="flex justify-end">
-            <Button type="button" className="h-11 px-5 font-bold" onClick={() => setTemp(null)}>
+            <Button type="button" className="h-11 rounded-xl font-heading px-5 font-bold" onClick={() => setTemp(null)}>
               Done
             </Button>
           </div>
@@ -1120,10 +1121,10 @@ function AccessGroup() {
             can’t be undone. If they sign in again, it shows up here as a new request.
           </p>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" autoFocus className="h-11 px-4 font-bold" onClick={() => setDeleting(null)}>
+            <Button type="button" variant="outline" autoFocus className="h-11 rounded-xl font-heading px-4 font-bold" onClick={() => setDeleting(null)}>
               Cancel
             </Button>
-            <Button type="button" className="h-11 bg-wrong px-4 font-bold text-white hover:bg-wrong/90" onClick={() => void confirmDelete()}>
+            <Button type="button" className="h-11 rounded-xl font-heading bg-wrong px-4 font-bold text-white hover:bg-wrong/90" onClick={() => void confirmDelete()}>
               Delete account
             </Button>
           </div>

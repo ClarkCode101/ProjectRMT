@@ -44,7 +44,8 @@ const COMMUNITY: NavItem = { to: '/community', label: 'Community', icon: Users }
 // Quick reference (/reference) is off the menus for now; the page and its address still work.
 
 const focusRing = 'outline-none focus-visible:ring-3 focus-visible:ring-ring/40'
-const floating = 'bg-card shadow-[0_12px_32px_-16px_rgb(7_71_94/0.35)]'
+// The rail and the account button float on the page as "stickers": ink outline, hard shadow.
+const floating = 'border-[2.5px] border-ink bg-card shadow-toon'
 
 /** One tab in the phone's bottom bar. */
 function BarTab({ item }: { item: NavItem }) {
@@ -81,7 +82,7 @@ function Tooltip({ children }: { children: string }) {
 
 /** A small red dot on a nav icon: something is waiting there (e.g. a Board Review invite or turn). */
 function AlertDot() {
-  return <span className="absolute top-1 right-1 size-2.5 rounded-full bg-wrong ring-2 ring-card" aria-hidden />
+  return <span className="absolute -top-0.5 -right-0.5 size-3 rounded-full border-2 border-ink bg-wrong" aria-hidden />
 }
 
 /** One round icon in the floating rail. `alert` = show the red dot. */
@@ -96,9 +97,11 @@ function RailLink({ item, alert = false }: { item: NavItem; alert?: boolean }) {
       aria-label={alert ? `${item.label} (something is waiting)` : item.label}
       className={({ isActive }) =>
         cn(
-          'group relative flex size-11 items-center justify-center rounded-full transition-colors',
+          'group relative flex size-11 items-center justify-center rounded-full border-2 transition-colors',
           focusRing,
-          isActive || alsoActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+          isActive || alsoActive
+            ? 'border-ink bg-primary text-primary-foreground shadow-toon-sm'
+            : 'border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground',
         )
       }
     >
@@ -153,7 +156,7 @@ export function AppLayout() {
                 type="button"
                 onClick={() => setMoreOpen(true)}
                 aria-label="Account menu"
-                className={cn('flex size-9 items-center justify-center rounded-full bg-primary-deep font-heading font-bold text-white uppercase', focusRing)}
+                className={cn('flex size-9 items-center justify-center rounded-full border-2 border-ink bg-highlight font-heading font-bold text-foreground uppercase shadow-toon-sm', focusRing)}
               >
                 {displayName.charAt(0)}
               </button>
@@ -165,7 +168,7 @@ export function AppLayout() {
             <NavLink
               to="/"
               aria-label="ProjectRMT home"
-              className={cn('fixed top-5 left-5 z-10 block size-14 overflow-hidden rounded-full shadow-[0_10px_24px_-12px_rgb(7_71_94/0.6)]', focusRing)}
+              className={cn('fixed top-5 left-5 z-10 block size-14 overflow-hidden rounded-full border-[2.5px] border-ink shadow-toon', focusRing)}
             >
               <Logo className="size-full" />
             </NavLink>
@@ -188,7 +191,7 @@ export function AppLayout() {
                 aria-label={`Account: ${displayName}`}
                 className={cn('group relative flex size-14 items-center justify-center rounded-full', floating, focusRing)}
               >
-                <span className="flex size-10 items-center justify-center rounded-full bg-primary-deep font-heading text-lg font-bold text-white uppercase">
+                <span className="flex size-10 items-center justify-center rounded-full border-2 border-ink bg-highlight font-heading text-lg font-bold text-foreground uppercase">
                   {displayName.charAt(0)}
                 </span>
                 {!profileOpen && <Tooltip>Account</Tooltip>}
@@ -202,22 +205,22 @@ export function AppLayout() {
                     role="menu"
                     aria-label="Account"
                     onKeyDown={(e) => e.key === 'Escape' && setProfileOpen(false)}
-                    className="animate-in fade-in slide-in-from-left-2 absolute bottom-0 left-full ml-3 w-72 rounded-xl border bg-card p-2 shadow-lg duration-150"
+                    className="animate-in fade-in slide-in-from-left-2 absolute bottom-0 left-full ml-3 w-72 rounded-2xl border-[2.5px] border-ink bg-card p-2 shadow-toon duration-150"
                   >
                     <div className="flex items-center gap-3 px-2 pt-2 pb-3">
-                      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary-deep font-heading text-lg font-bold text-white uppercase">
+                      <span className="flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-highlight font-heading text-lg font-bold text-foreground uppercase">
                         {displayName.charAt(0)}
                       </span>
                       {/* Just the email: the name was only the part before "@", so it said the same thing twice.
                           Not cut off ("break-all" lets a long email wrap). */}
                       <p className="min-w-0 font-heading leading-tight font-bold break-all">{email}</p>
                     </div>
-                    <div className="space-y-0.5 border-t pt-2">
+                    <div className="space-y-0.5 border-t-2 border-dashed pt-2">
                       <NavLink
                         to="/settings"
                         role="menuitem"
                         onClick={() => setProfileOpen(false)}
-                        className={cn('flex h-10 w-full items-center gap-2 rounded-lg px-2 text-sm font-semibold hover:bg-secondary', focusRing)}
+                        className={cn('flex h-10 w-full items-center gap-2 rounded-xl px-2 font-heading text-sm font-semibold hover:bg-secondary', focusRing)}
                       >
                         <Settings className="size-4" aria-hidden />
                         Settings
@@ -227,7 +230,7 @@ export function AppLayout() {
                         role="menuitem"
                         autoFocus
                         onClick={logOut}
-                        className={cn('flex h-10 w-full items-center gap-2 rounded-lg px-2 text-sm font-semibold text-wrong hover:bg-wrong-soft', focusRing)}
+                        className={cn('flex h-10 w-full items-center gap-2 rounded-xl px-2 font-heading text-sm font-semibold text-wrong hover:bg-wrong-soft', focusRing)}
                       >
                         <LogOut className="size-4" aria-hidden />
                         Log out
@@ -257,7 +260,7 @@ export function AppLayout() {
       </div>
 
       {!focusMode && (
-        <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-10 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
+        <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-10 border-t-[2.5px] border-ink bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
           <ul className="grid grid-cols-5">
             <li>
               <BarTab item={HOME} />
@@ -270,7 +273,7 @@ export function AppLayout() {
               <NavLink to="/practice" className={cn('group -mt-5 flex flex-col items-center gap-1 rounded-full text-xs', focusRing)}>
                 {({ isActive }) => (
                   <>
-                    <span className="flex size-14 items-center justify-center rounded-full bg-highlight text-foreground shadow-[0_6px_16px_-6px_rgb(7_71_94/0.6)] ring-4 ring-background group-active:translate-y-px">
+                    <span className="flex size-14 items-center justify-center rounded-full border-[2.5px] border-ink bg-highlight text-foreground shadow-toon-sm ring-4 ring-background group-active:translate-y-[3px] group-active:shadow-none">
                       <Play className="size-6 fill-current" aria-hidden />
                     </span>
                     <span className={cn(isActive ? 'font-bold text-primary' : 'font-semibold text-foreground')}>Practice</span>
@@ -290,7 +293,7 @@ export function AppLayout() {
               >
                 <span className="relative">
                   <Ellipsis className="size-5" strokeWidth={1.8} aria-hidden />
-                  {boardAlert && <span className="absolute -top-1 -right-1.5 size-2.5 rounded-full bg-wrong ring-2 ring-card" aria-hidden />}
+                  {boardAlert && <span className="absolute -top-1 -right-1.5 size-3 rounded-full border-2 border-ink bg-wrong" aria-hidden />}
                 </span>
                 More
               </button>
@@ -311,16 +314,16 @@ export function AppLayout() {
           <NavLink
             to="/games"
             onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
+            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40', focusRing)}
           >
             <Gamepad2 className="size-5" aria-hidden />
             Games
-            {boardAlert && <span className="ml-auto rounded-full bg-wrong px-2 text-xs font-bold text-white">Waiting</span>}
+            {boardAlert && <span className="ml-auto rounded-full border-2 border-ink bg-wrong px-2 text-xs font-bold text-white">Waiting</span>}
           </NavLink>
           <NavLink
             to="/community"
             onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
+            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40', focusRing)}
           >
             <Users className="size-5" aria-hidden />
             Community
@@ -328,7 +331,7 @@ export function AppLayout() {
           <NavLink
             to="/settings"
             onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
+            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40', focusRing)}
           >
             <Settings className="size-5" aria-hidden />
             Settings
@@ -336,7 +339,7 @@ export function AppLayout() {
           <NavLink
             to="/questions"
             onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold hover:bg-secondary', focusRing)}
+            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40', focusRing)}
           >
             <Library className="size-5" aria-hidden />
             Questions
@@ -344,7 +347,7 @@ export function AppLayout() {
           <button
             type="button"
             onClick={logOut}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-md border px-4 font-semibold text-wrong hover:bg-wrong-soft', focusRing)}
+            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold text-wrong shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-wrong-soft', focusRing)}
           >
             <LogOut className="size-5" aria-hidden />
             Log out
@@ -352,7 +355,7 @@ export function AppLayout() {
           <button
             type="button"
             onClick={() => setMoreOpen(false)}
-            className={cn('h-11 w-full rounded-md text-sm font-semibold text-muted-foreground hover:bg-secondary', focusRing)}
+            className={cn('h-11 w-full rounded-xl font-heading text-sm font-semibold text-muted-foreground hover:bg-secondary', focusRing)}
           >
             Close
           </button>
