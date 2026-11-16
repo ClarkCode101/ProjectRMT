@@ -95,7 +95,7 @@ export default function AccessPendingPage() {
           </p>
         </div>
 
-        <dl className="rounded-xl border bg-background px-4 py-2.5 text-[15px]">
+        <dl className="rounded-2xl border-2 border-ink bg-background px-4 py-2.5 text-[15px]">
           <Detail label="Signed in as">{session?.user.email}</Detail>
           {requested && <Detail label="Requested">{requested}</Detail>}
           <Detail label="Status">
@@ -105,7 +105,7 @@ export default function AccessPendingPage() {
 
         {!declined && (
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span aria-hidden className="size-2 shrink-0 rounded-full bg-highlight" />
+            <span aria-hidden className="size-2.5 shrink-0 rounded-full border-[1.5px] border-ink bg-highlight" />
             This page opens the app by itself once you’re accepted.
           </p>
         )}
@@ -114,7 +114,7 @@ export default function AccessPendingPage() {
           type="button"
           onClick={handleCheck}
           disabled={checking}
-          className="h-12 w-full rounded-md font-heading text-lg font-bold"
+          className="h-12 w-full rounded-xl font-heading text-lg font-bold"
         >
           {checking ? 'Checking…' : 'Check again'}
         </Button>

@@ -154,7 +154,7 @@ export default function LoginPage() {
     return (
       <AuthShell slip={SAMPLE_SLIP} strip={SAMPLE_STRIP}>
         <div className="space-y-5 p-6 md:p-9">
-          <span aria-hidden className="grid size-14 place-items-center rounded-full bg-secondary text-primary">
+          <span aria-hidden className="grid size-14 place-items-center rounded-full border-[2.5px] border-ink bg-[#D5F1F6] text-primary-deep">
             <Mail className="size-7" />
           </span>
           <div className="space-y-1">
@@ -167,7 +167,7 @@ export default function LoginPage() {
           <Button
             type="button"
             variant="outline"
-            className="h-11 rounded-md px-4 font-bold"
+            className="h-11 rounded-xl px-4 font-bold"
             onClick={() => {
               setCheckEmail(null)
               switchMode('login')
@@ -268,7 +268,7 @@ export default function LoginPage() {
             <div
               id="forgot-help"
               role="note"
-              className="animate-in fade-in relative space-y-1.5 rounded-lg border border-primary/20 bg-primary/[0.06] py-3 pr-10 pl-3.5 text-sm leading-relaxed duration-150"
+              className="animate-in fade-in relative space-y-1.5 rounded-xl border-2 border-ink bg-[#D5F1F6]/60 py-3 pr-10 pl-3.5 text-sm leading-relaxed duration-150"
             >
               <p>
                 <b>Message your admin.</b> They’ll send you a temporary password, and you’ll choose a new one after you log in.
@@ -287,7 +287,7 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
+          <p role="alert" className="rounded-xl border-2 border-ink bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
             {error}
             {/* A wrong password is the moment she needs the way back. */}
             {loginFailed && !showForgot && (
@@ -305,7 +305,7 @@ export default function LoginPage() {
           </p>
         )}
 
-        <Button type="submit" className="h-12 w-full rounded-md font-heading text-lg font-bold" disabled={submitting}>
+        <Button type="submit" className="h-12 w-full rounded-xl font-heading text-lg font-bold" disabled={submitting}>
           {signingUp ? (submitting ? 'Creating account…' : 'Create account') : submitting ? 'Logging in…' : 'Log in'}
         </Button>
 
@@ -320,7 +320,7 @@ export default function LoginPage() {
           variant="outline"
           onClick={handleGoogle}
           disabled={openingGoogle}
-          className="h-12 w-full gap-2.5 rounded-md border-input bg-card text-base font-semibold text-foreground"
+          className="h-12 w-full gap-2.5 rounded-xl bg-card font-heading text-base font-semibold text-foreground"
         >
           <GoogleMark />
           {openingGoogle ? 'Opening Google…' : 'Continue with Google'}

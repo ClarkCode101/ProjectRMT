@@ -29,10 +29,10 @@ export default function PrivacyPage() {
       className="min-h-dvh bg-background px-4 pt-[calc(2rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))]"
       style={LIGHT_GRAPH_PAPER}
     >
-      <article className="mx-auto max-w-2xl space-y-6 rounded-2xl border bg-card p-6 leading-relaxed shadow-[0_30px_60px_-30px_rgb(7_71_94/0.5)] md:p-10">
+      <article className="mx-auto max-w-2xl space-y-6 rounded-3xl border-[2.5px] border-ink bg-card p-6 leading-relaxed shadow-toon md:p-10">
         <header className="space-y-3">
           <Link to="/login" className="inline-flex items-center gap-2.5 rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-            <Logo className="size-9 rounded-lg" />
+            <Logo className="size-9 rounded-lg ring-2 ring-ink" />
             <span className="font-heading text-xl font-bold tracking-tight">
               Project<span className="text-primary">RMT</span>
             </span>

@@ -88,7 +88,7 @@ export default function ChoosePasswordPage() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-5 p-6 md:p-9" noValidate>
-        <span aria-hidden className="grid size-14 place-items-center rounded-full bg-highlight-soft text-[#9A5B00]">
+        <span aria-hidden className="grid size-14 place-items-center rounded-full border-[2.5px] border-ink bg-highlight-soft text-[#9A5B00]">
           <LockKeyhole className="size-7" />
         </span>
         <div className="space-y-1">
@@ -132,12 +132,12 @@ export default function ChoosePasswordPage() {
         </div>
 
         {error && (
-          <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
+          <p role="alert" className="rounded-xl border-2 border-ink bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
             {error}
           </p>
         )}
 
-        <Button type="submit" className="h-12 w-full rounded-md font-heading text-lg font-bold" disabled={saving}>
+        <Button type="submit" className="h-12 w-full rounded-xl font-heading text-lg font-bold" disabled={saving}>
           {saving ? 'Saving…' : 'Save and continue'}
         </Button>
 

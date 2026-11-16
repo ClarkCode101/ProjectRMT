@@ -69,7 +69,7 @@ function CommunityView({
       <PageHeader title="Community" subtitle="Books your classmates shared. Add one and it’s yours to keep." />
 
       {shared.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-primary/30 bg-card px-6 py-12 text-center">
+        <div className="rounded-2xl border-[2.5px] border-dashed border-ink/40 bg-card px-6 py-12 text-center">
           <Users className="mx-auto size-10 text-primary/60" aria-hidden />
           <p className="mt-3 font-heading text-lg font-bold">No shared books yet</p>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
@@ -93,10 +93,10 @@ function CommunityView({
                   placeholder="Search by book or classmate"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="h-11 w-full rounded-lg border border-input bg-card pr-3 pl-9 outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                  className="h-11 w-full rounded-xl border-2 border-ink/80 bg-card pr-3 pl-9 outline-none placeholder:text-muted-foreground focus-visible:border-ink focus-visible:ring-3 focus-visible:ring-ring/50"
                 />
               </div>
-              <div role="radiogroup" aria-label="Sort" className="flex shrink-0 rounded-lg border bg-card p-1">
+              <div role="radiogroup" aria-label="Sort" className="flex shrink-0 rounded-xl border-2 border-ink bg-card shadow-toon-sm p-1">
                 {(
                   [
                     ['newest', 'Newest'],
@@ -109,7 +109,7 @@ function CommunityView({
                     role="radio"
                     aria-checked={sort === value}
                     onClick={() => setSort(value)}
-                    className={cn('h-9 flex-1 rounded-md px-3 text-sm font-semibold transition-colors', focusRing, sort === value ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground')}
+                    className={cn('h-9 flex-1 rounded-lg border-2 px-3 font-heading text-sm font-semibold whitespace-nowrap transition-colors', focusRing, sort === value ? 'border-ink bg-primary text-white' : 'border-transparent text-muted-foreground hover:text-foreground')}
                   >
                     {label}
                   </button>
@@ -139,7 +139,7 @@ function CommunityView({
 
           {/* ---------- The books ---------- */}
           {shown.length === 0 ? (
-            <p className="rounded-xl border bg-card px-4 py-10 text-center text-muted-foreground">No books match. Try a different search or subject.</p>
+            <p className="rounded-2xl border-[2.5px] border-ink bg-card shadow-toon px-4 py-10 text-center text-muted-foreground">No books match. Try a different search or subject.</p>
           ) : (
             <ul className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
               {shown.map((b) => (
@@ -167,14 +167,14 @@ function MiniCover({ book, className }: { book: Pick<CommunityBook, 'title' | 'c
     <span
       aria-hidden
       className={cn(
-        'relative flex flex-col items-center overflow-hidden rounded-l-[3px] rounded-r-lg border border-primary/15 bg-card px-2 pt-2.5 pb-2 pl-4 text-primary-deep shadow-[0_8px_16px_-10px_rgb(7_71_94/0.55)]',
+        'relative flex flex-col items-center overflow-hidden rounded-l-[3px] rounded-r-lg border-[2.5px] border-ink bg-card px-2 pt-2.5 pb-2 pl-4 text-primary-deep shadow-toon',
         className,
       )}
     >
-      <span className="absolute inset-y-0 left-0 w-2.5" style={{ background: color }} />
+      <span className="absolute inset-y-0 left-0 w-3 border-r-2 border-ink" style={{ background: color }} />
       <span className="relative line-clamp-2 w-full text-center font-heading text-xs leading-tight font-bold tracking-wide uppercase">{book.title}</span>
       <span className="relative flex flex-1 items-center">
-        <span className="flex size-10 items-center justify-center rounded-full border-2 bg-secondary/60 font-heading text-xl font-black" style={{ borderColor: color, color }}>
+        <span className="flex size-10 items-center justify-center rounded-full border-2 bg-secondary/60 font-heading text-xl font-bold" style={{ borderColor: color, color }}>
           {book.title.charAt(0).toUpperCase()}
         </span>
       </span>
@@ -188,7 +188,7 @@ function BookCard({ book, onOpen }: { book: CommunityBook; onOpen: () => void })
       <span className="relative">
         <MiniCover book={book} className="h-[9.5rem] w-28 transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:-translate-y-1.5 group-hover:-rotate-2" />
         {(book.isMine || book.myCopyId) && (
-          <span className="absolute -top-2 -right-3 inline-flex items-center gap-0.5 rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-white shadow">
+          <span className="absolute -top-2 -right-3 inline-flex items-center gap-0.5 rounded-full border-2 border-ink bg-primary px-2 py-0.5 text-[11px] font-bold text-white">
             {book.isMine ? 'Yours' : <><Check className="size-3" aria-hidden /> Added</>}
           </span>
         )}
@@ -263,7 +263,7 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
           {book.subjectCodes.length > 0 && (
             <p className="mt-2 flex flex-wrap gap-1.5">
               {book.subjectCodes.map((code) => (
-                <span key={code} className="rounded-full bg-secondary px-2 py-px font-heading text-xs font-bold">
+                <span key={code} className="rounded-full border-[1.5px] border-ink bg-secondary px-2 py-px font-heading text-xs font-bold">
                   {code}
                 </span>
               ))}
@@ -276,8 +276,8 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
       </div>
 
       {/* ---------- A peek inside ---------- */}
-      <section aria-labelledby="community-preview-heading" className="rounded-lg border bg-card">
-        <h3 id="community-preview-heading" className="border-b px-3 py-2 font-heading text-xs font-bold tracking-[0.15em] text-muted-foreground uppercase">
+      <section aria-labelledby="community-preview-heading" className="rounded-xl border-2 border-ink bg-card shadow-toon-sm">
+        <h3 id="community-preview-heading" className="border-b-2 border-dashed px-3 py-2 font-heading text-xs font-bold tracking-[0.15em] text-muted-foreground uppercase">
           A peek inside
         </h3>
         {preview.isPending ? (
@@ -315,14 +315,14 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
       {/* ---------- What she can do with it ---------- */}
       {book.isMine ? (
         <div className="space-y-3">
-          <p className="rounded-md bg-secondary px-3 py-2 text-sm">
+          <p className="rounded-xl border-2 border-ink/30 bg-secondary px-3 py-2 text-sm">
             This is your book. To stop sharing it, open it and tap the Share to Community button at the top.
           </p>
           <OpenBookLink id={book.id} label="Open your book" />
         </div>
       ) : copyId ? (
         <div className="space-y-3">
-          <p role="status" className="flex items-center gap-2 rounded-md bg-correct-soft px-3 py-2 font-semibold text-correct">
+          <p role="status" className="flex items-center gap-2 rounded-xl border-2 border-ink bg-correct-soft px-3 py-2 font-semibold text-correct">
             <CircleCheck className="size-4 shrink-0" aria-hidden />
             {addedId
               ? `Added to ${libraryNames[library - 1]}${addedSkipped > 0 ? `, without the ${plural(addedSkipped, 'question')} you already have` : ''}. It’s yours to keep.`
@@ -330,7 +330,7 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
           </p>
           <div className="flex flex-col gap-2 sm:flex-row-reverse">
             <OpenBookLink id={copyId} label="Open your copy" />
-            <Button type="button" variant="outline" className="h-11 flex-1 rounded-lg" onClick={onClose}>
+            <Button type="button" variant="outline" className="h-11 flex-1 rounded-xl font-heading" onClick={onClose}>
               Keep browsing
             </Button>
           </div>
@@ -365,12 +365,12 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
           </fieldset>
 
           {firstWithRoom === 0 && (
-            <p role="alert" className="rounded-md bg-highlight-soft px-3 py-2 text-sm font-semibold">
+            <p role="alert" className="rounded-xl border-2 border-ink bg-highlight-soft px-3 py-2 text-sm font-semibold">
               All three libraries are full. Delete a book you don’t need anymore to make room.
             </p>
           )}
           {error && (
-            <p role="alert" className="rounded-md bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
+            <p role="alert" className="rounded-xl border-2 border-ink bg-wrong-soft px-3 py-2 text-sm font-bold text-wrong">
               {error}
             </p>
           )}
@@ -395,7 +395,7 @@ function BookSheet({ book, libraryNames, roomLeft, onClose }: { book: CommunityB
             disabled={busy || firstWithRoom === 0 || toAdd <= 0 || duplicates?.status === 'checking'}
             onClick={() => void handleAdd()}
             aria-describedby={skipped.size > 0 ? 'community-add-summary' : undefined}
-            className={cn('flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary font-heading text-lg font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-60', focusRing)}
+            className={cn('flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-ink bg-primary font-heading text-lg font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-primary/90 disabled:opacity-60', focusRing)}
           >
             {busy ? 'Adding…' : 'Add to my library'}
           </button>
@@ -451,7 +451,7 @@ function DuplicateWarning({
     )
   }
   return (
-    <fieldset className="min-w-0 rounded-lg border border-highlight/50 bg-highlight-soft/50 p-3">
+    <fieldset className="min-w-0 rounded-2xl border-2 border-ink bg-highlight-soft/60 p-3">
       <legend className="sr-only">Questions you may already have</legend>
       <p aria-hidden className="flex items-center gap-1.5 font-bold">
         <TriangleAlert className="size-4 shrink-0" />
@@ -463,7 +463,7 @@ function DuplicateWarning({
       <p className="mt-0.5 text-xs text-muted-foreground">Ticked ones are skipped (not added). Tap a question to compare.</p>
       <ul className="binder-scroll mt-2 max-h-[24dvh] space-y-1.5 overflow-y-auto pr-1">
         {found.map((d) => (
-          <li key={d.incomingId} className="flex items-start gap-2.5 rounded-md bg-card px-2.5 py-2">
+          <li key={d.incomingId} className="flex items-start gap-2.5 rounded-xl border-2 border-ink/20 bg-card px-2.5 py-2">
             <input
               type="checkbox"
               checked={skipped.has(d.incomingId)}
@@ -494,7 +494,7 @@ function OpenBookLink({ id, label }: { id: string; label: string }) {
   return (
     <Link
       to={`/questions?book=${id}`}
-      className={cn('flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-primary font-heading font-bold text-primary-foreground hover:bg-primary/90', focusRing)}
+      className={cn('flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border-2 border-ink bg-primary font-heading font-semibold text-primary-foreground shadow-toon-sm transition-[transform,box-shadow] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-primary/90', focusRing)}
     >
       <BookOpen className="size-4" aria-hidden />
       {label}
