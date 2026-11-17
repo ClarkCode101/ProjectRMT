@@ -382,15 +382,33 @@
   }
 }
 
-/* Home's cartoon body (BodyCartoon.tsx): it breathes slowly, the chosen organ has a ring that keeps pulsing,
-   and the whole body hops and sways once when the daily goal is reached. */
-@keyframes toon-breathe {
-  50% { transform: scale(1.012, 0.988) translateY(2px); }
+/* Home's cartoon body (BodyCartoon.tsx): she floats slowly in the water, bubbles rise around her, the rings of light
+   glow softly, the chosen organ has a ring that keeps pulsing, and the whole body hops and sways once when the
+   daily goal is reached. */
+@keyframes toon-float {
+  50% { transform: translateY(-9px) rotate(-0.8deg); }
 }
-.toon-breathe {
+.toon-float {
   transform-box: fill-box;
-  transform-origin: center bottom;
-  animation: toon-breathe 3.4s ease-in-out infinite;
+  transform-origin: center;
+  animation: toon-float 5s ease-in-out infinite;
+}
+/* A bubble starts under the drawing and rises past its top (the distance is in the drawing's own units). */
+@keyframes toon-bubble {
+  from { transform: translateY(0); opacity: 0; }
+  10%  { opacity: 1; }
+  85%  { opacity: 1; }
+  to   { transform: translateY(-720px); opacity: 0; }
+}
+.toon-bubble {
+  opacity: 0;
+  animation: toon-bubble 12s linear infinite;
+}
+@keyframes toon-halo {
+  50% { opacity: 0.4; }
+}
+.toon-halo {
+  animation: toon-halo 3.4s ease-in-out infinite;
 }
 @keyframes toon-ring {
   from { transform: scale(0.75); opacity: 0.95; }
@@ -415,9 +433,14 @@
   animation: toon-dance 1.5s ease-in-out 2;
 }
 @media (prefers-reduced-motion: reduce) {
-  .toon-breathe,
+  .toon-float,
+  .toon-halo,
   .toon-ring,
   .toon-dance {
     animation: none;
+  }
+  /* Bubbles only make sense moving: without motion they are hidden. */
+  .toon-bubble {
+    display: none;
   }
 }

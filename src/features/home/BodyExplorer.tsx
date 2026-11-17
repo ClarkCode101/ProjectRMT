@@ -1,24 +1,19 @@
-import { ChevronLeft, ChevronRight, Dices, Play, X } from 'lucide-react'
-import { lazy, Suspense, useRef, useState, type ReactNode } from 'react'
+import { Dices, Play, X } from 'lucide-react'
+import { useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Dialog } from '@/components/Dialog'
 import { heroButtonClass } from '@/components/report'
 import { PASSING_LABEL, PASSING_RATE, type SubjectSummary } from '@/lib/quiz'
 import { useCountUp } from '@/lib/useCountUp'
 import { cn } from '@/lib/utils'
-import type { Body3DControls, OrganAnchor } from './Body3D'
-import { BodyCartoon } from './BodyCartoon'
+import { BodyCartoon, type OrganAnchor } from './BodyCartoon'
 import { WarmupCard } from './HomeCards'
 import { OrganIcon } from './OrganIcon'
 import type { ScoreSnapshot } from './snapshot'
 import { correctCount, correctToPass, MIN_ANSWERED, nextMilestone, ORGANS, organLook, scoreCaption, STATUS_COLOR, subjectStatus, type SubjectStatus } from './organs'
 
-// three.js is big, so the 3D body downloads separately, after the rest of Home shows (the flat body shows meanwhile).
-const Body3D = lazy(() => import('./Body3D'))
-
 /**
- * The centerpiece of Home: a chibi 3D cartoon body you can turn, with a card for each subject around it.
- * While the 3D part downloads (and on devices that can't draw 3D) the flat cartoon body stands in.
+ * The centerpiece of Home: a cartoon body floating in water, with a card for each subject around it.
  * Laptops: cards in two columns beside the body, each joined to its organ by a faint line (like a labelled diagram).
  * Tablets and phones: the cards sit in a grid under the body.
  * From tablet size up, the stage stretches to fill the height it is given, so Home fits without scrolling.
@@ -41,7 +36,7 @@ export function BodyStage({
   /** subjects she answered more in since her last visit, with their old numbers (their labels count up from them) */
   previous: Record<string, ScoreSnapshot>
   onSelect: (subjectId: number) => void
-  /** the overall score, shown with the body like a scan readout (bottom right on laptops, under Turn on smaller screens) */
+  /** the overall score, shown with the body like a scan readout (bottom right on laptops, under the body on smaller screens) */
   readout?: ReactNode
   /** today's goal and the week so far (laptops only: bottom left, mirroring the readout) */
   today?: ReactNode
@@ -50,7 +45,6 @@ export function BodyStage({
 }) {
   const mapped = summary.filter((s) => ORGANS[s.code])
   const stageRef = useRef<HTMLDivElement>(null)
-  const controls = useRef<Body3DControls | null>(null)
   const canvasBoxRef = useRef<HTMLDivElement>(null)
   const cardRefs = useRef(new Map<string, HTMLElement>())
   const lineRefs = useRef(new Map<string, SVGGElement>())
@@ -83,7 +77,7 @@ export function BodyStage({
     }
   }
 
-  /** Tapping an organ (on the flat or the 3D body) chooses its subject. */
+  /** Tapping an organ on the body chooses its subject. */
   function pickOrgan(code: string) {
     const subject = mapped.find((s) => s.code === code)
     if (subject) onSelect(subject.subjectId)
@@ -168,8 +162,7 @@ export function BodyStage({
   // from the middle: about 5rem of breathing room between body and cards on any screen. Not tight against the arms
   // (too close felt cramped), not at the screen's edges (too far felt empty). The min() keeps a column inside
   // the stage on narrower laptops.
-  // The 3D box (below) is wider than the gap between the columns, so the cards sit over its empty sides
-  // (a narrow box would make the camera back up and the body shrink).
+  // The body's box (below) is wider than the gap between the columns, so the cards sit over its empty sides.
   // Each column runs from there out to the stage's edge, and its cards fill it (up to 20rem wide, kept on the
   // body's side), so the sides of the stage are used instead of left empty.
   const column = 'lg:absolute lg:top-0 lg:bottom-20 lg:flex lg:flex-col lg:justify-evenly'
@@ -182,7 +175,7 @@ export function BodyStage({
         Subjects on the body
       </h2>
 
-      {/* Phones and tablets: body, turn buttons, then a grid of cards (flex order).
+      {/* Phones and tablets: body, the overall score, then a grid of cards (flex order).
           Laptops: one stage with the body in the middle and a column of cards on each side. */}
       <div ref={stageRef} className="relative flex flex-col md:min-h-0 md:flex-1 lg:block">
         {/* Soft spotlight behind the body */}
@@ -190,30 +183,9 @@ export function BodyStage({
 
         <div
           ref={canvasBoxRef}
-          className="relative order-1 mx-auto h-96 w-full max-w-88 md:h-auto md:min-h-48 md:max-w-none md:flex-1 lg:absolute lg:w-auto lg:inset-x-28 lg:top-0 lg:bottom-11 xl:inset-x-32"
+          className="relative order-1 mx-auto h-96 w-full max-w-88 md:h-auto md:min-h-48 md:max-w-none md:flex-1 lg:absolute lg:w-auto lg:inset-x-28 lg:top-0 lg:bottom-2 xl:inset-x-32"
         >
-          {/* The flat body: shown while the 3D one downloads, and instead of it on devices without 3D. */}
-          {(() => {
-            const flat = (
-              <BodyCartoon selectedCode={selected?.code} looks={looks} onPick={pickOrgan} onFrame={drawLines} celebrate={celebrate} className="absolute inset-0" />
-            )
-            return (
-              <Suspense fallback={flat}>
-                <Body3D
-                  selectedCode={selected?.code}
-                  looks={looks}
-                  onPick={pickOrgan}
-                  onFrame={drawLines}
-                  ref={controls}
-                  celebrate={celebrate}
-                  // absolute, not size-full: on iPad portrait this box gets its height from the flex layout,
-                  // where a 100% height doesn't work (the canvas stayed 150px tall)
-                  className="absolute inset-0"
-                  fallback={flat}
-                />
-              </Suspense>
-            )
-          })()}
+          <BodyCartoon selectedCode={selected?.code} looks={looks} onPick={pickOrgan} onFrame={drawLines} celebrate={celebrate} className="absolute inset-0" />
         </div>
 
         {/* Leader lines (laptops only, where the cards sit beside the body): every card is joined to its organ,
@@ -246,26 +218,6 @@ export function BodyStage({
             )
           })}
         </svg>
-
-        {/* Turn handle under the feet, like a turntable (a sticker pill: ‹ Turn ›) */}
-        <div className="relative order-2 mt-1 flex shrink-0 justify-center lg:absolute lg:inset-x-0 lg:bottom-0 lg:mt-0">
-          <div className="flex w-full max-w-64 items-center">
-            <span aria-hidden className="h-0.5 flex-1 rounded-full bg-linear-to-r from-transparent to-ink/30" />
-            <span className="flex items-center rounded-full border-2 border-ink bg-primary p-0.5 text-primary-foreground shadow-toon-sm">
-              <button type="button" aria-label="Turn the body left" onClick={() => controls.current?.rotateBy(-Math.PI / 4)} className="flex size-8 items-center justify-center rounded-full outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white active:scale-90">
-                <ChevronLeft className="size-4" strokeWidth={2.8} aria-hidden />
-              </button>
-              {/* Says what the arrows do (they turn the body, they don't change page). */}
-              <span aria-hidden className="px-1 font-heading text-xs font-bold whitespace-nowrap">
-                Turn
-              </span>
-              <button type="button" aria-label="Turn the body right" onClick={() => controls.current?.rotateBy(Math.PI / 4)} className="flex size-8 items-center justify-center rounded-full outline-none hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-white active:scale-90">
-                <ChevronRight className="size-4" strokeWidth={2.8} aria-hidden />
-              </button>
-            </span>
-            <span aria-hidden className="h-0.5 flex-1 rounded-full bg-linear-to-l from-transparent to-ink/30" />
-          </div>
-        </div>
 
         {/* Subject cards. "contents" lets the same cards be one grid (small screens) or two side columns (laptops).
             Phones: two across (three cut the codes off, e.g. "MIC…"); tablets: three across. */}
