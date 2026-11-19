@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { FLOOR_LABEL, PASSING_LABEL, PASSING_RATE, type SubjectSummary } from '@/lib/quiz'
+import { FLOOR_LABEL, MIN_ANSWERED, PASSING_LABEL, PASSING_RATE, type SubjectSummary } from '@/lib/quiz'
 
 // Each board subject lives in the body part a MedTech links it to.
 export type Organ = {
@@ -142,8 +142,8 @@ export const ORGANS: Record<string, Organ> = {
  */
 export type SubjectStatus = 'new' | 'starting' | 'low' | 'passing'
 
-/** Answers needed before a subject's score counts as real (0% after one question says very little). */
-export const MIN_ANSWERED = 10
+/** Answers needed before a subject's score counts as real (one rule for the whole app, kept in lib/quiz). */
+export { MIN_ANSWERED }
 
 export function subjectStatus(s: SubjectSummary): SubjectStatus {
   if (s.accuracy === null || s.attempts === 0) return 'new'

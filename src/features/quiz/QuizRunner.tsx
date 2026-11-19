@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { ExitButton } from '@/components/ExitButton'
 import { shuffledChoiceOrder } from '@/lib/quiz'
 import { useSubjectOfTopic } from '@/lib/referenceData'
+import { fixedCount, MAX_TRIES, requeueMissed } from '@/lib/retryQueue'
 import { cn } from '@/lib/utils'
 import { setQuestionStatus, useRefreshBank } from '@/features/questions/api'
 import { useOnline } from '@/lib/offline/useOfflineSync'
@@ -22,11 +23,31 @@ type Props = {
   onFinish: (answers: AnswerResult[]) => void
   /** She chose to leave before the end. */
   onExit: (answers: AnswerResult[]) => void
+  /**
+   * "Fix until right" (past mistakes in Today's plan): a question she misses comes back a couple of questions later,
+   * up to MAX_TRIES times. Only the first try is saved as her answer, so a retry right after reading why
+   * doesn't make her scores look better than they are. `answers` then has one entry per try.
+   */
+  retryMissed?: boolean
 }
+
+/** One item in the quiz: which question (index into `questions`), with its choices in their shuffled order. */
+type Item = { q: number; order: number[] }
 
 // Rotated so a correct answer doesn't always get the same words.
 const PRAISE = ['Correct! Nice work.', 'Correct! Keep it up.', 'Correct! You got this.', 'Correct! Spot on.', 'Correct! Future RMT right there.']
 const ENCOURAGE = ['Not quite, and that’s okay.', 'Not quite. Now you know.', 'Not quite. We’ll come back to this one.']
+
+/**
+ * Under a wrong answer: when it comes back. A normal quiz: in Review again. Fix until right: a couple of
+ * questions later (`comesBackAt` = its next position, -1 = not put back), or tomorrow after the last try.
+ */
+function comesBackLine(retryMissed: boolean, comesBackAt: number, current: number, tries: number): string {
+  if (!retryMissed) return 'It comes back in Review again.'
+  if (tries >= MAX_TRIES || comesBackAt === -1) return 'That was the last try for today. It comes back tomorrow.'
+  const n = comesBackAt - current - 1
+  return n === 0 ? 'Read why below. It comes back next.' : `Read why below. It comes back after ${n} more ${n === 1 ? 'question' : 'questions'}.`
+}
 
 /** How many answers in a row (counting back from the latest) were correct. */
 function currentStreak(answers: AnswerResult[]) {
@@ -35,13 +56,13 @@ function currentStreak(answers: AnswerResult[]) {
   return streak
 }
 
-export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
+export function QuizRunner({ sessionId, questions, onFinish, onExit, retryMissed = false }: Props) {
   const [confirmExit, setConfirmExit] = useState(false)
   const subjectOf = useSubjectOfTopic()
   const refreshBank = useRefreshBank()
-  // Shuffle each question's choices once, when the quiz starts.
-  // choiceOrders[q][displayPosition] = original choice index.
-  const [choiceOrders] = useState(() => questions.map((q) => shuffledChoiceOrder(q.choices.length)))
+  // The quiz in order, each question's choices shuffled once when the quiz starts (order[displayPosition] = original index).
+  // With retryMissed, a missed question is put back in later as a new item (its choices shuffled again).
+  const [items, setItems] = useState<Item[]>(() => questions.map((q, i) => ({ q: i, order: shuffledChoiceOrder(q.choices.length) })))
   const [current, setCurrent] = useState(0)
   const [answers, setAnswers] = useState<AnswerResult[]>([])
   const online = useOnline()
@@ -53,11 +74,16 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
     shownAt.current = Date.now()
   }, [current])
 
-  const question = questions[current]
-  const order = choiceOrders[current]
+  const item = items[current]
+  const question = questions[item.q]
+  const order = item.order
   const answer = answers[current] as AnswerResult | undefined
-  const isLast = current === questions.length - 1
+  const isLast = current === items.length - 1
   const subject = subjectOf(question.topic_id)
+  // Fix until right: tries of this question before this one, and how soon it comes back (null = it doesn't).
+  const earlierTries = items.slice(0, current).filter((it) => it.q === item.q).length
+  const comesBackAt = items.findIndex((it, i) => i > current && it.q === item.q)
+  const fixed = fixedCount(answers)
 
   /** Marks the question as "needs a look" (shown as Reported on the Questions page), to fix later. */
   function report(id: string) {
@@ -81,7 +107,14 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
     }
     setAnswers((prev) => [...prev, result])
 
+    // Fix until right: missed (and tries left) = it comes back a couple of questions later.
+    if (retryMissed && !result.isCorrect) {
+      setItems((prev) => requeueMissed(prev, current, earlierTries + 1, (it) => ({ q: it.q, order: shuffledChoiceOrder(question.choices.length) })))
+    }
+
     // Saved on the device right away, then sent in the background (waits there while offline).
+    // A retry isn't saved: only her first try counts toward her scores.
+    if (earlierTries > 0) return
     queueAnswer({
       sessionId,
       questionId: question.id,
@@ -119,7 +152,7 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [order])
 
-  const samples = questions.map((_, i): SampleState =>
+  const samples = items.map((_, i): SampleState =>
     answers[i] ? (answers[i].isCorrect ? 'correct' : 'wrong') : i === current ? 'current' : 'pending',
   )
   const streak = currentStreak(answers)
@@ -137,7 +170,15 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
         <div className="flex items-center justify-between gap-3 text-sm tabular-nums">
           <ExitButton onClick={askToExit} />
           <p className="font-heading font-semibold text-muted-foreground">
-            <span className="text-foreground">{current + 1}</span> of {questions.length}
+            {retryMissed ? (
+              <>
+                Fixed <span className="text-foreground">{fixed}</span> of {questions.length}
+              </>
+            ) : (
+              <>
+                <span className="text-foreground">{current + 1}</span> of {questions.length}
+              </>
+            )}
           </p>
           {/* Only shows up when there is a streak worth celebrating. */}
           <span className="flex min-w-16 justify-end">
@@ -191,9 +232,13 @@ export function QuizRunner({ sessionId, questions, onFinish, onExit }: Props) {
             <Slime mood={answer.isCorrect ? 'cheer' : 'oops'} className="w-16 sm:w-18" />
             <div className="min-w-0">
               <p className={cn('font-heading text-lg font-bold', answer.isCorrect ? 'text-correct' : 'text-wrong')}>
-                {answer.isCorrect ? PRAISE[current % PRAISE.length] : ENCOURAGE[current % ENCOURAGE.length]}
+                {answer.isCorrect
+                  ? retryMissed && earlierTries > 0
+                    ? 'Fixed! Now you know this one.'
+                    : PRAISE[current % PRAISE.length]
+                  : ENCOURAGE[current % ENCOURAGE.length]}
               </p>
-              {!answer.isCorrect && <p className="text-sm text-muted-foreground">It comes back in Review again.</p>}
+              {!answer.isCorrect && <p className="text-sm text-muted-foreground">{comesBackLine(retryMissed, comesBackAt, current, earlierTries + 1)}</p>}
             </div>
           </div>
           {question.explanation && <p className="mt-2 leading-relaxed">{question.explanation}</p>}

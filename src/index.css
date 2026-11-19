@@ -47,6 +47,8 @@
     --color-highlight-soft: var(--highlight-soft);
     --color-primary-deep: var(--primary-deep);
     --color-ink: var(--ink);
+    --color-rest: var(--rest);
+    --color-rest-soft: var(--rest-soft);
 
     /* The hard "sticker" shadow under cards and buttons (sm = small buttons and chips) */
     --shadow-toon: 0 4px 0 var(--ink);
@@ -88,6 +90,8 @@
     --primary-deep: #07475E;      /* darker analyzer blue */
     --highlight: #F7B538;         /* gold for streaks, wins and the Start button */
     --highlight-soft: #FFF1CF;
+    --rest: #5B4BA8;              /* rest days on the Plan page (calm, not a warning) */
+    --rest-soft: #ECE8FA;
 }
 
 @layer base {

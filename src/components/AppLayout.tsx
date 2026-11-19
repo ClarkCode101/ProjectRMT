@@ -5,6 +5,7 @@ import {
   House,
   Layers,
   Library,
+  ListChecks,
   LogOut,
   NotebookPen,
   Play,
@@ -34,6 +35,8 @@ import { UpdateBanner } from './UpdateBanner'
 type NavItem = { to: string; label: string; icon: LucideIcon; alsoFor?: string[] }
 
 const HOME: NavItem = { to: '/', label: 'Home', icon: House }
+/** Today's plan in full (Home has a slim bar for it). On phones it's in More: the bottom bar is full. */
+const PLAN: NavItem = { to: '/plan', label: 'Plan', icon: ListChecks }
 const PRACTICE: NavItem = { to: '/practice', label: 'Practice', icon: NotebookPen }
 const MOCK: NavItem = { to: '/mock', label: 'Mock exam', icon: Timer }
 const FLASHCARDS: NavItem = { to: '/flashcards', label: 'Flashcards', icon: Layers }
@@ -174,6 +177,7 @@ export function AppLayout() {
             </NavLink>
             <nav aria-label="Main" className={cn('fixed top-24 left-5 z-10 flex w-14 flex-col items-center gap-1.5 rounded-full py-2', floating)}>
               <RailLink item={HOME} />
+              <RailLink item={PLAN} />
               <RailLink item={PRACTICE} />
               <RailLink item={MOCK} />
               <RailLink item={FLASHCARDS} />
@@ -310,7 +314,15 @@ export function AppLayout() {
             </h2>
             {email && <p className="text-sm text-muted-foreground">Logged in as {email}</p>}
           </div>
-          {/* Games (Board Review, Last Card) live here on phones: the bottom bar is full. */}
+          {/* The Plan page and Games (Board Review, Last Card) live here on phones: the bottom bar is full. */}
+          <NavLink
+            to="/plan"
+            onClick={() => setMoreOpen(false)}
+            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40', focusRing)}
+          >
+            <ListChecks className="size-5" aria-hidden />
+            Plan
+          </NavLink>
           <NavLink
             to="/games"
             onClick={() => setMoreOpen(false)}

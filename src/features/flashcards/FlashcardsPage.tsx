@@ -1,13 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarClock, House, Microscope, SlidersHorizontal, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { CountPicker } from '@/components/CountPicker'
 import { Dialog } from '@/components/Dialog'
 import { Slime } from '@/components/Slime'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { PageHeader } from '@/components/dashboard'
 import { SwipeCarousel } from '@/components/SwipeCarousel'
+import { useAuth } from '@/features/auth/authContext'
+import { PlanResultButtons, PlanResultHeading } from '@/features/plan/PlanResultParts'
+import { planResultInfo, planResultMessage, type PlanResultInfo } from '@/features/plan/planResults'
 import { useBooks } from '@/features/questions/booksApi'
 import { useFocusMode } from '@/components/layoutContext'
 import { HeroPanel, heroButtonClass } from '@/components/report'
@@ -15,7 +18,9 @@ import { DEFAULT_SOURCE, questionPoolOptions, type QuizQuestion, type SourceChoi
 import { SourcePicker } from '@/features/quiz/SourcePicker'
 import { localDateKey } from '@/lib/activity'
 import { buildDeck, dueByTomorrow, maxIntervalForExam } from '@/lib/fsrs'
+import { readFlashcardPlanLink, taskKey } from '@/lib/planLinks'
 import { daysUntil } from '@/lib/planner'
+import { readPlanProgress, readSavedPlan, recordPlanProgress, recordPlanResult } from '@/lib/planProgress'
 import { useStudySettings } from '@/features/settings/api'
 import { useSubjects, useTopics } from '@/lib/referenceData'
 import { cn } from '@/lib/utils'
@@ -57,7 +62,14 @@ function writeSettings(s: DeviceSettings) {
   }
 }
 
-type Stage = { name: 'setup' } | { name: 'session'; deck: QuizQuestion[] } | { name: 'done'; stats: SessionStats }
+// fromPlan: started from Today's plan on Home, so the cards also tick off that task (see lib/planProgress.ts)
+// plan on 'done': the cards were a task in Today's plan (the done screen then leads to the next task),
+// with how many cards she went through and remembered (cards, not presses: "Again" brings a card back)
+type PlanDone = { info: PlanResultInfo; cards: number; remembered: number }
+type Stage =
+  | { name: 'setup' }
+  | { name: 'session'; deck: QuizQuestion[]; fromPlan: boolean }
+  | { name: 'done'; stats: SessionStats; plan: PlanDone | null }
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
@@ -67,9 +79,13 @@ const LOOK_MS = 1000
 // /flashcards → choose a slide (subject lens) and look
 // /flashcards?subject=ID → that subject's lens in the middle; /flashcards?book=ID → only the cards in one of her books
 // (both from "Study → Flashcards" inside a book on Questions)
+// /flashcards?plan=cards&count=N → straight into N due cards from all subjects, no new ones (Today's plan on Home)
 export default function FlashcardsPage() {
   const queryClient = useQueryClient()
+  const userId = useAuth().session?.user?.id ?? null
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const planCount = readFlashcardPlanLink(searchParams)
   const subjectParam = Number(searchParams.get('subject'))
   const bookParam = searchParams.get('book')
   const books = useBooks({ enabled: bookParam !== null })
@@ -123,7 +139,7 @@ export default function FlashcardsPage() {
     if (looking) return
     const start = () => {
       setLooking(false)
-      setStage({ name: 'session', deck: [...deck.due, ...deck.fresh] })
+      setStage({ name: 'session', deck: [...deck.due, ...deck.fresh], fromPlan: false })
     }
     // Reduced motion: no scene, start right away.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return start()
@@ -135,10 +151,40 @@ export default function FlashcardsPage() {
     setSettings((s) => ({ ...s, ...change }))
   }
 
+  // Today's plan: due cards only (all subjects, the most overdue first), started as soon as the cards have loaded.
+  // Checked once, right here while drawing (React's "update state when data arrives" pattern), so the slides never flash first.
+  // Nothing due by now (she studied them elsewhere): the task is done, and the usual slides show, with "All caught up".
+  const [planCheck, setPlanCheck] = useState<'waiting' | 'started' | 'nothing-due'>('waiting')
+  if (planCount !== null && planCheck === 'waiting' && stage.name === 'setup' && pool.isSuccess && reviewStates.isSuccess) {
+    const due = buildDeck(pool.data, states, now, 0).due.slice(0, planCount)
+    setPlanCheck(due.length > 0 ? 'started' : 'nothing-due')
+    if (due.length > 0) setStage({ name: 'session', deck: due, fromPlan: true })
+  }
+  // Saving to the device is a side effect, so it waits until the screen is drawn.
+  useEffect(() => {
+    if (planCheck === 'nothing-due' && planCount !== null) recordPlanProgress(taskKey({ kind: 'flashcards' }), planCount)
+  }, [planCheck, planCount])
+
   function finish(stats: SessionStats, done: boolean) {
     // New due dates were saved: reload them next time.
     void queryClient.invalidateQueries({ queryKey: ['review-states'] })
-    setStage(done ? { name: 'done', stats } : { name: 'setup' })
+    if (stage.name === 'session' && stage.fromPlan && planCount !== null) {
+      // Finished = the whole task is done (even if fewer cards were due than it asked for).
+      // Left early = the cards she got through; a card she pressed Again on comes back in the same session,
+      // so count cards, not presses.
+      const cards = Math.min(stats.reviewed, stage.deck.length)
+      recordPlanProgress(taskKey({ kind: 'flashcards' }), done ? planCount : cards)
+      // For "What you learned today": the cards she remembered (an "Again" press means one she didn't).
+      const remembered = Math.max(0, cards - stats.again)
+      recordPlanResult(taskKey({ kind: 'flashcards' }), { correct: remembered, total: cards, fixed: remembered })
+      // Left early: back to Home, where the plan is.
+      if (!done) return void navigate('/')
+      // Where she is in the plan now (these cards counted), for the done screen's "Next" button.
+      const lastMockDay = queryClient.getQueryData<string | null>(['last-mock-day']) ?? null
+      const info = planResultInfo(userId ? readSavedPlan(userId) : null, readPlanProgress(), lastMockDay, taskKey({ kind: 'flashcards' }))
+      return setStage({ name: 'done', stats, plan: info ? { info, cards, remembered } : null })
+    }
+    setStage(done ? { name: 'done', stats, plan: null } : { name: 'setup' })
   }
 
   if (stage.name === 'session') {
@@ -156,6 +202,25 @@ export default function FlashcardsPage() {
 
   if (stage.name === 'done') {
     const tomorrow = dueByTomorrow(reviewStates.data ?? [], now)
+    const { stats, plan } = stage
+    // From Today's plan: where she is in the plan, and the next task (nothing that leads out of the plan).
+    if (plan) {
+      return (
+        <div className="mx-auto max-w-xl space-y-4 sm:pt-6">
+          <HeroPanel labelledBy="done-heading" className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Slime mood="cheer" className="-my-2 w-16 sm:w-20" />
+              <PlanResultHeading plan={plan.info} id="done-heading" />
+            </div>
+            <p className="font-heading text-4xl leading-none font-bold tabular-nums">
+              {plan.remembered} <span className="text-lg font-semibold text-white/70">of {plan.cards} remembered</span>
+            </p>
+            <p className="text-white/90">{planResultMessage(plan.info, plan.remembered, plan.cards)}</p>
+            <PlanResultButtons plan={plan.info} />
+          </HeroPanel>
+        </div>
+      )
+    }
     return (
       <div className="mx-auto max-w-xl space-y-4 sm:pt-6">
         <HeroPanel labelledBy="done-heading" className="space-y-4">
@@ -166,8 +231,8 @@ export default function FlashcardsPage() {
               All slides read
             </h1>
             <p className="mt-1 text-white/85">
-              You reviewed {plural(stage.stats.reviewed, 'card')}
-              {stage.stats.newStudied > 0 && <>, {stage.stats.newStudied} of them new</>}. Each one is scheduled to come back right before you’d forget it.
+              You reviewed {plural(stats.reviewed, 'card')}
+              {stats.newStudied > 0 && <>, {stats.newStudied} of them new</>}. Each one is scheduled to come back right before you’d forget it.
             </p>
           </div>
           {reviewStates.isSuccess && <p className="rounded-xl border-2 border-white/25 bg-white/10 px-3 py-2 text-sm">{plural(tomorrow, 'card')} due by the end of tomorrow.</p>}

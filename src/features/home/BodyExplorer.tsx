@@ -297,12 +297,23 @@ function ScoreNumber({ subject, before }: { subject: SubjectSummary; before: Sco
  * Narrow (iPad portrait, phones): the three parts stack, Practice last (nearest the thumbs).
  * Uses its own width (container query), not the screen's.
  */
-export function NextUpBar({ subject, subjectTopicIds }: { subject: SubjectSummary; subjectTopicIds: number[] }) {
+export function NextUpBar({ subject, subjectTopicIds, onClose }: { subject: SubjectSummary; subjectTopicIds: number[]; onClose?: () => void }) {
   const organ = ORGANS[subject.code]
   const status = subjectStatus(subject)
   const [warmupOpen, setWarmupOpen] = useState(false)
   return (
-    <section aria-labelledby="next-up-heading" className="@container shrink-0 rounded-3xl border-[2.5px] border-ink bg-card p-3 shadow-toon lg:px-5">
+    <section aria-labelledby="next-up-heading" className="@container relative shrink-0 rounded-3xl border-[2.5px] border-ink bg-card p-3 shadow-toon lg:px-5">
+      {/* Shown when she tapped a subject on the body: the X goes back to Today's plan. */}
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Back to today’s plan"
+          className="absolute -top-3 -right-2 z-10 flex size-9 items-center justify-center rounded-full border-2 border-ink bg-card shadow-toon-sm outline-none hover:bg-secondary focus-visible:ring-3 focus-visible:ring-ring/40 active:translate-y-px active:shadow-none"
+        >
+          <X className="size-4" strokeWidth={2.6} aria-hidden />
+        </button>
+      )}
       {/* No entrance animation and a fixed height (one-line title, steps row always there): switching subjects
           only swaps the words and numbers, so nothing on Home shifts or flickers when she taps a card. */}
       <div className="flex flex-col gap-3 @3xl:flex-row @3xl:items-center @3xl:gap-6">

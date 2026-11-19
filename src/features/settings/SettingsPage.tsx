@@ -660,8 +660,8 @@ function ResetProgress() {
             Reset progress
           </h2>
           <p className="text-sm text-muted-foreground">
-            Deletes quiz and mock exam history, scores, streak and flashcard schedule. Keeps your own questions, books, uploads and study plan.
-            Can’t be undone.
+            Deletes quiz and mock exam history, scores, streak, flashcard schedule and today’s plan (a new one starts from zero). Keeps your own
+            questions, books, uploads, exam date and daily goal. Can’t be undone.
           </p>
         </div>
         {!open && (

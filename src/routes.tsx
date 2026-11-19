@@ -9,6 +9,7 @@ import { RequireAuth } from '@/features/auth/RequireAuth'
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'))
 const PrivacyPage = lazy(() => import('@/features/auth/PrivacyPage'))
 const HomePage = lazy(() => import('@/features/home/HomePage'))
+const PlanPage = lazy(() => import('@/features/plan/PlanPage'))
 const PracticePage = lazy(() => import('@/features/quiz/PracticePage'))
 const MockPage = lazy(() => import('@/features/mock/MockPage'))
 const FlashcardsPage = lazy(() => import('@/features/flashcards/FlashcardsPage'))
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: '/', element: <HomePage /> },
+      { path: '/plan', element: <PlanPage /> },
       { path: '/practice', element: <PracticePage /> },
       { path: '/mock', element: <MockPage /> },
       { path: '/flashcards', element: <FlashcardsPage /> },

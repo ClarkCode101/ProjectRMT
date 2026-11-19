@@ -8,16 +8,20 @@ import { Button } from '@/components/ui/button'
 import { NOTES } from '@/data/encouragements'
 import { useTopicPerformance } from '@/features/dashboard/api'
 import { useAuth } from '@/features/auth/authContext'
+import { useTodaysPlan } from '@/features/plan/useTodaysPlan'
 import { DEFAULT_DAILY_TARGET, useStudySettings } from '@/features/settings/api'
+import { DEFAULT_STUDY_DAYS, isRestDay } from '@/lib/studyDays'
 import { currentStreak, dailyActivity, type DayActivity } from '@/lib/activity'
 import { firstName, needsWelcome } from '@/lib/profile'
 import { countdownLabel, daysUntil, milestoneKey, milestoneReached, pickNote } from '@/lib/planner'
 import { overallStats, PASSING_LABEL, PASSING_RATE, summarizePerformance, type SubjectSummary } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
+import { isFocusTask } from '@/lib/studyPlan'
 import { useCountUp } from '@/lib/useCountUp'
 import { cn } from '@/lib/utils'
 import { useAttemptHistory } from './api'
 import { BodyStage, NextUpBar } from './BodyExplorer'
+import { PlanBar } from './PlanBar'
 import { WelcomeDialog } from './WelcomeDialog'
 import { readinessGoal, STATUS_COLOR } from './organs'
 import { changedSince, makeSnapshot, readSnapshot, writeSnapshot } from './snapshot'
@@ -114,6 +118,9 @@ export default function HomePage() {
     writeSnapshot(makeSnapshot(latest, overallStats(latest).accuracy))
   }, [performance.data, subjects.data, topics.data])
 
+  // Today's plan: the slim bar at the bottom (the full plan is on the Plan page).
+  const todaysPlan = useTodaysPlan()
+
   if (performance.isPending || subjects.isPending || topics.isPending) return <FullPageMessage>Loading…</FullPageMessage>
   if (performance.isError || subjects.isError || topics.isError) {
     return <FullPageMessage>Couldn’t load your progress. Check your internet connection, then refresh.</FullPageMessage>
@@ -123,7 +130,9 @@ export default function HomePage() {
   const stats = overallStats(summary)
   // "Start here": the subject that needs the most work.
   const startHere = pickFocus(summary)
-  const selected = summary.find((s) => s.subjectId === selectedId) ?? startHere
+  // The subject that glows on the body: the one she tapped, else the plan's focus subject, else "Start here".
+  const planFocusId = todaysPlan.plan?.tasks.find(isFocusTask)?.subjectId
+  const selected = summary.find((s) => s.subjectId === selectedId) ?? summary.find((s) => s.subjectId === planFocusId) ?? startHere
   const selectedTopicIds = topics.data.filter((t) => t.subject_id === selected?.subjectId).map((t) => t.id)
   // Subjects she practiced since her last visit (their labels count up), and where the readiness number starts.
   const changed = changedSince(lastVisit, summary)
@@ -135,7 +144,9 @@ export default function HomePage() {
 
   // Streak milestone reached today (3, 7, 14, 30…): show her note once.
   const days = dailyActivity(attempts.data ?? [], now)
-  const streak = currentStreak(attempts.data ?? [], now)
+  // A rest day she picked in "This week" doesn't break the streak.
+  const studyDays = settings.data?.studyDays ?? DEFAULT_STUDY_DAYS
+  const streak = currentStreak(attempts.data ?? [], now, (key) => isRestDay(studyDays, key))
   const milestone = milestoneReached(streak, (days.at(-1)?.answered ?? 0) > 0)
   const milestoneSeenKey = milestone === null ? null : milestoneKey(milestone, now)
   // Never two popups at once: the welcome goes first.
@@ -159,7 +170,7 @@ export default function HomePage() {
     <div className="flex flex-col gap-3 md:min-h-[calc(100dvh-2.5rem)] lg:h-[calc(100dvh-2.5rem)] lg:min-h-144">
       {/* The body is the star, so the top is ONE light line: the greeting, and the small stats on the same line.
           The overall score sits with the body (its "scan readout", bottom right of the stage).
-          The next step lives in ONE place only, the Next up bar at the bottom. */}
+          The next step lives in ONE place only, Today's plan at the bottom. */}
       <header>
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1">
           <h1 className="text-2xl leading-tight font-bold">
@@ -217,9 +228,16 @@ export default function HomePage() {
         today={<TodayLine days={days} target={target} />}
       />
 
-      {/* Practice is always one tap away; tapping a card or organ above changes which subject it's for.
-          At the bottom: most use an iPad, held in both hands, and the bottom edge is where the thumbs reach. */}
-      {selected && <NextUpBar subject={selected} subjectTopicIds={selectedTopicIds} />}
+      {/* At the bottom: most use an iPad, held in both hands, and the bottom edge is where the thumbs reach.
+          Today's plan by default; tapping a card or organ above shows that subject's Next up bar (its X goes back).
+          Plan still loading: a placeholder of the same height. Couldn't be made: the Next up bar, as before the plan. */}
+      {selectedId === null && todaysPlan.plan ? (
+        <PlanBar today={{ ...todaysPlan, plan: todaysPlan.plan }} />
+      ) : selectedId === null && todaysPlan.loading ? (
+        <p className="flex h-20 shrink-0 items-center justify-center rounded-3xl border-[2.5px] border-dashed border-input text-sm text-muted-foreground">Making today’s plan…</p>
+      ) : (
+        selected && <NextUpBar subject={selected} subjectTopicIds={selectedTopicIds} onClose={todaysPlan.plan ? () => setSelectedId(null) : undefined} />
+      )}
 
       {settings.isSuccess && <WelcomeDialog open={showWelcome} settings={settings.data} onDone={() => setWelcomeClosed(true)} />}
 
@@ -319,7 +337,7 @@ function ReadinessLine({
   const isPassing = rate !== null && passes
 
   if (rate === null) {
-    return <p className="text-sm text-muted-foreground">Answer a few questions to see your overall score.</p>
+    return <p className="text-sm text-muted-foreground">Answer 10 questions in a subject to see your overall score.</p>
   }
   return (
     <section aria-label="Overall score" className="w-full pb-3">
