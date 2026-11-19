@@ -1,4 +1,4 @@
-// Today's plan: three small tasks picked for her each day (PROJECT_PLAN.md, "Today's plan").
+// Today's plan: three small tasks picked for her each day (rules and reasons: STUDY_PLAN.md).
 // Pure logic: no Supabase or React here, so it is easy to unit test.
 //
 //   Task 1: due flashcards (or a second subject when none are due)

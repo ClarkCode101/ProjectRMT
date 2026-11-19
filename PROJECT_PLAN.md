@@ -4,6 +4,8 @@ A private, mobile-first PWA (login required; a small group of about 15 classmate
 
 > **Goal:** zero-cost hosting, works on iPhone and Android, offline-capable, private (login required).
 
+> **Study plan ("Today's plan"):** its rules and the reasons behind them are in **[STUDY_PLAN.md](STUDY_PLAN.md)**.
+
 ---
 
 ## 1. Tech Stack
@@ -76,6 +78,7 @@ That's why the dashboard tracks scores per subject. In the app (all in `lib/quiz
 - [ ] **Image-based questions** (blood smears, parasite ova, urine crystals, colonies)
 - [x] **Quick reference page**: searchable normal values, formulas (MCV, MCH, MCHC…), mnemonics
 - [x] **Study planner**: exam-date countdown + daily targets
+- [x] **Today's plan** (2026-11-19): 3 daily tasks picked from her scores, "Learn" (study, then test), fix until right, spaced past mistakes, and This week (full / light / rest days). See [STUDY_PLAN.md](STUDY_PLAN.md)
 - [x] **Streak tracker**
 - [x] **Encouragement messages** written by me, shown after a mock exam, on streak milestones, etc. 💌
 - [ ] **PWA**: installable, offline quiz from cached questions
@@ -292,7 +295,8 @@ create table review_states (
 create table study_settings (
   user_id       uuid primary key references auth.users(id) on delete cascade,
   exam_date     date,
-  daily_target  int default 50
+  daily_target  int default 50,
+  study_days    jsonb not null default '{}'   -- full / light / rest per day (migration 0047, see STUDY_PLAN.md §7)
 );
 
 create table encouragements (
@@ -442,7 +446,8 @@ mtle-reviewer/
 | Route | Page |
 |---|---|
 | `/login` | Login |
-| `/` | Home: countdown, streak, today's target, quick start buttons |
+| `/` | Home: countdown, streak, today's target, quick start buttons; Today's plan bar at the bottom |
+| `/plan` | Today's plan: This week, today's tasks, road to the exam, past mistakes, what you learned today (see [STUDY_PLAN.md](STUDY_PLAN.md)) |
 | `/practice` | Source selector → practice quiz; also the per-subject / per-topic scores (the old `/dashboard` redirects here) |
 | `/mock` | Full Board: six papers one at a time → each paper's results (score, readings, trend) + review → the board's result. `/mock?book=ID`: a timed mock on one of her books |
 | `/flashcards` | Due cards (FSRS) |
@@ -453,7 +458,7 @@ mtle-reviewer/
 | `/questions` | Browse, add, edit, verify; coverage map |
 | `/upload` | Upload → parse → duplicate review |
 | `/reference` | Normal values, formulas, mnemonics |
-| `/settings` | Exam date, daily target |
+| `/settings` | Exam date, daily target (study days are picked on `/plan`) |
 
 ---
 
@@ -502,6 +507,8 @@ mtle-reviewer/
 28. [ ] *(maybe)* Push notifications for invites (§14, step 4)
 29. [x] Last Card, solo against 3 computer players (§15, step 1): `/cards`, works offline (migration 0041, already run on Supabase 2026-11-12)
 30. [x] Games page (§16): one "Games" nav item for Board Review and Last Card, a swipeable card picker at `/games`
+31. [x] Today's plan + Plan page + This week (full / light / rest days): [STUDY_PLAN.md](STUDY_PLAN.md). Migration 0047 (`study_settings.study_days`), already run on Supabase 2026-11-19
+32. [ ] Weekly recap (STUDY_PLAN.md §10)
 
 ---
 
