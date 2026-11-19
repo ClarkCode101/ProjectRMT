@@ -49,6 +49,9 @@ const COMMUNITY: NavItem = { to: '/community', label: 'Community', icon: Users }
 const focusRing = 'outline-none focus-visible:ring-3 focus-visible:ring-ring/40'
 // The rail and the account button float on the page as "stickers": ink outline, hard shadow.
 const floating = 'border-[2.5px] border-ink bg-card shadow-toon'
+/** A big white button in the phone's More sheet (pressing pushes it down onto its shadow). */
+const sheetButtonClass =
+  'flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none'
 
 /** One tab in the phone's bottom bar. */
 function BarTab({ item }: { item: NavItem }) {
@@ -81,6 +84,16 @@ function Tooltip({ children }: { children: string }) {
       {children}
     </span>
   )
+}
+
+/** The short line between two groups on the rail (just for the eye; screen readers skip it). */
+function RailDivider() {
+  return <span aria-hidden className="my-1 h-0.5 w-6 rounded-full bg-border" />
+}
+
+/** A small heading over a group in the phone's More sheet. */
+function SheetGroupLabel({ children }: { children: string }) {
+  return <p className="px-1 text-xs font-bold tracking-wide text-muted-foreground uppercase">{children}</p>
 }
 
 /** A small red dot on a nav icon: something is waiting there (e.g. a Board Review invite or turn). */
@@ -175,12 +188,15 @@ export function AppLayout() {
             >
               <Logo className="size-full" />
             </NavLink>
+            {/* Three groups, split by a short line: start your day | study tools | extra (same groups as the phone's More sheet). */}
             <nav aria-label="Main" className={cn('fixed top-24 left-5 z-10 flex w-14 flex-col items-center gap-1.5 rounded-full py-2', floating)}>
               <RailLink item={HOME} />
               <RailLink item={PLAN} />
+              <RailDivider />
               <RailLink item={PRACTICE} />
               <RailLink item={MOCK} />
               <RailLink item={FLASHCARDS} />
+              <RailDivider />
               <RailLink item={GAMES} alert={boardAlert} />
               <RailLink item={QUESTIONS} />
               <RailLink item={COMMUNITY} />
@@ -314,56 +330,44 @@ export function AppLayout() {
             </h2>
             {email && <p className="text-sm text-muted-foreground">Logged in as {email}</p>}
           </div>
-          {/* The Plan page and Games (Board Review, Last Card) live here on phones: the bottom bar is full. */}
-          <NavLink
-            to="/plan"
-            onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40', focusRing)}
-          >
-            <ListChecks className="size-5" aria-hidden />
-            Plan
-          </NavLink>
-          <NavLink
-            to="/games"
-            onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40', focusRing)}
-          >
-            <Gamepad2 className="size-5" aria-hidden />
-            Games
-            {boardAlert && <span className="ml-auto rounded-full border-2 border-ink bg-wrong px-2 text-xs font-bold text-white">Waiting</span>}
-          </NavLink>
-          <NavLink
-            to="/community"
-            onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40', focusRing)}
-          >
-            <Users className="size-5" aria-hidden />
-            Community
-          </NavLink>
-          <NavLink
-            to="/settings"
-            onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40', focusRing)}
-          >
-            <Settings className="size-5" aria-hidden />
-            Settings
-          </NavLink>
-          <NavLink
-            to="/questions"
-            onClick={() => setMoreOpen(false)}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-secondary/40', focusRing)}
-          >
-            <Library className="size-5" aria-hidden />
-            Questions
-          </NavLink>
-          <button
-            type="button"
-            onClick={logOut}
-            className={cn('flex h-12 w-full items-center gap-3 rounded-2xl border-2 border-ink bg-card px-4 font-heading font-semibold text-wrong shadow-toon-sm transition-[transform,box-shadow,background-color] duration-75 active:translate-y-[3px] active:shadow-none hover:bg-wrong-soft', focusRing)}
-          >
-            <LogOut className="size-5" aria-hidden />
-            Log out
-          </button>
+          {/*
+            What doesn't fit in the phone's bottom bar, in the same groups and order as the rail on a tablet:
+            Today (Plan), Extra (Games, Questions, Community), then Account (Settings, Log out).
+          */}
+          <div className="space-y-2">
+            <SheetGroupLabel>Today</SheetGroupLabel>
+            <NavLink to="/plan" onClick={() => setMoreOpen(false)} className={cn(sheetButtonClass, 'hover:bg-secondary/40', focusRing)}>
+              <ListChecks className="size-5" aria-hidden />
+              Plan
+            </NavLink>
+          </div>
+          <div className="space-y-2">
+            <SheetGroupLabel>Extra</SheetGroupLabel>
+            <NavLink to="/games" onClick={() => setMoreOpen(false)} className={cn(sheetButtonClass, 'hover:bg-secondary/40', focusRing)}>
+              <Gamepad2 className="size-5" aria-hidden />
+              Games
+              {boardAlert && <span className="ml-auto rounded-full border-2 border-ink bg-wrong px-2 text-xs font-bold text-white">Waiting</span>}
+            </NavLink>
+            <NavLink to="/questions" onClick={() => setMoreOpen(false)} className={cn(sheetButtonClass, 'hover:bg-secondary/40', focusRing)}>
+              <Library className="size-5" aria-hidden />
+              Questions
+            </NavLink>
+            <NavLink to="/community" onClick={() => setMoreOpen(false)} className={cn(sheetButtonClass, 'hover:bg-secondary/40', focusRing)}>
+              <Users className="size-5" aria-hidden />
+              Community
+            </NavLink>
+          </div>
+          <div className="space-y-2">
+            <SheetGroupLabel>Account</SheetGroupLabel>
+            <NavLink to="/settings" onClick={() => setMoreOpen(false)} className={cn(sheetButtonClass, 'hover:bg-secondary/40', focusRing)}>
+              <Settings className="size-5" aria-hidden />
+              Settings
+            </NavLink>
+            <button type="button" onClick={logOut} className={cn(sheetButtonClass, 'text-wrong hover:bg-wrong-soft', focusRing)}>
+              <LogOut className="size-5" aria-hidden />
+              Log out
+            </button>
+          </div>
           <button
             type="button"
             onClick={() => setMoreOpen(false)}
