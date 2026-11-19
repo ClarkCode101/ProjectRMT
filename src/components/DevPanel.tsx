@@ -5,18 +5,21 @@ export type DevAction = { label: string; onClick: () => void }
 type Props = {
   /** e.g. "solo game (this device)" or "team game (database, dev key)" */
   where: string
-  showAnswers: boolean
-  onShowAnswers: (on: boolean) => void
+  /** the Show answers box (games only; left out when there are no questions to answer) */
+  showAnswers?: boolean
+  onShowAnswers?: (on: boolean) => void
   actions: readonly DevAction[]
+  /** which edge the list lines up with (right = for a button at the right of the screen) */
+  align?: 'left' | 'right'
 }
 
 const devButton = 'w-full rounded-md border border-dashed border-wrong/60 bg-card px-3 py-2 text-left font-mono text-xs font-bold hover:bg-wrong-soft'
 
 /**
- * DEV ONLY (npm run dev): the red "DEV" button and its list of test shortcuts, for Board Review (solo and team).
+ * DEV ONLY (npm run dev): the red "DEV" button and its list of test shortcuts (Board Review, Last Card, the Plan page).
  * Render it only behind `import.meta.env.DEV`, which is false in `npm run build`, so it never reaches the deployed app.
  */
-export function DevPanel({ where, showAnswers, onShowAnswers, actions }: Props) {
+export function DevPanel({ where, showAnswers = false, onShowAnswers, actions, align = 'left' }: Props) {
   const [open, setOpen] = useState(false)
   return (
     <div className="relative shrink-0">
@@ -29,12 +32,14 @@ export function DevPanel({ where, showAnswers, onShowAnswers, actions }: Props) 
         DEV
       </button>
       {open && (
-        <div className="absolute top-11 left-0 z-40 w-64 space-y-1.5 rounded-xl border border-dashed border-wrong/60 bg-card p-3 shadow-lg">
+        <div className={`absolute top-11 z-40 max-h-[75vh] w-64 space-y-1.5 overflow-y-auto rounded-xl border border-dashed border-wrong/60 bg-card p-3 shadow-lg ${align === 'right' ? 'right-0' : 'left-0'}`}>
           <p className="font-mono text-[11px] font-bold text-wrong">DEV TEST ONLY · {where}</p>
-          <label className="flex items-center gap-2 pb-1 font-mono text-xs">
-            <input type="checkbox" checked={showAnswers} onChange={(e) => onShowAnswers(e.target.checked)} />
-            Show answers
-          </label>
+          {onShowAnswers && (
+            <label className="flex items-center gap-2 pb-1 font-mono text-xs">
+              <input type="checkbox" checked={showAnswers} onChange={(e) => onShowAnswers(e.target.checked)} />
+              Show answers
+            </label>
+          )}
           {actions.map((a) => (
             <button
               key={a.label}

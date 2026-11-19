@@ -131,3 +131,18 @@ The first time she opens the Plan page in a new week, last week's recap sits on 
 - No recap for a new member (no answers before this week).
 - **Left out on purpose:** scores per subject for the week. Saved answers carry only the question id, not its subject, so that would need an extra download every week. The focus line already says where to go next.
 
+## 11. Testing it (DEV mode)
+
+With `npm run dev` only, the Plan page has a red **DEV** button (`src/features/plan/PlanDevPanel.tsx`, `planDev.ts`). It is not in `npm run build`, so members never see it.
+- **Date:** +1 day, −1 day, next Monday (shows the weekly recap), this Sunday, back to the real date. The pretend date is used by the Plan page and the Home plan bar.
+- **Today =** Full / Light / Rest, or "my saved choice". This is not saved to the account.
+- **Situations:** Comeback (no answers in the last 3 days), Simulate (exam in 15 days), New member (no answers).
+- **Progress:** mark the next task done, mark all done (with a made-up 70% result, so "What you learned today" shows), make today's plan again, show the weekly recap again.
+- **Clear all DEV** goes back to the real date and data.
+
+Pretend dates and situations are kept on the device (`projectrmt:plan-dev`). They only change what the plan is made **from**.
+
+**Limits:**
+- Starting a task still saves real answers, on the real date. Its results screen only knows the plan on the real date.
+- Changing a day in This week (or "Study today anyway") saves to the account as usual.
+- The shortcuts clear today's plan progress on the device.

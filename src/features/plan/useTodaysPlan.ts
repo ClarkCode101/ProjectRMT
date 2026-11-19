@@ -10,6 +10,7 @@ import { summarizePerformance, type SubjectSummary } from '@/lib/quiz'
 import { useSubjects, useTopics } from '@/lib/referenceData'
 import { modeFor } from '@/lib/studyDays'
 import { buildPlan, previewTomorrow, swapSubject, type PlanInput, type StudyPlan, type TomorrowPreview } from '@/lib/studyPlan'
+import { applyPlanDev, devNow, readPlanDev } from './planDev'
 import { planRows, type PlanRow } from './planText'
 
 export type TodaysPlan = {
@@ -34,6 +35,8 @@ export type TodaysPlan = {
   input: PlanInput | null
   summary: SubjectSummary[]
   lastMockDay: string | null
+  /** "today" for the plan (the real date; in DEV, maybe a pretend one) */
+  now: Date
   /** she picked another subject for the focus task at `index` */
   swap: (index: number, subject: SubjectSummary) => void
 }
@@ -53,29 +56,33 @@ export function useTodaysPlan(): TodaysPlan {
   const lastMock = useLastMockDay()
   const userId = useAuth().session?.user?.id ?? null
 
+  // DEV ONLY: a pretend date and situations (planDev.ts). In the deployed app this is always "no changes".
+  const [dev] = useState(readPlanDev)
   // Read the clock once when the page opens, not on every re-render.
-  const [now] = useState(() => new Date())
+  const [now] = useState(() => devNow(dev))
   const [savedPlan, setSavedPlan] = useState<StudyPlan | null>(() => (userId ? readSavedPlan(userId, now) : null))
   const [progress] = useState(() => readPlanProgress(now))
-  const lastMockDay = lastMock.data ?? null
 
-  const summary = performance.data && subjects.data && topics.data ? summarizePerformance(performance.data, subjects.data, topics.data) : []
+  const realSummary = performance.data && subjects.data && topics.data ? summarizePerformance(performance.data, subjects.data, topics.data) : []
   // Everything the plan needs. Flashcards and the last Mock exam may fail to load (offline): the plan then skips them.
   const ready = performance.data && subjects.data && attempts.isSuccess && settings.isSuccess && !reviewStates.isPending && !lastMock.isPending
-  const input: PlanInput | null =
+  const realInput: PlanInput | null =
     ready && topics.data && attempts.data && settings.data
       ? {
           today: now,
           examDate: settings.data.examDate,
           dailyTarget: settings.data.dailyTarget,
-          summary,
+          summary: realSummary,
           topics: topics.data,
           attempts: attempts.data,
           flashcardsDue: (reviewStates.data ?? []).filter((r) => new Date(r.due).getTime() <= now.getTime()).length,
-          lastMockDay,
+          lastMockDay: lastMock.data ?? null,
           studyDays: settings.data.studyDays,
         }
       : null
+  const input = realInput ? applyPlanDev(realInput, dev) : null
+  const summary = input ? [...input.summary] : realSummary
+  const lastMockDay = input ? input.lastMockDay : (lastMock.data ?? null)
 
   // Nothing done yet today: she can still change today to a full, light or rest day (the plan is made again).
   const started = Object.keys(progress.done).length > 0
@@ -110,6 +117,7 @@ export function useTodaysPlan(): TodaysPlan {
     input,
     summary,
     lastMockDay,
+    now,
     swap: (index, subject) => {
       if (savedPlan) setSavedPlan(swapSubject(savedPlan, index, subject, topics.data ?? []))
     },

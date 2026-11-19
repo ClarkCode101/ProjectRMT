@@ -18,6 +18,7 @@ import { quietButtonClass, tagClass, TONE_CLASS } from './planStyles'
 import { minutesFor, PHASE_ABOUT, PHASE_LABEL, progressText, reasonNote, taskNote, taskTileLabel, taskTitle, taskWhy, tomorrowLine, type PlanRow } from './planText'
 import { weekSoFar, weekTiles } from './planWeek'
 import { useTodaysPlan } from './useTodaysPlan'
+import { PlanDevPanel } from './PlanDevPanel'
 import { WeekCard } from './WeekCard'
 import { markRecapSeen, readRecapSeen } from './recapSeen'
 import { WeeklyRecap } from './WeeklyRecap'
@@ -27,7 +28,8 @@ import { WeeklyRecap } from './WeeklyRecap'
 export default function PlanPage() {
   const today = useTodaysPlan()
   const settings = useStudySettings()
-  const [now] = useState(() => new Date())
+  // The plan's "today" (in DEV, maybe a pretend date: planDev.ts).
+  const now = today.now
   const [swapOpen, setSwapOpen] = useState(false)
   // The weekly recap: the Monday of the last week she closed it for (this device), and the sheet to see it again.
   const [recapSeen, setRecapSeen] = useState(readRecapSeen)
@@ -80,6 +82,8 @@ export default function PlanPage() {
         subtitle={`${dateLine} · picked from your scores`}
         actions={
           <div className="flex items-center gap-3">
+            {/* DEV ONLY (npm run dev): pretend dates and situations. Never in the deployed app. */}
+            {import.meta.env.DEV && <PlanDevPanel today={today} />}
             {rest ? (
               <p className="font-heading text-lg font-bold text-rest">Rest day</p>
             ) : (
