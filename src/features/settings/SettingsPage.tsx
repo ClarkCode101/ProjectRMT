@@ -1172,6 +1172,8 @@ export default function SettingsPage() {
       <Group title="This device">
         <InstallRow />
         <OfflineRow />
+        {/* Which push is on this device: if someone says they see an old screen, compare this with the latest push. */}
+        <Row label="App version" value={__APP_VERSION__} />
       </Group>
 
       <ResetProgress />

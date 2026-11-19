@@ -14,11 +14,11 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { useAuth } from '@/features/auth/authContext'
 import { leaveLobbyBeforeLogout, useBoardAlert } from '@/features/board/teamApi'
-import { useAppUpdate } from '@/lib/appUpdate'
+import { setUpdateBusy, switchOnPageChange, useAppUpdate } from '@/lib/appUpdate'
 import { forgetBank } from '@/lib/offline/bank'
 import { useOfflineSync } from '@/lib/offline/useOfflineSync'
 import { useAnnouncePresence } from '@/lib/presence'
@@ -147,6 +147,16 @@ export function AppLayout() {
   useAnnouncePresence(session?.user.id ?? null)
   // A new version was pushed and is downloaded: the "New version ready" banner.
   const appUpdate = useAppUpdate()
+  const { pathname } = useLocation()
+  // Moving to another page is a safe moment to start a waiting new version (the page she left is gone anyway).
+  // Runs before the busy line below, so it still knows whether the page she LEFT was a quiz.
+  useEffect(() => {
+    switchOnPageChange()
+  }, [pathname])
+  // A quiz, mock exam, game or editor (focus mode), or reviewing an upload: never switch by itself then.
+  useEffect(() => {
+    setUpdateBusy(focusMode || pathname === '/questions/upload')
+  }, [focusMode, pathname])
 
   const email = session?.user.email ?? ''
   const displayName = email.split('@')[0] || 'Reviewer'
