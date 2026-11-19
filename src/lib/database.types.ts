@@ -118,7 +118,7 @@ export type Database = {
         },
         'question_id'
       >
-      study_settings: Table<{ user_id: string; exam_date: string | null; daily_target: number | null }>
+      study_settings: Table<{ user_id: string; exam_date: string | null; daily_target: number | null; study_days: Json }>
       encouragements: Table<{ id: number; trigger: string; message: string }, 'trigger' | 'message'>
       reference_items: Table<
         { id: number; subject_id: number | null; title: string; value: string; notes: string | null },

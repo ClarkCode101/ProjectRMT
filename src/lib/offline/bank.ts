@@ -31,8 +31,8 @@ export type BankAttempt = {
   from_game?: boolean
 }
 
-/** Her planner row (exam date, daily goal); null until she saves one. */
-export type BankStudySettings = { exam_date: string | null; daily_target: number | null } | null
+/** Her planner row (exam date, daily goal, study days); null until she saves one. Copies saved before study days have none. */
+export type BankStudySettings = { exam_date: string | null; daily_target: number | null; study_days?: unknown } | null
 
 export type OfflineBank = {
   /** 2: added the flashcard schedule and study settings; 3: game answers marked (older copies are downloaded again) */
@@ -209,7 +209,7 @@ async function runDownload(): Promise<boolean> {
           .order('question_id')
           .range(from, to),
       ),
-      supabase.from('study_settings').select('exam_date, daily_target').maybeSingle(),
+      supabase.from('study_settings').select('exam_date, daily_target, study_days').maybeSingle(),
     ])
     if (settings.error) throw settings.error
 

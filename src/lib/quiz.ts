@@ -170,8 +170,8 @@ export function summarizePerformance(
 export type OverallStats = {
   /**
    * Her general average, like the board computes it: each subject's score times its weight.
-   * Only subjects she has answered count (their weights are scaled up to 100%), so one untouched subject
-   * doesn't pull it down to 0. null when nothing answered yet.
+   * Only subjects with a real score count (MIN_ANSWERED answers; their weights are scaled up to 100%), so an
+   * untouched or barely tried subject doesn't pull it down. null until one subject has a real score.
    */
   accuracy: number | null
   answered: number
@@ -236,18 +236,35 @@ export function closestToPassing(summary: readonly SubjectSummary[]): { subject:
   return { subject, pointsToGo }
 }
 
-/** Totals for the stat tiles on Home and the header on Practice. */
+/**
+ * A subject needs this many answers before its score is "real": fewer say too little
+ * (1 wrong answer is 0%). Home's subject cards, the overall score and Today's plan all use this one rule.
+ */
+export const MIN_ANSWERED = 10
+
+/** Has this subject enough answers for a real score? */
+export function hasRealScore(s: SubjectSummary): boolean {
+  return s.accuracy !== null && s.attempts >= MIN_ANSWERED
+}
+
+/**
+ * Totals for the stat tiles on Home and the header on Practice.
+ * The scores (overall, passing, weakest, below 50%) use only subjects with a real score (MIN_ANSWERED),
+ * the same rule as the subject cards, so a subject with 1 wrong answer doesn't drag the overall down.
+ * `answered` still counts every answer.
+ */
 export function overallStats(summary: readonly SubjectSummary[]): OverallStats {
   const answered = summary.reduce((sum, s) => sum + s.attempts, 0)
-  const low = summary.filter((s) => s.belowPassing).sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0))
+  const real = summary.filter(hasRealScore)
+  const low = real.filter((s) => s.belowPassing).sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0))
   return {
-    accuracy: generalAverage(summary),
+    accuracy: generalAverage(real),
     answered,
-    passingSubjects: summary.filter((s) => s.accuracy !== null && !s.belowPassing).length,
+    passingSubjects: real.filter((s) => !s.belowPassing).length,
     totalSubjects: summary.length,
     weakest: low[0] ?? null,
-    belowFloor: summary.filter((s) => s.belowFloor),
-    passes: passesBoard(summary),
+    belowFloor: real.filter((s) => s.belowFloor),
+    passes: passesBoard(real),
   }
 }
 

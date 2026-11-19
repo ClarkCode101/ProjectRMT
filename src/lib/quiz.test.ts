@@ -223,8 +223,22 @@ describe('overallStats', () => {
   })
 
   it('picks the lowest subject below 75% as weakest', () => {
-    const stats = overallStats([subject('CC', 5, 0.5), subject('HEMA', 5, 0.2), subject('BBIS', 5, 0.9)])
+    const stats = overallStats([subject('CC', 10, 0.5), subject('HEMA', 10, 0.2), subject('BBIS', 10, 0.9)])
     expect(stats.weakest?.code).toBe('HEMA')
+  })
+
+  it('leaves out subjects with fewer than 10 answers (no real score yet), like the subject cards', () => {
+    // One wrong HTMLE answer (0%) and 3 HEMA answers would drag 38% and 20% down to 26%.
+    const stats = overallStats([subject('CC', 16, 6 / 16), subject('MICRO', 10, 0.2), subject('HEMA', 3, 1 / 3), subject('HTMLE', 1, 0)])
+    expect(stats.accuracy).toBeCloseTo((0.2 * (6 / 16) + 0.2 * 0.2) / 0.4)
+    expect(stats.answered).toBe(30)
+    expect(stats.belowFloor.map((s) => s.code)).toEqual(['CC', 'MICRO'])
+    expect(stats.weakest?.code).toBe('MICRO')
+  })
+
+  it('has no overall score until one subject has 10 answers', () => {
+    const stats = overallStats([subject('CC', 9, 0.9), subject('HTMLE', 1, 0)])
+    expect(stats).toMatchObject({ accuracy: null, answered: 10, passingSubjects: 0, weakest: null, belowFloor: [], passes: null })
   })
 
   it('handles no answers at all', () => {

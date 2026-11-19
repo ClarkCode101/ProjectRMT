@@ -77,4 +77,20 @@ describe('currentStreak', () => {
     const attempts = [on(2026, 11, 2), on(2026, 11, 1), on(2026, 10, 31), on(2026, 10, 30)]
     expect(currentStreak(attempts, today)).toBe(4)
   })
+
+  it('a rest day with no answers is skipped: it neither adds to the streak nor breaks it', () => {
+    // Oct 31 (Sat) was a rest day; Nov 1, Nov 2, Oct 30, Oct 29 were study days.
+    const attempts = [on(2026, 11, 2), on(2026, 11, 1), on(2026, 10, 30), on(2026, 10, 29)]
+    const isRest = (key: string) => key === '2026-10-31'
+    expect(currentStreak(attempts, today)).toBe(2)
+    expect(currentStreak(attempts, today, isRest)).toBe(4)
+    // Studied on the rest day anyway: it counts.
+    expect(currentStreak([...attempts, on(2026, 10, 31)], today, isRest)).toBe(5)
+    // Rest yesterday, nothing yet today: still alive.
+    expect(currentStreak([on(2026, 10, 31)], today, (key) => key === '2026-11-01')).toBe(1)
+  })
+
+  it('stops even if every day were a rest day', () => {
+    expect(currentStreak([on(2026, 10, 1)], today, () => true)).toBe(0)
+  })
 })

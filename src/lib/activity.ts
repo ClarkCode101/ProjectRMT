@@ -56,17 +56,28 @@ export function dailyActivity(
   return result
 }
 
+/** A rest day can't be skipped more than this many days in a row (one a week is the rule; this just stops a runaway loop). */
+const MAX_REST_IN_A_ROW = 7
+
 /**
  * Days in a row with at least one answer, counting back from today.
  * If she hasn't answered anything yet today, the streak is still alive: count from yesterday.
+ * `isRest` (her study days): a rest day with no answers is skipped, so it neither adds to the streak nor breaks it.
  */
-export function currentStreak(attempts: readonly { created_at: string | null }[], today: Date): number {
+export function currentStreak(attempts: readonly { created_at: string | null }[], today: Date, isRest: (dateKey: string) => boolean = () => false): number {
   const activeDays = new Set(attempts.flatMap((a) => (a.created_at ? [localDateKey(new Date(a.created_at))] : [])))
   const day = new Date(today.getFullYear(), today.getMonth(), today.getDate())
   if (!activeDays.has(localDateKey(day))) day.setDate(day.getDate() - 1)
   let streak = 0
-  while (activeDays.has(localDateKey(day))) {
-    streak++
+  let restInARow = 0
+  for (;;) {
+    const key = localDateKey(day)
+    if (activeDays.has(key)) {
+      streak++
+      restInARow = 0
+    } else if (isRest(key) && restInARow < MAX_REST_IN_A_ROW) {
+      restInARow++
+    } else break
     day.setDate(day.getDate() - 1)
   }
   return streak
