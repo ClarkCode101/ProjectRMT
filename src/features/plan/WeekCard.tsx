@@ -68,35 +68,41 @@ export function WeekCard({
 }) {
   const [open, setOpen] = useState<WeekTile | null>(null)
   return (
-    <section aria-labelledby="week-heading" className="scroll-mt-4 rounded-3xl border-[2.5px] border-ink bg-card p-3 shadow-toon sm:p-4">
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+    <section aria-labelledby="week-heading" className="scroll-mt-4 rounded-3xl border-[2.5px] border-ink bg-card p-4 shadow-toon sm:p-5">
+      {/* One row: the title on the left; how many days she studied (and last week's recap) on the right. */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 id="week-heading" className="font-heading text-lg font-bold">
           This week
         </h2>
-        {onRecap && (
-          <button
-            type="button"
-            onClick={onRecap}
-            aria-haspopup="dialog"
-            className="-my-2 flex items-center gap-1.5 rounded-md py-2 text-sm font-semibold text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40"
-          >
-            <ChartNoAxesColumn className="size-4" aria-hidden />
-            Last week’s recap
-          </button>
-        )}
-        <p className="w-full text-xs text-muted-foreground">
-          Studied <span className="font-bold text-foreground tabular-nums">{soFar.studied}</span> of {soFar.days} {soFar.days === 1 ? 'day' : 'days'} so far · tap a
-          day to change it
+        <p className="flex flex-wrap items-baseline gap-x-1.5 text-sm text-muted-foreground">
+          <span>
+            Studied <span className="font-bold text-foreground tabular-nums">{soFar.studied}</span> of {soFar.days} {soFar.days === 1 ? 'day' : 'days'}
+          </span>
+          {onRecap && (
+            <>
+              <span aria-hidden>·</span>
+              <button
+                type="button"
+                onClick={onRecap}
+                aria-haspopup="dialog"
+                className="-my-2 flex items-center gap-1.5 rounded-md py-2 font-semibold text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40"
+              >
+                <ChartNoAxesColumn className="size-4" aria-hidden />
+                Last week’s recap
+              </button>
+            </>
+          )}
         </p>
       </div>
-      <ol className="grid grid-cols-7 gap-1 sm:gap-1.5">
+      <ol className="mt-4 grid grid-cols-7 gap-1 sm:gap-2">
         {tiles.map((tile) => (
           <li key={tile.key} className="min-w-0">
             <Tile tile={tile} onOpen={() => setOpen(tile)} />
           </li>
         ))}
       </ol>
-      <p className="mt-2.5 text-xs text-muted-foreground">Days ahead follow your scores, so what they hold may change. One rest day a week keeps your streak safe.</p>
+      {/* Short on purpose: the day sheet explains full, light and rest (and the one-rest-day rule). */}
+      <p className="mt-3 text-xs text-muted-foreground">Tap a day to change it.</p>
 
       <Dialog open={open !== null} onClose={() => setOpen(null)} labelledBy="day-heading" variant="sheet">
         {open && (
