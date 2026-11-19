@@ -508,7 +508,7 @@ mtle-reviewer/
 29. [x] Last Card, solo against 3 computer players (§15, step 1): `/cards`, works offline (migration 0041, already run on Supabase 2026-11-12)
 30. [x] Games page (§16): one "Games" nav item for Board Review and Last Card, a swipeable card picker at `/games`
 31. [x] Today's plan + Plan page + This week (full / light / rest days): [STUDY_PLAN.md](STUDY_PLAN.md). Migration 0047 (`study_settings.study_days`), already run on Supabase 2026-11-19
-32. [ ] Weekly recap (STUDY_PLAN.md §10)
+32. [x] Weekly recap "Your week" on the Plan page each new week (STUDY_PLAN.md §10)
 
 ---
 

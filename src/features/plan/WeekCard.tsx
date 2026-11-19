@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, Feather, GraduationCap, ListChecks, Minus, Moon, Play, type LucideIcon } from 'lucide-react'
+import { ChartNoAxesColumn, Check, Feather, GraduationCap, ListChecks, Minus, Moon, Play, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { heroButtonClass } from '@/components/report'
@@ -55,6 +55,7 @@ export function WeekCard({
   settings,
   today,
   started,
+  onRecap,
 }: {
   tiles: WeekTile[]
   soFar: { studied: number; days: number }
@@ -62,15 +63,28 @@ export function WeekCard({
   today: Date
   /** she has started today's plan (then today stays as it is) */
   started: boolean
+  /** shows "Last week's recap" (after she closed it on the page) */
+  onRecap?: () => void
 }) {
   const [open, setOpen] = useState<WeekTile | null>(null)
   return (
-    <section aria-labelledby="week-heading" className="rounded-3xl border-[2.5px] border-ink bg-card p-3 shadow-toon sm:p-4">
+    <section aria-labelledby="week-heading" className="scroll-mt-4 rounded-3xl border-[2.5px] border-ink bg-card p-3 shadow-toon sm:p-4">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <h2 id="week-heading" className="font-heading text-lg font-bold">
           This week
         </h2>
-        <p className="text-xs text-muted-foreground">
+        {onRecap && (
+          <button
+            type="button"
+            onClick={onRecap}
+            aria-haspopup="dialog"
+            className="-my-2 flex items-center gap-1.5 rounded-md py-2 text-sm font-semibold text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
+            <ChartNoAxesColumn className="size-4" aria-hidden />
+            Last week’s recap
+          </button>
+        )}
+        <p className="w-full text-xs text-muted-foreground">
           Studied <span className="font-bold text-foreground tabular-nums">{soFar.studied}</span> of {soFar.days} {soFar.days === 1 ? 'day' : 'days'} so far · tap a
           day to change it
         </p>

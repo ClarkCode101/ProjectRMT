@@ -10,6 +10,7 @@ import { saveStudyDays, studySettingsOptions, useStudySettings, type StudySettin
 import { planTaskLink } from '@/lib/planLinks'
 import type { SubjectSummary } from '@/lib/quiz'
 import { setDayMode } from '@/lib/studyDays'
+import { weekRecap } from '@/lib/weeklyRecap'
 import { isFocusTask, MISTAKE_STEPS, mistakeLadder, reasonFor, type Phase, type PlanAttempt, type StudyPlan } from '@/lib/studyPlan'
 import { cn } from '@/lib/utils'
 import { learnedToday, type RecapRow } from './planRecap'
@@ -18,6 +19,8 @@ import { minutesFor, PHASE_ABOUT, PHASE_LABEL, progressText, reasonNote, taskNot
 import { weekSoFar, weekTiles } from './planWeek'
 import { useTodaysPlan } from './useTodaysPlan'
 import { WeekCard } from './WeekCard'
+import { markRecapSeen, readRecapSeen } from './recapSeen'
+import { WeeklyRecap } from './WeeklyRecap'
 
 // /plan: today's three tasks in full (with why each one is there), the road to the exam,
 // the past mistakes coming back, and tomorrow. The slim bar on Home starts the next task; this page explains.
@@ -26,6 +29,9 @@ export default function PlanPage() {
   const settings = useStudySettings()
   const [now] = useState(() => new Date())
   const [swapOpen, setSwapOpen] = useState(false)
+  // The weekly recap: the Monday of the last week she closed it for (this device), and the sheet to see it again.
+  const [recapSeen, setRecapSeen] = useState(readRecapSeen)
+  const [recapOpen, setRecapOpen] = useState(false)
 
   if (today.loading) return <FullPageMessage>Making today’s plan…</FullPageMessage>
   if (!today.plan) return <FullPageMessage>Couldn’t make today’s plan. Check your internet connection, then refresh.</FullPageMessage>
@@ -54,25 +60,67 @@ export default function PlanPage() {
   const swapRow = rows.find((r) => isFocusTask(r.task) && !r.complete)
   const dateLine = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 
+  // "Your week": last week's recap, on top the first time she opens the Plan page in a new week.
+  const lastWeek = input ? weekRecap(input.attempts, now, input.studyDays) : null
+  const showRecap = lastWeek !== null && recapSeen !== lastWeek.weekStart
+  // Its focus line: what today's plan works on (on a rest day, tomorrow's).
+  const recapFocus = plan.tasks.find(isFocusTask) ?? preview?.task ?? null
+  const recapStart = current ? { to: planTaskLink(current.task, left) } : null
+  function closeRecap() {
+    if (!lastWeek) return
+    markRecapSeen(lastWeek.weekStart)
+    setRecapSeen(lastWeek.weekStart)
+    setRecapOpen(false)
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <PageHeader
         title="Today’s plan"
         subtitle={`${dateLine} · picked from your scores`}
         actions={
-          rest ? (
-            <p className="font-heading text-lg font-bold text-rest">Rest day</p>
-          ) : (
-            <p className={cn('text-base', allDone ? 'font-semibold text-correct' : 'text-muted-foreground')} aria-live="polite">
-              <span className="font-heading text-xl font-bold tabular-nums">{doneCount}</span> of {rows.length} done
-            </p>
-          )
+          <div className="flex items-center gap-3">
+            {rest ? (
+              <p className="font-heading text-lg font-bold text-rest">Rest day</p>
+            ) : (
+              <p className={cn('text-base', allDone ? 'font-semibold text-correct' : 'text-muted-foreground')} aria-live="polite">
+                <span className="font-heading text-xl font-bold tabular-nums">{doneCount}</span> of {rows.length} done
+              </p>
+            )}
+          </div>
         }
       />
 
-      {/* On top: her week. The app picks what to study; she picks when (full, light or rest). */}
+      {/* A new week: last week's recap first (once; then from "Last week's recap" on This week). */}
+      {showRecap && (
+        <WeeklyRecap
+          recap={lastWeek}
+          focus={recapFocus}
+          start={recapStart}
+          onDone={closeRecap}
+          onPlanWeek={() => {
+            closeRecap()
+            // After the recap closes, This week is at the top: bring it into view.
+            requestAnimationFrame(() => document.getElementById('week-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+          }}
+        />
+      )}
+
+      {/* Her week. The app picks what to study; she picks when (full, light or rest). */}
       {tiles && settings.data && (
-        <WeekCard tiles={tiles} soFar={weekSoFar(tiles, input?.attempts ?? [], now)} settings={settings.data} today={now} started={started} />
+        <WeekCard
+          tiles={tiles}
+          soFar={weekSoFar(tiles, input?.attempts ?? [], now)}
+          settings={settings.data}
+          today={now}
+          started={started}
+          onRecap={lastWeek && !showRecap ? () => setRecapOpen(true) : undefined}
+        />
+      )}
+      {lastWeek && (
+        <Dialog open={recapOpen} onClose={() => setRecapOpen(false)} labelledBy="recap-sheet-heading" variant="sheet">
+          <WeeklyRecap id="recap-sheet-heading" recap={lastWeek} focus={recapFocus} start={recapStart} onDone={closeRecap} />
+        </Dialog>
       )}
 
       {/* minmax(0,1fr) on phones too, so a long tag or button can't push the column wider than the screen */}

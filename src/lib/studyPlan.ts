@@ -120,6 +120,11 @@ export type MistakeLadder = {
   fixed: number
 }
 
+/** The past mistakes that were fixed (past the 14-day step) with her answers before `beforeKey` ("YYYY-MM-DD"). */
+export function fixedMistakesBefore(attempts: readonly PlanAttempt[], beforeKey: string): Set<string> {
+  return trackMistakes(attempts.filter((a) => a.created_at !== null && localDateKey(new Date(a.created_at)) < beforeKey)).fixed
+}
+
 /** Her past mistakes on the ladder (for the Plan page): how many at each step, and how many are fixed. */
 export function mistakeLadder(attempts: readonly PlanAttempt[]): MistakeLadder {
   const { tracks, fixed } = trackMistakes(attempts)

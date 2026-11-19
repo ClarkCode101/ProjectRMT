@@ -107,6 +107,27 @@ Tap today or a day ahead, then pick:
 - **Recap over checkmarks:** when all is done, "What you learned today" shows what moved (a topic's score "new → 40%", mistakes fixed).
 - **Rest is purple** (calm, not a warning). Red stays for "needs work", gold for "next", green for "done".
 
-## 10. Later
+## 10. Weekly recap ("Your week")
 
-- [ ] Weekly recap (this week vs last week, the weakest skill).
+The first time she opens the Plan page in a new week, last week's recap sits on top. It uses the same dark panel as the results screens. Built 2026-11-19 (`src/lib/weeklyRecap.ts`, `src/features/plan/WeeklyRecap.tsx`).
+- **Headline:** the best true thing, in this order:
+  1. "Your best week so far!" (more answers than any earlier week)
+  2. "Every one of them!" (studied every day that wasn't a rest day)
+  3. "Back on track!" (after a quiet week)
+  4. Otherwise "Keep it going."
+  - A week with no answers: "A quiet week. A fresh one starts today."
+- **Four numbers:**
+  - Questions answered and share answered right, each compared with the week before
+  - Past mistakes fixed (passed the 14-day step that week)
+  - Streak at the week's end (rest days don't break it)
+- **A bar per day.** Dashed purple means a rest day she kept.
+- **This week's focus:** what today's plan works on first, with its reason tag.
+- **One tip** from the week, e.g. "Wednesday was empty. If it's a busy day, make it a light day this week."
+- **Buttons:**
+  - **Start this week** closes the recap and starts today's first task. It reads **Got it** on a rest day or once the day is done.
+  - **Plan my week** closes it and goes to This week.
+- After she closes it, **Last week's recap** on This week opens it again as a sheet, until the next week's recap replaces it.
+- Everything comes from her saved answers and study days. Nothing new is stored on her account. "Closed" is remembered on the device (`projectrmt:recap-seen`).
+- No recap for a new member (no answers before this week).
+- **Left out on purpose:** scores per subject for the week. Saved answers carry only the question id, not its subject, so that would need an extra download every week. The focus line already says where to go next.
+
