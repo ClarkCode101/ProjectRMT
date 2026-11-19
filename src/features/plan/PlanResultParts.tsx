@@ -1,5 +1,5 @@
 import { House, ListChecks, Play, Sparkles } from 'lucide-react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { heroButtonClass } from '@/components/report'
 import { cn } from '@/lib/utils'
 import { quietHeroButtonClass } from './planStyles'
@@ -31,11 +31,13 @@ export function PlanResultHeading({ plan, id }: { plan: PlanResultInfo; id: stri
  * see-through = the plan (or Home). Nothing that leads out of the plan.
  */
 export function PlanResultButtons({ plan }: { plan: PlanResultInfo }) {
+  // "Next" passes on where she started (the Plan page or Home), so leaving the next task goes back there too.
+  const location = useLocation()
   return (
     <div className="grid gap-2.5 pt-1 sm:grid-cols-[minmax(0,1fr)_auto]">
       {plan.next ? (
         <>
-          <Link to={plan.next.to} className={cn(heroButtonClass, 'min-w-0 sm:flex sm:w-full')}>
+          <Link to={plan.next.to} state={location.state} className={cn(heroButtonClass, 'min-w-0 sm:flex sm:w-full')}>
             <Play className="size-5 shrink-0 fill-current" aria-hidden />
             <span className="min-w-0 truncate">Next: {plan.next.title}</span>
           </Link>

@@ -50,6 +50,17 @@ export function planTaskLink(task: PlanTask, remaining: number): string {
   }
 }
 
+/**
+ * Started from the Plan page: put this on the link's router state (`<Link state={FROM_PLAN_PAGE}>`), so leaving
+ * the task goes back to the Plan page instead of Home. It isn't in the address, so it can't end up in a bookmark.
+ */
+export const FROM_PLAN_PAGE = { from: 'plan' } as const
+
+/** Where leaving a plan task goes: the Plan page if she started it there, else Home (where the plan bar is). */
+export function planBackTo(state: unknown): '/plan' | '/' {
+  return typeof state === 'object' && state !== null && (state as { from?: unknown }).from === 'plan' ? '/plan' : '/'
+}
+
 const topicPart = (topicId: number | null) => (topicId === null ? '' : `&topic=${topicId}`)
 
 /** A whole number of at least 1, or null. */

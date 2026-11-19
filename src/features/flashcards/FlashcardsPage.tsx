@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarClock, House, Microscope, SlidersHorizontal, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { CountPicker } from '@/components/CountPicker'
 import { Dialog } from '@/components/Dialog'
 import { Slime } from '@/components/Slime'
@@ -18,7 +18,7 @@ import { DEFAULT_SOURCE, questionPoolOptions, type QuizQuestion, type SourceChoi
 import { SourcePicker } from '@/features/quiz/SourcePicker'
 import { localDateKey } from '@/lib/activity'
 import { buildDeck, dueByTomorrow, maxIntervalForExam } from '@/lib/fsrs'
-import { readFlashcardPlanLink, taskKey } from '@/lib/planLinks'
+import { planBackTo, readFlashcardPlanLink, taskKey } from '@/lib/planLinks'
 import { daysUntil } from '@/lib/planner'
 import { readPlanProgress, readSavedPlan, recordPlanProgress, recordPlanResult } from '@/lib/planProgress'
 import { useStudySettings } from '@/features/settings/api'
@@ -85,6 +85,8 @@ export default function FlashcardsPage() {
   const userId = useAuth().session?.user?.id ?? null
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  // Leaving the plan's cards early: back to the Plan page if she started there, else Home.
+  const planBack = planBackTo(useLocation().state)
   const planCount = readFlashcardPlanLink(searchParams)
   const subjectParam = Number(searchParams.get('subject'))
   const bookParam = searchParams.get('book')
@@ -177,8 +179,8 @@ export default function FlashcardsPage() {
       // For "What you learned today": the cards she remembered (an "Again" press means one she didn't).
       const remembered = Math.max(0, cards - stats.again)
       recordPlanResult(taskKey({ kind: 'flashcards' }), { correct: remembered, total: cards, fixed: remembered })
-      // Left early: back to Home, where the plan is.
-      if (!done) return void navigate('/')
+      // Left early: back to where she started (the Plan page or Home).
+      if (!done) return void navigate(planBack)
       // Where she is in the plan now (these cards counted), for the done screen's "Next" button.
       const lastMockDay = queryClient.getQueryData<string | null>(['last-mock-day']) ?? null
       const info = planResultInfo(userId ? readSavedPlan(userId) : null, readPlanProgress(), lastMockDay, taskKey({ kind: 'flashcards' }))

@@ -1,5 +1,6 @@
 import { CalendarRange, Crosshair, Play } from 'lucide-react'
 import { Link } from 'react-router'
+import { FROM_PLAN_PAGE } from '@/lib/planLinks'
 import { HeroPanel, heroButtonClass } from '@/components/report'
 import type { FocusTask } from '@/lib/studyPlan'
 import { cn } from '@/lib/utils'
@@ -135,7 +136,7 @@ export function WeeklyRecap({
 
       <div className={cn('grid gap-2.5 pt-1', onPlanWeek && 'sm:grid-cols-[minmax(0,1fr)_auto]')}>
         {start ? (
-          <Link to={start.to} onClick={onDone} className={cn(heroButtonClass, 'sm:flex sm:w-full')}>
+          <Link to={start.to} state={FROM_PLAN_PAGE} onClick={onDone} className={cn(heroButtonClass, 'sm:flex sm:w-full')}>
             <Play className="size-5 shrink-0 fill-current" aria-hidden />
             Start this week
           </Link>

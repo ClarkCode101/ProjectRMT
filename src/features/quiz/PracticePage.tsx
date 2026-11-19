@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { Info, Play } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { FullPageMessage } from '@/components/FullPageMessage'
 import { useFocusMode } from '@/components/layoutContext'
 import { HeroPanel, heroButtonClass } from '@/components/report'
@@ -10,7 +10,7 @@ import { useAuth } from '@/features/auth/authContext'
 import { useMistakes } from '@/features/mistakes/api'
 import { planResultInfo, type PlanResultInfo } from '@/features/plan/planResults'
 import { useBooks } from '@/features/questions/booksApi'
-import { readPracticePlanLink, taskKey, type PracticePlanLink } from '@/lib/planLinks'
+import { planBackTo, readPracticePlanLink, taskKey, type PracticePlanLink } from '@/lib/planLinks'
 import { readPlanProgress, readSavedPlan, recordPlanProgress, recordPlanResult, recordStudied, type TaskResult } from '@/lib/planProgress'
 import { shuffle } from '@/lib/quiz'
 import { firstAnswerPerQuestion, fixedCount, lastAnswerPerQuestion } from '@/lib/retryQueue'
@@ -83,6 +83,8 @@ const BOOK_SESSION_MAX = 50
 export default function PracticePage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  // Leaving a plan task: back to the Plan page if she started it there, else Home.
+  const planBack = planBackTo(useLocation().state)
   const planLink = readPracticePlanLink(searchParams)
   const fromMistakes = searchParams.get('from') === 'mistakes'
   const bookParam = searchParams.get('book')
@@ -312,7 +314,7 @@ export default function PracticePage() {
 
   /**
    * She left before the last item. Answers so far are already saved, so just record the partial score
-   * and go back: to Home for a plan task (where she came from), else to the Practice rack.
+   * and go back: for a plan task, to where she started it (Plan page or Home), else to the Practice rack.
    */
   function exit(answers: AnswerResult[]) {
     if (stage.name !== 'quiz') return
@@ -325,7 +327,7 @@ export default function PracticePage() {
       if (stage.plan) recordPlanResult(stage.plan.key, planResult(answers))
       refreshAfterAnswers()
     }
-    if (stage.plan) return void navigate('/')
+    if (stage.plan) return void navigate(planBack)
     restart()
   }
 
@@ -357,12 +359,12 @@ export default function PracticePage() {
           recordStudied(stage.key, stage.questions.map((q) => q.id))
           setStage({ name: 'study-done', questions: stage.questions, key: stage.key })
         }}
-        onExit={() => void navigate('/')}
+        onExit={() => void navigate(planBack)}
       />
     )
   }
   if (stage.name === 'study-done') {
-    return <StudyDone count={stage.questions.length} starting={starting} message={message} onStart={() => startLearnTest(stage.questions, stage.key)} onLater={() => void navigate('/')} />
+    return <StudyDone count={stage.questions.length} starting={starting} message={message} onStart={() => startLearnTest(stage.questions, stage.key)} onLater={() => void navigate(planBack)} />
   }
   if (stage.name === 'results') {
     return (

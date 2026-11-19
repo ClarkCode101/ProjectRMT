@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PLAN_LINK_MAX, planTaskLink, readFlashcardPlanLink, readPracticePlanLink, taskKey } from './planLinks'
+import { FROM_PLAN_PAGE, PLAN_LINK_MAX, planBackTo, planTaskLink, readFlashcardPlanLink, readPracticePlanLink, taskKey } from './planLinks'
 import type { PlanTask } from './studyPlan'
 
 const params = (link: string) => new URLSearchParams(link.split('?')[1] ?? '')
@@ -62,5 +62,15 @@ describe('taskKey', () => {
     expect(taskKey({ kind: 'learn', subjectId: 4, topicId: null, count: 10, step: 'test' })).toBe('learn:4')
     expect(taskKey({ kind: 'mistakes', count: 3 })).toBe('mistakes')
     expect(taskKey({ kind: 'flashcards' })).toBe('flashcards')
+  })
+})
+
+describe('planBackTo', () => {
+  it('goes back to the Plan page only when the task was started there', () => {
+    expect(planBackTo(FROM_PLAN_PAGE)).toBe('/plan')
+    expect(planBackTo(null)).toBe('/')
+    expect(planBackTo(undefined)).toBe('/')
+    expect(planBackTo({ from: 'home' })).toBe('/')
+    expect(planBackTo('plan')).toBe('/')
   })
 })

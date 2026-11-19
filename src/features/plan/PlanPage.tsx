@@ -7,7 +7,7 @@ import { FullPageMessage } from '@/components/FullPageMessage'
 import { PageHeader } from '@/components/dashboard'
 import { heroButtonClass } from '@/components/report'
 import { saveStudyDays, studySettingsOptions, useStudySettings, type StudySettings } from '@/features/settings/api'
-import { planTaskLink } from '@/lib/planLinks'
+import { FROM_PLAN_PAGE, planTaskLink } from '@/lib/planLinks'
 import type { SubjectSummary } from '@/lib/quiz'
 import { setDayMode } from '@/lib/studyDays'
 import { weekRecap } from '@/lib/weeklyRecap'
@@ -87,7 +87,7 @@ export default function PlanPage() {
           Swap
         </button>
       )}
-      <Link to={planTaskLink(current.task, left)} className={cn(heroButtonClass, 'min-w-0 px-4 sm:flex sm:w-full')}>
+      <Link to={planTaskLink(current.task, left)} state={FROM_PLAN_PAGE} className={cn(heroButtonClass, 'min-w-0 px-4 sm:flex sm:w-full')}>
         <Play className="size-4 shrink-0 fill-current" aria-hidden />
         <span className="min-w-0 truncate">
           {current.done > 0 ? 'Continue' : 'Start'}: {taskTitle(current.task, left)}
