@@ -89,7 +89,7 @@ export const ORGANS: Record<string, Organ> = {
     name: 'Liver',
     about: 'Liver and kidney function, enzymes, glucose, lipids and electrolytes.',
     side: 'left',
-    rank: 3,
+    rank: 2,
     color: '#B9773F',
     iconBox: '0 0 48 48',
     icon: (
@@ -115,14 +115,12 @@ export const ORGANS: Record<string, Organ> = {
       </>
     ),
   },
-  // BBIS sits ABOVE CC on the left, although the liver is a bit higher than the arm's blood drop:
-  // both cards are lower than their organs, and the card of the outer organ (the drop) has to be the higher one,
-  // or the two lines cross.
+  // BBIS is the lowest card on the left: its blood drop sits in the thigh, below the liver.
   BBIS: {
     name: 'Blood donation',
     about: 'Blood typing, crossmatching, transfusion and immunology.',
     side: 'left',
-    rank: 2,
+    rank: 3,
     color: '#E5484D',
     iconBox: '0 0 48 48',
     icon: (
