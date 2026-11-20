@@ -56,7 +56,7 @@ export function dailyActivity(
   return result
 }
 
-/** A rest day can't be skipped more than this many days in a row (one a week is the rule; this just stops a runaway loop). */
+/** A rest day can't be skipped more than this many days in a row (up to 3 a week is the rule, so at most 6 in a row across two weeks; this just stops a runaway loop). */
 const MAX_REST_IN_A_ROW = 7
 
 /**

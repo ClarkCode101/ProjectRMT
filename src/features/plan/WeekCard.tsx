@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Dialog } from '@/components/Dialog'
 import { heroButtonClass } from '@/components/report'
 import { saveStudyDays, studySettingsOptions, type StudySettings } from '@/features/settings/api'
-import { canRest, otherRestDay, setDayMode, type DayMode, type StudyDays } from '@/lib/studyDays'
+import { canRest, MAX_REST_DAYS, otherRestDays, setDayMode, type DayMode, type StudyDays } from '@/lib/studyDays'
 import { LIGHT_COUNT } from '@/lib/studyPlan'
 import { cn } from '@/lib/utils'
 import { quietButtonClass } from './planStyles'
@@ -12,6 +12,8 @@ import type { TileState, WeekTile } from './planWeek'
 
 const weekday = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'long' })
 const shortDay = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short' })
+/** "Saturday, Sunday and Wednesday" */
+const listOf = (items: string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`)
 
 /** How each tile looks: the box, the round mark, and its icon. */
 const TILE_LOOK: Record<TileState, { box: string; mark: string }> = {
@@ -101,7 +103,7 @@ export function WeekCard({
           </li>
         ))}
       </ol>
-      {/* Short on purpose: the day sheet explains full, light and rest (and the one-rest-day rule). */}
+      {/* Short on purpose: the day sheet explains full, light and rest (and the rest-day limit). */}
       <p className="mt-3 text-xs text-muted-foreground">Tap a day to change it.</p>
 
       <Dialog open={open !== null} onClose={() => setOpen(null)} labelledBy="day-heading" variant="sheet">
@@ -172,7 +174,7 @@ function DaySheet({ tile, settings, today, locked, onClose }: { tile: WeekTile; 
   const [error, setError] = useState(false)
 
   const restOk = canRest(days, tile.date, every)
-  const otherRest = otherRestDay(days, tile.date)
+  const otherRests = otherRestDays(days, tile.date)
   const isToday = tile.state === 'today'
   const title = `${isToday ? 'Today, ' : ''}${weekday(tile.date)}, ${tile.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
 
@@ -200,7 +202,11 @@ function DaySheet({ tile, settings, today, locked, onClose }: { tile: WeekTile; 
       icon: Moon,
       iconClass: 'bg-rest-soft text-rest',
       title: 'Rest',
-      about: restOk ? 'No tasks. Your streak stays safe.' : `Your rest day this week is ${otherRest ? weekday(otherRest) : 'already set'}. One a week keeps the streak safe.`,
+      about: restOk
+        ? 'No tasks. Your streak stays safe.'
+        : otherRests.length >= MAX_REST_DAYS
+          ? `You already rest on ${listOf(otherRests.map(weekday))} this week. Up to ${MAX_REST_DAYS} a week keeps the streak safe.`
+          : `Every week would have more than ${MAX_REST_DAYS} rest days. Up to ${MAX_REST_DAYS} a week keeps the streak safe.`,
       disabled: !restOk,
     },
   ]

@@ -119,7 +119,7 @@ export function recapTip(r: WeekRecap): string | null {
     const name = empty.date.toLocaleDateString('en-US', { weekday: 'long' })
     return `${name} was empty. If it’s a busy day, make it a light day this week.`
   }
-  if (r.studied === 7 && !r.rested) return 'Seven days straight! One rest day a week is fine: your streak stays safe.'
+  if (r.studied === 7 && !r.rested) return 'Seven days straight! Rest days are fine too: your streak stays safe.'
   if (r.accuracy !== null && r.prevAccuracy !== null && r.accuracy <= r.prevAccuracy - 0.05) {
     return 'Your score dipped a little. Learn days and past mistakes are how it climbs back.'
   }

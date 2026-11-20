@@ -49,29 +49,45 @@ export function weekOf(day: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => new Date(day.getFullYear(), day.getMonth(), day.getDate() - back + i, 12))
 }
 
-/** The other rest day in `day`'s week (Monday to Sunday), if there is one. */
-export function otherRestDay(days: StudyDays, day: Date): Date | null {
+/** At most this many rest days in a week (Monday to Sunday): enough for a long weekend, but "rest" can't turn into "stop". */
+export const MAX_REST_DAYS = 3
+
+/** The other rest days in `day`'s week (Monday to Sunday), Monday first. */
+export function otherRestDays(days: StudyDays, day: Date): Date[] {
   const key = localDateKey(day)
-  return weekOf(day).find((d) => localDateKey(d) !== key && modeFor(days, d) === 'rest') ?? null
+  return weekOf(day).filter((d) => localDateKey(d) !== key && modeFor(days, d) === 'rest')
+}
+
+/** How many rest days the week of `day` has. */
+function restDaysInWeek(days: StudyDays, day: Date): number {
+  return weekOf(day).filter((d) => modeFor(days, d) === 'rest').length
 }
 
 /**
- * Can this day be a rest day? Only one a week keeps the streak safe, so "rest" can't turn into "stop".
- * `every`: as a weekly rest day, which also counts the weekly rest days of every other week.
+ * Can this day be a rest day? Up to MAX_REST_DAYS a week keep the streak safe.
+ * `every`: as a weekly rest day, so every week must stay within the limit: a usual week (weekly choices only),
+ * this week, and each week that has a one-off day.
  */
 export function canRest(days: StudyDays, day: Date, every: boolean): boolean {
-  const other = otherRestDay(days, day)
-  if (other === null) return true
-  // As the new WEEKLY rest day, it takes the place of the old weekly one (setDayMode makes that a full day).
-  // A one-off rest day stays where it is, so then this one can't rest.
-  return every && days.dates[localDateKey(other)] === undefined && days.weekly[other.getDay()] === 'rest'
+  const key = localDateKey(day)
+  if (!every) {
+    const next: StudyDays = { weekly: days.weekly, dates: { ...days.dates, [key]: 'rest' } }
+    return restDaysInWeek(next, day) <= MAX_REST_DAYS
+  }
+  const weekly = [...days.weekly]
+  weekly[day.getDay()] = 'rest'
+  const dates = { ...days.dates }
+  delete dates[key]
+  const next: StudyDays = { weekly, dates }
+  if (weekly.filter((m) => m === 'rest').length > MAX_REST_DAYS) return false
+  return [day, ...Object.keys(dates).map(dateFromKey)].every((d) => restDaysInWeek(next, d) <= MAX_REST_DAYS)
 }
 
 /**
  * Her study days with one day changed. `every`: every week on that weekday (else just that date).
  * - Weekly: the weekday changes, and a one-off on that date is dropped (so it shows the new weekly choice).
- *   A new weekly rest day replaces the old one (only one a week).
  * - One-off dates before `today` are dropped, so the list doesn't grow forever.
+ * (Check canRest first: this doesn't enforce the rest-day limit.)
  */
 export function setDayMode(days: StudyDays, day: Date, mode: DayMode, every: boolean, today: Date): StudyDays {
   const key = localDateKey(day)
@@ -83,7 +99,7 @@ export function setDayMode(days: StudyDays, day: Date, mode: DayMode, every: boo
     if (days.weekly[day.getDay()] !== mode) dates[key] = mode
     return { weekly: [...days.weekly], dates }
   }
-  const weekly = days.weekly.map((m) => (mode === 'rest' && m === 'rest' ? 'full' : m))
+  const weekly = [...days.weekly]
   weekly[day.getDay()] = mode
   return { weekly, dates }
 }

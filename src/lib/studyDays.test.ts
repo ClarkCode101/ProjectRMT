@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { localDateKey } from './activity'
-import { canRest, DEFAULT_STUDY_DAYS, modeFor, otherRestDay, parseStudyDays, setDayMode, weekOf, type DayMode, type StudyDays } from './studyDays'
+import { canRest, DEFAULT_STUDY_DAYS, MAX_REST_DAYS, modeFor, otherRestDays, parseStudyDays, setDayMode, weekOf, type DayMode, type StudyDays } from './studyDays'
 
 // Thursday, Nov 19 2026 (the week is Mon Nov 16 – Sun Nov 22).
 const TODAY = new Date(2026, 10, 19, 9)
@@ -39,21 +39,37 @@ describe('modeFor / weekOf', () => {
   })
 })
 
-describe('canRest: one rest day a week', () => {
+describe('canRest: up to 3 rest days a week', () => {
+  it('is 3', () => {
+    expect(MAX_REST_DAYS).toBe(3)
+  })
+
   it('a free week: any day can rest', () => {
     expect(canRest(DEFAULT_STUDY_DAYS, day(21), false)).toBe(true)
   })
 
-  it('another rest day this week: not this one too', () => {
-    const days: StudyDays = { weekly: weekly('rest'), dates: {} }
-    expect(otherRestDay(days, day(21))?.getDate()).toBe(22)
-    expect(canRest(days, day(21), false)).toBe(false)
-    expect(canRest(days, day(22), false)).toBe(true) // Sunday itself
+  it('a second and a third rest day are fine', () => {
+    const sunday: StudyDays = { weekly: weekly('rest'), dates: {} }
+    expect(otherRestDays(sunday, day(21)).map((d) => d.getDate())).toEqual([22])
+    expect(canRest(sunday, day(21), false)).toBe(true) // Saturday too: 2
+    const weekend: StudyDays = { weekly: weekly('rest', 'rest'), dates: {} }
+    expect(canRest(weekend, day(18), false)).toBe(true) // and Wednesday: 3
+    expect(canRest(weekend, day(18), true)).toBe(true) // every Wednesday too
   })
 
-  it('as the new weekly rest day, it can take the place of the old weekly one, not of a one-off one', () => {
-    expect(canRest({ weekly: weekly('rest'), dates: {} }, day(21), true)).toBe(true)
-    expect(canRest({ weekly: weekly('full'), dates: { '2026-11-20': 'rest' } }, day(21), true)).toBe(false)
+  it('a fourth rest day is not', () => {
+    const three: StudyDays = { weekly: weekly('rest', 'rest'), dates: { '2026-11-18': 'rest' } }
+    expect(otherRestDays(three, day(17)).map((d) => d.getDate())).toEqual([18, 21, 22])
+    expect(canRest(three, day(17), false)).toBe(false)
+    expect(canRest(three, day(22), false)).toBe(true) // a day that already rests
+  })
+
+  it('every week: no week may go over, counting one-off rest days in other weeks', () => {
+    const weekendPlusOne: StudyDays = { weekly: weekly('rest', 'rest'), dates: { '2026-11-25': 'rest' } } // + Wed of next week
+    expect(canRest(weekendPlusOne, day(17), false)).toBe(true) // this Tuesday only: 3 this week
+    expect(canRest(weekendPlusOne, day(17), true)).toBe(false) // every Tuesday: next week would have 4
+    const threeWeekly: StudyDays = { weekly: ['rest', 'rest', 'full', 'full', 'full', 'full', 'rest'], dates: {} }
+    expect(canRest(threeWeekly, day(17), true)).toBe(false) // a 4th weekly rest day
   })
 })
 
@@ -67,9 +83,9 @@ describe('setDayMode', () => {
     expect(setDayMode(days, day(22), 'rest', false, TODAY).dates).toEqual({})
   })
 
-  it('every week: the weekday changes, and a new weekly rest day replaces the old one', () => {
+  it('every week: the weekday changes and the other weekly rest days stay', () => {
     const days: StudyDays = { weekly: weekly('rest'), dates: { '2026-11-21': 'light' } }
-    expect(setDayMode(days, day(21), 'rest', true, TODAY)).toEqual({ weekly: weekly('full', 'rest'), dates: {} })
+    expect(setDayMode(days, day(21), 'rest', true, TODAY)).toEqual({ weekly: weekly('rest', 'rest'), dates: {} })
   })
 
   it('drops one-off days that have passed', () => {

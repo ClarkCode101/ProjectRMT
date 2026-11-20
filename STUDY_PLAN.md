@@ -83,7 +83,7 @@ Tap today or a day ahead, then pick:
 | **Rest** | No tasks, and the **streak stays safe**. "Study today anyway" on the Plan page turns it back into a full day. |
 
 - **"Every Saturday"** makes it a weekly choice. Otherwise it applies to that date only, and a one-off wins over the weekly choice.
-- **One rest day a week** (Monday to Sunday), so "rest" can't turn into "stop". A new weekly rest day replaces the old weekly one.
+- **Up to 3 rest days a week** (Monday to Sunday), so "rest" can't turn into "stop". When a week already has 3, Rest is turned off for its other days (changed from one a week on 2026-11-20).
 - **Today can't be changed** once she has done something from today's plan.
 - **Streak:** a rest day with no answers is skipped. It doesn't add to the streak and doesn't break it.
 
