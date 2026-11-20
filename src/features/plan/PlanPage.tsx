@@ -414,7 +414,7 @@ function RoadCard({ plan, examDate }: { plan: StudyPlan; examDate: string | null
               <span aria-hidden className={cn('block h-3 rounded-full border-2 border-ink', i < at ? 'bg-primary' : i === at ? 'bg-highlight' : 'bg-secondary')} />
               <span className={cn('mt-2 flex flex-wrap items-center gap-1.5 font-heading text-sm font-bold', i !== at && 'text-muted-foreground')}>
                 {PHASE_LABEL[p]}
-                {i === at && <span className="rounded-md bg-ink px-1.5 text-[10px] leading-4 text-white">You</span>}
+                {i === at && <span className="rounded-md bg-foreground px-1.5 text-[10px] leading-4 text-white">You</span>}
               </span>
               {/* What a phase is about: only for the one she's in. */}
               {i === at && <span className="block text-xs text-muted-foreground">{PHASE_ABOUT[p]}</span>}

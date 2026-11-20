@@ -17,7 +17,7 @@
 
 @theme inline {
     --font-sans: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
-    --font-heading: 'Fredoka Variable', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+    --font-heading: var(--heading-font);
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -51,8 +51,8 @@
     --color-rest-soft: var(--rest-soft);
 
     /* The hard "sticker" shadow under cards and buttons (sm = small buttons and chips) */
-    --shadow-toon: 0 4px 0 var(--ink);
-    --shadow-toon-sm: 0 3px 0 var(--ink);
+    --shadow-toon: var(--toon-shadow);
+    --shadow-toon-sm: var(--toon-shadow-sm);
 
     --radius-sm: calc(var(--radius) * 0.5);
     --radius-md: calc(var(--radius) * 0.75);
@@ -92,6 +92,102 @@
     --highlight-soft: #FFF1CF;
     --rest: #5B4BA8;              /* rest days on the Plan page (calm, not a warning) */
     --rest-soft: #ECE8FA;
+
+    --toon-shadow: 0 4px 0 var(--ink);    /* hard "sticker" shadow */
+    --toon-shadow-sm: 0 3px 0 var(--ink);
+    --heading-font: 'Fredoka Variable', 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+}
+
+/*
+  Design: Pastel (Settings > Design, src/lib/theme.ts), "bright pastel A". The SAME palette (analyzer blue, gold,
+  pale lab blue), made light but still saturated (no gray mixed in: a gray-ish first try looked faded):
+  sky-blue outlines instead of dark ink, and soft floating blue shadows instead of hard ones.
+  Text stays dark, and every text color passes 4.5:1 contrast on its background.
+*/
+[data-theme="pastel"] {
+    --ink: #9FDBF7;               /* sky-blue outline */
+    --background: #E5F6FF;
+    --foreground: #0C3E5C;
+    --card-foreground: #0C3E5C;
+    --popover-foreground: #0C3E5C;
+    --primary: #0A72AB;           /* bright analyzer blue (white text 5.2:1, as text on the page 4.7:1) */
+    --secondary: #CDEEFF;
+    --secondary-foreground: #0C3E5C;
+    --muted: #CDEEFF;
+    --muted-foreground: #4A6B82;
+    --accent: #CDEEFF;
+    --accent-foreground: #0C3E5C;
+    --destructive: #C0284B;
+    --border: #C9EBFB;
+    --input: #8ACBEA;
+    --ring: #2A9FD8;
+
+    --correct: #137A4A;
+    --correct-soft: #D6F7E5;
+    --wrong: #C0284B;
+    --wrong-soft: #FFE3EA;
+
+    --primary-deep: #08557F;
+    --highlight: #FFD452;         /* sunshine gold */
+    --highlight-soft: #FFF4C7;
+    --rest: #6A5DB5;
+    --rest-soft: #EFEBFF;
+
+    --toon-shadow: 0 10px 22px -8px rgb(10 140 210 / 0.4);   /* soft, floating, blue */
+    --toon-shadow-sm: 0 5px 14px -5px rgb(10 140 210 / 0.42);
+}
+
+/*
+  Design: Modern (Settings > Design). The SAME colors (analyzer blue, gold), drawn like a professional app:
+  thin light-gray lines instead of thick ink outlines, quiet shadows, plain (Atkinson) headings instead of
+  the round Fredoka, smaller corners, solid dividers, and buttons that don't "press down".
+*/
+[data-theme="modern"] {
+    --ink: #D5DFE5;               /* thin light-gray lines */
+    --background: #F5F8FA;
+    --foreground: #0E2A36;
+    --card-foreground: #0E2A36;
+    --popover-foreground: #0E2A36;
+    --primary: #0A789C;           /* the analyzer blue (white text 5.1:1, as text on the page 4.7:1) */
+    --secondary: #E8F2F5;
+    --secondary-foreground: #0E2A36;
+    --muted: #E8F2F5;
+    --muted-foreground: #5A6B75;
+    --accent: #E8F2F5;
+    --accent-foreground: #0E2A36;
+    --border: #E3EAEE;
+    --input: #B7C6CE;
+    --correct-soft: #E3F5EA;
+    --wrong-soft: #FDECEE;
+    --highlight-soft: #FFF4DA;
+
+    --toon-shadow: 0 1px 2px rgb(14 42 54 / 0.05), 0 2px 8px rgb(14 42 54 / 0.06);   /* quiet */
+    --toon-shadow-sm: 0 1px 2px rgb(14 42 54 / 0.08);
+    --heading-font: 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif;
+
+    /* smaller corners */
+    --radius: 0.5rem;
+    --radius-2xl: 0.75rem;
+    --radius-3xl: 1rem;
+    --radius-4xl: 1.25rem;
+}
+/* Thin lines: the full outlines (border-2, border-[2.5px], border-[3px]) become 1px. One-side borders keep their own classes. */
+[data-theme="modern"] :is(.border-2, .border-\[2\.5px\], .border-\[3px\]) {
+  border-width: 1px;
+}
+[data-theme="modern"] .border-t-\[2\.5px\] {
+  border-top-width: 1px;
+}
+/* Rows inside a card: one thin solid line between them instead of a thick dashed one. */
+[data-theme="modern"] :is(.divide-y-2) > :not(:last-child) {
+  border-bottom-width: 1px;
+}
+[data-theme="modern"] .divide-dashed > * {
+  border-style: solid;
+}
+/* No "pressed down onto its shadow" move (there's no hard shadow to press onto). */
+[data-theme="modern"] :is(.translate-y-\[3px\], .active\:translate-y-\[3px\]:active, .group:active .group-active\:translate-y-\[3px\]) {
+  translate: none;
 }
 
 @layer base {

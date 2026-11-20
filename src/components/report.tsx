@@ -36,7 +36,7 @@ export function RangeBar({ rate, label }: { rate: number | null; label: string }
           aria-hidden
         />
       )}
-      <div className="absolute -inset-y-1.5 w-[3px] rounded-full bg-ink" style={{ left: `${PASSING_RATE * 100}%` }} aria-hidden />
+      <div className="absolute -inset-y-1.5 w-[3px] rounded-full bg-foreground" style={{ left: `${PASSING_RATE * 100}%` }} aria-hidden />
     </div>
   )
 }

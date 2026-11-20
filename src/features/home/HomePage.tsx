@@ -360,7 +360,7 @@ function ReadinessLine({
         className="relative mt-1.5 h-3 rounded-full border-2 border-ink bg-secondary"
       >
         <div className={cn('h-full rounded-full', isPassing ? 'bg-correct' : 'bg-highlight')} style={{ width: `${shown}%` }} />
-        <span aria-hidden className="absolute -top-1 -bottom-1 w-[3px] rounded-full bg-ink" style={{ left: `${PASSING_RATE * 100}%` }} />
+        <span aria-hidden className="absolute -top-1 -bottom-1 w-[3px] rounded-full bg-foreground" style={{ left: `${PASSING_RATE * 100}%` }} />
         <span aria-hidden className="absolute top-full mt-1 -translate-x-1/2 text-[10px] leading-none font-semibold text-muted-foreground" style={{ left: `${PASSING_RATE * 100}%` }}>
           {PASSING_LABEL}
         </span>

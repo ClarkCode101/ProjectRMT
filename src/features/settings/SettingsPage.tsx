@@ -22,6 +22,7 @@ import {
   saveFirstName,
   type PasswordChangeError,
 } from '@/lib/profile'
+import { applyTheme, readTheme, type Theme } from '@/lib/theme'
 import { cn } from '@/lib/utils'
 import { DAILY_TARGET_CHOICES, resetProgress, saveStudySettings, useStudySettings, type StudySettings } from './api'
 
@@ -507,6 +508,55 @@ function DailyGoalRow({ settings }: { settings: StudySettings }) {
 }
 
 /* -------------------------------- This device -------------------------------- */
+
+/** The two dots on each Design choice: its blue and its gold (fixed colors, so each one shows its own look). */
+const THEME_CHOICES: { id: Theme; label: string; dots: [string, string]; outlined: boolean }[] = [
+  { id: 'modern', label: 'Modern', dots: ['#0B7FA3', '#F7B538'], outlined: false },
+  { id: 'cartoon', label: 'Cartoon', dots: ['#0B7FA3', '#F7B538'], outlined: true },
+  { id: 'pastel', label: 'Pastel', dots: ['#5CC3F2', '#FFD452'], outlined: false },
+]
+
+/** Design: tap a look and the whole app changes right away (saved on this device, src/lib/theme.ts). */
+function DesignRow() {
+  const [theme, setTheme] = useState<Theme>(readTheme)
+
+  function pick(next: Theme) {
+    applyTheme(next)
+    setTheme(next)
+  }
+
+  return (
+    <Row
+      label="Design"
+      hint="How the app looks"
+      value={
+        <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Design">
+          {THEME_CHOICES.map((choice) => (
+            <label
+              key={choice.id}
+              className={cn(
+                'flex h-11 cursor-pointer items-center gap-2 rounded-xl border-2 border-ink px-3.5 font-heading font-bold has-focus-visible:ring-3 has-focus-visible:ring-ring/40',
+                theme === choice.id ? 'translate-y-[3px] bg-primary text-white' : 'bg-card text-foreground shadow-toon-sm hover:bg-secondary/40',
+              )}
+            >
+              <input type="radio" name="design" checked={theme === choice.id} onChange={() => pick(choice.id)} className="sr-only" />
+              <span aria-hidden className="flex -space-x-1">
+                {choice.dots.map((color) => (
+                  <span
+                    key={color}
+                    className={cn('size-3.5 rounded-full', choice.outlined ? 'border-2 border-[#0E3445]' : 'ring-2 ring-white')}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </span>
+              {choice.label}
+            </label>
+          ))}
+        </div>
+      }
+    />
+  )
+}
 
 /** Install app: what to do depends on the device (see lib/install.ts). The same help as the tip on top. */
 function InstallRow() {
@@ -1170,6 +1220,7 @@ export default function SettingsPage() {
       </Group>
 
       <Group title="This device">
+        <DesignRow />
         <InstallRow />
         <OfflineRow />
         {/* Which push is on this device: if someone says they see an old screen, compare this with the latest push. */}

@@ -21,7 +21,7 @@ const TILE_LOOK: Record<TileState, { box: string; mark: string }> = {
   rest: { box: 'border-rest bg-rest-soft', mark: 'border-rest bg-card text-rest' },
   today: { box: 'border-[2.5px] border-ink bg-highlight-soft shadow-toon-sm', mark: 'border-ink bg-highlight text-foreground' },
   planned: { box: 'border-border bg-card', mark: 'border-input bg-card text-primary-deep' },
-  exam: { box: 'border-ink bg-ink text-white', mark: 'border-white bg-ink text-white' },
+  exam: { box: 'border-ink bg-foreground text-white', mark: 'border-white bg-foreground text-white' },
 }
 
 /** The icon in a tile's round mark. */
@@ -126,7 +126,7 @@ function Tile({ tile, onOpen }: { tile: WeekTile; onOpen: () => void }) {
   const body = (
     <>
       {tile.state === 'today' && (
-        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-ink px-1.5 text-[9px] leading-4 font-bold tracking-wide text-white">TODAY</span>
+        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-foreground px-1.5 text-[9px] leading-4 font-bold tracking-wide text-white">TODAY</span>
       )}
       <span className={cn('text-[11px] font-bold tracking-wide uppercase', tile.state !== 'exam' && 'text-muted-foreground')}>{shortDay(tile.date)}</span>
       <span className="font-heading text-lg leading-none font-bold tabular-nums">{tile.date.getDate()}</span>

@@ -35,14 +35,14 @@ export function TubeFigure({
           <span className="absolute inset-x-0 top-0 h-1.5 bg-white/25" />
         </span>
         {/* 75% passing mark */}
-        <span className="absolute right-0 h-[3px] w-4 rounded-l-full bg-ink md:w-6" style={{ bottom: `${PASSING_RATE * 100}%` }} />
+        <span className="absolute right-0 h-[3px] w-4 rounded-l-full bg-foreground md:w-6" style={{ bottom: `${PASSING_RATE * 100}%` }} />
         {/* glass shine */}
         <span className="absolute top-2 bottom-12 left-1.5 w-1.5 rounded-full bg-white/70 md:left-2.5" />
         {/* the face: two eyes and a smile, near the round bottom */}
         <svg viewBox="0 0 24 14" className="absolute inset-x-0 bottom-4 mx-auto w-6 md:bottom-6 md:w-8">
-          <circle cx="7" cy="4" r="2.2" fill="var(--ink)" />
-          <circle cx="17" cy="4" r="2.2" fill="var(--ink)" />
-          <path d="M9 8.5q3 3.2 6 0" fill="none" stroke="var(--ink)" strokeWidth="1.8" strokeLinecap="round" />
+          <circle cx="7" cy="4" r="2.2" fill="var(--foreground)" />
+          <circle cx="17" cy="4" r="2.2" fill="var(--foreground)" />
+          <path d="M9 8.5q3 3.2 6 0" fill="none" stroke="var(--foreground)" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
       </span>
     </span>

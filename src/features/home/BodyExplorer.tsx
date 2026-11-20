@@ -207,13 +207,13 @@ export function BodyStage({
               >
                 <polyline
                   fill="none"
-                  stroke={isSelected ? 'var(--ink)' : 'var(--muted-foreground)'}
+                  stroke={isSelected ? 'var(--foreground)' : 'var(--muted-foreground)'}
                   strokeOpacity={isSelected ? 1 : isPointed ? 0.8 : 0.35}
                   strokeWidth={isSelected ? 2.5 : 1.5}
                   strokeDasharray={isSelected ? undefined : '2 4'}
                   strokeLinecap="round"
                 />
-                <circle r={isSelected ? 3.5 : 2.5} fill={isSelected ? 'var(--ink)' : 'var(--muted-foreground)'} fillOpacity={isSelected ? 1 : isPointed ? 0.8 : 0.5} />
+                <circle r={isSelected ? 3.5 : 2.5} fill={isSelected ? 'var(--foreground)' : 'var(--muted-foreground)'} fillOpacity={isSelected ? 1 : isPointed ? 0.8 : 0.5} />
               </g>
             )
           })}
@@ -264,7 +264,7 @@ function ProgressBar({ subject, status }: { subject: SubjectSummary; status: Sub
   return (
     <span aria-hidden className="relative block h-3 rounded-full border-2 border-ink bg-secondary">
       <span className={cn('block h-full rounded-full', BAR_COLOR[status])} style={{ width: `${fill * 100}%` }} />
-      {isReal && <span className="absolute -top-1 -bottom-1 w-[3px] rounded-full bg-ink" style={{ left: `${PASSING_RATE * 100}%` }} />}
+      {isReal && <span className="absolute -top-1 -bottom-1 w-[3px] rounded-full bg-foreground" style={{ left: `${PASSING_RATE * 100}%` }} />}
     </span>
   )
 }
@@ -428,7 +428,7 @@ function GoalProgress({ subject, status }: { subject: SubjectSummary; status: Su
       {/* The bar: score with the 75% line once it's real, answers toward 10 before that */}
       <div aria-hidden className="relative mt-2 h-3 rounded-full border-2 border-ink bg-secondary">
         <div className={cn('h-full rounded-full', status === 'passing' ? 'bg-correct' : status === 'low' ? 'bg-highlight' : 'bg-primary')} style={{ width: `${fill * 100}%` }} />
-        {isReal && <span className="absolute -top-1 -bottom-1 w-[3px] rounded-full bg-ink" style={{ left: `${PASSING_RATE * 100}%` }} />}
+        {isReal && <span className="absolute -top-1 -bottom-1 w-[3px] rounded-full bg-foreground" style={{ left: `${PASSING_RATE * 100}%` }} />}
       </div>
 
       {/* The steps still to take (filled ones are already done). The row is always there (empty when passing),

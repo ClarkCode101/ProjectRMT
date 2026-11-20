@@ -13,6 +13,16 @@
     <meta name="apple-mobile-web-app-title" content="ProjectRMT" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>ProjectRMT</title>
+    <!-- The look picked in Settings > Design (src/lib/theme.ts), set before the page draws so it never flashes.
+         Nothing picked yet (or storage blocked): Modern, the default. -->
+    <script>
+      var theme = 'modern'
+      try {
+        var saved = localStorage.getItem('projectrmt:theme')
+        if (saved === 'cartoon' || saved === 'pastel') theme = saved
+      } catch (e) {}
+      document.documentElement.dataset.theme = theme
+    </script>
   </head>
   <body>
     <div id="root"></div>
